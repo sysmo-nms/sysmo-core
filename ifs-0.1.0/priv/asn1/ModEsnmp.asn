@@ -1,0 +1,34 @@
+ModEsnmp DEFINITIONS AUTOMATIC TAGS ::=
+BEGIN
+
+TrapsTableRow   ::= SEQUENCE {
+    timeStamp   PrintableString,
+    version     PrintableString,
+    fromIp      PrintableString,
+    fromPort    PrintableString,
+    credentials PrintableString,
+    tags        PrintableString,
+    message     PrintableString
+}
+
+RegV2Agent  ::= SEQUENCE {
+    ip          PrintableString,
+    port        PrintableString,
+    community   PrintableString,
+    user        PrintableString
+}
+
+FromServer ::= CHOICE {
+    trapsTableWrite SEQUENCE OF TrapsTableRow
+}
+
+FromClient ::= CHOICE {
+    registerV2Agent RegV2Agent
+}
+
+EsnmpPDU        ::= CHOICE {
+    fromServer  FromServer,
+    fromClient  FromClient
+}
+
+END

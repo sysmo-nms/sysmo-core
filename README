@@ -1,0 +1,65 @@
+Enms is a Network Management System aimed to manage and monitor SNMP targets,
+monitor network hosts and services, provide a consistent documentation system
+and provide tools to help network professionals to have a wide perspective of
+the networks they manage.
+
+(SOON) Enms (will) provide a well documented protocol and API for asynchronous
+client access over:
+- TCP or SSL over TCP using Asn.1 BER or PER encoded messages.
+- WebSocket and SSL over Websocket using XML encoded messages.
+
+(SOON) Two interfaces (will) exists:
+- an open source interface using WebSocket,
+- an performance optimized proprietary interface using a graphical UI.
+
+Enms is written in Erlang/OTP. The native support for distributed programming
+and fault-tolerence will be used in the future to build scalable distributed
+infrastructure.
+
+The project is actualy in his Alpha stage. The first production ready system
+(1.0.0) is planned for late 2013.
+
+
+== BUILD ==
+
+Enms is developed using 'Erlang R15B02 (erts-5.9.2)' but should work with any
+Erlang R15+ version. 
+
+$ make
+
+
+== DOC ==
+
+(Partial) Documentation is generated using the Erlang 'edoc' tool. It is accessible in the
+'doc' directory in each modules after issuing the following command:
+
+$ make doc
+
+
+== RUNNING SERVER ==
+
+Actualy, Enms only have a SNMP module wich have incomplete and indocumented API.
+Its actual primary function is to help develop the 'ifs' module, sending traps
+events.
+You can start the ifs and enmp module using:
+
+$ make start
+
+Note that a 'sudo erl' is used to allow the snmp module to listen to the root port 162. 
+You can change this by modifying the 'snmp' part of the 'sys.config' file, and the Makefile.
+Note that this snmp configuration refere to the Erlang/OTP snmp module. Refere to the concerned
+documentation to modify these values.
+
+
+== RUNNING CLI CLIENT == 
+
+You can use the command line client "clifs" using the following commande in
+another shell:
+
+$ make clifs
+
+
+== BUGS ==
+
+This is an Alpha work. It is not meant to be used in a production environment for now.
+There is actualy no need to reports bugs.

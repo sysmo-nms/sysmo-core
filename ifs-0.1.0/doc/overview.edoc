@@ -1,0 +1,24 @@
+%% sldfjlqsdkjf
+@author Sebastien Serre <sserre.bx@gmail.com>
+@version 0.1.0
+@title Welcome to if_session application server
+@doc 
+== Overview ==
+<p>"if_session" est un serveur d'interface client asynchrone.
+Il permet a (n) clients de s'authentifier, recevoir ou d'envoyer des donnees de (n) modules en suivant les restriction d'acces definies le modele d access RBAC. </p>
+
+Dans le contexte de if_session: <ul>
+<li> "ifs_module" est un module erlang definit par l'utilisateur implementant le behaviour "ifs_module". C'est l'application cible de l'utilisateur.</li>
+<li> "ifs_auth" est un module erlang implementant le behaviour {@link ifs_auth. ifs_auth}. Il est utilise par if_session_server pour authentifier les clients.</li>
+<li> "ifs_client" est un module erlang implementant le behaviour "ifs_client".</li>
+</ul>
+
+<p>Il est donc possible d'adapter son propre client, modele d'authentification ou modele de permission.</p>
+
+Sont suporte par defaut: <ul>
+<li>"ssl_client", un module "ifs_client" utilisant ssl over tcp pour communiquer avec les applications clientes,</li>
+<li>plusieurs "ifs_auth" ("ifs_auth_ldap", "ifs_auth_local"),</li>
+</ul>
+
+{@link ifs_mpd_rbac. <em> dd</em>}
+@end
