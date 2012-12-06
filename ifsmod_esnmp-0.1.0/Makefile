@@ -9,7 +9,9 @@ MIBDEST = $(patsubst priv/mibs/%.mib, priv/snmp/mibs/%.bin, $(MIBSRC))
 
 INCLUDE = $(wildcard include/*.hrl)
 
-compile: $(DEST) $(MIBDEST)
+compile: $(DEST)
+
+mib: $(MIBDEST)
 
 priv/snmp/mibs/%.bin: priv/mibs/%.mib
 	$(SNMPC) --o priv/snmp/mibs/ priv/mibs/$*.mib
