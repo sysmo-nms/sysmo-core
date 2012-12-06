@@ -18,6 +18,7 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
+
 %%% @doc
 %%% <p>This module use SSL certificates. Here are the commands to create one:
 %%% <ul>
@@ -32,13 +33,14 @@
 -behaviour(gen_fsm).
 -include_lib("../include/client_state.hrl").
 
--export([start_link/1, set_socket/2, auth_set/2]).
+-export([start_link/1, set_socket/2, auth_set/2, send/2, raw_send/2]).
 -export([init/1, handle_event/3, handle_sync_event/4, 
-            handle_info/3, terminate/3, code_change/4, send/2]).
+            handle_info/3, terminate/3, code_change/4]).
 -export(['WAIT_FOR_SOCKET'/2, 'WAIT_FOR_CLIENT_AUTH'/2, 'RUNNING'/2]).
 
 -define(TIMEOUT, 30000).
 -define(MAX_AUTH_ATEMPT, 3).
+-define(ENCODING_MOD, bifs_encoder_asn2).
 
 
 %%%------------------------------------------------------------------------
@@ -76,7 +78,11 @@ auth_set(auth_fail,     NewState) ->
     UserName    = NewState#client_state.user_name,
     gen_fsm:send_event(Pid, {auth_fail, Ref, UserName}).
 
-send(SockState, Pdu) ->
+send(SockState, Msg) ->
+    gen_fsm:send_event(SockState#client_state.pid, 
+        {encode_send_msg, SockState#client_state.ref, Msg}).
+
+raw_send(SockState, Pdu) ->
     gen_fsm:send_event(SockState#client_state.pid, 
         {send_pdu, SockState#client_state.ref, Pdu}).
 
@@ -98,6 +104,7 @@ init([{Key, Cert, CACert}]) ->
         key             = Key,
         certificate     = Cert, 
         ca_certificate  = CACert,
+        encoding_mod    = ?ENCODING_MOD,
         state           = 'WAIT_FOR_SOCKET'}}.
 
 %%-------------------------------------------------------------------------
@@ -136,8 +143,8 @@ init([{Key, Cert, CACert}]) ->
 %%-------------------------------------------------------------------------
 %% process user credentials here
 %%-------------------------------------------------------------------------
-'WAIT_FOR_CLIENT_AUTH'({client_data, AsnData}, State) ->
-    ifs_server:handle_pdu(State, AsnData),
+'WAIT_FOR_CLIENT_AUTH'({client_data, Pdu}, #client_state{encoding_mod = Encoder} = State) ->
+    ifs_server:handle_msg(State, Encoder:decode(Pdu)),
 	{next_state, 'WAIT_FOR_CLIENT_AUTH', State, ?TIMEOUT};
 
 'WAIT_FOR_CLIENT_AUTH'({auth_success, Ref, User, Roles}, #client_state{ref = Ref} = State) ->
@@ -150,6 +157,11 @@ init([{Key, Cert, CACert}]) ->
 'WAIT_FOR_CLIENT_AUTH'({auth_fail, Ref, User}, #client_state{ref = Ref} = State) ->
 	io:format("failed to register with user ~p ~n", [User]),
     {next_state, 'WAIT_FOR_CLIENT_AUTH', State, ?TIMEOUT};
+
+'WAIT_FOR_CLIENT_AUTH'({encode_send_msg, Ref,  Msg},
+        #client_state{ref = Ref, encoding_mod = Encoder} = State) ->
+    ssl:send(State#client_state.socket, Encoder:encode(Msg)),
+    {next_state, 'WAIT_FOR_CLIENT_AUTH', State};
 
 'WAIT_FOR_CLIENT_AUTH'({send_pdu, Ref,  Pdu},  #client_state{ref = Ref} = State) ->
     ssl:send(State#client_state.socket, Pdu),
@@ -170,9 +182,13 @@ init([{Key, Cert, CACert}]) ->
 %%-------------------------------------------------------------------------
 %% application running
 %%-------------------------------------------------------------------------
-'RUNNING'({client_data, Data}, State) ->
-    ifs_server:handle_pdu(State, Data),
+'RUNNING'({client_data, Data}, #client_state{encoding_mod = Encoder} = State) ->
+    ifs_server:handle_msg(State, Encoder:decode(Data)),
 	{next_state, 'RUNNING', State};
+
+'RUNNING'({encode_send_msg, Ref, Msg}, #client_state{ref = Ref, encoding_mod = Encoder} = State) ->
+    ssl:send(State#client_state.socket, Encoder:encode(Msg)),
+    {next_state, 'RUNNING', State};
 
 'RUNNING'({send_pdu, Ref, Pdu}, #client_state{ref = Ref} = State) ->
     ssl:send(State#client_state.socket, Pdu),
@@ -220,10 +236,6 @@ handle_sync_event(Event, _From, StateName, StateData) ->
 %%-------------------------------------------------------------------------
 handle_info({ssl,Socket, Bin}, StateName, #client_state{socket=Socket} = StateData) ->
 	ssl:setopts(Socket, [{active, once}]),
-    %ssl:send(Socket, <<"abraracoursix">>), %% DEBUG clifs
-    %io:format("data from ifs is: ~p~n", [Bin]), %% DEBUG clifs
-    %io:format("size of data is: ~p~n", [byte_size(Bin)]), %% DEBUG clifs
-	%?MODULE:StateName({client_dataa, Bin}, StateData); %% DEBUG clifs
 	?MODULE:StateName({client_data, Bin}, StateData);
 
 handle_info({ssl_closed, Socket}, _StateName,

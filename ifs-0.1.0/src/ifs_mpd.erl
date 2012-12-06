@@ -115,7 +115,7 @@ ifs_process_msg(Mod, Perms, Data, S) ->
             {ok, Pdu} = 'NmsPDU':encode('PDU', Data),
             lists:foreach(fun(X) -> 
                 SMod = X#client_state.module,
-                SMod:send(X, Pdu)
+                SMod:raw_send(X, Pdu)
             end, Clients)
     end.
 

@@ -29,7 +29,7 @@
         start_link/0, 
         notify_connection/1, 
         notify_disconnection/1, 
-        handle_pdu/2, 
+        handle_msg/2, 
         register_mod/1]).
 
 -record(if_module, {callback_mod, asnkey}).
@@ -51,52 +51,48 @@ register_mod({ModName, AsnKey}) ->
     gen_server:call(?MODULE, {new_mod, ModName, AsnKey}).
     
 % @doc execute par le client lors de sa connection
-notify_connection(SocketState) ->
-    {ok, AuthReqPDU} = bifs_encoder_asn:encode({modIfPDU, {fromServer, {authReq, ldap}}}),
-    CliMod = SocketState#client_state.module,
-    CliMod:send(SocketState, AuthReqPDU).
+notify_connection(#client_state{module = Module} = SocketState) ->
+    Module:send(SocketState, {modIfPDU, {fromServer, {authReq, ldap}}}).
 
 % @doc execute par le client lors de sa deconnection
 notify_disconnection(SocketState) ->
     ifs_mpd:del_client(SocketState).
 
-% @doc handle pdu client destine au server (modIfPDU) ou aux ifs_modules. decode et envoi a handle_msg/1
-handle_pdu(SocketState, Pdu) ->
-    {ok, {Mod, Message}} = bifs_encoder_asn:decode(Pdu),
+% @doc handle_msg qui viennent du client
+handle_msg(SocketState, {Mod, Msg}) ->
     case Mod of
         modIfPDU ->
-            io:format("~p  modIfPDU receive ~p~n", [?MODULE, Message]),
-            handle_msg(Message, SocketState);
+            io:format("~p  modIfPDU receive ~p~n", [?MODULE, Msg]),
+            process_msg(Msg, SocketState);
         OtherMod ->
-            gen_server:call(?MODULE, {ext_msg, OtherMod, Message, SocketState})
+            gen_server:call(?MODULE, {ext_msg, OtherMod, Msg, SocketState})
     end.
+
+
 
 % @doc handle message destine au server.
 % @private
-handle_msg({fromClient, {authRep, {ldap, AuthData}}}, SocketState) ->
-    {_, UName, UPass}   = AuthData,
-    Mod                 = SocketState#client_state.module,
-    Rep                 = ?AUTH_MOD:authenticate(UName, UPass),
-    case Rep of
+process_msg({fromClient, {authRep, {ldap, {_, UName, UPass}}}}, #client_state{module = Mod} = SocketState) ->
+
+    case ?AUTH_MOD:authenticate(UName, UPass) of
         {ok, Roles} ->
-            gen_server:cast(?MODULE, {send_ack, Roles, SocketState, UName, Mod});
+            gen_server:cast(?MODULE, {send_ack, Roles, SocketState, UName});
         fail ->
-            {ok, Pdu} = bifs_encoder_asn:encode({modIfPDU, {fromServer, {authError,
-                 {'AuthPDU_fromServer_authError', badPass, UName, UPass}}}}),
-            Mod:send(SocketState, Pdu);
+            Mod:send(SocketState, {modIfPDU, {fromServer, {authError,
+                    {'AuthPDU_fromServer_authError', badPass, UName, UPass}}}});
         Other ->
             io:format("unknown ~p in ~p line ~p~n", [Other, ?MODULE, ?LINE])
     end;
 
-handle_msg({fromClient, {subscribe, Mods}}, #client_state{state = 'RUNNING'} = SocketState) ->
+process_msg({fromClient, {subscribe, Mods}}, #client_state{state = 'RUNNING'} = SocketState) ->
     %gen_server:cast(?MODULE, {subscribe, Mods, CState});
     lists:foreach(fun(X) -> ifs_mpd:register_client(SocketState, X) end, Mods);
 
-handle_msg({fromClient, {unsubscribe, Mods}}, #client_state{state = 'RUNNING'} = SocketState) ->
+process_msg({fromClient, {unsubscribe, Mods}}, #client_state{state = 'RUNNING'} = SocketState) ->
     %gen_server:cast(?MODULE, {subscribe, Mods, CState});
     lists:foreach(fun(X) -> ifs_mpd:unregister_client(SocketState, X) end, Mods);
 
-handle_msg(A, S) ->
+process_msg(A, S) ->
     io:format("ici ~p ~p~n", [A,S]).
     
 
@@ -127,14 +123,18 @@ handle_call(_R, _F, S) ->
     {reply, ok, S}.
 
 % CAST
-handle_cast({send_ack, Roles, SocketState, UName, CliMod}, S) ->
-    % TODO demander aux modules si le client est authorisé,
-    Modules = lists:map(fun(X) -> erlang:atom_to_list(X#if_module.callback_mod) end, S#if_server_state.modules),
-    {ok, Pdu } = bifs_encoder_asn:encode({modIfPDU, {fromServer, {authAck, 
-        {'AuthPDU_fromServer_authAck', Roles, Modules}}}}),
-    NewSocketState  = SocketState#client_state{user_roles=Roles, user_name=UName},
+handle_cast({send_ack, Roles, 
+    #client_state{module = CliMod} = SocketState, 
+        UName}, S) ->
+
+    Modules = lists:map(fun(X) -> 
+        erlang:atom_to_list(X#if_module.callback_mod) 
+    end, S#if_server_state.modules),
+
+    NewSocketState  = SocketState#client_state{user_roles = Roles, user_name = UName},
     CliMod:auth_set(auth_success, NewSocketState),
-    CliMod:send(NewSocketState, Pdu),
+    CliMod:send(NewSocketState, {modIfPDU, {fromServer, {authAck,
+                                {'AuthPDU_fromServer_authAck', Roles, Modules}}}}),
     {noreply, S};
 
 handle_cast(_R, S) ->

@@ -25,13 +25,14 @@
 -behaviour(gen_fsm).
 -include_lib("../include/client_state.hrl").
 
--export([start_link/0, set_socket/2, auth_set/2]).
+-export([start_link/0, set_socket/2, auth_set/2, send/2, raw_send/2]).
 -export([init/1, handle_event/3, handle_sync_event/4, 
-            handle_info/3, terminate/3, code_change/4, send/2]).
+            handle_info/3, terminate/3, code_change/4]).
 -export(['WAIT_FOR_SOCKET'/2, 'WAIT_FOR_CLIENT_AUTH'/2, 'RUNNING'/2]).
 
 -define(TIMEOUT, 30000).
 -define(MAX_AUTH_ATEMPT, 3).
+-define(ENCODING_MOD, bifs_encoder_asn2).
 
 
 %%%------------------------------------------------------------------------
@@ -69,7 +70,11 @@ auth_set(auth_fail,     NewState) ->
     UserName    = NewState#client_state.user_name,
     gen_fsm:send_event(Pid, {auth_fail, Ref, UserName}).
 
-send(SockState, Pdu) ->
+send(SockState, Msg) ->
+    gen_fsm:send_event(SockState#client_state.pid,
+        {encode_send_msg, SockState#client_state.ref, Msg}).
+
+raw_send(SockState, Pdu) ->
     gen_fsm:send_event(SockState#client_state.pid, 
         {send_pdu, SockState#client_state.ref, Pdu}).
 
@@ -88,6 +93,7 @@ send(SockState, Pdu) ->
 init([]) ->
 	process_flag(trap_exit, true),
 	{ok, 'WAIT_FOR_SOCKET', #client_state{
+        encoding_mod    = ?ENCODING_MOD,
         state           = 'WAIT_FOR_SOCKET'}}.
 
 %%-------------------------------------------------------------------------
@@ -120,8 +126,8 @@ init([]) ->
 %%-------------------------------------------------------------------------
 %% process user credentials here
 %%-------------------------------------------------------------------------
-'WAIT_FOR_CLIENT_AUTH'({client_data, AsnData}, State) ->
-    ifs_server:handle_pdu(State, AsnData),
+'WAIT_FOR_CLIENT_AUTH'({client_data, Pdu}, #client_state{encoding_mod = Encoder} = State) ->
+    ifs_server:handle_msg(State, Encoder:decode(Pdu)),
 	{next_state, 'WAIT_FOR_CLIENT_AUTH', State, ?TIMEOUT};
 
 'WAIT_FOR_CLIENT_AUTH'({auth_success, Ref, User, Roles}, #client_state{ref = Ref} = State) ->
@@ -134,6 +140,11 @@ init([]) ->
 'WAIT_FOR_CLIENT_AUTH'({auth_fail, Ref, User}, #client_state{ref = Ref} = State) ->
 	io:format("failed to register with user ~p ~n", [User]),
     {next_state, 'WAIT_FOR_CLIENT_AUTH', State, ?TIMEOUT};
+
+'WAIT_FOR_CLIENT_AUTH'({encode_send_msg, Ref,  Msg},  
+        #client_state{ref = Ref, encoding_mod = Encoder} = State) ->
+    gen_tcp:send(State#client_state.socket, Encoder:encode(Msg)),
+    {next_state, 'WAIT_FOR_CLIENT_AUTH', State};
 
 'WAIT_FOR_CLIENT_AUTH'({send_pdu, Ref,  Pdu},  #client_state{ref = Ref} = State) ->
     gen_tcp:send(State#client_state.socket, Pdu),
@@ -154,9 +165,13 @@ init([]) ->
 %%-------------------------------------------------------------------------
 %% application running
 %%-------------------------------------------------------------------------
-'RUNNING'({client_data, Data}, State) ->
-    ifs_server:handle_pdu(State, Data),
+'RUNNING'({client_data, Pdu}, #client_state{encoding_mod = Encoder} = State) ->
+    ifs_server:handle_msg(State, Encoder:decode(Pdu)),
 	{next_state, 'RUNNING', State};
+
+'RUNNING'({encode_send_msg, Ref, Msg}, #client_state{ref = Ref, encoding_mod = Encoder} = State) ->
+    gen_tcp:send(State#client_state.socket, Encoder:encode(Msg)),
+    {next_state, 'RUNNING', State};
 
 'RUNNING'({send_pdu, Ref, Pdu}, #client_state{ref = Ref} = State) ->
     gen_tcp:send(State#client_state.socket, Pdu),
