@@ -1,6 +1,6 @@
 Lot, lot of stuffs!!
 
- The development flow should follow this order:
+The development flow should follow this order:
 
 #MODULE NAME            #PRIORITY   #COMPLETED  #DESCRIPTION
 ifs                     HIGHT       90%         Module events and client communication/auth
