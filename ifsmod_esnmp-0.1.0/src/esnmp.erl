@@ -24,17 +24,22 @@
 % beha_ifs_module exports
 -export([           
     handle_msg/2,
-    init_conn/1]).
+    init_client/1]).
 
 -export([
-    which_agents/0,
     register_v2agent/4,
     gen_id/0,
     get_conf_dir/0,
+    % config
+    get_manager_conf/0,
+    get_users_conf/0,
+    get_agents_conf/0,
+    get_usm_conf/0,
     init_db/0,
     module_roles/4]).
 
 -include_lib("../include/esnmp.hrl").
+-include_lib("../../ifs-0.1.0/include/client_state.hrl").
 -define(DEF_AGENT_PORT, 161).
 
 %% API
@@ -47,13 +52,37 @@ module_roles(add, Read, ReadWrite, RoleName) ->
         read_write  = ReadWrite},
     {atomic, ok} = mnesia:transaction(fun() -> mnesia:write(esnmp_perm, DbRec, write) end).
 
-which_agents() ->
-    snmpm:which_agents().
+% get Configuration informations
+get_manager_conf() ->
+    snmpm_conf:read_manager_config(get_conf_dir()).
 
-init_conn(_ClientState) ->
-    ok.
+get_users_conf() ->
+    snmpm_conf:read_users_config(get_conf_dir()).
+
+get_agents_conf() ->
+    snmpm_conf:read_agents_config(get_conf_dir()).
+
+get_usm_conf() ->
+    snmpm_conf:read_usm_config(get_conf_dir()).
+
 
 %% MESSAGE FROM CLIENTS
+init_client(#client_state{module = Module} = ClientState) ->
+    % Send all agents configuration:
+    {ok, AConf} = get_agents_conf(),
+    AConfAsn = lists:map(fun({_, T, C, [I1,I2,I3,I4], P, E, To, Ms, V, Vs, Sm, Auth}) ->
+        {'AgentConf', 
+            T, C, 
+            {'IpAddr', I1,I2,I3,I4},
+            P, E, To, Ms,
+            erlang:atom_to_list(V),
+            erlang:atom_to_list(Vs),
+            Sm,
+            erlang:atom_to_list(Auth)
+        }
+    end, AConf),
+    Module:send(ClientState, {modEsnmpPDU, {fromServer, {agentsConf, AConfAsn}}}).
+
 handle_msg(Msg, ClientState) ->
     io:format("~p ~p~n", [Msg, ClientState]).
 
@@ -78,6 +107,7 @@ register_v2agent(UserMod, Addr, Port, Community) ->
             Any
     end.
 
+% @private
 gen_id() ->
     AllowedChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789",
     Id = lists:foldl(fun(_, Acc) ->

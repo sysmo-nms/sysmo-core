@@ -11,19 +11,34 @@ TrapsTableRow   ::= SEQUENCE {
     message     PrintableString
 }
 
-RegV2Agent  ::= SEQUENCE {
-    ip          PrintableString,
-    port        PrintableString,
-    community   PrintableString,
-    user        PrintableString
+IpAddr  ::= SEQUENCE {
+    o1  INTEGER,
+    o2  INTEGER,
+    o3  INTEGER,
+    o4  INTEGER
+}
+
+AgentConf  ::= SEQUENCE {
+    targetName      PrintableString,
+    community       PrintableString,
+    ipAddr          IpAddr,
+    port            INTEGER,
+    engineID        PrintableString,
+    timeout         INTEGER,
+    maxMessageSize  INTEGER,
+    version         PrintableString,
+    secModel        PrintableString,
+    secName         PrintableString,
+    secLevel        PrintableString
 }
 
 FromServer ::= CHOICE {
-    trapsTableWrite SEQUENCE OF TrapsTableRow
+    trapsTableWrite SEQUENCE OF TrapsTableRow,
+    agentsConf      SEQUENCE OF AgentConf
 }
 
 FromClient ::= CHOICE {
-    registerV2Agent RegV2Agent
+    registerV2Agent AgentConf
 }
 
 EsnmpPDU        ::= CHOICE {

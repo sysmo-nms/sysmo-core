@@ -85,8 +85,11 @@ process_msg({fromClient, {authRep, {ldap, {_, UName, UPass}}}}, #client_state{mo
     end;
 
 process_msg({fromClient, {subscribe, Mods}}, #client_state{state = 'RUNNING'} = SocketState) ->
-    %gen_server:cast(?MODULE, {subscribe, Mods, CState});
-    lists:foreach(fun(X) -> ifs_mpd:register_client(SocketState, X) end, Mods);
+    lists:foreach(fun(X) -> 
+        Mod = erlang:list_to_atom(X),
+        Mod:init_client(SocketState),
+        ifs_mpd:register_client(SocketState, X) 
+    end, Mods);
 
 process_msg({fromClient, {unsubscribe, Mods}}, #client_state{state = 'RUNNING'} = SocketState) ->
     %gen_server:cast(?MODULE, {subscribe, Mods, CState});
@@ -124,8 +127,7 @@ handle_call(_R, _F, S) ->
 
 % CAST
 handle_cast({send_ack, Roles, 
-    #client_state{module = CliMod} = SocketState, 
-        UName}, S) ->
+    #client_state{module = CliMod} = SocketState, UName}, S) ->
 
     Modules = lists:map(fun(X) -> 
         erlang:atom_to_list(X#if_module.callback_mod) 
