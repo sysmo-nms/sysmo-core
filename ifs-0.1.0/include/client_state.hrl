@@ -28,6 +28,7 @@
     ref,                            % reference ovoiding socket swap in the middle of a async call
     user_name = [],                 % user attached to the socket
     user_roles = [],                % groups wich the user belong
+    user_modules,                   % modules allowed at client connexion
     auth_request_count = 1,         % used by max request count
     module,                         % callback mod to send data
     encoding_mod,                   %

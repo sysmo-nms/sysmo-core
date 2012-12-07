@@ -33,7 +33,7 @@
 -behaviour(gen_fsm).
 -include_lib("../include/client_state.hrl").
 
--export([start_link/1, set_socket/2, auth_set/2, send/2, raw_send/2]).
+-export([start_link/1, set_socket/2, auth_set/2, auth_set/5, send/2, raw_send/2]).
 -export([init/1, handle_event/3, handle_sync_event/4, 
             handle_info/3, terminate/3, code_change/4]).
 -export(['WAIT_FOR_SOCKET'/2, 'WAIT_FOR_CLIENT_AUTH'/2, 'RUNNING'/2]).
@@ -63,15 +63,16 @@ start_link(TlsFiles) ->
 set_socket(Pid, Socket) when is_pid(Pid), is_port(Socket) ->
 	gen_fsm:send_event(Pid, {socket_ready, Socket}).
 
-%auth_set(auth_success,  [Pid, Ref, {UserName, Roles}]) ->
-auth_set(auth_success,  NewState) ->
-    Pid         = NewState#client_state.pid,
-    Ref         = NewState#client_state.ref,
-    UserName    = NewState#client_state.user_name,
-    Roles       = NewState#client_state.user_roles,
-    gen_fsm:send_event(Pid, {auth_success, Ref, UserName, Roles});
+auth_set(success, #client_state{pid = Pid, ref = Ref}, Name, Roles, AllowedMods) ->
+    gen_fsm:send_event(Pid, {success, Ref, Name, Roles, AllowedMods}).
 
-%auth_set(auth_fail,     [Pid, Ref, UserName]) ->
+%auth_set(auth_success,  NewState) ->
+    %Pid         = NewState#client_state.pid,
+    %Ref         = NewState#client_state.ref,
+    %UserName    = NewState#client_state.user_name,
+    %Roles       = NewState#client_state.user_roles,
+    %gen_fsm:send_event(Pid, {auth_success, Ref, UserName, Roles});
+    
 auth_set(auth_fail,     NewState) ->
     Pid         = NewState#client_state.pid,
     Ref         = NewState#client_state.ref,
@@ -147,11 +148,15 @@ init([{Key, Cert, CACert}]) ->
     ifs_server:handle_msg(State, Encoder:decode(Pdu)),
 	{next_state, 'WAIT_FOR_CLIENT_AUTH', State, ?TIMEOUT};
 
-'WAIT_FOR_CLIENT_AUTH'({auth_success, Ref, User, Roles}, #client_state{ref = Ref} = State) ->
+'WAIT_FOR_CLIENT_AUTH'({success, Ref, Name, Roles, Mods}, #client_state{ref = Ref} = State) ->
     NextState = State#client_state{
-        user_name       = User,
+        user_name       = Name,
         user_roles      = Roles,
+        user_modules    = Mods,
         state           = 'RUNNING'},
+    ssl_client:send(NextState, {modIfPDU, {fromServer, 
+                                    {authAck, 
+                                        {'AuthPDU_fromServer_authAck', Roles, Mods}}}}),
     {next_state, 'RUNNING', NextState};
 
 'WAIT_FOR_CLIENT_AUTH'({auth_fail, Ref, User}, #client_state{ref = Ref} = State) ->
@@ -182,10 +187,12 @@ init([{Key, Cert, CACert}]) ->
 %%-------------------------------------------------------------------------
 %% application running
 %%-------------------------------------------------------------------------
+% message from the client:
 'RUNNING'({client_data, Data}, #client_state{encoding_mod = Encoder} = State) ->
     ifs_server:handle_msg(State, Encoder:decode(Data)),
 	{next_state, 'RUNNING', State};
 
+% message from the server:
 'RUNNING'({encode_send_msg, Ref, Msg}, #client_state{ref = Ref, encoding_mod = Encoder} = State) ->
     ssl:send(State#client_state.socket, Encoder:encode(Msg)),
     {next_state, 'RUNNING', State};
