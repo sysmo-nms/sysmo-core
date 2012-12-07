@@ -41,6 +41,10 @@ doc: compile
 clifs: compile
 	$(ERL) $(ERL_NMS_PATH) -eval 'clifs:start_link()'
 
+push: clean
+	echo -n "coment: "; read COMENT; \
+	git add -A; git commit -m "$$COMENT"; git push -u origin master
+
 clean:
 	rm -rf erl_crash.dump MnesiaCore.* *.pid
 	rm -f SLASH/var/lib/manager/* SLASH/var/lib/agent/*
