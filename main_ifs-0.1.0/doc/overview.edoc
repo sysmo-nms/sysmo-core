@@ -1,4 +1,3 @@
-%% sldfjlqsdkjf
 @author Sebastien Serre <sserre.bx@gmail.com>
 @version 0.1.0
 @title Welcome to if_session application server
@@ -12,7 +11,6 @@ Dans le contexte de if_session: <ul>
 <li> "ifs_auth" est un module erlang implementant le behaviour {@link ifs_auth. ifs_auth}. Il est utilise par if_session_server pour authentifier les clients.</li>
 <li> "ifs_client" est un module erlang implementant le behaviour "ifs_client".</li>
 </ul>
-
 <p>Il est donc possible d'adapter son propre client, modele d'authentification ou modele de permission.</p>
 
 Sont suporte par defaut: <ul>
