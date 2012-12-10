@@ -1,26 +1,31 @@
 Lot, lot of stuffs!!
 
 The development flow should follow this order:
-
 #MODULE NAME            #PRIORITY   #COMPLETED  #DESCRIPTION
-ifs                     HIGHT       90%         Module events and client communication/auth
-ifsmod_esnmp            HIGHT       50%         SNMP utility and monitoring
-ifsmod_maps             HIGHT       0%          Create, save and generate maps
-ifsmod_rrd              HIGHT       0%          Generate round robin database data
-interface               HIGHT       0%          Web and GUI interface for Enms
---> release 1 should be somewere here
-ifsmod_icmpmon          HIGHT       0%          Monitor network hosts
-ifsmod_locator          HIGHT       0%          Where is/was this IP/Mac address
-ifsmod_switching        HIGHT       0%          V4-ARP V6-CDP traffic monitoring
-ifsmod_alertclimbs      HIGHT       0%          Escalade alerts module
-ifsmod_mailutils        HIGHT       0%          Mail for ifsmod_alertclimbs
+main_ifs                HIGHT       90%         Module events and client communication/auth
+main_emodsrv            HIGHT       50%         Register/inform and trac activated modules
+emod_template           HIGHT       50%         How to develop a module + template 
+emod_esnmp              HIGHT       50%         SNMP utility and monitoring
+GUI interface           HIGHT       0%          Graphical interface to the system
+--> release 1
+emod_maps               HIGHT       0%          Create, save and generate maps
+emod_rrd                HIGHT       0%          Generate round robin database data
+Web interface           HIGHT       0%          Web interface for Enms
+GUI interface           HIGHT       0%          Add maps and rrd
 --> release 2
-ifsmod_routing          MEDIUM      0%          Routing protocols monitoring/maps
-ifsmod_netmon           MEDIUM      0%          Monitor network services
-ifsmod_sysdoc           MEDIUM      0%          Documentation system
-ifsmod_coumpoundwarn    MEDIUM      0%          Create alerts using patterns of events
-ifsmod_phoneutils       MEDIUM      0%          Phone for ifsmod_alertclimbs
-ifsmod_rmon             LOW         0%          Collect RMON data
-ifsmod_syslog           LOW         0%          Collect syslog data
-ifsmod_wifiman          LOW         0%          Manage multiple devices with identic configuration
-ifsmod_time_machine     LOW         0%          Replay events in a specific timeframe
+emod_icmpmon            HIGHT       0%          Monitor network hosts
+emod_locator            HIGHT       0%          Where is/was this IP/Mac address
+emod_switching          HIGHT       0%          V4-ARP V6-CDP traffic monitoring
+emod_alertclimbs        HIGHT       0%          Escalade alerts module
+emod_mailutils          HIGHT       0%          Mail for emod_alertclimbs
+--> release 3
+emod_routing            MEDIUM      0%          Routing protocols monitoring/maps
+emod_netmon             MEDIUM      0%          Monitor network services
+emod_sysdoc             MEDIUM      0%          Documentation system
+emod_coumpoundwarn      MEDIUM      0%          Create alerts events pattern
+emod_phoneutils         MEDIUM      0%          Phone for emod_alertclimbs
+emod_rmon               LOW         0%          Collect RMON data
+emod_syslog             LOW         0%          Collect syslog data
+emod_wifiman            LOW         0%          Manage multiple devices with identic configuration
+emod_time_machine       LOW         0%          Replay events in a specific timeframe
+--> release 4
