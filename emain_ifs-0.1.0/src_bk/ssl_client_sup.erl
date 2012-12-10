@@ -1,4 +1,6 @@
 % This file is part of "Enms" (http://sourceforge.net/projects/enms/)
+% Based on the work from Serge Aleynikov <saleyn at gmail.com> on the article
+% from http://www.trapexit.org/Building_a_Non-blocking_TCP_server_using_OTP_principles
 % Copyright (C) 2012 <Sébastien Serre sserre.bx@gmail.com>
 % 
 % Enms is a Network Management System aimed to manage and monitor SNMP
@@ -18,21 +20,36 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
-{application, ifsmod_esnmp, [
-	{description, "Enms snmp layer on erlang/OTP snmpm and snmpa"},
-	{vsn, "0.4.0"},
-	{modules,
-		[
-            esnmp_net_if,
-			esnmp_user_default,
-			esnmp_user_generic,
-			esnmp_server,
-            esnmp_app,
-            esnmp_sup,
-			esnmp
-		]
-	},
-	{registered,[esnmp_server, esnmp, esnmp_sup]},
-	{applications, [kernel, stdlib, snmp, mnesia]},
-    {mod, {esnmp_app, []}}
-]}.
+% @private
+-module(ssl_client_sup).
+-behaviour(supervisor).
+
+-export([start_link/3, start_client/0]).
+-export([init/1]).
+
+start_link(Key, Cert, CaCert) ->
+	supervisor:start_link({local, ?MODULE}, ?MODULE, [Key, Cert, CaCert]).
+
+%%-------------------------------------------------------------------------
+%% @spec start_client() -> {ok, Pid}
+%% @doc  Call from the listener to open a new client
+%% @end
+%%-------------------------------------------------------------------------
+start_client() ->
+	supervisor:start_child(?MODULE, []).
+
+init([Key, Cert, CaCert]) ->
+    SslFiles = {Key, Cert, CaCert},
+	{ok, {
+		{simple_one_for_one, 10, 60},
+			[
+				{ssl_client,
+					{ssl_client, start_link, [SslFiles]},
+					temporary,
+					brutal_kill,
+					worker,
+					[ssl_client]
+				}
+			]
+		}
+	}.

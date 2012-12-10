@@ -18,28 +18,9 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
--module(esnmp_sup).
--behaviour(supervisor).
+-module(esnmp_api_ifs).
 
--export([start_link/0]).
--export([init/1]).
+-export([handle_cmd/2]).
 
-start_link() ->
-    supervisor:start_link({local, ?MODULE}, ?MODULE, []).
-
-init([]) ->
-    {ok,
-        {
-            {one_for_one, 1, 60},
-            [
-                {
-                    esnmp_server,
-                    {esnmp_server, start_link, []},
-                    permanent,
-                    2000,
-                    worker,
-                    [esnmp_server]
-                }
-            ]
-        }
-    }.
+handle_cmd(Msg, ClientState) ->
+    io:format("~p: Message ~p from ~p~n", [?MODULE, Msg, ClientState]).

@@ -31,4 +31,4 @@ werr:
 	make werr
 
 start: compile
-	sudo erl -pa ebin -config sys -eval 'application:start(mnesia), application:start(snmp), application:start(esnmp)'
+	sudo erl -pa ebin -config sys -eval 'application:start(emod_template)'

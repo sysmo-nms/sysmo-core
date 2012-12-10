@@ -1,6 +1,6 @@
 # Makefile 
 NMS_NAME		= nms_project
-MODS			= ifs ifsmod_esnmp
+MODS			= emain_ifs emain_emodsrv emod_esnmp
 ERL				= erl
 ERLC			= erlc -Werror
 SUDO_ERL		= sudo erl
@@ -12,8 +12,8 @@ MODS_DEF_FILE	= $(foreach app, $(MODS_EBIN_DIR), $(wildcard $(app)/*.app))
 # MAKE NMSEASE s appui sur les $(app).app enms.rel et le fichier enms.script
 ERL_NMS_PATH		= $(addprefix -pa ,$(MODS_EBIN_DIR))
 ERL_START           = 'application:start(mnesia), application:start(crypto), application:start(public_key), \
-	                        application:start(ssl), application:start(snmp), application:start(ifs), \
-                                application:start(ifsmod_esnmp)'
+	                        application:start(ssl), application:start(snmp), application:start(emain_modsrv), \
+                                application:start(emain_ifs), application:start(emod_esnmp)'
 ERL_START_STIM      = 'application:start(crypto), application:start(public_key), \
 	                    application:start(ssl), application:start(nms_core), mod_test1:start_link(), \
                         mod_test1:stim_updates()'

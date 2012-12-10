@@ -1,0 +1,49 @@
+ModEsnmp DEFINITIONS AUTOMATIC TAGS ::=
+BEGIN
+
+TrapsTableRow   ::= SEQUENCE {
+    timeStamp   PrintableString,
+    version     PrintableString,
+    fromIp      PrintableString,
+    fromPort    PrintableString,
+    credentials PrintableString,
+    tags        PrintableString,
+    message     PrintableString
+}
+
+IpAddr  ::= SEQUENCE {
+    o1  INTEGER,
+    o2  INTEGER,
+    o3  INTEGER,
+    o4  INTEGER
+}
+
+AgentConf  ::= SEQUENCE {
+    targetName      PrintableString,
+    community       PrintableString,
+    ipAddr          IpAddr,
+    port            INTEGER,
+    engineID        PrintableString,
+    timeout         INTEGER,
+    maxMessageSize  INTEGER,
+    version         PrintableString,
+    secModel        PrintableString,
+    secName         PrintableString,
+    secLevel        PrintableString
+}
+
+FromServer ::= CHOICE {
+    trapsTableWrite SEQUENCE OF TrapsTableRow,
+    agentsConf      SEQUENCE OF AgentConf
+}
+
+FromClient ::= CHOICE {
+    registerV2Agent AgentConf
+}
+
+EsnmpPDU        ::= CHOICE {
+    fromServer  FromServer,
+    fromClient  FromClient
+}
+
+END

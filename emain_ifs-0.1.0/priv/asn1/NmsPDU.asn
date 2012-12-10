@@ -1,0 +1,13 @@
+NmsPDU DEFINITIONS AUTOMATIC TAGS ::=
+
+BEGIN
+IMPORTS 
+    IfPDU       FROM ModIf
+    EsnmpPDU     FROM ModEsnmp;
+
+PDU ::= CHOICE {
+    modIfPDU         IfPDU,
+    modEsnmpPDU      EsnmpPDU
+}
+
+END
