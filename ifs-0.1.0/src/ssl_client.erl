@@ -1,4 +1,6 @@
 % This file is part of "Enms" (http://sourceforge.net/projects/enms/)
+% Based on the work from Serge Aleynikov <saleyn at gmail.com> on the article
+% from http://www.trapexit.org/Building_a_Non-blocking_TCP_server_using_OTP_principles
 % Copyright (C) 2012 <Sébastien Serre sserre.bx@gmail.com>
 % 
 % Enms is a Network Management System aimed to manage and monitor SNMP
@@ -40,7 +42,7 @@
 
 -define(TIMEOUT, 30000).
 -define(MAX_AUTH_ATEMPT, 3).
--define(ENCODING_MOD, bifs_encoder_asn2).
+-define(ENCODING_MOD, bifs_encoder_asn).
 
 
 %%%------------------------------------------------------------------------

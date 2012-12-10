@@ -26,7 +26,9 @@
 
 
 encode(Message) ->
-    'NmsPDU':encode('PDU', Message).
+    {ok, Pdu} = 'NmsPDU':encode('PDU', Message),
+    Pdu.
 
 decode(Pdu) ->
-    'NmsPDU':decode('PDU', Pdu).
+    {ok, Msg} = 'NmsPDU':decode('PDU', Pdu),
+    Msg.
