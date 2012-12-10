@@ -9,8 +9,8 @@ client access over:
 - WebSocket and SSL over Websocket using XML encoded messages.
 
 (SOON) Two interfaces (will) exists:
-- an open source interface using WebSocket,
-- an performance optimized proprietary interface using a graphical UI.
+- a web interface using WebSocket,
+- a GUI interface.
 
 Enms is written in Erlang/OTP. The native support for distributed programming
 and fault-tolerence will be used in the future to build scalable distributed
