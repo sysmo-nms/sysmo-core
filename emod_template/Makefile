@@ -1,20 +1,13 @@
 # Makefile
 
 ERLCC   += erlc -Werror -pa ../ifs-0.1.0/ebin
-SNMPC   := snmpc
 SRC     = $(shell find src -name "*.erl")
 DEST    = $(patsubst src/%.erl, ebin/%.beam, $(SRC))
-MIBSRC  = $(shell find priv/mibs -name "*.mib")
 MIBDEST = $(patsubst priv/mibs/%.mib, priv/snmp/mibs/%.bin, $(MIBSRC))
 
 INCLUDE = $(wildcard include/*.hrl)
 
 compile: $(DEST)
-
-mib: $(MIBDEST)
-
-priv/snmp/mibs/%.bin: priv/mibs/%.mib
-	$(SNMPC) --o priv/snmp/mibs/ priv/mibs/$*.mib
 
 ebin/%.beam: src/%.erl $(INCLUDE)
 	$(ERLCC) -o ebin/ src/$*.erl
@@ -26,9 +19,6 @@ clean:
 
 all:
 	make
-
-werr:
-	make werr
 
 start: compile
 	sudo erl -pa ebin -config sys -eval 'application:start(emod_template)'

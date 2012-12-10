@@ -18,7 +18,7 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
--module(template_client_msg).
+-module(template_api).
 
 -export([           
     handle/2]).
