@@ -18,7 +18,7 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
--module(emodsrv).
+-module(modsrv).
 -behaviour(gen_server).
 -include_lib("../../include/eunit.hrl").
 % gen_server callbacks
@@ -32,7 +32,7 @@
 % @doc Start the server.
 % Note that this module must be started before all others main modules.
 % @end
--spec emodsrv:start_link() -> {ok, pid()} | ignore | {error, Err::term()}.
+-spec modsrv:start_link() -> {ok, pid()} | ignore | {error, Err::term()}.
 start_link() ->
     gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
@@ -41,15 +41,24 @@ start_link() ->
 
 % @doc Call from a module when it start.
 % <p>ArgList must be 1 or more values: <ul>
-% <li> {emodsrv_callback, ModuleName} where ModuleName must implement a
-% callback function ModuleName:emodsrv_notify/1 to receive the informations
+% <li> {modsrv_callback, ModuleName} where ModuleName must implement a
+% callback function ModuleName:modsrv_notify/1 to receive the informations
 % concerning the availables modules. MANDATORY </li>
-% <li> {event_callback, EventMod} where EventMod must implement a
-% callback function EventMod:register/1 if the module offer some events
+% <li> {event_handler, EventHandlerMod} where EventHandlerMod is an atom
+% registered as a gen_event handler if the module offer some events
 % of interest for other modules, OPTIONAL</li>
-% <li> {ifs_callback, FormatMod} where FormatMod must implement a
-% callback function FormatMod:present/1 if the module have some data to 
-% present to clients via the mainmod_ifs module. OPTIONAL</li></ul>
+% <li> {ifs_callback, CallbackMod} where CallbackMod must
+% have a <em>ifs_module</em> behaviour.OPTIONAL</li>
+% <li> {ifs_event_handler, EventHandlerMod} where EventHandlerMod is an atom
+% registered as a gen_event handler if the module offer some events
+% of interest for ifs clients.<br></br>
+% If used {ifs_callback, CallbackMod} MUST be set. OPTIONAL</li>
+%   <li> {ifs_asnkey, AsnKey::atom()} used to identify a client call
+%       to a function of this module. If the AsnKey match a module, the
+%       call CallbackMod:handle_msg(Message) will be made.<br></br>
+%       If used {ifs_callback, CallbackMod} MUST be set. OPTIONAL
+%   </li>
+% </ul>
 % </p>
 % <p>It will:
 % <ul>
@@ -59,20 +68,20 @@ start_link() ->
 % <li> notify ModName of the actual available modules providing an 
 % {event_callback, EventMod} argument.</li></ul></p>
 % @end
--spec emodsrv:hello(Arg :: {ModName :: atom(), ArgList :: list()}) -> ok.
+-spec modsrv:hello(Arg :: {ModName :: atom(), ArgList :: list()}) -> ok.
 hello({ModName, Opts}) ->
-    {value, {_, CallBackMod}} = lists:keysearch(emodsrv_callback, 1, Opts),
+    {value, {_, CallBackMod}} = lists:keysearch(modsrv_callback, 1, Opts),
     gen_server:call(?MODULE, {hello, {ModName,Opts}, CallBackMod}).
 
 
 
 % @doc Call from a module when he chutdown.
--spec emodsrv:bye(ModName :: atom()) -> ok.
+-spec modsrv:bye(ModName :: atom()) -> ok.
 bye(Arg) ->
     gen_server:call(?MODULE, {bye, Arg}).
 
 % @doc Get the entire module list.
--spec emodsrv:get_modules() -> Modules::list().
+-spec modsrv:get_modules() -> Modules::list().
 get_modules() ->
     gen_server:call(?MODULE, dump).
 
@@ -95,11 +104,11 @@ handle_call({hello, {ModName, OptList} = Args, CallBackMod}, _From, State) ->
     % new mod list is:
     NewState = [Args | CleanState],
     lists:foreach(fun({Mod, Opts}) -> 
-        {value, {_, CallOtherMod}} = lists:keysearch(emodsrv_callback, 1, Opts),
+        {value, {_, CallOtherMod}} = lists:keysearch(modsrv_callback, 1, Opts),
         % inform ModName of available modules
-        CallBackMod:emodsrv_notify({Mod, Opts}),
+        CallBackMod:modsrv_notify({Mod, Opts}),
         % and inform other mods of the availability of ModName
-        CallOtherMod:emodsrv_notify({ModName, OptList})
+        CallOtherMod:modsrv_notify({ModName, OptList})
     end, CleanState),
     {reply, ok, NewState};
 
@@ -113,8 +122,8 @@ handle_call({bye, Arg}, _From, State) ->
     end, State),
     % notify other modules
     lists:foreach(fun({_ ,Opts}) ->
-        {value, {_, CallBMod}} = lists:keysearch(emodsrv, 1, Opts),
-        CallBMod:emodsrv_notify(Arg)
+        {value, {_, CallBMod}} = lists:keysearch(modsrv, 1, Opts),
+        CallBMod:modsrv_notify(Arg)
     end, NewState),
     {reply, ok, NewState};
 
@@ -148,18 +157,15 @@ code_change(_O, S, _E) ->
 % @private eunit test
 add_test() ->
     ?assert(?MODULE:get_modules() == []),
-    ?assert(?MODULE:hello({mod_a, [{emodsrv_callback, cbmod1}, {othertuple, b}]}) == ok),
-    ?assert(?MODULE:get_modules() == [{mod_a, [{emodsrv_callback, cbmod1}, {othertuple, b}]}]).
+    ?assert(?MODULE:hello({mod_a, [{modsrv_callback, cbmod1}, {othertuple, b}]}) == ok),
+    ?assert(?MODULE:get_modules() == [{mod_a, [{modsrv_callback, cbmod1}, {othertuple, b}]}]).
 
 % @private eunit test
 modify_test() ->
-    ?assert(?MODULE:hello({mod_a, [{emodsrv_callback, cbmod2}, {othertuple, a}]}) == ok),
-    ?assert(?MODULE:get_modules() == [{mod_a, [{emodsrv_callback, cbmod2}, {othertuple,a}]}]).
+    ?assert(?MODULE:hello({mod_a, [{modsrv_callback, cbmod2}, {othertuple, a}]}) == ok),
+    ?assert(?MODULE:get_modules() == [{mod_a, [{modsrv_callback, cbmod2}, {othertuple,a}]}]).
     
 % @private eunit test
 del_test() ->
     ?assert(?MODULE:bye(mod_a) == ok),
     ?assert(?MODULE:get_modules() == []).
-
-
-

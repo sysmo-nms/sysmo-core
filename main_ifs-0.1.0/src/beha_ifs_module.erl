@@ -32,9 +32,9 @@
 % a ifs de correctement router les message provenant des clients (definit dans le fichier asn.1).</li>
 % <li>chaque message venant du client est routé selon <b>AsnKey</b> et delivré au module <b>ModuleName</b> via la
 % fonction exportée <b>handle_msg/2</b></li>.
-% <li><em>modx</em> envoie chaqun de ses evenements au module ifs_mpd 
+% <li><em>modx</em> envoie chaqun de ses evenements au module ifs_rbac 
 % via la fonction <b>handle_event/3</b>
-% <p><em><b>ifs_mpd:handle_event(ModuleName, Msg, ReadRoles)</b></em> ou
+% <p><em><b>ifs_rbac:handle_event(ModuleName, Msg, ReadRoles)</b></em> ou
 % <ul>
 % <li><b>ModuleName</b> est le nom du module enregistre</li>
 % <li><b>Msg</b> est un message compris par ifs_encoder</li>
@@ -50,11 +50,12 @@
 % </ul></p>
 % <p><em>initial_conn(<b>SocketState</b>)</em>. Est executé par ifs_server lors de la connexion d'un client.
 % Le module peut ainsi initialiser les données client</p>
+% <p><em>present(<b>Term</b>)</em> return a valide term() for the asnencoder and a list of allowed read roles.</p>
 -module(beha_ifs_module).
 -export([behaviour_info/1]).
 
 behaviour_info(callbacks) ->
-    [{handle_msg, 2}];
+    [{handle_msg, 2}, {initial_conn, 1}, {present, 1}];
 
 behaviour_info(_) ->
     undefined.

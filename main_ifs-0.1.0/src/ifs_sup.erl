@@ -66,12 +66,12 @@ init([TlsConfFile]) ->
 %                    [bifs_auth_ldap]
 %                },
                 {
-                    ifs_mpd,
-                    {ifs_mpd, start_link, []},
+                    ifs_rbac,
+                    {ifs_rbac, start_link, []},
                     permanent,
                     2000,
                     worker,
-                    [ifs_mpd]
+                    [ifs_rbac]
                 }
             ]
         }

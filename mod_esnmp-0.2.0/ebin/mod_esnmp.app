@@ -18,30 +18,22 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
-% @private
--module(emodsrv_sup).
--behaviour(supervisor).
-
--export([start_link/0]).
--export([init/1]).
-
-start_link() ->
-    supervisor:start_link({local, ?MODULE}, ?MODULE, []).
-
-init([]) ->
-    {ok,
-        {
-            {one_for_one, 1, 60},
-            [
-                {
-                    emodsrv,
-                    {emodsrv, start_link, []},
-                    permanent,
-                    2000,
-                    supervisor,
-                    [emodsrv]
-                }
-            ]
-        }
-    }.
-
+{application, mod_esnmp, [
+	{description, "Enms snmp layer on erlang/OTP snmpm and snmpa"},
+	{vsn, "0.2.0"},
+	{modules,
+		[
+            esnmp_api,
+            esnmp_api_ifs,
+            esnmp_net_if,
+			esnmp_user_default,
+			esnmp_user_generic,
+			esnmp_events,
+            esnmp_app,
+            esnmp_sup
+		]
+	},
+	{registered,[esnmp_server, esnmp_sup]},
+	{applications, [kernel, stdlib, snmp, main_modsrv]},
+    {mod, {esnmp_app, []}}
+]}.

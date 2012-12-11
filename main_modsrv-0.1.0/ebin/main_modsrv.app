@@ -18,22 +18,21 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
-{application, emod_esnmp, [
-	{description, "Enms snmp layer on erlang/OTP snmpm and snmpa"},
-	{vsn, "0.2.0"},
-	{modules,
-		[
-            esnmp_api,
-            esnmp_api_ifs,
-            esnmp_net_if,
-			esnmp_user_default,
-			esnmp_user_generic,
-			esnmp_events,
-            esnmp_app,
-            esnmp_sup,
-		]
-	},
-	{registered,[esnmp_server, esnmp_sup]},
-	{applications, [kernel, stdlib]},
-    {mod, {esnmp_app, []}}
-]}.
+{application, main_modsrv,
+	[
+		{description, "Module registration and information"},
+		{vsn, "1.0.0"},
+		{modules, [
+            modsrv_app,
+            modsrv_sup,
+            modsrv
+            ]},
+		{registered, [
+            modsrv_sup,
+            modsrv
+            ]},
+		{applications, [kernel, stdlib]},
+		% mandatory
+		{mod, {modsrv_app, []}}
+	]
+}.

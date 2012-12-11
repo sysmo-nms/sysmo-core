@@ -54,7 +54,7 @@ notify_connection(#client_state{module = Module} = ClientState) ->
 
 % @doc execute par le client lors de sa deconnection
 notify_disconnection(ClientState) ->
-    ifs_mpd:del_client(ClientState).
+    ifs_rbac:del_client(ClientState).
 
 % @doc handle_msg from client
 handle_msg(ClientState, {Mod, Msg}) ->
@@ -86,12 +86,12 @@ process_msg({fromClient, {subscribe, Mods}}, #client_state{state = 'RUNNING'} = 
     lists:foreach(fun(X) -> 
         Mod = erlang:list_to_atom(X),
         Mod:init_client(ClientState),
-        ifs_mpd:register_client(ClientState, X) 
+        ifs_rbac:register_client(ClientState, X) 
     end, Mods);
 
 process_msg({fromClient, {unsubscribe, Mods}}, #client_state{state = 'RUNNING'} = ClientState) ->
     %gen_server:cast(?MODULE, {subscribe, Mods, CState});
-    lists:foreach(fun(X) -> ifs_mpd:unregister_client(ClientState, X) end, Mods);
+    lists:foreach(fun(X) -> ifs_rbac:unregister_client(ClientState, X) end, Mods);
 
 process_msg(A, S) ->
     io:format("ici ~p ~p~n", [A,S]).

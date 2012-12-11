@@ -18,38 +18,30 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
-{application, emain_ifs,
-	[
-		{description, "ENMS core system"},
-		{vsn, "0.1.0"},
-		{modules, [
-                ifs_app,
-                ifs_sup,
-                ifs_srv,
-                ifs_mpd,
-                ifs_auth_ldap,
-                asncli,
-                ssl_client,
-                ssl_client_sup,
-                ssl_server_sup,
-                ssl_listener,
-                tcp_client,
-                tcp_client_sup,
-                tcp_server_sup,
-                tcp_listener
-            ]},
-		{registered, [
-                ifs_sup,
-                ifs_server,
-                ifs_mpd,
-                ifs_auth_ldap,
-                ssl_client_sup,
-                ssl_server_sup,
-                ssl_listener
-            ]},
-		{applications, [kernel, stdlib, crypto, public_key, ssl]},
+% @private
+-module(modsrv_sup).
+-behaviour(supervisor).
 
-		% mandatory
-		{mod, {ifs_app, []}}
-	]
-}.
+-export([start_link/0]).
+-export([init/1]).
+
+start_link() ->
+    supervisor:start_link({local, ?MODULE}, ?MODULE, []).
+
+init([]) ->
+    {ok,
+        {
+            {one_for_one, 1, 60},
+            [
+                {
+                    modsrv,
+                    {modsrv, start_link, []},
+                    permanent,
+                    2000,
+                    supervisor,
+                    [modsrv]
+                }
+            ]
+        }
+    }.
+

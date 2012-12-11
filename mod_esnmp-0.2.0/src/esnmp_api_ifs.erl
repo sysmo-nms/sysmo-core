@@ -18,28 +18,27 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
--module(esnmp_sup).
--behaviour(supervisor).
+-module(esnmp_api_ifs).
+-behaviour(beha_ifs_module).
+% beha_ifs_module export
+-export([handle_msg/2, present/1, initial_conn/1]).
 
--export([start_link/0]).
--export([init/1]).
+% @doc
+% Handle a command from a client
+% @end
+-spec esnmp_api_ifs:handle_msg(Data::term(), ClientState::record()) -> any().
+handle_msg(Msg, ClientState) ->
+    io:format("~p: Message ~p from ~p~n", [?MODULE, Msg, ClientState]).
 
-start_link() ->
-    supervisor:start_link({local, ?MODULE}, ?MODULE, []).
+% @doc
+% Callback from ifs module. Data must be presented so it can
+% be compiled with asnc, and fetch the roles for wich the
+% @end
+-spec esnmp_api_ifs:present(Data::term()) -> {Asn::tuple(), Roles::list(Role::string())}.
+present(Term) ->
+    io:format("present Term ~n"),
+    {Term, ["admin"]}.
 
-init([]) ->
-    {ok,
-        {
-            {one_for_one, 1, 60},
-            [
-                {
-                    esnmp_events,
-                    {esnmp_events, start_link, []},
-                    permanent,
-                    2000,
-                    worker,
-                    [esnmp_events]
-                }
-            ]
-        }
-    }.
+-spec esnmp_api_ifs:initial_conn(ClientState::record()) -> {term(), Roles::list(Role::string())}.
+initial_conn(_ClientState) ->
+    ok.

@@ -19,7 +19,7 @@
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 % @private
--module(ifs_mpd).
+-module(ifs_rbac).
 -behaviour(gen_server).
 -include_lib("../include/client_state.hrl").
 

@@ -18,14 +18,28 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
-% @private
--module(emodsrv_app).
--behaviour(application).
+-module(esnmp_sup).
+-behaviour(supervisor).
 
--export([start/2, stop/1]).
+-export([start_link/0]).
+-export([init/1]).
 
-start(_Type, _Args) ->
-    emodsrv_sup:start_link().
+start_link() ->
+    supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
-stop(_State) ->
-	ok.
+init([]) ->
+    {ok,
+        {
+            {one_for_one, 1, 60},
+            [
+                {
+                    esnmp_modsrv_events,
+                    {esnmp_modsrv_events, start_link, []},
+                    permanent,
+                    2000,
+                    worker,
+                    [esnmp_modsrv_events]
+                }
+            ]
+        }
+    }.

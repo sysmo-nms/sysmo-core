@@ -18,21 +18,14 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
-{application, emain_emodsrv,
-	[
-		{description, "Module registration and information"},
-		{vsn, "1.0.0"},
-		{modules, [
-            emodsrv_app,
-            emodsrv_sup,
-            emodsrv
-            ]},
-		{registered, [
-            emodsrv_sup,
-            emodsrv
-            ]},
-		{applications, [kernel, stdlib]},
-		% mandatory
-		{mod, {emodsrv_app, []}}
-	]
-}.
+% @private
+-module(modsrv_app).
+-behaviour(application).
+
+-export([start/2, stop/1]).
+
+start(_Type, _Args) ->
+    modsrv_sup:start_link().
+
+stop(_State) ->
+	ok.

@@ -18,13 +18,38 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
--module(esnmp_events).
--export([start_link/0]).
+{application, main_ifs,
+	[
+		{description, "ENMS core system"},
+		{vsn, "0.1.0"},
+		{modules, [
+                ifs_app,
+                ifs_sup,
+                ifs_srv,
+                ifs_mpd,
+                ifs_auth_ldap,
+                asncli,
+                ssl_client,
+                ssl_client_sup,
+                ssl_server_sup,
+                ssl_listener,
+                tcp_client,
+                tcp_client_sup,
+                tcp_server_sup,
+                tcp_listener
+            ]},
+		{registered, [
+                ifs_sup,
+                ifs_server,
+                ifs_mpd,
+                ifs_auth_ldap,
+                ssl_client_sup,
+                ssl_server_sup,
+                ssl_listener
+            ]},
+		{applications, [kernel, stdlib, crypto, public_key, ssl]},
 
-start_link() ->
-    % START the event manager:
-    {ok, _} = Return = gen_event:start_link({local, ?MODULE}),
-    % add a default handler for debug:
-    gen_event:add_handler(?MODULE, esnmp_terminal_logger, []),
-    % return to the supervisor
-    Return.
+		% mandatory
+		{mod, {ifs_app, []}}
+	]
+}.

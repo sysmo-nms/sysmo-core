@@ -25,7 +25,7 @@
 -export([start/2, stop/1]).
 
 start(_Type, _Args) ->
-    {ok, TlsConfFile}     = application:get_env(emain_ifs, tls_conf),
+    {ok, TlsConfFile}     = application:get_env(main_ifs, tls_conf),
     io:format("~n~p: ~p~n", [?MODULE,TlsConfFile]),
     ifs_sup:start_link(TlsConfFile).
 
