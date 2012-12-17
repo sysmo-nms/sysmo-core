@@ -27,7 +27,8 @@
 % @doc
 % Handle a command from a client
 % @end
--spec esnmp_api_ifs:handle_msg(Data::term(), ClientState::record()) -> AsnResponce::term() | noreply.
+-spec esnmp_api_ifs:handle_msg(Data::term(), ClientState::record()) -> 
+        AsnResponce::term() | noreply.
 handle_msg(Msg, ClientState) ->
     io:format("~p: Message ~p from ~p~n", [?MODULE, Msg, ClientState]),
     noreply.
@@ -35,7 +36,8 @@ handle_msg(Msg, ClientState) ->
 % @doc
 % Return roles and valid asn term.
 % @end
--spec esnmp_api_ifs:pre_process(Data::term()) -> {Asn::tuple(), Roles::list(Role::string())}.
+-spec esnmp_api_ifs:pre_process(Data::term()) -> 
+        {Asn::tuple(), Roles::list(Role::string())}.
 pre_process({trap, {v2_community, Community}, {Ip, Port}, Payload}) ->
     Roles = community_to_roles(Community),
     %Tags  = esnmp_conf:get_tags(Source),
@@ -50,7 +52,8 @@ pre_process({trap, {v2_community, Community}, {Ip, Port}, Payload}) ->
         message         = lists:flatten(io_lib:format("~p", [Payload])) }]}}},
     {Roles, Msg}.
 
--spec esnmp_api_ifs:initial_conn(ClientState::record()) -> {term(), Roles::list(Role::string())}.
+-spec esnmp_api_ifs:initial_conn(ClientState::record()) -> 
+        {term(), Roles::list(Role::string())}.
 initial_conn(ClientState) ->
     io:format("~p initialconn!!!! from ~p~n", [?MODULE, ClientState]),
     ok.
