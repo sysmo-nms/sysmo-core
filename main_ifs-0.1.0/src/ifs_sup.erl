@@ -33,6 +33,7 @@ init([TlsConfFile]) ->
         {
             {one_for_one, 1, 60},
             [
+                %% Client endpoint
                 {
                     ifs_server,
                     {ifs_server, start_link, []},
@@ -41,6 +42,7 @@ init([TlsConfFile]) ->
                     supervisor,
                     [ifs_server]
                 },
+                %% SSL server
                 {
                     ssl_server_sup,
                     {ssl_server_sup, start_link, [TlsConfFile]},
@@ -49,6 +51,7 @@ init([TlsConfFile]) ->
                     supervisor,
                     [ssl_server_sup]
                 },
+                %% TCP server
                 {
                     tcp_server_sup,
                     {tcp_server_sup, start_link, []},
@@ -57,14 +60,7 @@ init([TlsConfFile]) ->
                     supervisor,
                     [tcp_server_sup]
                 },
-%                {
-%                    bifs_auth_ldap,
-%                    {bifs_auth_ldap, start_link, []},
-%                    permanent,
-%                    2000,
-%                    worker,
-%                    [bifs_auth_ldap]
-%                },
+                %% IFS rbac mpd
                 {
                     ifs_rbac,
                     {ifs_rbac, start_link, []},

@@ -156,9 +156,6 @@ init([{Key, Cert, CACert}]) ->
         user_roles      = Roles,
         user_modules    = Mods,
         state           = 'RUNNING'},
-    ssl_client:send(NextState, {modIfPDU, {fromServer, 
-                                    {authAck, 
-                                        {'AuthPDU_fromServer_authAck', Roles, Mods}}}}),
     {next_state, 'RUNNING', NextState};
 
 'WAIT_FOR_CLIENT_AUTH'({auth_fail, Ref, User}, #client_state{ref = Ref} = State) ->

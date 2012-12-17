@@ -20,25 +20,40 @@
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 -module(esnmp_api_ifs).
 -behaviour(beha_ifs_module).
-% beha_ifs_module export
--export([handle_msg/2, present/1, initial_conn/1]).
+-include_lib("../../pdu-0.1.0/build/ModEsnmp.hrl").
 
+% beha_ifs_module export
+-export([handle_msg/2, pre_process/1, initial_conn/1]).
 % @doc
 % Handle a command from a client
 % @end
--spec esnmp_api_ifs:handle_msg(Data::term(), ClientState::record()) -> any().
+-spec esnmp_api_ifs:handle_msg(Data::term(), ClientState::record()) -> AsnResponce::term() | noreply.
 handle_msg(Msg, ClientState) ->
-    io:format("~p: Message ~p from ~p~n", [?MODULE, Msg, ClientState]).
+    io:format("~p: Message ~p from ~p~n", [?MODULE, Msg, ClientState]),
+    noreply.
 
 % @doc
-% Callback from ifs module. Data must be presented so it can
-% be compiled with asnc, and fetch the roles for wich the
+% Return roles and valid asn term.
 % @end
--spec esnmp_api_ifs:present(Data::term()) -> {Asn::tuple(), Roles::list(Role::string())}.
-present(Term) ->
-    io:format("present Term ~n"),
-    {Term, ["admin"]}.
+-spec esnmp_api_ifs:pre_process(Data::term()) -> {Asn::tuple(), Roles::list(Role::string())}.
+pre_process({trap, {v2_community, Community}, {Ip, Port}, Payload}) ->
+    Roles = community_to_roles(Community),
+    %Tags  = esnmp_conf:get_tags(Source),
+    Tags = ["a","b"],
+    Msg = {modEsnmpPDU, {fromServer, {trap, [#'TrapsTableRow'{
+        timeStamp       = "time",
+        version         = lists:flatten(io_lib:format("~p", [v2])),
+        fromIp          = lists:flatten(io_lib:format("~p", [Ip])),
+        fromPort        = lists:flatten(io_lib:format("~p", [Port])),
+        credentials     = lists:flatten(io_lib:format("~p", [Roles])),
+        tags            = lists:flatten(io_lib:format("~p", [Tags])),
+        message         = lists:flatten(io_lib:format("~p", [Payload])) }]}}},
+    {Roles, Msg}.
 
 -spec esnmp_api_ifs:initial_conn(ClientState::record()) -> {term(), Roles::list(Role::string())}.
-initial_conn(_ClientState) ->
+initial_conn(ClientState) ->
+    io:format("~p initialconn!!!! from ~p~n", [?MODULE, ClientState]),
     ok.
+
+community_to_roles(_Community) ->
+    ["admin"].

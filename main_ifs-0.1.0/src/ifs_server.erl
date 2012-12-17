@@ -25,9 +25,17 @@
 % gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 % API
--export([start_link/0, notify_connection/1, notify_disconnection/1, handle_msg/2, register_mod/1]).
+-export([
+    start_link/0, 
+    notify_connection/1, 
+    notify_disconnection/1, 
+    handle_msg/2, 
+    register_mod/1,
+    handle_mod_event/2,
+    modsrv_notify/1]).
 
 -record(if_module, {
+    mod_name,
     callback_mod,
     asnkey}).
 
@@ -56,6 +64,10 @@ notify_connection(#client_state{module = Module} = ClientState) ->
 notify_disconnection(ClientState) ->
     ifs_rbac:del_client(ClientState).
 
+% @doc message received from a gen_event registered on another module
+handle_mod_event(Mod, Event) ->
+    gen_server:cast(?MODULE, {handle_mod_event, Mod, Event}).
+
 % @doc handle_msg from client
 handle_msg(ClientState, {Mod, Msg}) ->
     case Mod of
@@ -66,10 +78,7 @@ handle_msg(ClientState, {Mod, Msg}) ->
             gen_server:call(?MODULE, {ext_msg, OtherMod, Msg, ClientState})
     end.
 
-
-
 % @doc handle message destine au server.
-% @private
 process_msg({fromClient, {authRep, {ldap, {_, UName, UPass}}}}, #client_state{module = Mod} = ClientState) ->
 
     case ?AUTH_MOD:authenticate(UName, UPass) of
@@ -85,8 +94,8 @@ process_msg({fromClient, {authRep, {ldap, {_, UName, UPass}}}}, #client_state{mo
 process_msg({fromClient, {subscribe, Mods}}, #client_state{state = 'RUNNING'} = ClientState) ->
     lists:foreach(fun(X) -> 
         Mod = erlang:list_to_atom(X),
-        Mod:init_client(ClientState),
-        ifs_rbac:register_client(ClientState, X) 
+        ifs_rbac:register_client(ClientState, X),
+        gen_server:call(?MODULE, {subscribe_client, ClientState, Mod})
     end, Mods);
 
 process_msg({fromClient, {unsubscribe, Mods}}, #client_state{state = 'RUNNING'} = ClientState) ->
@@ -96,11 +105,19 @@ process_msg({fromClient, {unsubscribe, Mods}}, #client_state{state = 'RUNNING'} 
 process_msg(A, S) ->
     io:format("ici ~p ~p~n", [A,S]).
     
+% @doc modsrv callback
+-spec ifs_server:modsrv_notify(Args::list()) -> ok.
+modsrv_notify(Args) ->
+    gen_server:call(?MODULE, {modsrv_event, Args}).
 
 %%--------------------------------------------
 %% GEN_SERVER CALLBACKS
 %%--------------------------------------------
 init([]) ->
+    % notify mdsrv of the availability of ?MODULE,
+    modsrv:hello({main_ifs, [
+        {modsrv_callback, ?MODULE},
+        {event_handler, ifs_events}]}),
     {ok, #if_server_state{authmod = ?AUTH_MOD}}.
 
 % CALL
@@ -109,6 +126,24 @@ handle_call({new_mod, ModName, AsnKey}, _From, S) ->
     NewMod = #if_module{callback_mod = ModName, asnkey = AsnKey},
     UpdatedMods = [NewMod | CurrentMods],
     {reply, ok, S#if_server_state{modules = UpdatedMods}};
+
+handle_call({modsrv_event, {ModName, Args}}, _From, S) ->
+    CurrentMods = S#if_server_state.modules,
+    io:format("~p modsrv_event ~p ~n", [?MODULE, Args]),
+    case lists:keysearch(main_ifs, 1, Args) of
+        false -> {reply, ok, S};
+        {value, {_, Opts}} ->
+            {value, {_, CallBack}}  = lists:keysearch(callback, 1, Opts),
+            {value, {_, AsnKey}}    = lists:keysearch(asnkey, 1, Opts),
+            NewMod = #if_module{mod_name = ModName, callback_mod = CallBack, asnkey = AsnKey},
+            case lists:keysearch(listen_events, 1, Opts) of
+                false -> ok;
+                {value, {_, true}}  ->
+                    {value, {_, EventHandler}} = lists:keysearch(event_handler, 1, Args),
+                    gen_event:add_handler(EventHandler, ifs_mod_listener, ModName)
+            end,
+            {reply, ok, S#if_server_state{modules = [NewMod | CurrentMods]}}
+    end;
 
 handle_call({ext_msg, ModKey, Msg, ClientState}, _From, S) ->
     case lists:keysearch(ModKey, 3, S#if_server_state.modules) of
@@ -119,15 +154,37 @@ handle_call({ext_msg, ModKey, Msg, ClientState}, _From, S) ->
     end,
     {reply, ok, S};
 
+handle_call({subscribe_client, ClientState, Module}, _From, S) ->
+    io:format("-<<<<<<<<<<<<<<<<modname is ~p state is ~p~n", [Module, S]),
+    Modules = S#if_server_state.modules,
+    {value, ModuleRecord} = lists:keysearch(Module, 2, Modules),
+    ModuleCallback = ModuleRecord#if_module.callback_mod,
+    ModuleCallback:initial_conn(ClientState),
+    {reply, ok, S};
+
 handle_call(_R, _F, S) ->
     {reply, ok, S}.
 
 % CAST
 handle_cast({send_ack, Roles, #client_state{module = CliMod} = ClientState, Name}, S) ->
-    Modules = lists:map(fun(X) -> erlang:atom_to_list(X#if_module.callback_mod) 
+    Modules = lists:map(fun(X) -> erlang:atom_to_list(X#if_module.mod_name) 
         end, S#if_server_state.modules),
     CliMod:auth_set(success, ClientState, Name, Roles, Modules),
+    CliMod:send(ClientState, {modIfPDU, {fromServer, {authAck, 
+        {'AuthPDU_fromServer_authAck', Roles, Modules}}}}),
     {noreply, S};
+
+handle_cast({handle_mod_event, Mod, Event}, S) ->
+    spawn(fun() ->
+        Modules = S#if_server_state.modules,
+        {value, ModRecord} = lists:keysearch(Mod, 2, Modules),
+        CallbackMod = ModRecord#if_module.callback_mod,
+        {Roles, AsnMsg} = CallbackMod:pre_process(Event),
+        ifs_rbac:handle_event(Mod, AsnMsg, Roles)
+    end),
+    {noreply, S};
+
+
 
 handle_cast(_R, S) ->
     {noreply, S}.

@@ -33,7 +33,7 @@ AgentConf  ::= SEQUENCE {
 }
 
 FromServer ::= CHOICE {
-    trapsTableWrite SEQUENCE OF TrapsTableRow,
+    trap            SEQUENCE OF TrapsTableRow,
     agentsConf      SEQUENCE OF AgentConf
 }
 

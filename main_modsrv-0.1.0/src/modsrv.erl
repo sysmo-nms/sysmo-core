@@ -47,17 +47,6 @@ start_link() ->
 % <li> {event_handler, EventHandlerMod} where EventHandlerMod is an atom
 % registered as a gen_event handler if the module offer some events
 % of interest for other modules, OPTIONAL</li>
-% <li> {ifs_callback, CallbackMod} where CallbackMod must
-% have a <em>ifs_module</em> behaviour.OPTIONAL</li>
-% <li> {ifs_event_handler, EventHandlerMod} where EventHandlerMod is an atom
-% registered as a gen_event handler if the module offer some events
-% of interest for ifs clients.<br></br>
-% If used {ifs_callback, CallbackMod} MUST be set. OPTIONAL</li>
-%   <li> {ifs_asnkey, AsnKey::atom()} used to identify a client call
-%       to a function of this module. If the AsnKey match a module, the
-%       call CallbackMod:handle_msg(Message) will be made.<br></br>
-%       If used {ifs_callback, CallbackMod} MUST be set. OPTIONAL
-%   </li>
 % </ul>
 % </p>
 % <p>It will:

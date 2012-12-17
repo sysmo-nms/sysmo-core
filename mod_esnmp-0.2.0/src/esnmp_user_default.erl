@@ -46,8 +46,7 @@ handle_error(ReqId, Reason, UserData) ->
 
 
 handle_agent(Addr, Port, Type, SnmpInfo, _UserData) ->
-    gen_event:notify(esnmp_events, {Type, Addr, Port, SnmpInfo}),
-    io:format("ici~n"),
+    gen_event:notify(esnmp_events, {Type, {v2_community,"unknown_community"}, {Addr, Port}, SnmpInfo}),
 	ignore.
 
 handle_pdu(TargetName, ReqId, SnmpResponse, UserData) ->

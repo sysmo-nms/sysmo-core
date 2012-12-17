@@ -33,12 +33,12 @@ init([]) ->
             {one_for_one, 1, 60},
             [
                 {
-                    esnmp_modsrv_events,
-                    {esnmp_modsrv_events, start_link, []},
+                    esnmp_events,
+                    {esnmp_events, start_link, []},
                     permanent,
                     2000,
                     worker,
-                    [esnmp_modsrv_events]
+                    [esnmp_events]
                 }
             ]
         }

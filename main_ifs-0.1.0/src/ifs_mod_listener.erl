@@ -18,18 +18,28 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
--module(bifs_auth_local).
--behaviour(beha_ifs_auth).
--export([authenticate/2]).
+-module(ifs_mod_listener).
+-behaviour(gen_event).
 
-%% --------------------------------------------------------------
-%% USER API
-%% --------------------------------------------------------------
-authenticate(UName, UPass) ->
-    case {UName, UPass} of
-        {"admuser", "passwd"} ->
-            Roles = ["admin","wheel"],
-            {ok, Roles};
-        _ ->
-            fail
-    end.
+-export([init/1, handle_event/2, handle_call/2, handle_info/2, terminate/2, code_change/3]).
+
+init(Mod) ->
+    {ok, Mod}.
+
+handle_event(Event, State) ->
+    ifs_server:handle_mod_event(State, Event),
+    {ok, State}.
+
+
+%% not used
+handle_call(_Request, State) ->
+    {ok, ok, State}.
+
+handle_info(_Info, State) ->
+    {ok, State}.
+
+terminate(_Args, _State) ->
+    ok.
+
+code_change(_OldVsn, State, _ExtraA) ->
+    {ok, State}.

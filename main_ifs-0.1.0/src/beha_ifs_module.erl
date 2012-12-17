@@ -55,7 +55,7 @@
 -export([behaviour_info/1]).
 
 behaviour_info(callbacks) ->
-    [{handle_msg, 2}, {initial_conn, 1}, {present, 1}];
+    [{handle_msg, 2}, {initial_conn, 1}, {pre_process, 1}];
 
 behaviour_info(_) ->
     undefined.

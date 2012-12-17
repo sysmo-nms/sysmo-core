@@ -24,7 +24,14 @@
 -include_lib("../include/client_state.hrl").
 
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
--export([start_link/0, handle_event/3, register_client/2, unregister_client/2, del_client/1, dump/0]).
+-export([
+    start_link/0, 
+    handle_event/3, 
+    handle_event2/3, 
+    register_client/2, 
+    unregister_client/2, 
+    del_client/1, 
+    dump/0]).
 
 %%-------------------------------------------------------------
 %% API
@@ -48,6 +55,10 @@ del_client(CState) ->
 % @doc FromMod doit etre l atome avec lequel s'est enregistre le module via ifs_server:regiter_mod/1.
 handle_event(FromMod, Data, Perm) ->
     gen_server:cast(?MODULE, {process_msg, FromMod, Data, Perm}).
+
+handle_event2(FromMod, _Data, Perm) ->
+    io:format("~p ~p ~p~n", [?MODULE, FromMod, Perm]).
+    %gen_server:cast(?MODULE, {process_msg, FromMod, Data, Perm}).
 
 % @doc debug function
 dump() ->

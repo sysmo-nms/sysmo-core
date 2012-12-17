@@ -1,6 +1,4 @@
 % This file is part of "Enms" (http://sourceforge.net/projects/enms/)
-% Based on the work from Serge Aleynikov <saleyn at gmail.com> on the article
-% from http://www.trapexit.org/Building_a_Non-blocking_TCP_server_using_OTP_principles
 % Copyright (C) 2012 <Sébastien Serre sserre.bx@gmail.com>
 % 
 % Enms is a Network Management System aimed to manage and monitor SNMP
@@ -20,36 +18,33 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
-% @private
--module(ssl_client_sup).
--behaviour(supervisor).
+-module(esnmp_events).
+-export([start_link/0, modsrv_notify/1]).
 
--export([start_link/3, start_client/0]).
--export([init/1]).
+% @doc
+% Start the event manager and initialise the module.
+% @end
+-spec esnmp_events:start_link() -> {ok, Pid::pid()}.
+start_link() ->
+    % START the event manager:
+    ReturnSup = gen_event:start_link({local, ?MODULE}),
+    % notify the availability of ?MODULE to modsrv
+    modsrv:hello({mod_esnmp, [
+        {modsrv_callback,   ?MODULE}, 
+        {event_handler,     ?MODULE},
+        {main_ifs, [
+                {callback,  esnmp_api_ifs},
+                {asnkey,    modEsnmpPDU},
+                {listen_events, true}
+            ]}
+        ]}),
 
-start_link(Key, Cert, CaCert) ->
-	supervisor:start_link({local, ?MODULE}, ?MODULE, [Key, Cert, CaCert]).
+    ReturnSup.
 
-%%-------------------------------------------------------------------------
-%% @spec start_client() -> {ok, Pid}
-%% @doc  Call from the listener to open a new client
-%% @end
-%%-------------------------------------------------------------------------
-start_client() ->
-	supervisor:start_child(?MODULE, []).
-
-init([Key, Cert, CaCert]) ->
-    SslFiles = {Key, Cert, CaCert},
-	{ok, {
-		{simple_one_for_one, 10, 60},
-			[
-				{ssl_client,
-					{ssl_client, start_link, [SslFiles]},
-					temporary,
-					brutal_kill,
-					worker,
-					[ssl_client]
-				}
-			]
-		}
-	}.
+% @doc
+% modsrv callback. Action to be taken when a module appear or disapear.
+% Actualy esnmp do not need to listen anywere.
+% @end
+-spec esnmp_events:modsrv_notify(Any::any()) -> ok.
+modsrv_notify(_Args) ->
+    ok.
