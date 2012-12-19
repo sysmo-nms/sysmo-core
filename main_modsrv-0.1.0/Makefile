@@ -3,6 +3,7 @@
 ERLCC   += erlc -Werror -pa ../ifs-0.1.0/ebin
 SRC     = $(shell find src -name "*.erl")
 DEST    = $(patsubst src/%.erl, ebin/%.beam, $(SRC))
+APP     = $(subst ebin/,,$(basename $(wildcard ebin/*.app)))
 
 compile: $(DEST)
 
@@ -17,13 +18,15 @@ clean:
 	rm -f doc/edoc-info
 	rm -f erl_crash.dump
 
+# TESTS
+test: compile
+	@sudo erl -noinput -pa ebin -eval \
+ 'application:start($(APP)), eunit:test(modsrv, [verbose]), init:stop()'
+
+# DOCUMENTATION
 doc: doc/index.html
 
-doc/index.html:
-	erl -noinput -pa ebin -eval 'edoc:application(emain_emodsrv, ".", []), init:stop()'
+doc/index.html: doc/overview.edoc src/*.erl
+	erl -noinput -pa ebin -eval \
+ 'edoc:application($(APP), ".", []), init:stop()'
 
-test: compile
-	@sudo erl -noinput -pa ebin -eval 'application:start(emain_emodsrv), eunit:test(emodsrv, [verbose]), init:stop()'
-
-start: compile
-	@sudo erl -pa ebin -eval 'application:start(emain_emodsrv)'

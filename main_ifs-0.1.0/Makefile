@@ -44,8 +44,8 @@ clean:
 	rm -rf ebin/*.beam
 	rm -rf erl_crash.dump
 	rm -rf doc/*.html
-	rm -rf doc/*png
-	rm -rf doc/*css
+	rm -rf doc/*.png
+	rm -rf doc/*.css
 	rm -rf doc/edoc-info
 	rm -rf priv/asn1/build/*
 
@@ -54,5 +54,6 @@ clean:
 # DOCUMENTATION
 doc: doc/index.html
 
-doc/index.html: compile doc/overview.edoc
-	erl -noinput -pa ebin -eval 'edoc:application($(APP), ".", []), init:stop()'
+doc/index.html: doc/overview.edoc src/*.erl
+	erl -noinput -pa ebin -eval \
+ 'edoc:application($(APP), ".", []), init:stop()'

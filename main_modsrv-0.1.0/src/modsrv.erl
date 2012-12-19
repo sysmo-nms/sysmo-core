@@ -22,7 +22,13 @@
 -behaviour(gen_server).
 -include_lib("../../include/eunit.hrl").
 % gen_server callbacks
--export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
+-export([
+    init/1, 
+    handle_call/3, 
+    handle_cast/2, 
+    handle_info/2, 
+    terminate/2, 
+    code_change/3]).
 
 % API
 -export([start_link/0, hello/1, bye/1, get_modules/0]).
@@ -40,22 +46,20 @@ start_link() ->
 
 
 % @doc Call from a module when it start.
-% <p>ArgList must be 1 or more values: <ul>
+% <p>ModName is the name of the application module. ArgList must be 1 or more 
+% values: <ul>
 % <li> {modsrv_callback, ModuleName} where ModuleName must implement a
 % callback function ModuleName:modsrv_notify/1 to receive the informations
-% concerning the availables modules. MANDATORY </li>
+% concerning the availables modules. Note that the return value of 
+% mdsrv_notify/1 <b>MUST</b> be the atom <em>ok</em>. <b>MANDATORY</b> </li>
 % <li> {event_handler, EventHandlerMod} where EventHandlerMod is an atom
 % registered as a gen_event handler if the module offer some events
-% of interest for other modules, OPTIONAL</li>
+% of interest for other modules. <b>OPTIONAL</b></li>
+% <li> Configuration options of specific modules. <b>OPTIONAL</b>
+% </li>
 % </ul>
+% See <b>Building module tutorial</b> documentation.
 % </p>
-% <p>It will:
-% <ul>
-% <li> update the current available modules database </li>
-% <li> notify actual and future modules of the availability
-% of module ModName,</li> 
-% <li> notify ModName of the actual available modules providing an 
-% {event_callback, EventMod} argument.</li></ul></p>
 % @end
 -spec modsrv:hello(Arg :: {ModName :: atom(), ArgList :: list()}) -> ok.
 hello({ModName, Opts}) ->
@@ -69,7 +73,7 @@ hello({ModName, Opts}) ->
 bye(Arg) ->
     gen_server:call(?MODULE, {bye, Arg}).
 
-% @doc Get the entire module list.
+% @doc Get the entire module list. Used primary for debug purpose.
 -spec modsrv:get_modules() -> Modules::list().
 get_modules() ->
     gen_server:call(?MODULE, dump).
@@ -93,7 +97,8 @@ handle_call({hello, {ModName, OptList} = Args, CallBackMod}, _From, State) ->
     % new mod list is:
     NewState = [Args | CleanState],
     lists:foreach(fun({Mod, Opts}) -> 
-        {value, {_, CallOtherMod}} = lists:keysearch(modsrv_callback, 1, Opts),
+        {value, {_, CallOtherMod}} = 
+            lists:keysearch(modsrv_callback, 1, Opts),
         % inform ModName of available modules
         CallBackMod:modsrv_notify({Mod, Opts}),
         % and inform other mods of the availability of ModName
@@ -146,13 +151,17 @@ code_change(_O, S, _E) ->
 % @private eunit test
 add_test() ->
     ?assert(?MODULE:get_modules() == []),
-    ?assert(?MODULE:hello({mod_a, [{modsrv_callback, cbmod1}, {othertuple, b}]}) == ok),
-    ?assert(?MODULE:get_modules() == [{mod_a, [{modsrv_callback, cbmod1}, {othertuple, b}]}]).
+    ?assert(?MODULE:hello({mod_a, [{modsrv_callback, cbmod1}, 
+        {othertuple, b}]}) == ok),
+    ?assert(?MODULE:get_modules() == [{mod_a, [{modsrv_callback, cbmod1}, 
+        {othertuple, b}]}]).
 
 % @private eunit test
 modify_test() ->
-    ?assert(?MODULE:hello({mod_a, [{modsrv_callback, cbmod2}, {othertuple, a}]}) == ok),
-    ?assert(?MODULE:get_modules() == [{mod_a, [{modsrv_callback, cbmod2}, {othertuple,a}]}]).
+    ?assert(?MODULE:hello({mod_a, [{modsrv_callback, cbmod2}, 
+        {othertuple, a}]}) == ok),
+    ?assert(?MODULE:get_modules() == [{mod_a, [{modsrv_callback, cbmod2}, 
+        {othertuple,a}]}]).
     
 % @private eunit test
 del_test() ->
