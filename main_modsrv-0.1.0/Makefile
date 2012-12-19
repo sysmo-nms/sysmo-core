@@ -1,14 +1,15 @@
 # Makefile
 
-ERLCC   += erlc -Werror -pa ../ifs-0.1.0/ebin
+EPATH   += -pa ../ifs-0.1.0/ebin
+ERLC    = erlc -Werror $(EPATH)
 SRC     = $(shell find src -name "*.erl")
-DEST    = $(patsubst src/%.erl, ebin/%.beam, $(SRC))
+DST     = $(patsubst src/%.erl, ebin/%.beam, $(SRC))
 APP     = $(subst ebin/,,$(basename $(wildcard ebin/*.app)))
 
-compile: $(DEST)
+compile: $(DST)
 
-ebin/%.beam: src/%.erl $(INCLUDE)
-	$(ERLCC) -o ebin/ src/$*.erl
+ebin/%.beam: src/%.erl 
+	$(ERLC) -o ebin/ src/$*.erl
 
 clean:
 	rm -f ebin/*.beam
@@ -16,17 +17,16 @@ clean:
 	rm -f doc/*.png
 	rm -f doc/*.css
 	rm -f doc/edoc-info
-	rm -f erl_crash.dump
 
 # TESTS
 test: compile
-	@sudo erl -noinput -pa ebin -eval \
+	@erl -noinput -pa ebin -eval \
  'application:start($(APP)), eunit:test(modsrv, [verbose]), init:stop()'
 
 # DOCUMENTATION
 doc: doc/index.html
 
 doc/index.html: doc/overview.edoc src/*.erl
-	erl -noinput -pa ebin -eval \
+	@echo "Building documentation..."
+	@erl -noinput -pa ebin -eval \
  'edoc:application($(APP), ".", []), init:stop()'
-

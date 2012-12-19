@@ -1,35 +1,43 @@
 # Makefile
 
-ERLCC   += erlc -Werror -pa ../ifs-0.1.0/ebin
-SNMPC   := snmpc
+APP     = mod_esnmp
+ERLC   += erlc -Werror
+SNMPC  := snmpc
 SRC     = $(shell find src -name "*.erl")
 DEST    = $(patsubst src/%.erl, ebin/%.beam, $(SRC))
 MIBSRC  = $(shell find priv/mibs -name "*.mib")
 MIBDEST = $(patsubst priv/mibs/%.mib, priv/snmp/mibs/%.bin, $(MIBSRC))
-PATHS   = -pa ../main_ifs-0.1.0/ebin
+EPATH  += -pa ../main_ifs-0.1.0/ebin
 INCLUDE = $(wildcard include/*.hrl)
 
 compile: $(DEST)
 
-mib: $(MIBDEST)
-
-priv/snmp/mibs/%.bin: priv/mibs/%.mib
-	$(SNMPC) --o priv/snmp/mibs/ priv/mibs/$*.mib
-
 ebin/%.beam: src/%.erl $(INCLUDE)
-	$(ERLCC) $(PATHS) -o ebin/ src/$*.erl
+	$(ERLC) $(EPATH) -o ebin/ src/$*.erl
 
 clean:
 	rm -f ebin/*.beam
+	rm -f doc/*.html
+	rm -f doc/*.png
+	rm -f doc/*.css
+	rm -f doc/edoc-info
 	rm -f priv/snmp/mibs/*.bin
-	rm -f erl_crash.dump
 
-all:
-	make
+# TEST
+test:
 
-werr:
-	make werr
+# DOCUMENTATION
+doc: doc/index.html
 
-start: compile
-	#sudo erl -pa ebin -config sys -eval 'application:start(snmp), application:start(esnmp)'
-	sudo erl -pa ebin -config sys -eval 'application:start(emod_esnmp)'
+doc/index.html: doc/overview.edoc src/*.erl
+	@echo "Building documentation..."
+	@erl -noinput -pa ebin -eval \
+ 'edoc:application($(APP), ".", []), init:stop()'
+
+
+## COMPILING MIBS 
+#mib: $(MIBDEST)
+#
+#priv/snmp/mibs/%.bin: priv/mibs/%.mib
+#	$(SNMPC) --o priv/snmp/mibs/ priv/mibs/$*.mib
+#
