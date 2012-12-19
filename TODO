@@ -19,6 +19,9 @@ SNMP utility and monitoring
 mod_targets             HIGHT       0
 Live list of various network elements (later used by icmpmon and netmon)
 
+mod_tags                HIGHT       0
+Associate tags to elements or data
+
 HOWTO write GUI         HIGHT       0%
 documentation
 
