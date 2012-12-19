@@ -11,7 +11,10 @@ ebin/%.beam: src/%.erl $(INCLUDE)
 
 clean:
 	rm -f ebin/*.beam
-	rm -f doc/*
+	rm -f doc/*.html
+	rm -f doc/*.png
+	rm -f doc/*.css
+	rm -f doc/edoc-info
 	rm -f erl_crash.dump
 
 doc: doc/index.html
