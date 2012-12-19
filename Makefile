@@ -33,6 +33,10 @@ start: compile
 clifs: compile
 	@$(ERL) $(ERL_NMS_PATH) -sname "client" -eval 'clifs:start_link()'
 
-push: clean
-	@echo -n "coment: "; read COMENT; \
-	git add -A; git commit -m "$$COMENT"; git push -u origin master
+# PRIVATE
+commit: clean
+	echo -n "coment: "; read COMENT; \
+	git add -A; git commit -m "$$COMENT"
+
+push:
+	git push -u origin master
