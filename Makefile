@@ -7,6 +7,8 @@ MODS_VER		= $(foreach app, $(MODS), $(wildcard $(app)-*))
 
 compile: recurse pdu_lib
 
+all: compile doc test local-release
+
 recurse:
 	@for i in $(MODS_VER); do cd $$i; make compile; cd ../; done
 
@@ -20,6 +22,7 @@ clean:
 	rm -f erl_crash.dump
 	rm -f $(REL_NAME).script
 	rm -f $(REL_NAME).boot
+	rm -f stim.pid
 	@for i in $(MODS_VER); do cd $$i; make clean; cd ../; done
 
     
@@ -46,10 +49,10 @@ ERL_NMS_PATH	= $(addprefix -pa ,$(MODS_EBIN_DIR))
 ERL_REL_COMM    = 'systools:make_script("$(REL_NAME)", [local]), init:stop()'
 
 start: local-release
-	sudo $(ERL) -sname server -boot ./$(REL_NAME) -config ./sys
+	@sudo $(ERL) -sname server -boot ./$(REL_NAME) -config ./sys
 
 clifs: compile
-	@$(ERL) $(ERL_NMS_PATH) -sname "client" -eval 'clifs:start_link()'
+	@$(ERL) $(ERL_NMS_PATH) -sname client -eval 'clifs:start_link()'
 
 
 

@@ -33,8 +33,9 @@
 -define(DEFAULT_COMMUNITY, "unknown_agent").
 
 handle_error(_ReqId,  {failed_processing_message, 
-            {{securityError,usmStatsUnknownEngineIDs}, _Addr, _Port}}, _UserData) ->
-	%io:format("received usmStatsUnknownEngineIDs from ~p port ~p~n", [_Addr, _Port]),
+    {{securityError,usmStatsUnknownEngineIDs}, _Addr, _Port}}, _UserData) ->
+	%io:format("received usmStatsUnknownEngineIDs from ~p port ~p~n", 
+    %    [_Addr, _Port]),
     ok;
 
 handle_error(ReqId, Reason, UserData) ->
@@ -46,7 +47,8 @@ handle_error(ReqId, Reason, UserData) ->
 
 
 handle_agent(Addr, Port, Type, SnmpInfo, _UserData) ->
-    gen_event:notify(esnmp_events, {Type, {v2_community,"unknown_community"}, {Addr, Port}, SnmpInfo}),
+    gen_event:notify(esnmp_events, {Type, 
+        {v2_community,"unknown_community"}, {Addr, Port}, SnmpInfo}),
 	ignore.
 
 handle_pdu(TargetName, ReqId, SnmpResponse, UserData) ->
