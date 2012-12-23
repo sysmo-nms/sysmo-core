@@ -25,8 +25,8 @@
 		{modules, [
                 ifs_app,
                 ifs_sup,
-                ifs_srv,
-                ifs_mpd,
+                ifs_server,
+                ifs_rbac,
                 ifs_auth_ldap,
                 asncli,
                 ssl_client,
@@ -47,7 +47,9 @@
                 ssl_server_sup,
                 ssl_listener
             ]},
-		{applications, [kernel, stdlib, crypto, public_key, ssl]},
+		{applications, 
+            [kernel, stdlib, crypto, public_key, ssl, main_modsrv]
+        },
 
 		% mandatory
 		{mod, {ifs_app, []}}

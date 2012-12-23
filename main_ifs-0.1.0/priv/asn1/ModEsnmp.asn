@@ -41,7 +41,7 @@ FromClient ::= CHOICE {
     registerV2Agent AgentConf
 }
 
-EsnmpPDU        ::= CHOICE {
+EsnmpPDU    ::= CHOICE {
     fromServer  FromServer,
     fromClient  FromClient
 }

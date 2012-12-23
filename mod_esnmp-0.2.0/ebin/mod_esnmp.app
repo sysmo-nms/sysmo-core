@@ -34,6 +34,8 @@
 		]
 	},
 	{registered,[esnmp_server, esnmp_sup]},
-	{applications, [kernel, stdlib, snmp, main_modsrv]},
+	{applications, 
+        [kernel, stdlib, crypto, public_key, snmp, main_modsrv]
+    },
     {mod, {esnmp_app, []}}
 ]}.

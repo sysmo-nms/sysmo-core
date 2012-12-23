@@ -21,7 +21,7 @@
 {application, main_modsrv,
 	[
 		{description, "Module registration and information"},
-		{vsn, "1.0.0"},
+		{vsn, "0.1.0"},
 		{modules, [
             modsrv_app,
             modsrv_sup,
@@ -31,7 +31,9 @@
             modsrv_sup,
             modsrv
             ]},
-		{applications, [kernel, stdlib]},
+		{applications, 
+            [kernel, stdlib]
+        },
 		% mandatory
 		{mod, {modsrv_app, []}}
 	]
