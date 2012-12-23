@@ -1,61 +1,64 @@
 The development flow should follow this order:
 
 #MODULE/OTHER           #PRIORITY   #COMPLETED
-main_modsrv             HIGHT       100%
+- main_modsrv             HIGHT       100%
 Register/inform and trac activated modules
-
-main_ifs                HIGHT       90%
+- main_ifs                HIGHT       90%
 Module events and client communication/auth
-
-mod_template            HIGHT       0%
+- mod_template            HIGHT       0%
 How to develop a module + template
-
-HOWTO write module      HIGHT       0%
-documentation
-
-mod_esnmp               HIGHT       50%
+- mod_esnmp               HIGHT       50%
 SNMP utility and monitoring
-
-mod_targets             HIGHT       0
-Live list of various network elements (later used by icmpmon and netmon)
-
-mod_tags                HIGHT       0
-Associate tags to elements or data
-
-HOWTO write GUI         HIGHT       0%
+- mod_targets             HIGHT       0
+Live list of various network elements 
+(later used by icmpmon, netmon...)
+- mod_tags                HIGHT       0
+Associate tags to elements, events and data
+- HOWTO write GUI         HIGHT       0%
 documentation
-
-GUI interface           HIGHT       0%
-Graphical interface to the system
---> RELEASE 1
-
-
-mod_maps                HIGHT       0%          Create, save and generate maps
-mod_rrd                 HIGHT       0%          Generate RRD
-Web interface           HIGHT       0%          Web interface for Enms
---> release 2
+- mod_maps                HIGHT       0%
+Create, save and generate maps
+- mod_rrd                 HIGHT       0%
+Generate RRD
+---------> RELEASE 0.2
 
 
-mod_icmpmon             HIGHT       0%          Monitor network hosts
-mod_locator             HIGHT       0%          Where is/was this
-                                                IP/Mac address
-mod_switching           HIGHT       0%          V4-ARP V6-CDP traffic
-                                                monitoring
-mod_alertclimbs         HIGHT       0%          Escalade alerts module
-mod_mailutils           HIGHT       0%          Mail for emod_alertclimbs
---> release 3
+- mod_snmpmon             HIGHT       0%
+Monitor snmp nodes
+- mod_locator             MEDIUM      0%
+Where is/was this IP/Mac address
+- mod_switching           MEDIUM      0%
+V4-ARP V6-CDP traffic monitoring
+- mod_sh                  MEDIUM      0%
+Provide access to managed devices
+---------> RELEASE 1.0
 
 
-mod_routing             MEDIUM      0%          Routing protocols
-                                                monitoring/maps
-mod_netmon              MEDIUM      0%          Monitor network services
-mod_sysdoc              MEDIUM      0%          Documentation system
-mod_coumpoundwarn       MEDIUM      0%          Create alerts events pattern
-mod_phoneutils          MEDIUM      0%          Phone for emod_alertclimbs
-mod_rmon                LOW         0%          Collect RMON data
-mod_syslog              LOW         0%          Collect syslog data
-mod_wifiman             LOW         0%          Manage multiple devices with
-                                                identic configuration
-mod_time_machine        LOW         0%          Replay events in a specific
-                                                timeframe
---> release 4
+- mod_icmpmon             MEDIUM      0%
+Monitor network hosts
+- mod_netmon              MEDIUM      0%
+Monitor network services
+- mod_coumpoundwarn       MEDIUM      0%
+Create alerts with events patterns
+- mod_alertclimbs         LOW         0%
+Escalade alerts module
+- mod_sysdoc              LOW         0%
+Documentation system
+- mod_support             LOW         0%
+Ticket gestion linked to mod_sysdoc
+- mod_repport             LOW         0%
+Generate various report using sysdoc, support or other monitors
+---------> RELEASE 1.1
+
+
+- mod_routing             LOW         0%
+Routing protocols monitoring/maps
+- mod_multiman            OPT         0%
+Manage multiple devices with identic configuration
+- mod_rmon                OPT         0%
+Collect RMON data
+- mod_syslog              OPT         0%
+Collect syslog data
+- mod_time_machine        OPT         0%
+Replay events in a specific timeframe
+---------> FINAL???
