@@ -5,7 +5,9 @@ MODS			= main_ifs main_modsrv mod_esnmp
 
 MODS_VER		= $(foreach app, $(MODS), $(wildcard $(app)-*))
 
-compile:
+compile: recurse pdu_lib
+
+recurse:
 	@for i in $(MODS_VER); do cd $$i; make compile; cd ../; done
 
 test:
@@ -21,6 +23,21 @@ clean:
 	@for i in $(MODS_VER); do cd $$i; make clean; cd ../; done
 
     
+
+
+# Shared includes from IFS
+IFS_DIR         = $(filter main_ifs%, $(MODS_VER))
+IFS_INCLUDES_DIR    = $(addsuffix /include, $(addprefix ./, $(IFS_DIR)))
+IFS_INCLUDES_SRC    = $(wildcard $(IFS_INCLUDES_DIR)/*.hrl)
+IFS_INCLUDES_DST    = $(addprefix ./include/, $(notdir $(IFS_INCLUDES_SRC)))
+
+pdu_lib: $(IFS_INCLUDES_DST)
+
+$(IFS_INCLUDES_DST): ./include/%.hrl: $(IFS_INCLUDES_DIR)/%.hrl
+	@cp $(IFS_INCLUDES_DIR)/$*.hrl ./include/$*.hrl
+
+	
+
 # UTILS
 ERL             = erl
 MODS_EBIN_DIR	= $(addprefix ./, $(addsuffix /ebin, $(MODS_VER)))
@@ -35,12 +52,15 @@ clifs: compile
 	@$(ERL) $(ERL_NMS_PATH) -sname "client" -eval 'clifs:start_link()'
 
 
+
+
 # RELEASES
 local-release: compile $(REL_NAME).script 
 
 $(REL_NAME).script: $(MODS_DEF_FILE)
 	@echo "Generating $(REL_NAME).script and $(REL_NAME).boot files..."
 	@$(ERL) -noinput $(ERL_NMS_PATH) -eval $(ERL_REL_COMM)
+
 
 
 # PRIVATE UTILS
