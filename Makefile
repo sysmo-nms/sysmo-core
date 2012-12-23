@@ -7,7 +7,7 @@ MODS_VER		= $(foreach app, $(MODS), $(wildcard $(app)-*))
 
 compile: recurse pdu_lib
 
-all: compile doc test local-release
+all: compile doc test local-release www
 
 recurse:
 	@for i in $(MODS_VER); do cd $$i; make compile; cd ../; done
@@ -23,6 +23,7 @@ clean:
 	rm -f $(REL_NAME).script
 	rm -f $(REL_NAME).boot
 	rm -f stim.pid
+	rm -rf www/htdocs/*
 	@for i in $(MODS_VER); do cd $$i; make clean; cd ../; done
 
     
@@ -71,5 +72,6 @@ commit: clean
 	@echo -n "coment: "; read COMENT; \
 	git add -A; git commit -m "$$COMENT"
 
-push:
-	git push -u origin master
+www: doc
+	@for i in $(MODS_VER); do cp -r $$i/doc www/htdocs/$$i; done
+	@ ./www/gen-htindex $(MODS_VER)
