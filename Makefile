@@ -1,9 +1,8 @@
 # Makefile 
 
 REL_NAME        = enms
-MODS			= main_ifs main_modsrv mod_esnmp 
-
-MODS_VER		= $(foreach app, $(MODS), $(wildcard $(app)-*))
+MODS            = main_ifs main_modsrv mod_esnmp 
+MODS_VER        = $(foreach app, $(MODS), $(wildcard $(app)-*))
 
 compile: recurse pdu_lib
 
@@ -23,14 +22,15 @@ clean:
 	rm -f $(REL_NAME).script
 	rm -f $(REL_NAME).boot
 	rm -f stim.pid
-	rm -rf www/htdocs/*
+	rm -rf www/htdocs/edoc/*
+	rm -rf www/htdocs/documentation.html
 	@for i in $(MODS_VER); do cd $$i; make clean; cd ../; done
 
     
 
 
 # Shared includes from IFS
-IFS_DIR         = $(filter main_ifs%, $(MODS_VER))
+IFS_DIR             = $(filter main_ifs%, $(MODS_VER))
 IFS_INCLUDES_DIR    = $(addsuffix /include, $(addprefix ./, $(IFS_DIR)))
 IFS_INCLUDES_SRC    = $(wildcard $(IFS_INCLUDES_DIR)/*.hrl)
 IFS_INCLUDES_DST    = $(addprefix ./include/, $(notdir $(IFS_INCLUDES_SRC)))
@@ -73,5 +73,5 @@ commit: clean
 	git add -A; git commit -m "$$COMENT"
 
 www: doc
-	@for i in $(MODS_VER); do cp -r $$i/doc www/htdocs/$$i; done
-	@ ./www/gen-htindex $(MODS_VER)
+	@for i in $(MODS_VER); do cp -r $$i/doc www/htdocs/edoc/$$i; done
+	@ ./www/gen-htdoc $(MODS_VER)
