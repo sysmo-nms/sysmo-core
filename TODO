@@ -3,10 +3,8 @@ The development flow should follow this order:
 #MODULE/OTHER           #PRIORITY   #COMPLETED
 - main_modsrv             HIGHT       100%
 Register/inform and trac activated modules
-- mod_ifs                 HIGHT       90%
+- mod_ifs                 HIGHT       100%
 Module events and client communication/auth
-- mod_template            HIGHT       0%
-How to develop a module + template
 - mod_esnmp               HIGHT       50%
 SNMP utility and monitoring
 - mod_targets             HIGHT       0
@@ -20,31 +18,31 @@ documentation
 Create, save and generate maps
 - mod_rrd                 HIGHT       0%
 Generate RRD
+- mod_snmpmon             HIGHT       0%
+Monitor snmp nodes
 ---------> RELEASE 0.2
 
 
-- mod_snmpmon             HIGHT       0%
-Monitor snmp nodes
 - mod_locator             MEDIUM      0%
 Where is/was this IP/Mac address
 - mod_switching           MEDIUM      0%
 V4-ARP V6-CDP traffic monitoring
 - mod_sh                  MEDIUM      0%
-Provide access to managed devices
+Provide access to managed devices using telnet/ssh
+- mod_icmpmon             MEDIUM      0%
+Monitor network hosts
 ---------> RELEASE 1.0
 
 
-- mod_icmpmon             MEDIUM      0%
-Monitor network hosts
 - mod_netmon              MEDIUM      0%
 Monitor network services
 - mod_coumpoundwarn       MEDIUM      0%
 Create alerts with events patterns
-- mod_alertclimbs         LOW         0%
+- mod_alertclimbs         MEDIUM      0%
 Escalade alerts module
-- mod_sysdoc              LOW         0%
+- mod_sysdoc              MEDIUM      0%
 Documentation system
-- mod_support             LOW         0%
+- mod_support             MEDIUM      0%
 Ticket gestion linked to mod_sysdoc
 - mod_repport             LOW         0%
 Generate various report using sysdoc, support or other monitors

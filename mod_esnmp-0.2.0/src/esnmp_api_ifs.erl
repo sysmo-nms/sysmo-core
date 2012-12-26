@@ -50,7 +50,10 @@ pre_process({trap, {v2_community, Community}, {Ip, Port}, Payload}) ->
         credentials     = lists:flatten(io_lib:format("~p", [Roles])),
         tags            = lists:flatten(io_lib:format("~p", [Tags])),
         message         = lists:flatten(io_lib:format("~p", [Payload])) }]}}},
-    {Roles, Msg}.
+    {Roles, Msg};
+
+pre_process(_Other) ->
+    io:format("unknown message to pre_process ~p ~p~n", [?MODULE, _Other]).
 
 -spec esnmp_api_ifs:initial_conn(ClientState::record()) -> 
         {term(), Roles::list(Role::string())}.
