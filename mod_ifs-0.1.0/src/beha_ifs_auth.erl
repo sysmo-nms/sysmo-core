@@ -18,28 +18,22 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
--module(ifs_mod_listener).
--behaviour(gen_event).
+%% @doc
+%% Un module qui implemente ce behaviour doit exporter une fonction 
+%% authenticate/2
+%% et retourner la liste des roles de l'utilisateur. Un example simple est 
+%% {@link bifs_auth_ldap. bifs_auth_ldap}.
+%% <p> authenticate/2 -> <em>authenticate(Uname, UPass) -> Roles | fail</em>
+%% </p><br></br>
+%% Roles = list of Role,<br></br>
+%% Uname = string,<br></br>
+%% UPass = string,<br></br>
+%% @end
+-module(beha_ifs_auth).
+-export([behaviour_info/1]).
 
--export([init/1, handle_event/2, handle_call/2, handle_info/2, terminate/2, code_change/3]).
+behaviour_info(callbacks) ->
+    [{authenticate, 2}];
 
-init(Mod) ->
-    {ok, Mod}.
-
-handle_event(Event, State) ->
-    ifs_server:handle_mod_event(State, Event),
-    {ok, State}.
-
-
-%% not used
-handle_call(_Request, State) ->
-    {ok, ok, State}.
-
-handle_info(_Info, State) ->
-    {ok, State}.
-
-terminate(_Args, _State) ->
-    ok.
-
-code_change(_OldVsn, State, _ExtraA) ->
-    {ok, State}.
+behaviour_info(_) ->
+    undefined.

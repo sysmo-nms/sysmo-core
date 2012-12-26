@@ -3,7 +3,7 @@ The development flow should follow this order:
 #MODULE/OTHER           #PRIORITY   #COMPLETED
 - main_modsrv             HIGHT       100%
 Register/inform and trac activated modules
-- main_ifs                HIGHT       90%
+- mod_ifs                 HIGHT       90%
 Module events and client communication/auth
 - mod_template            HIGHT       0%
 How to develop a module + template

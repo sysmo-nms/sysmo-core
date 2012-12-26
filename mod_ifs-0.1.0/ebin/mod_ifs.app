@@ -18,7 +18,7 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
-{application, main_ifs,
+{application, mod_ifs,
 	[
 		{description, "ENMS core system"},
 		{vsn, "0.1.0"},

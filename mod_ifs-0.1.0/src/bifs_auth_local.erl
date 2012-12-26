@@ -18,19 +18,19 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
-%% @doc
-%% Un module qui implemente ce behaviour doit exporter une fonction authenticate/2
-%% et retourner la liste des roles de l'utilisateur. Un example simple est {@link bifs_auth_ldap. bifs_auth_ldap}.
-%% <p> authenticate/2 -> <em>authenticate(Uname, UPass) -> Roles</em></p><br></br>
-%% Roles = list of Role,<br></br>
-%% Uname = string,<br></br>
-%% UPass = string,<br></br>
-%% @end
--module(beha_ifs_auth).
--export([behaviour_info/1]).
+% @private
+-module(bifs_auth_local).
+-behaviour(beha_ifs_auth).
+-export([authenticate/2]).
 
-behaviour_info(callbacks) ->
-    [{authenticate, 2}];
-
-behaviour_info(_) ->
-    undefined.
+%% --------------------------------------------------------------
+%% USER API
+%% --------------------------------------------------------------
+authenticate(UName, UPass) ->
+    case {UName, UPass} of
+        {"admuser", "passwd"} ->
+            Roles = ["admin","wheel"],
+            {ok, Roles};
+        _ ->
+            fail
+    end.

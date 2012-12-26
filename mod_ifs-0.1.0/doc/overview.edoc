@@ -1,0 +1,99 @@
+@author Sebastien Serre <sserre.bx@gmail.com>
+@version 0.1.0
+@title Welcome to ifs (InterFace Session) application server
+@doc 
+== Introduction ==
+<p>"if_session" is an asynchronous message dispatch module for communication
+between (n) clients and (n) modules. He is responsible of:
+<ul>
+    <li>Authenticate user,</li>
+    <li>Send messages from modules the client has registered,</li>
+    <li>Send messages from modules the client have access right to, following
+    a role based access control,</li>
+    <li>Use the encoding rules defined by the client state.</li>
+</ul>
+</p>
+== Behaviours ==
+<p>The following behaviours permit to customise <b>mod_ifs</b>:</p>
+
+=== beha_ifs_auth ===
+<p>It is the module used to authenticate the user. <b>mod_ifs</b> do a
+<em>Mod:authenticate/2</em> on user credentials submit. Configuring the module
+is done using the <em>sys.config</em> file under <em>mod_ifs</em> application
+config <em>ifs_auth</em> atom.
+</p>
+
+=== beha_ifs_encoder ===
+<p>This behaviour define the encoding rules used for a client. It is stored in
+the client state on the server side. There is actualy 3 module implementing
+this behaviour:
+<ul>
+    <li><em>bifs_encoder_asn</em>: ASN BER encode/decode,</li>
+    <li><em>bifs_encoder_native</em>: erlang term,</li>
+    <li><em>bifs_encoder_xml</em>: xml term.</li>
+</ul>
+
+Create a new module using this behaviour has sence in the context of a custom
+client module. Note that a new encoder must take a <em>bifs_encoder_asn</em>
+valid term and produce valid asn tuple when decoding.<br></br>
+In this context, <em>mod_ifs</em> can handle multiple clients, heach using
+it's hown <em>beha_ifs_encoder</em> module thus permiting multiple encoding
+rules. Because of it's complexity it is not documented nor recommended to
+extend this module
+</p>
+
+<p>Actualy two clients modules can be used together:
+<ul>
+    <li><b>tcp_client</b> using asn, native or xml,</li>
+    <li><b>ssl_client</b> using asn, native or xml.</li>
+</ul>
+</p>
+
+=== beha_ifs_module ===
+<p>A Enms module producing events of interest for clients must implement this
+behaviour. <em>mod_ifs</em> get the correct configuration for a specific
+module with the <em>main_modsrv</em> module.<br></br>
+See <b>Building a server module</b> tutorial.</p>
+
+== Configuration ==
+<p><em>mod_ifs</em> uses the <em>sys.config</em> file for configuration
+options using the <b>mod_ifs</b> atom as an entry.</p>
+<p>Configuration can be:<ul>
+<li><code>{ssl_conf, TlsConf}</code> where TlsConf is the config file for the
+erlang ssl module,</li>
+<li><code>{ifs_auth, Module}</code> where Module is a module implementing the
+<em>beha_fis_auth</em> behaviour,</li>
+<li><code>{tcp_client | ssl_client, Conf}</code> where conf is a list which
+    can be:<ul>
+    <li><code>{encoder, Encoder}</code> where Encoder is a module implementing
+    the beha_ifs_encoder behaviour</li>
+    <li><code>{enabled, true | false}</code>: <em>true</em> will start the
+    listener on the specified <em>port</em></li>
+    <li><code>{port, Port}</code> where Port is an integer defining the port
+    on wich the client module will listen</li></ul>
+</li></ul></p>
+<p>Example <em>sys.config</em> file:</p>
+<code>
+[<br></br>
+        { kernel,<br></br>
+                [<br></br>
+                        {start_dist_ac, false},<br></br>
+                        {inet_dist_listen_min, 9000},<br></br>
+                        {inet_dist_listen_max, 9000}<br></br>
+                ]<br></br>
+        },<br></br>
+    {mod_ifs,<br></br>
+        [<br></br>
+                        {ssl_conf,  "mod_ifs-0.1.0/ssl.conf"},<br></br>
+            {ifs_auth,  ifs_auth_ldap},<br></br>
+            {tcp_client, [<br></br>
+                {encoder, bifs_encoder_asn}<br></br>
+            ]},<br></br>
+            {ssl_client, [<br></br>
+                {encoder, bifs_encoder_asn}<br></br>
+            ]}<br></br>
+        ]<br></br>
+    }<br></br>
+]
+</code>
+@end

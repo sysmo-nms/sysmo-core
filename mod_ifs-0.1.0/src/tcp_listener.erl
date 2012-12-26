@@ -46,9 +46,11 @@
 %% @doc Called by a supervisor to start the listening process.
 %% @end
 %%----------------------------------------------------------------------
-start_link(Port, Module, ConnLimit) when is_integer(Port), is_atom(Module) ->
-    error_logger:info_msg("~p listen at ~p~n", [Module, Port]),
-    gen_server:start_link({local, ?MODULE}, ?MODULE, [Port, Module, ConnLimit], []).
+start_link(Port, Module, ConnLimit) ->
+    error_logger:info_msg("~p llllisten at ~p~n", 
+        [Module, Port]),
+    gen_server:start_link({local, ?MODULE}, ?MODULE, 
+        [Port, Module, ConnLimit], []).
 
 %%%------------------------------------------------------------------------
 %%% Callback functions from gen_server
@@ -118,7 +120,8 @@ handle_cast(_Msg, State) ->
 %% @private
 %%-------------------------------------------------------------------------
 handle_info({inet_async, ListSock, Ref, {ok, CliSocket}},
-            #state{listener=ListSock, acceptor=Ref, module=Module, connection_limit = ConnLimit} = State) ->
+            #state{listener=ListSock, acceptor=Ref, module=Module,
+                connection_limit = ConnLimit} = State) ->
 
     ActiveC = erlang:length(supervisor:which_children(tcp_client_sup)),
     %% test the max conn limit
@@ -130,17 +133,19 @@ handle_info({inet_async, ListSock, Ref, {ok, CliSocket}},
                 {error, Reason} -> exit({set_sockopt, Reason})
                 end,
 
-                %% New client connected - spawn a new process using the simple_one_for_one
-                %% supervisor.
+                %% New client connected - spawn a new process using the 
+                %% simple_one_for_one supervisor.
                 {ok, Pid} = tcp_client_sup:start_client(),
                 gen_tcp:controlling_process(CliSocket, Pid),
                 %% Instruct the new FSM that it owns the socket.
                 Module:set_socket(Pid, CliSocket),
         
-                %% Signal the network driver that we are ready to accept another connection
+                %% Signal the network driver that we are ready to accept 
+                %% another connection
                 case prim_inet:async_accept(ListSock, -1) of
                     {ok,    NewRef} -> ok;
-                    {error, NewRef} -> exit({async_accept, inet:format_error(NewRef)})
+                    {error, NewRef} -> 
+                        exit({async_accept, inet:format_error(NewRef)})
                 end,
 
                 {noreply, State#state{acceptor=NewRef}}

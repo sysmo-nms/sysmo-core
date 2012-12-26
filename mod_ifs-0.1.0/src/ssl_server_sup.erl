@@ -1,6 +1,4 @@
 % This file is part of "Enms" (http://sourceforge.net/projects/enms/)
-% Based on the work from Serge Aleynikov <saleyn at gmail.com> on the article
-% from http://www.trapexit.org/Building_a_Non-blocking_TCP_server_using_OTP_principles
 % Copyright (C) 2012 <Sébastien Serre sserre.bx@gmail.com>
 % 
 % Enms is a Network Management System aimed to manage and monitor SNMP
@@ -21,34 +19,44 @@
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 % @private
--module(ssl_client_sup).
+-module(ssl_server_sup).
 -behaviour(supervisor).
 
--export([start_link/3, start_client/0]).
+-export([start_link/4]).
 -export([init/1]).
 
-start_link(Key, Cert, CaCert) ->
-	supervisor:start_link({local, ?MODULE}, ?MODULE, [Key, Cert, CaCert]).
+start_link(Encoder, Port, MaxC, SslConfFile) ->
+    {ok, Conf} = file:consult(SslConfFile),
+    {value, {certificate, Cert}} =
+        lists:keysearch(certificate, 1, Conf),
+    {value, {caCertificate, CaCert}} =
+        lists:keysearch(caCertificate, 1, Conf),
+    {value, {key, Key}} =
+        lists:keysearch(key, 1, Conf),
+	supervisor:start_link({local, ?MODULE}, ?MODULE, 
+        [Encoder, Port, MaxC, Cert, CaCert, Key]).
 
-%%-------------------------------------------------------------------------
-%% @spec start_client() -> {ok, Pid}
-%% @doc  Call from the listener to open a new client
-%% @end
-%%-------------------------------------------------------------------------
-start_client() ->
-	supervisor:start_child(?MODULE, []).
-
-init([Key, Cert, CaCert]) ->
-    SslFiles = {Key, Cert, CaCert},
-	{ok, {
-		{simple_one_for_one, 10, 60},
+init([Encoder, Port, MaxC, Cert, CaCert, Key]) ->
+	{ok,
+		{
+			{one_for_one, 1, 60},
 			[
-				{ssl_client,
-					{ssl_client, start_link, [SslFiles]},
-					temporary,
-					brutal_kill,
+				{
+					ssl_listener,
+					{ssl_listener, start_link, [Port, ssl_client, MaxC]},
+					permanent,
+					2000,
 					worker,
-					[ssl_client]
+					[ssl_listener]
+				},
+				{
+					ssl_client_sup,
+					{ssl_client_sup, start_link, 
+                        [Encoder, Key, Cert, CaCert]},
+					permanent,
+					infinity,
+					supervisor,
+					[ssl_client_sup]
 				}
 			]
 		}

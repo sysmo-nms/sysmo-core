@@ -1,6 +1,4 @@
 % This file is part of "Enms" (http://sourceforge.net/projects/enms/)
-% Based on the work from Serge Aleynikov <saleyn at gmail.com> on the article
-% from http://www.trapexit.org/Building_a_Non-blocking_TCP_server_using_OTP_principles
 % Copyright (C) 2012 <Sébastien Serre sserre.bx@gmail.com>
 % 
 % Enms is a Network Management System aimed to manage and monitor SNMP
@@ -21,34 +19,28 @@
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 % @private
--module(tcp_client_sup).
--behaviour(supervisor).
+-module(ifs_gen_event).
+-behaviour(gen_event).
 
--export([start_link/0, start_client/0]).
--export([init/1]).
+-export([init/1, handle_event/2, handle_call/2, handle_info/2, terminate/2, code_change/3]).
 
-start_link() ->
-	supervisor:start_link({local, ?MODULE}, ?MODULE, []).
+init(Mod) ->
+    {ok, Mod}.
 
-%%-------------------------------------------------------------------------
-%% @spec start_client() -> {ok, Pid}
-%% @doc  Call from the listener to open a new client
-%% @end
-%%-------------------------------------------------------------------------
-start_client() ->
-	supervisor:start_child(?MODULE, []).
+handle_event(Event, State) ->
+    ifs_server:handle_mod_event(State, Event),
+    {ok, State}.
 
-init([]) ->
-	{ok, {
-		{simple_one_for_one, 10, 60},
-			[
-				{tcp_client,
-					{tcp_client, start_link, []},
-					temporary,
-					brutal_kill,
-					worker,
-					[tcp_client]
-				}
-			]
-		}
-	}.
+
+%% not used
+handle_call(_Request, State) ->
+    {ok, ok, State}.
+
+handle_info(_Info, State) ->
+    {ok, State}.
+
+terminate(_Args, _State) ->
+    ok.
+
+code_change(_OldVsn, State, _ExtraA) ->
+    {ok, State}.

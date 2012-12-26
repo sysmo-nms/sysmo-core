@@ -19,39 +19,19 @@
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 % @private
--module(tcp_server_sup).
--behaviour(supervisor).
+-module(ifs_app).
+-behaviour(application).
 
--export([start_link/0]).
--export([init/1]).
+-export([start/2, stop/1]).
 
--define(DEFPORT, 8888).
--define(MAXCONN, 50).
+start(_Type, _Args) ->
+    {ok, AuthModule}      = application:get_env(mod_ifs, ifs_auth),
+    {ok, TcpClientConf}   = application:get_env(mod_ifs, tcp_client),
+    {ok, SslClientConf}   = application:get_env(mod_ifs, ssl_client),
+    io:format("~n~p: authmod: ~p~n", [?MODULE,AuthModule]),
+    io:format("~n~p: tcp_client: ~p~n", [?MODULE,TcpClientConf]),
+    io:format("~n~p: ssl_client: ~p~n", [?MODULE,SslClientConf]),
+    ifs_sup:start_link(AuthModule, TcpClientConf, SslClientConf).
 
-start_link() ->
-	supervisor:start_link({local, ?MODULE}, ?MODULE, [?DEFPORT,?MAXCONN]).
-
-init([Port, MaxC]) ->
-	{ok,
-		{
-			{one_for_one, 1, 60},
-			[
-				{
-					tcp_listener,
-					{tcp_listener, start_link, [Port, tcp_client, MaxC]},
-					permanent,
-					2000,
-					worker,
-					[tcp_listener]
-				},
-				{
-					tcp_client_sup,
-					{tcp_client_sup, start_link, []},
-					permanent,
-					infinity,
-					supervisor,
-					[tcp_client_sup]
-				}
-			]
-		}
-	}.
+stop(_State) ->
+	ok.

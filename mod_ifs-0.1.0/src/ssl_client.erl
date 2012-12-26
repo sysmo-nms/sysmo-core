@@ -20,14 +20,22 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
+%%% @private
 %%% @doc
-%%% tcp client interface
+%%% <p>This module use SSL certificates. Here are the commands to create one:
+%%% <ul>
+%%%     <li><b>openssl genrsa -out key.pem 1024</b></li>
+%%%     <li><b>openssl req -new -key key.pem -out request.pem</b>
+%%%         <em> (ici Common Name est mandatory, "localhost" pour les tests)</em></li>
+%%%     <li><b>openssl x509 -req -days 30 -in request.pem -signkey key.pem -out certificate.pem</b></li>
+%%% </ul>
+%%% </p>
 %%% @end
--module(tcp_client).
+-module(ssl_client).
 -behaviour(gen_fsm).
 -include_lib("../include/client_state.hrl").
 
--export([start_link/0, set_socket/2, auth_set/2, send/2, raw_send/2]).
+-export([start_link/2, set_socket/2, auth_set/2, auth_set/5, send/2, raw_send/2]).
 -export([init/1, handle_event/3, handle_sync_event/4, 
             handle_info/3, terminate/3, code_change/4]).
 -export(['WAIT_FOR_SOCKET'/2, 'WAIT_FOR_CLIENT_AUTH'/2, 'RUNNING'/2]).
@@ -42,7 +50,7 @@
 %%%------------------------------------------------------------------------
 
 %%-------------------------------------------------------------------------
-%% @spec start_link() -> {ok,Pid} | ignore | {error,Error}
+%% @spec start_link(Encoder, TlsFiles) -> {ok,Pid} | ignore | {error,Error}
 %% @doc To be called by the supervisor in order to start the server.
 %%	  If init/1 fails with Reason, the function returns {error,Reason}.
 %%	  If init/1 returns {stop,Reason} or ignore, the process is
@@ -50,22 +58,23 @@
 %%	  respectively.
 %% @end
 %%-------------------------------------------------------------------------
-start_link() ->
+start_link(Encoder, TlsFiles) ->
 	io:format("start_link ~p~n", [?MODULE]),
-	gen_fsm:start_link(?MODULE, [], []).
+	gen_fsm:start_link(?MODULE, [Encoder, TlsFiles], []).
 
 set_socket(Pid, Socket) when is_pid(Pid), is_port(Socket) ->
 	gen_fsm:send_event(Pid, {socket_ready, Socket}).
 
-%auth_set(auth_success,  [Pid, Ref, {UserName, Roles}]) ->
-auth_set(auth_success,  NewState) ->
-    Pid         = NewState#client_state.pid,
-    Ref         = NewState#client_state.ref,
-    UserName    = NewState#client_state.user_name,
-    Roles       = NewState#client_state.user_roles,
-    gen_fsm:send_event(Pid, {auth_success, Ref, UserName, Roles});
+auth_set(success, #client_state{pid = Pid, ref = Ref}, Name, Roles, AllowedMods) ->
+    gen_fsm:send_event(Pid, {success, Ref, Name, Roles, AllowedMods}).
 
-%auth_set(auth_fail,     [Pid, Ref, UserName]) ->
+%auth_set(auth_success,  NewState) ->
+    %Pid         = NewState#client_state.pid,
+    %Ref         = NewState#client_state.ref,
+    %UserName    = NewState#client_state.user_name,
+    %Roles       = NewState#client_state.user_roles,
+    %gen_fsm:send_event(Pid, {auth_success, Ref, UserName, Roles});
+    
 auth_set(auth_fail,     NewState) ->
     Pid         = NewState#client_state.pid,
     Ref         = NewState#client_state.ref,
@@ -73,7 +82,7 @@ auth_set(auth_fail,     NewState) ->
     gen_fsm:send_event(Pid, {auth_fail, Ref, UserName}).
 
 send(SockState, Msg) ->
-    gen_fsm:send_event(SockState#client_state.pid,
+    gen_fsm:send_event(SockState#client_state.pid, 
         {encode_send_msg, SockState#client_state.ref, Msg}).
 
 raw_send(SockState, Pdu) ->
@@ -92,10 +101,13 @@ raw_send(SockState, Pdu) ->
 %%		  {stop, StopReason}
 %% @private
 %%-------------------------------------------------------------------------
-init([]) ->
+init([Encoder, {Key, Cert, CACert}]) ->
 	process_flag(trap_exit, true),
 	{ok, 'WAIT_FOR_SOCKET', #client_state{
-        encoding_mod    = ?ENCODING_MOD,
+        key             = Key,
+        certificate     = Cert, 
+        ca_certificate  = CACert,
+        encoding_mod    = Encoder,
         state           = 'WAIT_FOR_SOCKET'}}.
 
 %%-------------------------------------------------------------------------
@@ -107,10 +119,16 @@ init([]) ->
 %%-------------------------------------------------------------------------
 'WAIT_FOR_SOCKET'({socket_ready, Socket}, State) when is_port(Socket) ->
 	%% Now we own the socket!
-	inet:setopts(Socket, [{active, once}, {packet, 2}, binary]),
-	{ok, {IP, Port}} = inet:peername(Socket),
+    {ok, SSLSocket} = ssl:ssl_accept(Socket, [
+        {cacertfile,        State#client_state.ca_certificate},
+        {certfile,          State#client_state.certificate},
+        {keyfile,           State#client_state.key},
+        {protocol,          tlsv1},
+        {active,            false}], 3000),
+	ssl:setopts(SSLSocket, [{active, once}, {packet, 2}, binary]),
+	{ok, {IP, Port}} = ssl:peername(SSLSocket),
     NextState = State#client_state{
-        socket          = Socket,
+        socket          = SSLSocket,
         addr            = IP,
         port            = Port, 
         ref             = make_ref(),
@@ -132,10 +150,11 @@ init([]) ->
     ifs_server:handle_msg(State, Encoder:decode(Pdu)),
 	{next_state, 'WAIT_FOR_CLIENT_AUTH', State, ?TIMEOUT};
 
-'WAIT_FOR_CLIENT_AUTH'({auth_success, Ref, User, Roles}, #client_state{ref = Ref} = State) ->
+'WAIT_FOR_CLIENT_AUTH'({success, Ref, Name, Roles, Mods}, #client_state{ref = Ref} = State) ->
     NextState = State#client_state{
-        user_name       = User,
+        user_name       = Name,
         user_roles      = Roles,
+        user_modules    = Mods,
         state           = 'RUNNING'},
     {next_state, 'RUNNING', NextState};
 
@@ -143,13 +162,13 @@ init([]) ->
 	io:format("failed to register with user ~p ~n", [User]),
     {next_state, 'WAIT_FOR_CLIENT_AUTH', State, ?TIMEOUT};
 
-'WAIT_FOR_CLIENT_AUTH'({encode_send_msg, Ref,  Msg},  
+'WAIT_FOR_CLIENT_AUTH'({encode_send_msg, Ref,  Msg},
         #client_state{ref = Ref, encoding_mod = Encoder} = State) ->
-    gen_tcp:send(State#client_state.socket, Encoder:encode(Msg)),
+    ssl:send(State#client_state.socket, Encoder:encode(Msg)),
     {next_state, 'WAIT_FOR_CLIENT_AUTH', State};
 
 'WAIT_FOR_CLIENT_AUTH'({send_pdu, Ref,  Pdu},  #client_state{ref = Ref} = State) ->
-    gen_tcp:send(State#client_state.socket, Pdu),
+    ssl:send(State#client_state.socket, Pdu),
     {next_state, 'WAIT_FOR_CLIENT_AUTH', State};
 
 'WAIT_FOR_CLIENT_AUTH'(timeout, #client_state{auth_request_count = ?MAX_AUTH_ATEMPT} = State) ->
@@ -167,16 +186,18 @@ init([]) ->
 %%-------------------------------------------------------------------------
 %% application running
 %%-------------------------------------------------------------------------
-'RUNNING'({client_data, Pdu}, #client_state{encoding_mod = Encoder} = State) ->
-    ifs_server:handle_msg(State, Encoder:decode(Pdu)),
+% message from the client:
+'RUNNING'({client_data, Data}, #client_state{encoding_mod = Encoder} = State) ->
+    ifs_server:handle_msg(State, Encoder:decode(Data)),
 	{next_state, 'RUNNING', State};
 
+% message from the server:
 'RUNNING'({encode_send_msg, Ref, Msg}, #client_state{ref = Ref, encoding_mod = Encoder} = State) ->
-    gen_tcp:send(State#client_state.socket, Encoder:encode(Msg)),
+    ssl:send(State#client_state.socket, Encoder:encode(Msg)),
     {next_state, 'RUNNING', State};
 
 'RUNNING'({send_pdu, Ref, Pdu}, #client_state{ref = Ref} = State) ->
-    gen_tcp:send(State#client_state.socket, Pdu),
+    ssl:send(State#client_state.socket, Pdu),
     {next_state, 'RUNNING', State};
 
 'RUNNING'(timeout, State) ->
@@ -219,11 +240,11 @@ handle_sync_event(Event, _From, StateName, StateData) ->
 %%		  {stop, Reason, NextStateData}
 %% @private
 %%-------------------------------------------------------------------------
-handle_info({tcp,Socket, Bin}, StateName, #client_state{socket=Socket} = StateData) ->
-	inet:setopts(Socket, [{active, once}]),
+handle_info({ssl,Socket, Bin}, StateName, #client_state{socket=Socket} = StateData) ->
+	ssl:setopts(Socket, [{active, once}]),
 	?MODULE:StateName({client_data, Bin}, StateData);
 
-handle_info({tcp_closed, Socket}, _StateName,
+handle_info({ssl_closed, Socket}, _StateName,
 			#client_state{socket=Socket, addr=Addr} = StateData) ->
 	error_logger:info_msg("~p Client ~p disconnected.\n", [self(), Addr]),
 	{stop, normal, StateData};
@@ -243,7 +264,7 @@ handle_info(Info, StateName, StateData) ->
 %%-------------------------------------------------------------------------
 terminate(_Reason, _StateName, #client_state{socket=Socket} = State) ->
 	io:format("terminate ~p ~p~n", [?MODULE, _Reason]),
-	(catch gen_tcp:close(Socket)),
+	(catch ssl:close(Socket)),
     ifs_server:notify_disconnection(State),
 	ok.
 

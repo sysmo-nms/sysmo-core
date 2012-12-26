@@ -1,4 +1,6 @@
 % This file is part of "Enms" (http://sourceforge.net/projects/enms/)
+% Based on the work from Serge Aleynikov <saleyn at gmail.com> on the article
+% www.trapexit.org/Building_a_Non-blocking_TCP_server_using_OTP_principles
 % Copyright (C) 2012 <Sébastien Serre sserre.bx@gmail.com>
 % 
 % Enms is a Network Management System aimed to manage and monitor SNMP
@@ -18,18 +20,37 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
--module(bifs_auth_local).
--behaviour(beha_ifs_auth).
--export([authenticate/2]).
+% @private
+-module(ssl_client_sup).
+-behaviour(supervisor).
 
-%% --------------------------------------------------------------
-%% USER API
-%% --------------------------------------------------------------
-authenticate(UName, UPass) ->
-    case {UName, UPass} of
-        {"admuser", "passwd"} ->
-            Roles = ["admin","wheel"],
-            {ok, Roles};
-        _ ->
-            fail
-    end.
+-export([start_link/4, start_client/0]).
+-export([init/1]).
+
+start_link(Encoder, Key, Cert, CaCert) ->
+	supervisor:start_link({local, ?MODULE}, ?MODULE, 
+        [Encoder, Key, Cert, CaCert]).
+
+%%-------------------------------------------------------------------------
+%% @spec start_client() -> {ok, Pid}
+%% @doc  Call from the listener to open a new client
+%% @end
+%%-------------------------------------------------------------------------
+start_client() ->
+	supervisor:start_child(?MODULE, []).
+
+init([Encoder, Key, Cert, CaCert]) ->
+    SslFiles = {Key, Cert, CaCert},
+	{ok, {
+		{simple_one_for_one, 10, 60},
+			[
+				{ssl_client,
+					{ssl_client, start_link, [Encoder, SslFiles]},
+					temporary,
+					brutal_kill,
+					worker,
+					[ssl_client]
+				}
+			]
+		}
+	}.

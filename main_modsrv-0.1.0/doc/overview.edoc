@@ -37,7 +37,7 @@ This example assert that at least one module is allready registered:
 <h2>What for</h2>
 <h3>Events</h3>
 <p>
-    All Enms modules need a way of communicating events to others. To do so, 
+    Some Enms modules need a way of communicating events to others. To do so, 
     a module must export an event loop on wich others modules can register
     theyre proper <b>gen_event</b> module behaviour for regirecting any events
     of interest to specific functions. <em>main_modsrv</em> have been build
@@ -54,18 +54,18 @@ This example assert that at least one module is allready registered:
         </li>
     </ul>
 </p>
-<h3>main_ifs</h3>
+<h3>mod_ifs</h3>
     <p>
         All modules which have events of interest for users behind a client 
-        must export an event loop described before. <em>main_ifs</em> also 
+        must export an event loop described before. <em>mod_ifs</em> also 
         need some specific parameters. These parameters are givent during the
         registration process.
     </p>
     <p>See <b>Building module tutorial</b> and 
-    {@link main_ifs. <em> main_ifs</em>} documentation</p>
+    {@link mod_ifs. <em> mod_ifs</em>} documentation</p>
 <h3>other modules</h3>
     <p>
-        Like <em>main_ifs</em>, future modules may need to get some 
+        Like <em>mod_ifs</em>, future modules may need to get some 
         configuration options.
     </p>
     <p>See <b>Building module tutorial</b></p>

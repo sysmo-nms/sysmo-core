@@ -18,6 +18,7 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
+% @private
 -module(bifs_auth_ldap).
 -behaviour(gen_server).
 -behaviour(beha_ifs_auth).

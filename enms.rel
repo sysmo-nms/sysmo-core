@@ -8,7 +8,7 @@
         {crypto, "2.2"},
         {mnesia, "4.7.1"},
         {main_modsrv, "0.1.0"},
-        {main_ifs, "0.1.0"},
+        {mod_ifs, "0.1.0"},
         {ssl, "5.1"},
         {public_key, "0.16"},
         {snmp, "4.22.1"},

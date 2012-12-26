@@ -32,7 +32,7 @@ start_link() ->
     modsrv:hello({mod_esnmp, [
         {modsrv_callback,   ?MODULE}, 
         {event_handler,     ?MODULE},
-        {main_ifs, [
+        {mod_ifs, [
                 {callback,  esnmp_api_ifs},
                 {asnkey,    modEsnmpPDU},
                 {listen_events, true}
