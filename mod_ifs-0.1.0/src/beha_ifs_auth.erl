@@ -19,15 +19,21 @@
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 %% @doc
-%% Un module qui implemente ce behaviour doit exporter une fonction 
-%% authenticate/2
-%% et retourner la liste des roles de l'utilisateur. Un example simple est 
-%% {@link bifs_auth_ldap. bifs_auth_ldap}.
-%% <p> authenticate/2 -> <em>authenticate(Uname, UPass) -> Roles | fail</em>
-%% </p><br></br>
+%% A module using this behaviour can be used by <em>mod_ifs</em> to
+%% authenticate clients.
+%% 
+%% == authenticate/2 ==
+%%
+%% The only function to be exported is <em>authenticate/2</em>.
+%%
+%% <code>
+%% authenticate(Uname, UPass) -> Roles | fail
+%% <br></br>
 %% Roles = list of Role,<br></br>
+%% Role  = string,<br></br>
 %% Uname = string,<br></br>
 %% UPass = string,<br></br>
+%% </code>
 %% @end
 -module(beha_ifs_auth).
 -export([behaviour_info/1]).

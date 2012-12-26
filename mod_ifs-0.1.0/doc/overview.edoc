@@ -1,15 +1,15 @@
 @author Sebastien Serre <sserre.bx@gmail.com>
 @version 0.1.0
-@title Welcome to ifs (InterFace Session) application server
+@title Welcome to mod_ifs (InterFace Session) application server
 @doc 
 == Introduction ==
-<p>"if_session" is an asynchronous message dispatch module for communication
+<p><b>mod_ifs</b>is an asynchronous message dispatch module for communication
 between (n) clients and (n) modules. He is responsible of:
 <ul>
-    <li>Authenticate user,</li>
-    <li>Send messages from modules the client has registered,</li>
-    <li>Send messages from modules the client have access right to, following
-    a role based access control,</li>
+    <li>Authenticate client,</li>
+    <li>Send messages from modules the client has subscribed on,</li>
+    <li>Send messages the client is allowed to receive, following a role based
+    access control,</li>
     <li>Use the encoding rules defined by the client state.</li>
 </ul>
 </p>
@@ -39,10 +39,10 @@ valid term and produce valid asn tuple when decoding.<br></br>
 In this context, <em>mod_ifs</em> can handle multiple clients, heach using
 it's hown <em>beha_ifs_encoder</em> module thus permiting multiple encoding
 rules. Because of it's complexity it is not documented nor recommended to
-extend this module
+extend this module.
 </p>
 
-<p>Actualy two clients modules can be used together:
+<p>Actualy there si two possibles client modules and three encoding rules:
 <ul>
     <li><b>tcp_client</b> using asn, native or xml,</li>
     <li><b>ssl_client</b> using asn, native or xml.</li>
@@ -52,48 +52,65 @@ extend this module
 === beha_ifs_module ===
 <p>A Enms module producing events of interest for clients must implement this
 behaviour. <em>mod_ifs</em> get the correct configuration for a specific
-module with the <em>main_modsrv</em> module.<br></br>
+module with the <em>main_modsrv</em> module and then add his own <b>gen_event
+</b> handler on the module events loop.<br></br>
+
 See <b>Building a server module</b> tutorial.</p>
 
 == Configuration ==
 <p><em>mod_ifs</em> uses the <em>sys.config</em> file for configuration
 options using the <b>mod_ifs</b> atom as an entry.</p>
-<p>Configuration can be:<ul>
-<li><code>{ssl_conf, TlsConf}</code> where TlsConf is the config file for the
-erlang ssl module,</li>
+<p>Configuration can be:
+<ul>
 <li><code>{ifs_auth, Module}</code> where Module is a module implementing the
-<em>beha_fis_auth</em> behaviour,</li>
+<em>beha_ifs_auth</em> behaviour,</li>
 <li><code>{tcp_client | ssl_client, Conf}</code> where conf is a list which
     can be:<ul>
     <li><code>{encoder, Encoder}</code> where Encoder is a module implementing
-    the beha_ifs_encoder behaviour</li>
+    the beha_ifs_encoder behaviour,</li>
     <li><code>{enabled, true | false}</code>: <em>true</em> will start the
-    listener on the specified <em>port</em></li>
+    listener on the specified <em>port</em>,</li>
     <li><code>{port, Port}</code> where Port is an integer defining the port
-    on wich the client module will listen</li></ul>
-</li></ul></p>
+    on wich the client module will listen,</li>
+    <li><code>{maxconn, Max}</code> where <em>Max</em> is an integer 
+    representing then maximum number of simultaneous active clients accepted
+    by the listener. Each connexion ecceding this limit will clause
+    immediately,
+    </li>
+    <li><code>{ssl_conf, TlsConf}</code> where TlsConf is the config file for 
+    the ssl_client module.</li>
+    </ul>
+</li>
+</ul>
+</p>
 <p>Example <em>sys.config</em> file:</p>
-<code>
-[<br></br>
-        { kernel,<br></br>
-                [<br></br>
-                        {start_dist_ac, false},<br></br>
-                        {inet_dist_listen_min, 9000},<br></br>
-                        {inet_dist_listen_max, 9000}<br></br>
-                ]<br></br>
-        },<br></br>
-    {mod_ifs,<br></br>
-        [<br></br>
-                        {ssl_conf,  "mod_ifs-0.1.0/ssl.conf"},<br></br>
-            {ifs_auth,  ifs_auth_ldap},<br></br>
-            {tcp_client, [<br></br>
-                {encoder, bifs_encoder_asn}<br></br>
-            ]},<br></br>
-            {ssl_client, [<br></br>
-                {encoder, bifs_encoder_asn}<br></br>
-            ]}<br></br>
-        ]<br></br>
-    }<br></br>
-]
-</code>
+```
+[
+    { kernel,
+        [
+            {start_dist_ac, false},
+            {inet_dist_listen_min, 9000},
+            {inet_dist_listen_max, 9000}
+        ]
+    },
+    {mod_ifs,
+        [
+            {ifs_auth, ifs_auth_ldap},
+            {tcp_client, [
+                {enabled, true},
+                {encoder, bifs_encoder_asn},
+                {port, 8888},
+                {maxconn, 50}
+            ]},
+            {ssl_client, [
+                {enabled, true},
+                {encoder, bifs_encoder_asn}
+                {port, 4443},
+                {maxconn, 50},
+                {ssl_conf, "directory/to/ssl.conf"}
+            ]}
+        ]
+    },
+    ...
+]'''
 @end

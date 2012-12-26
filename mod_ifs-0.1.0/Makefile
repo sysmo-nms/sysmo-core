@@ -23,6 +23,7 @@ $(OTHER_DEST): ebin/%.beam: src/%.erl
 
 clean:
 	rm -f ebin/*.beam
+	rm -f *.dump
 	rm -f doc/*.html
 	rm -f doc/*.png
 	rm -f doc/*.css
