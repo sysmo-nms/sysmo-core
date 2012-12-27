@@ -19,7 +19,7 @@
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 %% @doc
-%% A module using this behaviour can be used by <em>mod_ifs</em> to
+%% A module using this behaviour can be used by <em>ifs</em> to
 %% authenticate clients.
 %% 
 %% == authenticate/2 ==

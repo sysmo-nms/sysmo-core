@@ -1,7 +1,7 @@
 # Makefile 
 
 REL_NAME        = enms
-MODS            = mod_ifs esnmp 
+MODS            = ifs esnmp 
 MODS_VER        = $(foreach app, $(MODS), $(wildcard $(app)-*))
 
 compile: recurse pdu_lib
@@ -30,7 +30,7 @@ clean:
 
 
 # Shared includes from IFS
-IFS_DIR             = $(filter mod_ifs%, $(MODS_VER))
+IFS_DIR             = $(filter ifs%, $(MODS_VER))
 IFS_INCLUDES_DIR    = $(addsuffix /include, $(addprefix ./, $(IFS_DIR)))
 IFS_INCLUDES_SRC    = $(wildcard $(IFS_INCLUDES_DIR)/*.hrl)
 IFS_INCLUDES_DST    = $(addprefix ./include/, $(notdir $(IFS_INCLUDES_SRC)))

@@ -1,9 +1,9 @@
 @author Sebastien Serre <sserre.bx@gmail.com>
 @version 0.1.0
-@title Welcome to mod_ifs (InterFace Session) application server
+@title Welcome to ifs (InterFace Session) application server
 @doc 
 == Introduction ==
-<p><b>mod_ifs</b>is an asynchronous message dispatch module for communication
+<p><b>ifs</b>is an asynchronous message dispatch module for communication
 between (n) clients and (n) modules. He is responsible of:
 <ul>
     <li>Authenticate client,</li>
@@ -14,12 +14,12 @@ between (n) clients and (n) modules. He is responsible of:
 </ul>
 </p>
 == Behaviours ==
-<p>The following behaviours permit to customise <b>mod_ifs</b>:</p>
+<p>The following behaviours permit to customise <b>ifs</b>:</p>
 
 === beha_ifs_auth ===
-<p>It is the module used to authenticate the user. <b>mod_ifs</b> do a
+<p>It is the module used to authenticate the user. <b>ifs</b> do a
 <em>Mod:authenticate/2</em> on user credentials submit. Configuring the module
-is done using the <em>sys.config</em> file under <em>mod_ifs</em> application
+is done using the <em>sys.config</em> file under <em>ifs</em> application
 config <em>ifs_auth</em> atom.
 </p>
 
@@ -36,7 +36,7 @@ this behaviour:
 Create a new module using this behaviour has sence in the context of a custom
 client module. Note that a new encoder must take a <em>bifs_encoder_asn</em>
 valid term and produce valid asn tuple when decoding.<br></br>
-In this context, <em>mod_ifs</em> can handle multiple clients, heach using
+In this context, <em>ifs</em> can handle multiple clients, heach using
 it's hown <em>beha_ifs_encoder</em> module thus permiting multiple encoding
 rules. Because of it's complexity it is not documented nor recommended to
 extend this module.
@@ -51,15 +51,15 @@ extend this module.
 
 === beha_ifs_module ===
 <p>A Enms module producing events of interest for clients must implement this
-behaviour. <em>mod_ifs</em> get the correct configuration for a specific
+behaviour. <em>ifs</em> get the correct configuration for a specific
 module with the <em>main_modsrv</em> module and then add his own <b>gen_event
 </b> handler on the module events loop.<br></br>
 
 See <b>Building a server module</b> tutorial.</p>
 
 == Configuration ==
-<p><em>mod_ifs</em> uses the <em>sys.config</em> file for configuration
-options using the <b>mod_ifs</b> atom as an entry.</p>
+<p><em>ifs</em> uses the <em>sys.config</em> file for configuration
+options using the <b>ifs</b> atom as an entry.</p>
 <p>Configuration can be:
 <ul>
 <li><code>{ifs_auth, Module}</code> where Module is a module implementing the
@@ -93,7 +93,7 @@ options using the <b>mod_ifs</b> atom as an entry.</p>
             {inet_dist_listen_max, 9000}
         ]
     },
-    {mod_ifs,
+    {ifs,
         [
             {ifs_auth, ifs_auth_ldap},
             {tcp_client, [

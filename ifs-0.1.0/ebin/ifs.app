@@ -18,19 +18,40 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
-% @private
--module(ifs_app).
--behaviour(application).
+{application, ifs,
+	[
+		{description, "ENMS core system"},
+		{vsn, "0.1.0"},
+		{modules, [
+                ifs_app,
+                ifs_sup,
+                ifs_server,
+                ifs_rbac,
+                ifs_auth_ldap,
+                asncli,
+                ssl_client,
+                ssl_client_sup,
+                ssl_server_sup,
+                ssl_listener,
+                tcp_client,
+                tcp_client_sup,
+                tcp_server_sup,
+                tcp_listener
+            ]},
+		{registered, [
+                ifs_sup,
+                ifs_server,
+                ifs_mpd,
+                ifs_auth_ldap,
+                ssl_client_sup,
+                ssl_server_sup,
+                ssl_listener
+            ]},
+		{applications, 
+            [kernel, stdlib, crypto, public_key, ssl]
+        },
 
--export([start/2, stop/1]).
-
-start(_Type, _Args) ->
-    {ok, AuthModule}    = application:get_env(mod_ifs, ifs_auth),
-    {ok, TcpClientConf} = application:get_env(mod_ifs, tcp_client),
-    {ok, SslClientConf} = application:get_env(mod_ifs, ssl_client),
-    {ok, ManagedMods}   = application:get_env(mod_ifs, if_module_records),
-    ifs_sup:start_link(AuthModule, TcpClientConf, 
-                        SslClientConf, ManagedMods).
-
-stop(_State) ->
-	ok.
+		% mandatory
+		{mod, {ifs_app, []}}
+	]
+}.
