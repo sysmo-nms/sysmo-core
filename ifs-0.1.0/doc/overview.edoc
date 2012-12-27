@@ -18,9 +18,7 @@ between (n) clients and (n) modules. He is responsible of:
 
 == beha_ifs_auth ==
 <p>It is the module used to authenticate the user. <b>ifs</b> do a
-<em>Mod:authenticate/2</em> on user credentials submit. Configuring the module
-is done using the <em>sys.config</em> file under <em>ifs</em> application
-config <em>ifs_auth</em> atom.
+<em>Mod:authenticate/2</em> on user credentials submit.
 </p>
 
 == beha_ifs_module ==
@@ -137,11 +135,10 @@ Eshell V5.9.2  (abort with ^G)
 3>
 '''
             Note that this command is only used now for test purpose. All the
-            new added module have to do is to produce a valid term when
-            <em>ifs</em> ask
+            new added module have to do is to produce a valid term for
+            'NmsPDU':encode/2 when <em>ifs</em> ask
             <em>MymodIfsModBehavior:pre_process(MyModEvent::term())</em>, <b>
-            whaterver the encoding rule is defined in the configuration 
-            file</b>.
+            whaterver the encoding rule defined in the configuration file</b>.
         </li>
     </ol>
 </p>
