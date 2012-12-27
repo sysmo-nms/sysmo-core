@@ -18,14 +18,24 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
--module(esnmp_app).
--behaviour(application).
--export([start/2, stop/1]).
-
-start(_Type, _Args) ->
-    {ok, GenEventListeners} = 
-        application:get_env(mod_esnmp, registered_events),
-    esnmp_sup:start_link(GenEventListeners).
-
-stop(_State) ->
-    ok.
+{application, esnmp, [
+	{description, "Enms snmp layer on erlang/OTP snmpm and snmpa"},
+	{vsn, "0.2.0"},
+	{modules,
+		[
+            esnmp_api,
+            esnmp_api_ifs,
+            esnmp_net_if,
+			esnmp_user_default,
+			esnmp_user_generic,
+			esnmp_events,
+            esnmp_app,
+            esnmp_sup
+		]
+	},
+	{registered,[esnmp_server, esnmp_sup]},
+	{applications, 
+        [kernel, stdlib, crypto, public_key, snmp]
+    },
+    {mod, {esnmp_app, []}}
+]}.

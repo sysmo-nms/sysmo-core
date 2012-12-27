@@ -5,7 +5,7 @@ The development flow should follow this order:
 Register/inform and trac activated modules
 - mod_ifs                 HIGHT       100%
 Module events and client communication/auth
-- mod_esnmp               HIGHT       50%
+- esnmp                   HIGHT       50%
 SNMP utility and monitoring
 - mod_snmp_targets        HIGHT       0%
 Live list of snmp targets

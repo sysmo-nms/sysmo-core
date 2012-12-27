@@ -1,6 +1,6 @@
 # Makefile
 
-APP     = mod_esnmp
+APP     = esnmp
 ERLC   += erlc -Werror
 SNMPC  := snmpc
 SRC     = $(shell find src -name "*.erl")
