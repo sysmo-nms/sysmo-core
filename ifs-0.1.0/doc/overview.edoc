@@ -2,7 +2,7 @@
 @version 0.1.0
 @title Welcome to ifs (InterFace Session) application server
 @doc 
-== Introduction ==
+<h1> Introduction </h1>
 <p><b>ifs</b>is an asynchronous message dispatch module for communication
 between (n) clients and (n) modules. He is responsible of:
 <ul>
@@ -13,17 +13,17 @@ between (n) clients and (n) modules. He is responsible of:
     <li>Use the encoding rules defined by the client state.</li>
 </ul>
 </p>
-== Behaviours ==
+<h1> Behaviours </h1>
 <p>The following behaviours permit to customise <b>ifs</b>:</p>
 
-=== beha_ifs_auth ===
+== beha_ifs_auth ==
 <p>It is the module used to authenticate the user. <b>ifs</b> do a
 <em>Mod:authenticate/2</em> on user credentials submit. Configuring the module
 is done using the <em>sys.config</em> file under <em>ifs</em> application
 config <em>ifs_auth</em> atom.
 </p>
 
-=== beha_ifs_encoder ===
+== beha_ifs_encoder ==
 <p>This behaviour define the encoding rules used for a client. It is stored in
 the client state on the server side. There is actualy 3 module implementing
 this behaviour:
@@ -49,16 +49,16 @@ extend this module.
 </ul>
 </p>
 
-=== beha_ifs_module ===
+== beha_ifs_module ==
 <p>A Enms module producing events of interest for clients must implement this
 behaviour. See the <em>configuration</em> part of the doc to see how to add an
 event module.</p>
 
 
-== Configuration ==
+<h1> Configuration </h1>
 <p><em>ifs</em> uses the <em>sys.config</em> file for configuration
 options.</p>
-=== General configuration ===
+== General configuration ==
 <p>Configuration can be:
 <ul>
 <li><code>{ifs_auth, Module}</code> where Module is a module implementing the
@@ -105,8 +105,8 @@ options.</p>
         ]
     },
     ...
-]'''
-=== Module events configuration ===
+].'''
+== Module events configuration ==
 <p>For <em>ifs</em> to work properly, the following task must be done:
     <ul>
         <li>Register the <em>ifs_gen_event</em> on the event handler of the
@@ -148,7 +148,7 @@ options.</p>
             ...
         ]
     ...
-]
+].
 '''
 <p>The <b>if_module_records</b> is a list of <em>#if_module</em> records
 defined as followed:</p>
@@ -164,7 +164,7 @@ register the <b>ifs_gen_event</b> to his event handler</em>. </p>
 <p>In this specific case, <em>esnmp</em> uses the sys.config file to be able to 
 register multiple gen_events.</p>
 
-=== ssl_conf configuration file ===
+== ssl_conf configuration file ==
 <p>Here is an example <em>ssl_conf</em> file named <em>ssl.conf</em>:
 ```
 cat ./ssl.conf
