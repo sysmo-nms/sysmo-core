@@ -51,15 +51,14 @@ extend this module.
 
 === beha_ifs_module ===
 <p>A Enms module producing events of interest for clients must implement this
-behaviour. <em>ifs</em> get the correct configuration for a specific
-module with the <em>main_modsrv</em> module and then add his own <b>gen_event
-</b> handler on the module events loop.<br></br>
+behaviour. See the <em>configuration</em> part of the doc to see how to add an
+event module.</p>
 
-See <b>Building a server module</b> tutorial.</p>
 
 == Configuration ==
 <p><em>ifs</em> uses the <em>sys.config</em> file for configuration
-options using the <b>ifs</b> atom as an entry.</p>
+options.</p>
+=== General configuration ===
 <p>Configuration can be:
 <ul>
 <li><code>{ifs_auth, Module}</code> where Module is a module implementing the
@@ -86,13 +85,7 @@ options using the <b>ifs</b> atom as an entry.</p>
 <p>Example <em>sys.config</em> file:</p>
 ```
 [
-    { kernel,
-        [
-            {start_dist_ac, false},
-            {inet_dist_listen_min, 9000},
-            {inet_dist_listen_max, 9000}
-        ]
-    },
+    ...
     {ifs,
         [
             {ifs_auth, ifs_auth_ldap},
@@ -113,4 +106,71 @@ options using the <b>ifs</b> atom as an entry.</p>
     },
     ...
 ]'''
+=== Module events configuration ===
+<p>For <em>ifs</em> to work properly, the following task must be done:
+    <ul>
+        <li>Register the <em>ifs_gen_event</em> on the event handler of the
+        module we want to integrate,</li>
+        <li>Give to <em>ifs</em> informations about the managed module:
+            <ul>
+                <li>The name the module will be presented to the client</li>
+                <li>The Asn key used by the Pdu to correctly route traffic 
+                from clients </li>
+                <li>The name of a callback module implementing the
+                <em>beha_ifs_module</em>. It is used to: 
+                    <ul>
+                        <li>preprocess an event and eventualy return a tuple 
+                        that can be encoded,</li>
+                        <li>receive clients events, actualy commands,</li>
+                        <li>receive notification of newly connected clients
+                        and eventualy take further actions.</li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+    </ul>
+    All the <em>ifs</em> configuration task is made with the sys.config file.
+    Following this example sys.config file:
+</p>
+```
+[
+    ...
+    {esnmp,
+        [
+            {registered_events, [ifs_gen_event]}
+        ]
+    },
+    {ifs,
+        [
+            {if_module_records, [
+                {if_module, esnmp, esnmp_api_ifs, modEsnmpPDU}
+            ]},
+            ...
+        ]
+    ...
+]
+'''
+<p>The <b>if_module_records</b> is a list of <em>#if_module</em> records
+defined as followed:</p>
+```
+define(if_module, {
+    module_name,    % module name from the client perspective
+    callback_mod,   % module implementing the beha_ifs_module behaviour
+    asnkey,         % asn key
+}).
+'''
+<p>Note that <em>it is the responsibility of the <b>esnmp</b> module to 
+register the <b>ifs_gen_event</b> to his event handler</em>. </p>
+<p>In this specific case, <em>esnmp</em> uses the sys.config file to be able to 
+register multiple gen_events.</p>
+
+=== ssl_conf configuration file ===
+<p>Here is an example <em>ssl_conf</em> file named <em>ssl.conf</em>:
+```
+cat ./ssl.conf
+{certificate,   "path/to/certificate.pem"}.
+{caCertificate, "path/to/request.pem"}.
+{key,           "path/to/key.pem"}.
+'''
+</p>
 @end
