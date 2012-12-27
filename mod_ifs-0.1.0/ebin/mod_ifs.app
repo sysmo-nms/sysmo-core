@@ -48,7 +48,7 @@
                 ssl_listener
             ]},
 		{applications, 
-            [kernel, stdlib, crypto, public_key, ssl, main_modsrv]
+            [kernel, stdlib, crypto, public_key, ssl]
         },
 
 		% mandatory

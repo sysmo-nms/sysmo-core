@@ -7,49 +7,46 @@ Register/inform and trac activated modules
 Module events and client communication/auth
 - mod_esnmp               HIGHT       50%
 SNMP utility and monitoring
-- mod_targets             HIGHT       0
-Live list of various network elements 
-(later used by icmpmon, netmon...)
-- mod_tags                HIGHT       0
-Associate tags to elements, events and data
-- HOWTO write GUI         HIGHT       0%
-documentation
-- mod_maps                HIGHT       0%
-Create, save and generate maps
-- mod_rrd                 HIGHT       0%
-Generate RRD
+- mod_snmp_targets        HIGHT       0%
+Live list of snmp targets
 - mod_snmpmon             HIGHT       0%
 Monitor snmp nodes
+- mod_tags                HIGHT       0%
+Associate tags to elements, events and data
+- mod_maps                HIGHT       0%
+Create, save and generate maps (manual links)
+- mod_rrd                 HIGHT       0%
+Generate RRD data and graphs
+- mod_weathermap          HIGHT       0%
+Generate maps with rrd datas (see cacti weathermap)
 ---------> RELEASE 0.2
 
 
-- mod_locator             MEDIUM      0%
-Where is/was this IP/Mac address
-- mod_switching           MEDIUM      0%
-V4-ARP V6-CDP traffic monitoring
-- mod_sh                  MEDIUM      0%
-Provide access to managed devices using telnet/ssh
 - mod_icmpmon             MEDIUM      0%
 Monitor network hosts
----------> RELEASE 1.0
-
-
-- mod_netmon              MEDIUM      0%
-Monitor network services
-- mod_coumpoundwarn       MEDIUM      0%
-Create alerts with events patterns
-- mod_alertclimbs         MEDIUM      0%
-Escalade alerts module
+- mod_sh                  MEDIUM      0%
+Provide access to managed devices using telnet/ssh
+- mod_switching           MEDIUM      0%
+V4-ARP V6-CDP traffic monitoring ex: Where is/was this IP/Mac address
 - mod_sysdoc              MEDIUM      0%
 Documentation system
 - mod_support             MEDIUM      0%
 Ticket gestion linked to mod_sysdoc
-- mod_repport             LOW         0%
+- mod_repport             MEDIUM      0%
 Generate various report using sysdoc, support or other monitors
+---------> RELEASE 1.0
+
+
+- mod_netmon              LOW         0%
+Monitor network services
+- mod_coumpoundwarn       LOW         0%
+Create alerts with events patterns
+- mod_alertclimbs         LOW         0%
+Escalade alerts module
 ---------> RELEASE 1.1
 
 
-- mod_routing             LOW         0%
+- mod_routing             OPT         0%
 Routing protocols monitoring/maps
 - mod_multiman            OPT         0%
 Manage multiple devices with identic configuration
@@ -59,4 +56,4 @@ Collect RMON data
 Collect syslog data
 - mod_time_machine        OPT         0%
 Replay events in a specific timeframe
----------> FINAL???
+---------> RELEASE 2

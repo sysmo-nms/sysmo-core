@@ -22,15 +22,15 @@
 -module(ifs_sup).
 -behaviour(supervisor).
 
--export([start_link/3]).
+-export([start_link/4]).
 -export([init/1]).
 
-start_link(AuthModule, TcpClientConf, SslClientConf) ->
+start_link(AuthModule, TcpClientConf, SslClientConf, ManagedMods) ->
     supervisor:start_link(
         {local, ?MODULE}, ?MODULE, 
-            [AuthModule, TcpClientConf, SslClientConf]).
+            [AuthModule, TcpClientConf, SslClientConf, ManagedMods]).
 
-init([AuthModule, TcpClientConf, SslClientConf]) ->
+init([AuthModule, TcpClientConf, SslClientConf, ManagedMods]) ->
     IfsRbac = {
         ifs_rbac,
         {ifs_rbac, start_link, []},
@@ -41,7 +41,7 @@ init([AuthModule, TcpClientConf, SslClientConf]) ->
     },
     IfsServer = {
         ifs_server,
-        {ifs_server,start_link, [AuthModule]},
+        {ifs_server,start_link, [AuthModule, ManagedMods]},
         permanent,
         2000,
         worker,

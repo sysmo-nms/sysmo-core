@@ -19,32 +19,18 @@
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 -module(esnmp_events).
--export([start_link/0, modsrv_notify/1]).
+-export([start_link/1]).
 
 % @doc
 % Start the event manager and initialise the module.
 % @end
--spec esnmp_events:start_link() -> {ok, Pid::pid()}.
-start_link() ->
+-spec esnmp_events:start_link(EventListeners::list()) -> {ok, Pid::pid()}.
+start_link(GenEventListeners) ->
     % START the event manager:
     ReturnSup = gen_event:start_link({local, ?MODULE}),
-    % notify the availability of ?MODULE to modsrv
-    modsrv:hello({mod_esnmp, [
-        {modsrv_callback,   ?MODULE}, 
-        {event_handler,     ?MODULE},
-        {mod_ifs, [
-                {callback,  esnmp_api_ifs},
-                {asnkey,    modEsnmpPDU},
-                {listen_events, true}
-            ]}
-        ]}),
+
+    lists:foreach(fun(X) -> 
+        gen_event:add_handler(?MODULE, X, esnmp)
+    end, GenEventListeners),
 
     ReturnSup.
-
-% @doc
-% modsrv callback. Action to be taken when a module appear or disapear.
-% Actualy esnmp do not need to listen anywere.
-% @end
--spec esnmp_events:modsrv_notify(Any::any()) -> ok.
-modsrv_notify(_Args) ->
-    ok.

@@ -23,7 +23,9 @@
 -export([start/2, stop/1]).
 
 start(_Type, _Args) ->
-    esnmp_sup:start_link().
+    {ok, GenEventListeners} = 
+        application:get_env(mod_esnmp, registered_events),
+    esnmp_sup:start_link(GenEventListeners).
 
 stop(_State) ->
     ok.

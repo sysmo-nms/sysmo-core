@@ -34,13 +34,11 @@
 
 % API
 -export([
-    start_link/1,
+    start_link/2,
     notify_connection/1,
     notify_disconnection/1,
     handle_msg/2,
-    register_mod/1,
-    handle_mod_event/2,
-    modsrv_notify/1]).
+    handle_mod_event/2]).
 
 -record(if_module, {
     mod_name,
@@ -55,12 +53,9 @@
 %% API
 %%-----------------------------------------------------
 % @doc start the server. No arguments.
-start_link(AuthMod) ->
-    gen_server:start_link({local, ?MODULE}, ?MODULE, [AuthMod], []).
-
-% @doc register_mod execute par un module pour etre presente au client.
-register_mod({ModName, AsnKey}) ->
-    gen_server:call(?MODULE, {new_mod, ModName, AsnKey}).
+start_link(AuthMod, ManagedMods) ->
+    gen_server:start_link({local, ?MODULE}, ?MODULE, 
+                                [AuthMod, ManagedMods], []).
 
 % @doc execute par le client lors de sa connection
 notify_connection(#client_state{module = Module} = ClientState) ->
@@ -70,7 +65,7 @@ notify_connection(#client_state{module = Module} = ClientState) ->
 notify_disconnection(ClientState) ->
     ifs_rbac:del_client(ClientState).
 
-% @doc message received from a gen_event registered on another module
+% @doc message received from a gen_event listener registered on another module
 handle_mod_event(Mod, Event) ->
     gen_server:cast(?MODULE, {handle_mod_event, Mod, Event}).
 
@@ -84,7 +79,9 @@ handle_msg(ClientState, {Mod, Msg}) ->
             gen_server:call(?MODULE, {ext_msg, OtherMod, Msg, ClientState})
     end.
 
-% @doc handle message destine au server.
+% @doc 
+% handle PDU decoded message comming from client
+% @end
 process_msg({fromClient, {authRep, {ldap, {_, UName, UPass}}}},
         #client_state{module = Mod} = ClientState) ->
     AuthResponce = gen_server:call(?MODULE, {auth_rep, UName, UPass}),
@@ -115,56 +112,22 @@ process_msg({fromClient, {unsubscribe, Mods}},
 process_msg(A, S) ->
     io:format("ici ~p ~p~n", [A,S]).
 
-% @doc modsrv callback
--spec ifs_server:modsrv_notify(Args::list()) -> ok.
-modsrv_notify(Args) ->
-    gen_server:call(?MODULE, {modsrv_event, Args}).
-
 %%--------------------------------------------
 %% GEN_SERVER CALLBACKS
 %%--------------------------------------------
-init([AuthMod]) ->
-    % notify mdsrv of the availability of ?MODULE,
-    modsrv:hello({mod_ifs, [
-        {modsrv_callback, ?MODULE},
-        {event_handler, ifs_events}]}),
-    {ok, #if_server_state{authmod = AuthMod}}.
+init([AuthMod, ManagedMods]) ->
+    {ok, #if_server_state{
+        authmod = AuthMod,
+        modules = ManagedMods}}.
 
 % CALL
+% @doc Auth responce from the client
 handle_call({auth_rep, UName, UPass}, _From,
         #if_server_state{authmod = AuthMod} = S) ->
     Rep = AuthMod:authenticate(UName, UPass),
     {reply, Rep, S};
 
-handle_call({new_mod, ModName, AsnKey}, _From, S) ->
-    CurrentMods = S#if_server_state.modules,
-    NewMod = #if_module{callback_mod = ModName, asnkey = AsnKey},
-    UpdatedMods = [NewMod | CurrentMods],
-    {reply, ok, S#if_server_state{modules = UpdatedMods}};
-
-handle_call({modsrv_event, {ModName, Args}}, _From, S) ->
-    CurrentMods = S#if_server_state.modules,
-    io:format("~p modsrv_event ~p ~n", [?MODULE, Args]),
-    case lists:keysearch(mod_ifs, 1, Args) of
-        false -> {reply, ok, S};
-        {value, {_, Opts}} ->
-            {value, {_, CallBack}}  = lists:keysearch(callback, 1, Opts),
-            {value, {_, AsnKey}}    = lists:keysearch(asnkey, 1, Opts),
-            NewMod = #if_module{
-                mod_name = ModName,
-                callback_mod = CallBack,
-                asnkey = AsnKey},
-            case lists:keysearch(listen_events, 1, Opts) of
-                false -> ok;
-                {value, {_, true}}  ->
-                    {value, {_, EventHandler}} =
-                        lists:keysearch(event_handler, 1, Args),
-                    gen_event:add_handler(
-                        EventHandler, ifs_gen_event, ModName)
-            end,
-            {reply, ok, S#if_server_state{modules = [NewMod | CurrentMods]}}
-    end;
-
+% @doc handle message destined to another module
 handle_call({ext_msg, ModKey, Msg, ClientState}, _From, S) ->
     case lists:keysearch(ModKey, 3, S#if_server_state.modules) of
         false ->
@@ -174,8 +137,11 @@ handle_call({ext_msg, ModKey, Msg, ClientState}, _From, S) ->
     end,
     {reply, ok, S};
 
+% @doc 
+% Subscribe client to a specific module and 
+% call a ModuleCallback:initial_conn/1
+% @end
 handle_call({subscribe_client, ClientState, Module}, _From, S) ->
-    io:format("-<<<<<<<<<<<<<<<<modname is ~p state is ~p~n", [Module, S]),
     Modules = S#if_server_state.modules,
     {value, ModuleRecord} = lists:keysearch(Module, 2, Modules),
     ModuleCallback = ModuleRecord#if_module.callback_mod,
@@ -186,6 +152,7 @@ handle_call(_R, _F, S) ->
     {reply, ok, S}.
 
 % CAST
+% @doc Send an Ack PDU to the client defined by ClientState
 handle_cast({send_ack, Roles,
         #client_state{module = CliMod} = ClientState, Name}, S) ->
     Modules = lists:map(fun(X) -> erlang:atom_to_list(X#if_module.mod_name)
@@ -195,13 +162,20 @@ handle_cast({send_ack, Roles,
         {'AuthPDU_fromServer_authAck', Roles, Modules}}}}),
     {noreply, S};
 
+% @doc 
 handle_cast({handle_mod_event, Mod, Event}, S) ->
     spawn(fun() ->
         Modules = S#if_server_state.modules,
         {value, ModRecord} = lists:keysearch(Mod, 2, Modules),
         CallbackMod = ModRecord#if_module.callback_mod,
-        {Roles, AsnMsg} = CallbackMod:pre_process(Event),
-        ifs_rbac:handle_event(Mod, AsnMsg, Roles)
+        case CallbackMod:pre_process(Event) of
+            {Roles, AsnMsg} ->
+                ifs_rbac:handle_event(Mod, AsnMsg, Roles);
+            ok ->
+                true;
+            Other ->
+                io:format("Error: ~p ~p ~p~n", [?MODULE,?LINE,Other])
+        end
     end),
     {noreply, S};
 

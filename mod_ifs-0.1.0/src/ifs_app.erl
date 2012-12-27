@@ -25,13 +25,12 @@
 -export([start/2, stop/1]).
 
 start(_Type, _Args) ->
-    {ok, AuthModule}      = application:get_env(mod_ifs, ifs_auth),
-    {ok, TcpClientConf}   = application:get_env(mod_ifs, tcp_client),
-    {ok, SslClientConf}   = application:get_env(mod_ifs, ssl_client),
-    io:format("~n~p: authmod: ~p~n", [?MODULE,AuthModule]),
-    io:format("~n~p: tcp_client: ~p~n", [?MODULE,TcpClientConf]),
-    io:format("~n~p: ssl_client: ~p~n", [?MODULE,SslClientConf]),
-    ifs_sup:start_link(AuthModule, TcpClientConf, SslClientConf).
+    {ok, AuthModule}    = application:get_env(mod_ifs, ifs_auth),
+    {ok, TcpClientConf} = application:get_env(mod_ifs, tcp_client),
+    {ok, SslClientConf} = application:get_env(mod_ifs, ssl_client),
+    {ok, ManagedMods}   = application:get_env(mod_ifs, if_module_records),
+    ifs_sup:start_link(AuthModule, TcpClientConf, 
+                        SslClientConf, ManagedMods).
 
 stop(_State) ->
 	ok.
