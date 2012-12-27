@@ -1,8 +1,6 @@
 The development flow should follow this order:
 
 #MODULE/OTHER           #PRIORITY   #COMPLETED
-- main_modsrv             HIGHT       100%
-Register/inform and trac activated modules
 - ifs                     HIGHT       100%
 Module events and client communication/auth
 - esnmp                   HIGHT       50%
