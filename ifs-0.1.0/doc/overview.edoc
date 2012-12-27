@@ -3,7 +3,7 @@
 @title Welcome to ifs (InterFace Session) application server
 @doc 
 <h1> Introduction </h1>
-<p><b>ifs</b>is an asynchronous message dispatch module for communication
+<p><b>ifs</b> is an asynchronous message dispatch module for communication
 between (n) clients and (n) modules. He is responsible of:
 <ul>
     <li>Authenticate client,</li>
@@ -22,6 +22,12 @@ between (n) clients and (n) modules. He is responsible of:
 is done using the <em>sys.config</em> file under <em>ifs</em> application
 config <em>ifs_auth</em> atom.
 </p>
+
+== beha_ifs_module ==
+<p>A Enms module producing events of interest for clients must implement this
+behaviour. See the <em>configuration</em> part of the doc to see how to add an
+event module.</p>
+
 
 == beha_ifs_encoder ==
 <p>This behaviour define the encoding rules used for a client. It is stored in
@@ -44,22 +50,105 @@ extend this module.
 
 <p>Actualy there si two possibles client modules and three encoding rules:
 <ul>
-    <li><b>tcp_client</b> using asn, native or xml,</li>
-    <li><b>ssl_client</b> using asn, native or xml.</li>
+    <li><em>tcp_client</em> using asn, native or xml,</li>
+    <li><em>ssl_client</em> using asn, native or xml.</li>
 </ul>
 </p>
 
-== beha_ifs_module ==
-<p>A Enms module producing events of interest for clients must implement this
-behaviour. See the <em>configuration</em> part of the doc to see how to add an
-event module.</p>
+<h1>About PDUs</h1>
+<p>
+    When adding a new module, <em>ifs</em> need to have a way to encode it
+    before sending it and decode it on receive. To do this for a simple module
+    named <em>mymodule</em> for example, you will have to do the following
+    tasks:
+    <ol>
+        <li>
+            Create a new file in the <em>ifs-x.x.x/priv/asn1/</em>:
+```
+$ touch ifs-x.x.x/priv/asn1/ModMymod.asn
+'''
+        </li>
+        <li>
+            Describe the content of the PDUs. Here is a very simpler one.
+            Client and server only exchange message identified by his sender
+            (fromServer or fromClient) containing a <em>PrintableString</em>:
 
+```  
+$ cat ifs-x.x.x/priv/asn1/ModMymod.asn
+ModMymod DEFINITIONS AUTOMATIC TAGS ::=
+BEGIN
 
-<h1> Configuration </h1>
-<p><em>ifs</em> uses the <em>sys.config</em> file for configuration
-options.</p>
+MymodPDU    ::= CHOICE {
+    fromServer  PrintableString,
+    fromClient  PrintableString
+}
+
+END
+'''
+        </li>
+        <li>
+            Edit the NmsPDU.asn description file to include your newly created
+            module PDU:
+```
+cat ifs-x.x.x/priv/asn1/NmsPDU.asn
+BEGIN
+IMPORTS 
+    IfPDU       FROM ModIf
+    EsnmpPDU    FROM ModEsnmp
+    MymodPDU    FROM ModMymod;      -- Newly added
+
+PDU ::= CHOICE {
+    modIfPDU         IfPDU,
+    modEsnmpPDU      EsnmpPDU,
+    modMymodPDU      MymodPDU       -- Newly added. 
+}                                   -- Note the atom *modMymodPDU* will be
+                                    -- the *asnkey* for the *ifs*
+END                                 -- configuration options
+'''
+        </li>
+        <li>
+            Then do a make in the <em>ifs</em> directory:
+```
+$ cd ifs-x.x.x/
+$ make pdu
+erlc -Werror -bber_bin +optimize +nif -o priv/asn1/build priv/asn1/ModIf.asn
+erlc -Werror -bber_bin +optimize +nif -o priv/asn1/build priv/asn1/NmsPDU.asn
+erlc -Werror -bber_bin +optimize +nif -o priv/asn1/build priv/asn1/ModMymod.asn
+erlc -Werror -bber_bin +optimize +nif -o priv/asn1/build priv/asn1/ModEsnmp.asn
+'''
+        </li>
+        <li>
+            At this point, valid tuple can be encoded and decoded using the 
+            command <em>'NmsPDU':(encode | decode)/2</em> function:
+```
+$ erl -pa ebin
+Erlang R15B02 (erts-5.9.2) [source] [smp:2:2] [async-threads:0] [hipe] [kernel-poll:false]
+
+Eshell V5.9.2  (abort with ^G)
+1> {ok, Pdu}  = 'NmsPDU':encode('PDU', {modMymodPDU, {fromServer, "hello from server"}}).
+{ok,[<<"¢">>,
+     [19],
+     <<128>>,
+     [17],
+     104,101,108,108,111,32,102,114,111,109,32,115,101,114,118,
+     101,114]}
+2> 'NmsPDU':decode('PDU', Pdu).
+{ok,{modMymodPDU,{fromServer,"hello from server"}}}
+3>
+'''
+            Note that this command is only used now for test purpose. All the
+            new added module have to do is to produce a valid term when
+            <em>ifs</em> ask
+            <em>MymodIfsModBehavior:pre_process(MyModEvent::term())</em>, <b>
+            whaterver the encoding rule is defined in the configuration 
+            file</b>.
+        </li>
+    </ol>
+</p>
+<h1>Configuration </h1>
+<p><em>ifs</em> uses the <em>sys.config</em> file for configuration.</p>
 == General configuration ==
-<p>Configuration can be:
+<p>Configuration options can be:
 <ul>
 <li><code>{ifs_auth, Module}</code> where Module is a module implementing the
 <em>beha_ifs_auth</em> behaviour,</li>
@@ -97,7 +186,7 @@ options.</p>
             ]},
             {ssl_client, [
                 {enabled, true},
-                {encoder, bifs_encoder_asn}
+                {encoder, bifs_encoder_native}
                 {port, 4443},
                 {maxconn, 50},
                 {ssl_conf, "directory/to/ssl.conf"}
@@ -129,8 +218,7 @@ options.</p>
             </ul>
         </li>
     </ul>
-    All the <em>ifs</em> configuration task is made with the sys.config file.
-    Following this example sys.config file:
+    Example sys.config file:
 </p>
 ```
 [
@@ -153,7 +241,7 @@ options.</p>
 <p>The <b>if_module_records</b> is a list of <em>#if_module</em> records
 defined as followed:</p>
 ```
-define(if_module, {
+-define(if_module, {
     module_name,    % module name from the client perspective
     callback_mod,   % module implementing the beha_ifs_module behaviour
     asnkey,         % asn key
@@ -161,8 +249,8 @@ define(if_module, {
 '''
 <p>Note that <em>it is the responsibility of the <b>esnmp</b> module to 
 register the <b>ifs_gen_event</b> to his event handler</em>. </p>
-<p>In this specific case, <em>esnmp</em> uses the sys.config file to be able to 
-register multiple gen_events.</p>
+<p>In this specific case, the module <em>esnmp</em> uses the sys.config file 
+to be able to watch what gen_events he will have to register at startup.</p>
 
 == ssl_conf configuration file ==
 <p>Here is an example <em>ssl_conf</em> file named <em>ssl.conf</em>:
@@ -171,6 +259,7 @@ cat ./ssl.conf
 {certificate,   "path/to/certificate.pem"}.
 {caCertificate, "path/to/request.pem"}.
 {key,           "path/to/key.pem"}.
-'''
+''' 
+Self explanatory.
 </p>
 @end
