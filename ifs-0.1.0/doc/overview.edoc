@@ -63,13 +63,13 @@ in big-endian byte order:
 <p>
     When adding a new application, <em>ifs</em> need to have a way to encode 
     it before sending it and decode it on receive. To do this for a simple 
-    module named <em>mymodule</em> for example, you will have to do the 
+    module named <em>myapp</em> for example, you will have to do the 
     following tasks:
     <ol>
         <li>
             Create a new file in the <em>ifs-x.x.x/priv/asn1/</em>:
 ```
-$ touch ifs-x.x.x/priv/asn1/ModMymod.asn
+$ touch ifs-x.x.x/priv/asn1/AppMyapp.asn
 '''
         </li>
         <li>
@@ -78,11 +78,11 @@ $ touch ifs-x.x.x/priv/asn1/ModMymod.asn
             (fromServer or fromClient) containing a <em>PrintableString</em>:
 
 ```  
-$ cat ifs-x.x.x/priv/asn1/ModMymod.asn
-ModMymod DEFINITIONS AUTOMATIC TAGS ::=
+$ cat ifs-x.x.x/priv/asn1/AppMyapp.asn
+AppMyapp DEFINITIONS AUTOMATIC TAGS ::=
 BEGIN
 
-MymodPDU    ::= CHOICE {
+MyappPDU    ::= CHOICE {
     fromServer  PrintableString,
     fromClient  PrintableString
 }
@@ -91,21 +91,21 @@ END
 '''
         </li>
         <li>
-            Edit the NmsPDU.asn description file to include your newly created
-            module PDU:
+            Edit the NmsPDU.asn file to include your newly created ASN
+            definition:
 ```
 cat ifs-x.x.x/priv/asn1/NmsPDU.asn
 BEGIN
 IMPORTS 
     IfPDU       FROM ModIf
     EsnmpPDU    FROM ModEsnmp
-    MymodPDU    FROM ModMymod;      -- Newly added
+    MyappPDU    FROM AppMyapp;      -- Newly added
 
 PDU ::= CHOICE {
     modIfPDU         IfPDU,
     modEsnmpPDU      EsnmpPDU,
-    modMymodPDU      MymodPDU       -- Newly added. 
-}                                   -- Note the atom *modMymodPDU* will be
+    modMyappPDU      MyappPDU       -- Newly added. 
+}                                   -- Note the atom *modMyappPDU* will be
                                     -- the *asnkey* for the *ifs*
 END                                 -- configuration options
 '''
@@ -117,7 +117,7 @@ $ cd ifs-x.x.x/
 $ make pdu
 erlc -Werror -bber_bin +optimize +nif -o priv/asn1/build priv/asn1/ModIf.asn
 erlc -Werror -bber_bin +optimize +nif -o priv/asn1/build priv/asn1/NmsPDU.asn
-erlc -Werror -bber_bin +optimize +nif -o priv/asn1/build priv/asn1/ModMymod.asn
+erlc -Werror -bber_bin +optimize +nif -o priv/asn1/build priv/asn1/AppMyapp.asn
 erlc -Werror -bber_bin +optimize +nif -o priv/asn1/build priv/asn1/ModEsnmp.asn
 '''
         </li>
@@ -129,7 +129,7 @@ $ erl -pa ebin
 Erlang R15B02 (erts-5.9.2) [source] [smp:2:2] [async-threads:0] [hipe] [kernel-poll:false]
 
 Eshell V5.9.2  (abort with ^G)
-1> {ok, Pdu}  = 'NmsPDU':encode('PDU', {modMymodPDU, {fromServer, "hello from server"}}).
+1> {ok, Pdu}  = 'NmsPDU':encode('PDU', {modMyappPDU, {fromServer, "hello from server"}}).
 {ok,[<<"¢">>,
      [19],
      <<128>>,
@@ -137,13 +137,13 @@ Eshell V5.9.2  (abort with ^G)
      104,101,108,108,111,32,102,114,111,109,32,115,101,114,118,
      101,114]}
 2> 'NmsPDU':decode('PDU', Pdu).
-{ok,{modMymodPDU,{fromServer,"hello from server"}}}
+{ok,{modMyappPDU,{fromServer,"hello from server"}}}
 3>
 '''
             Note that this command is only used now for test purpose. All the
             new added application have to do is to produce a valid term for
             'NmsPDU':encode/2 when <em>ifs</em> ask
-            <em>MymodIfsModBehavior:pre_process(MyModEvent::term())</em>, <b>
+            <em>MyappIfsModBehavior:pre_process(MyAppEvent::term())</em>, <b>
             whaterver the encoding rule defined in the configuration file</b>.
         </li>
     </ol>
