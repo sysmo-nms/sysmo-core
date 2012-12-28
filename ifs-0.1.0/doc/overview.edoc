@@ -21,14 +21,17 @@ communication between (n) clients and (n)application. He is responsible of:
 <p>The following behaviours permit to customise <b>ifs</b>:</p>
 
 == beha_ifs_auth ==
-<p>It is the module used to authenticate the user. <b>ifs</b> do a
-<em>Mod:authenticate/2</em> on user credentials submit.
+<p>It is a module used to authenticate the user. More in the
+<em>configuration</em> part of the doc and the {@link beha_ifs_auth} 
+documentation.
+
 </p>
 
 == beha_ifs_module ==
 <p>A Enms application producing events of interest for clients must implement 
-this behaviour. See the <em>configuration</em> part of the doc to see how to 
-add an application.</p>
+this behaviour. More in the <em>configuration</em> part of the doc to see how 
+to  add an application and the {@link beha_ifs_module} documentation for 
+implementation details.</p>
 
 
 == beha_ifs_encoder ==
