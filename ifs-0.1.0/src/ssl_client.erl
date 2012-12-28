@@ -65,7 +65,8 @@ start_link(Encoder, TlsFiles) ->
 set_socket(Pid, Socket) when is_pid(Pid), is_port(Socket) ->
 	gen_fsm:send_event(Pid, {socket_ready, Socket}).
 
-auth_set(success, #client_state{pid = Pid, ref = Ref}, Name, Roles, AllowedMods) ->
+auth_set(success, 
+        #client_state{pid = Pid, ref = Ref}, Name, Roles, AllowedMods) ->
     gen_fsm:send_event(Pid, {success, Ref, Name, Roles, AllowedMods}).
 
 %auth_set(auth_success,  NewState) ->
@@ -139,18 +140,21 @@ init([Encoder, {Key, Cert, CACert}]) ->
 	{next_state, 'WAIT_FOR_CLIENT_AUTH', NextState, ?TIMEOUT};
 
 'WAIT_FOR_SOCKET'(Other, State) ->
-	error_logger:error_msg("State: 'WAIT_FOR_SOCKET'. Unexpected message: ~p\n", [Other]),
+	error_logger:error_msg(
+        "State: 'WAIT_FOR_SOCKET'. Unexpected message: ~p\n", [Other]),
 	{next_state, 'WAIT_FOR_SOCKET', State}.
 
 
 %%-------------------------------------------------------------------------
 %% process user credentials here
 %%-------------------------------------------------------------------------
-'WAIT_FOR_CLIENT_AUTH'({client_data, Pdu}, #client_state{encoding_mod = Encoder} = State) ->
+'WAIT_FOR_CLIENT_AUTH'({client_data, Pdu}, 
+        #client_state{encoding_mod = Encoder} = State) ->
     ifs_server:handle_msg(State, Encoder:decode(Pdu)),
 	{next_state, 'WAIT_FOR_CLIENT_AUTH', State, ?TIMEOUT};
 
-'WAIT_FOR_CLIENT_AUTH'({success, Ref, Name, Roles, Mods}, #client_state{ref = Ref} = State) ->
+'WAIT_FOR_CLIENT_AUTH'({success, Ref, Name, Roles, Mods}, 
+        #client_state{ref = Ref} = State) ->
     NextState = State#client_state{
         user_name       = Name,
         user_roles      = Roles,
@@ -158,7 +162,8 @@ init([Encoder, {Key, Cert, CACert}]) ->
         state           = 'RUNNING'},
     {next_state, 'RUNNING', NextState};
 
-'WAIT_FOR_CLIENT_AUTH'({auth_fail, Ref, User}, #client_state{ref = Ref} = State) ->
+'WAIT_FOR_CLIENT_AUTH'({auth_fail, Ref, User}, 
+        #client_state{ref = Ref} = State) ->
 	io:format("failed to register with user ~p ~n", [User]),
     {next_state, 'WAIT_FOR_CLIENT_AUTH', State, ?TIMEOUT};
 
@@ -167,15 +172,18 @@ init([Encoder, {Key, Cert, CACert}]) ->
     ssl:send(State#client_state.socket, Encoder:encode(Msg)),
     {next_state, 'WAIT_FOR_CLIENT_AUTH', State};
 
-'WAIT_FOR_CLIENT_AUTH'({send_pdu, Ref,  Pdu},  #client_state{ref = Ref} = State) ->
+'WAIT_FOR_CLIENT_AUTH'({send_pdu, Ref,  Pdu},  
+        #client_state{ref = Ref} = State) ->
     ssl:send(State#client_state.socket, Pdu),
     {next_state, 'WAIT_FOR_CLIENT_AUTH', State};
 
-'WAIT_FOR_CLIENT_AUTH'(timeout, #client_state{auth_request_count = ?MAX_AUTH_ATEMPT} = State) ->
+'WAIT_FOR_CLIENT_AUTH'(timeout, 
+        #client_state{auth_request_count = ?MAX_AUTH_ATEMPT} = State) ->
 	{stop, normal, State};
 
 'WAIT_FOR_CLIENT_AUTH'(timeout, State) ->
-    NextState = State#client_state{auth_request_count = State#client_state.auth_request_count + 1},
+    NextState = State#client_state{auth_request_count = 
+                    State#client_state.auth_request_count + 1},
     ifs_server:notify_connection(NextState),
 	{next_state, 'WAIT_FOR_CLIENT_AUTH', NextState, ?TIMEOUT};
 
@@ -187,12 +195,14 @@ init([Encoder, {Key, Cert, CACert}]) ->
 %% application running
 %%-------------------------------------------------------------------------
 % message from the client:
-'RUNNING'({client_data, Data}, #client_state{encoding_mod = Encoder} = State) ->
+'RUNNING'({client_data, Data}, 
+        #client_state{encoding_mod = Encoder} = State) ->
     ifs_server:handle_msg(State, Encoder:decode(Data)),
 	{next_state, 'RUNNING', State};
 
 % message from the server:
-'RUNNING'({encode_send_msg, Ref, Msg}, #client_state{ref = Ref, encoding_mod = Encoder} = State) ->
+'RUNNING'({encode_send_msg, Ref, Msg}, 
+        #client_state{ref = Ref, encoding_mod = Encoder} = State) ->
     ssl:send(State#client_state.socket, Encoder:encode(Msg)),
     {next_state, 'RUNNING', State};
 
@@ -201,7 +211,8 @@ init([Encoder, {Key, Cert, CACert}]) ->
     {next_state, 'RUNNING', State};
 
 'RUNNING'(timeout, State) ->
-	error_logger:error_msg("~p Running Client connection timeout - closing.\n", [self()]),
+	error_logger:error_msg(
+        "~p Running Client connection timeout - closing.\n", [self()]),
 	{stop, normal, State};
 
 'RUNNING'(Data, State) ->
@@ -240,7 +251,8 @@ handle_sync_event(Event, _From, StateName, StateData) ->
 %%		  {stop, Reason, NextStateData}
 %% @private
 %%-------------------------------------------------------------------------
-handle_info({ssl,Socket, Bin}, StateName, #client_state{socket=Socket} = StateData) ->
+handle_info({ssl,Socket, Bin}, StateName, 
+        #client_state{socket=Socket} = StateData) ->
 	ssl:setopts(Socket, [{active, once}]),
 	?MODULE:StateName({client_data, Bin}, StateData);
 

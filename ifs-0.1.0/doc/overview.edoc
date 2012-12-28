@@ -50,10 +50,12 @@ rules. Because of it's complexity it is not documented nor recommended to
 extend this module.
 </p>
 
-<p>Actualy there si two possibles client modules and three encoding rules:
+<p>Actualy there is two possibles client modules and three encoding rules. 
+They use both TCP with a two bytes header length containing unsigned integers
+in big-endian byte order:
 <ul>
-    <li><em>tcp_client</em> using asn, native or xml,</li>
-    <li><em>ssl_client</em> using asn, native or xml.</li>
+    <li><em>tcp_client</em> asn, native or xml,</li>
+    <li><em>ssl_client</em> asn, native or xml.</li>
 </ul>
 </p>
 
