@@ -1,2 +1,3 @@
-- XML support
+- XML support,
+- Websocket/secure Websocket support,
 - Behaviour in a distributed environment with multiple ifs servers running?

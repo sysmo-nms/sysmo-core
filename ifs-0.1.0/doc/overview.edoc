@@ -2,6 +2,10 @@
 @version 0.1.0
 @title Welcome to ifs (InterFace Session) application server
 @doc 
+<b><em>XML appear in the documentation but is not yet supported. Waiting for 
+asn XER support from Erlang, or custom encoder. This is one of the prerequise
+before release 1.0.0, the other is websocket and secure websocket support.
+</em></b>
 <h1> Introduction </h1>
 <p><b>ifs</b> is an asynchronous message dispatch module for communication
 between (n) clients and (n) modules. He is responsible of:
