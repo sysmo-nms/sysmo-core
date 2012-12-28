@@ -28,7 +28,7 @@ start(_Type, _Args) ->
     {ok, AuthModule}    = application:get_env(ifs, ifs_auth),
     {ok, TcpClientConf} = application:get_env(ifs, tcp_client),
     {ok, SslClientConf} = application:get_env(ifs, ssl_client),
-    {ok, ManagedMods}   = application:get_env(ifs, if_module_records),
+    {ok, ManagedMods}   = application:get_env(ifs, ifs_app_records),
     ifs_sup:start_link(AuthModule, TcpClientConf, 
                         SslClientConf, ManagedMods).
 

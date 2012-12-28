@@ -7,11 +7,11 @@ asn XER support from Erlang, or custom encoder. This is one of the prerequise
 before release 1.0.0, the other is websocket and secure websocket support.
 </em></b>
 <h1> Introduction </h1>
-<p><b>ifs</b> is an asynchronous message dispatch module for communication
-between (n) clients and (n) modules. He is responsible of:
+<p><b>ifs</b> is an asynchronous message dispatch application for 
+communication between (n) clients and (n)application. He is responsible of:
 <ul>
     <li>Authenticate client,</li>
-    <li>Send messages from modules the client has subscribed on,</li>
+    <li>Send messages from applications the client has subscribed on,</li>
     <li>Send messages the client is allowed to receive, following a role based
     access control,</li>
     <li>Use the encoding rules defined by the client state.</li>
@@ -26,9 +26,9 @@ between (n) clients and (n) modules. He is responsible of:
 </p>
 
 == beha_ifs_module ==
-<p>A Enms module producing events of interest for clients must implement this
-behaviour. See the <em>configuration</em> part of the doc to see how to add an
-event module.</p>
+<p>A Enms application producing events of interest for clients must implement 
+this behaviour. See the <em>configuration</em> part of the doc to see how to 
+add an application.</p>
 
 
 == beha_ifs_encoder ==
@@ -42,7 +42,7 @@ this behaviour:
 </ul>
 
 Create a new module using this behaviour has sence in the context of a custom
-client module. Note that a new encoder must take a <em>bifs_encoder_asn</em>
+client. Note that a new encoder must take a <em>bifs_encoder_asn</em>
 valid term and produce valid asn tuple when decoding.<br></br>
 In this context, <em>ifs</em> can handle multiple clients, heach using
 it's hown <em>beha_ifs_encoder</em> module thus permiting multiple encoding
@@ -61,10 +61,10 @@ in big-endian byte order:
 
 <h1>About PDUs</h1>
 <p>
-    When adding a new module, <em>ifs</em> need to have a way to encode it
-    before sending it and decode it on receive. To do this for a simple module
-    named <em>mymodule</em> for example, you will have to do the following
-    tasks:
+    When adding a new application, <em>ifs</em> need to have a way to encode 
+    it before sending it and decode it on receive. To do this for a simple 
+    module named <em>mymodule</em> for example, you will have to do the 
+    following tasks:
     <ol>
         <li>
             Create a new file in the <em>ifs-x.x.x/priv/asn1/</em>:
@@ -141,7 +141,7 @@ Eshell V5.9.2  (abort with ^G)
 3>
 '''
             Note that this command is only used now for test purpose. All the
-            new added module have to do is to produce a valid term for
+            new added application have to do is to produce a valid term for
             'NmsPDU':encode/2 when <em>ifs</em> ask
             <em>MymodIfsModBehavior:pre_process(MyModEvent::term())</em>, <b>
             whaterver the encoding rule defined in the configuration file</b>.
@@ -162,7 +162,7 @@ Eshell V5.9.2  (abort with ^G)
     <li><code>{enabled, true | false}</code>: <em>true</em> will start the
     listener on the specified <em>port</em>,</li>
     <li><code>{port, Port}</code> where Port is an integer defining the port
-    on wich the client module will listen,</li>
+    on wich the client server will listen,</li>
     <li><code>{maxconn, Max}</code> where <em>Max</em> is an integer 
     representing then maximum number of simultaneous active clients accepted
     by the listener. Each connexion ecceding this limit will clause
@@ -198,14 +198,27 @@ Eshell V5.9.2  (abort with ^G)
     },
     ...
 ].'''
-== Module events configuration ==
+
+== ssl_conf configuration file ==
+<p>Here is an example <em>ssl_conf</em> file named <em>ssl.conf</em>:
+```
+cat ./ssl.conf
+{certificate,   "path/to/certificate.pem"}.
+{caCertificate, "path/to/request.pem"}.
+{key,           "path/to/key.pem"}.
+''' 
+Self explanatory.
+</p>
+
+== Application events configuration ==
 <p>For <em>ifs</em> to work properly, the following task must be done:
     <ul>
         <li>Register the <em>ifs_gen_event</em> on the event handler of the
-        module we want to integrate,</li>
-        <li>Give to <em>ifs</em> informations about the managed module:
+        application we want to integrate,</li>
+        <li>Give to <em>ifs</em> informations about the managed application:
             <ul>
-                <li>The name the module will be presented to the client</li>
+                <li>The name the application will be presented to the 
+                client</li>
                 <li>The Asn key used by the Pdu to correctly route traffic 
                 from clients </li>
                 <li>The name of a callback module implementing the
@@ -233,36 +246,27 @@ Eshell V5.9.2  (abort with ^G)
     },
     {ifs,
         [
-            {if_module_records, [
-                {if_module, esnmp, esnmp_api_ifs, modEsnmpPDU}
+            {ifs_app_records, [
+                {ifs_app_record, esnmp, esnmp_api_ifs, modEsnmpPDU}
             ]},
             ...
         ]
     ...
 ].
 '''
-<p>The <b>if_module_records</b> is a list of <em>#if_module</em> records
+<p>The <b>if_app_records</b> is a list of <em>#ifs_app_record</em> records
 defined as followed:</p>
 ```
--define(if_module, {
-    module_name,    % module name from the client perspective
+-define(ifs_app_record, {
+    app_name,       % application name from the client perspective
     callback_mod,   % module implementing the beha_ifs_module behaviour
     asnkey,         % asn key
 }).
 '''
-<p>Note that <em>it is the responsibility of the <b>esnmp</b> module to 
+<p>Note that <em>it is the responsibility of the <b>esnmp</b> application to
 register the <b>ifs_gen_event</b> to his event handler</em>. </p>
-<p>In this specific case, the module <em>esnmp</em> uses the sys.config file 
-to be able to watch what gen_events he will have to register at startup.</p>
+<p>In this specific case, the application <em>esnmp</em> uses the sys.config 
+file  to be able to watch what gen_events he will have to register at
+startup.</p>
 
-== ssl_conf configuration file ==
-<p>Here is an example <em>ssl_conf</em> file named <em>ssl.conf</em>:
-```
-cat ./ssl.conf
-{certificate,   "path/to/certificate.pem"}.
-{caCertificate, "path/to/request.pem"}.
-{key,           "path/to/key.pem"}.
-''' 
-Self explanatory.
-</p>
 @end

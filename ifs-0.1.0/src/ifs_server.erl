@@ -40,14 +40,14 @@
     handle_msg/2,
     handle_mod_event/2]).
 
--record(if_module, {
-    mod_name,
+-record(ifs_app_record, {
+    app_name,
     callback_mod,
     asnkey}).
 
 -record(if_server_state, {
     authmod,            % authentication module
-    modules = []}).     % list of #if_module
+    modules = []}).     % list of #ifs_app_record
 
 %%-----------------------------------------------------
 %% API
@@ -132,7 +132,7 @@ handle_call({ext_msg, ModKey, Msg, ClientState}, _From, S) ->
     case lists:keysearch(ModKey, 3, S#if_server_state.modules) of
         false ->
             io:format("bad module ~p ~p~n", [?MODULE, ?LINE]);
-        {value, {if_module, Mod, ModKey}} ->
+        {value, {ifs_app_record, Mod, ModKey}} ->
             Mod:handle_msg(Msg, ClientState)
     end,
     {reply, ok, S};
@@ -144,7 +144,7 @@ handle_call({ext_msg, ModKey, Msg, ClientState}, _From, S) ->
 handle_call({subscribe_client, ClientState, Module}, _From, S) ->
     Modules = S#if_server_state.modules,
     {value, ModuleRecord} = lists:keysearch(Module, 2, Modules),
-    ModuleCallback = ModuleRecord#if_module.callback_mod,
+    ModuleCallback = ModuleRecord#ifs_app_record.callback_mod,
     ModuleCallback:initial_conn(ClientState),
     {reply, ok, S};
 
@@ -155,7 +155,7 @@ handle_call(_R, _F, S) ->
 % @doc Send an Ack PDU to the client defined by ClientState
 handle_cast({send_ack, Roles,
         #client_state{module = CliMod} = ClientState, Name}, S) ->
-    Modules = lists:map(fun(X) -> erlang:atom_to_list(X#if_module.mod_name)
+    Modules = lists:map(fun(X) -> erlang:atom_to_list(X#ifs_app_record.app_name)
         end, S#if_server_state.modules),
     CliMod:auth_set(success, ClientState, Name, Roles, Modules),
     CliMod:send(ClientState, {modIfPDU, {fromServer, {authAck,
@@ -167,7 +167,7 @@ handle_cast({handle_mod_event, Mod, Event}, S) ->
     spawn(fun() ->
         Modules = S#if_server_state.modules,
         {value, ModRecord} = lists:keysearch(Mod, 2, Modules),
-        CallbackMod = ModRecord#if_module.callback_mod,
+        CallbackMod = ModRecord#ifs_app_record.callback_mod,
         case CallbackMod:pre_process(Event) of
             {Roles, AsnMsg} ->
                 ifs_rbac:handle_event(Mod, AsnMsg, Roles);
