@@ -2,10 +2,6 @@
 @version 0.1.0
 @title Welcome to ifs (InterFace Session) application server
 @doc 
-<b><em>XML appear in the documentation but is not yet supported. Waiting for 
-asn XER support from Erlang, or custom encoder. This is one of the prerequise
-before release 1.0.0, the other is websocket and secure websocket support.
-</em></b>
 <h1> Introduction </h1>
 <p><b>ifs</b> is an asynchronous message dispatch application for 
 communication between (n) clients and (n)application. He is responsible of:
@@ -41,7 +37,6 @@ this behaviour:
 <ul>
     <li><em>bifs_encoder_asn</em>: ASN BER encode/decode,</li>
     <li><em>bifs_encoder_native</em>: erlang term,</li>
-    <li><em>bifs_encoder_xml</em>: xml term.</li>
 </ul>
 
 Create a new module using this behaviour has sence in the context of a custom
@@ -57,8 +52,8 @@ extend this module.
 They use both TCP with a two bytes header length containing unsigned integers
 in big-endian byte order:
 <ul>
-    <li><em>tcp_client</em> asn, native or xml,</li>
-    <li><em>ssl_client</em> asn, native or xml.</li>
+    <li><em>tcp_client</em> asn or native,</li>
+    <li><em>ssl_client</em> asn or native.</li>
 </ul>
 </p>
 
