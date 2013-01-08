@@ -25,57 +25,81 @@
 
 
 
+%% SET TARGET CONF
 % @doc Add or modify a v2 agent entry
-set_v2_agent(AgentConf) ->
+set_v2_agent(_AgentConf) ->
     ok.
 
 % @doc Add or modify a v3 agent entry
-set_v3_agent(AgentConf) ->
+set_v3_agent(_AgentConf) ->
     ok.
 
 % @doc delete an agent entry
-del_agent(AgentId) ->
+del_agent(_AgentId) ->
     ok.
 
 
 
 
+%% PROBES
 % @doc Add or modify a probe configuration
-set_probe(ProbeConf, AgentId) ->
+set_probe(_ProbeConf, _AgentId) ->
     ok.
 
 % @doc delete a probe configuration
-del_probe(ProbeId) ->
+del_probe(_ProbeId) ->
     ok.
 
 
+%% COMMUNITY TO ROLES
+% @doc set or modify community to role table
+set_ctr(_Community, _Role) ->
+    ok.
+
+% @doc del community to role entry
+del_ctr(_Community, _Role) ->
+    ok.
+
+% @doc get community to role table
+get_ctr(_Community, _Role) ->
+    ok.
+
+% @doc get roles from a community and the reverse
+get_ctr({community, _Community}) ->
+    ok;
+
+get_ctr({role, _Role}) ->
+    ok.
 
 
 %% HELPERS
 % @private
-% @doc get agent information
-get_agent(Id) ->
-    case a_info(Id, engine_id) of
+% @doc get agent informations
+get_agent(AgentId) ->
+    case a_info(AgentId, engine_id) of
         {error, not_found} ->
             {error, not_found};
         EngineId ->
-            #snmp_agent{
+            AgentInfo = #snmp_agent{
                 engine_id   = EngineId,
-                address     = a_info(Id, address),
-                port        = a_info(Id, port),
-                tdomain     = a_info(Id, tdomain),
-                community   = a_info(Id, community),
-                timeout     = a_info(Id, timeout),
-                max_message_size = a_info(Id, max_message_size),
-                version     = a_info(Id, version),
-                sec_model   = a_info(Id, sec_model),
-                sec_name    = a_info(Id, sec_name),
-                sec_level   = a_info(Id, sec_level)
-            }
+                address     = a_info(AgentId, address),
+                port        = a_info(AgentId, port),
+                tdomain     = a_info(AgentId, tdomain),
+                community   = a_info(AgentId, community),
+                timeout     = a_info(AgentId, timeout),
+                max_message_size = a_info(AgentId, max_message_size),
+                version     = a_info(AgentId, version),
+                sec_model   = a_info(AgentId, sec_model),
+                sec_name    = a_info(AgentId, sec_name),
+                sec_level   = a_info(AgentId, sec_level)
+            },
+            {ok, AgentInfo}
     end.
 
-a_info(Id, Val) ->
-    case snmpm:agent_info(Id, Val) of
+% @private
+% @doc get agent info
+a_info(AgentId, Val) ->
+    case snmpm:agent_info(AgentId, Val) of
         {ok, Ret} -> Ret;
         Error     -> Error
     end.

@@ -21,7 +21,13 @@ The final map should look like the cacti weathermap module + visual alerts.
 Provide access to managed devices using telnet/ssh, or provide enougth
 information to the client to connect to the device with his own lib.
 - mod_switching           MEDIUM      0%
-V4-ARP V6-CDP traffic monitoring ex: Where is/was this IP/Mac address
+V4-ARP V6-CDP traffic monitoring: 
+    Where is/was this IP/Mac address
+    Address conflict detection
+    MAC address traking
+- mod_rmon                MEDIUM      0%            will rock!!!
+Collect RMON data and produce graphs with rrd for
+mac address/ip address traffic
 - mod_coumpoundwarn       MEDIUM      0%            a must for a VRP...
 Create alerts with events patterns
 - mod_alertclimbs         MEDIUM      0%            a must for a VRP...
@@ -55,8 +61,6 @@ Manage multiple devices with identic configuration
 ---------> RELEASE 5.0
 
 
-- mod_rmon                ONE DAY     0%            would rock!!!
-Collect RMON data
 - mod_syslog              ONE DAY     0%            to much?
 Collect syslog data
 - mod_time_machine        ONE DAY     0%            scifi
