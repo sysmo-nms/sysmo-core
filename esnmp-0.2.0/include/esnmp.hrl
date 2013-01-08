@@ -39,20 +39,29 @@
     read_write}).
 
 -record(snmp_agent, {
-				id,
-				version,
-				snmpm_user,
-				sec_name,
-				sec_level,
-				addr,
-				port,
-				community,
-				engine_id,
-				target_name,
-				added_date,
-				updade_date,
-				tags,
-                extra,
-				user_data,
-                permissions
+        engine_id,
+        address,
+        port,
+        tdomain,
+        community,
+        timeout,
+        max_message_size,
+        version,
+        sec_model,
+        sec_name,
+        sec_level
 	}).
+
+-record(snmp_usm_user, {
+                        id,
+                        engine_id,
+                        user_name,
+                        sec_name,
+                        auth,
+                        auth_key,
+                        derived_auth_key,
+                        priv,
+                        priv_key,
+                        derived_priv_key
+                }).
+

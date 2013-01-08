@@ -4,54 +4,61 @@ The development flow should follow this order:
 - ifs                     HIGHT       100%
 Module events and client communication/auth
 - esnmp                   HIGHT       50%
-SNMP utility and monitoring
-- mod_snmp_targets        HIGHT       0%
-Live list of snmp targets
-- mod_snmpmon             HIGHT       0%
-Monitor snmp nodes
-- mod_tags                HIGHT       0%
-Associate tags to elements, events and data
-- mod_maps                HIGHT       0%
-Create, save and generate maps (manual links)
-- mod_rrd                 HIGHT       0%
-Generate RRD data and graphs
-- mod_weathermap          HIGHT       0%
-Generate maps with rrd datas (see cacti weathermap)
----------> RELEASE 0.2
+SNMP utility and monitoring + Live list of snmp targets
+- probes_dock             HIGHT       0%
+Monitor snmp nodes and get data
+- rrd                     HIGHT       0%
+Generate RRD data whith the "probes_dock" module.
+See "github.com/Vagabond/erlang-rrdtool" and
+"github.com/archaelus/errd"
+- wmaps                   HIGHT       0%            will realy rocks!
+Create, save and generate (what format?) maps (manual links between nodes).
+The final map should look like the cacti weathermap module + visual alerts.
+---------> RELEASE 1.0,
 
 
-- mod_icmpmon             MEDIUM      0%
-Monitor network hosts
-- mod_sh                  MEDIUM      0%
-Provide access to managed devices using telnet/ssh
+- mod_sh                  HIGHT       0%
+Provide access to managed devices using telnet/ssh, or provide enougth
+information to the client to connect to the device with his own lib.
 - mod_switching           MEDIUM      0%
 V4-ARP V6-CDP traffic monitoring ex: Where is/was this IP/Mac address
-- mod_sysdoc              MEDIUM      0%
-Documentation system
-- mod_support             MEDIUM      0%
-Ticket gestion linked to mod_sysdoc
-- mod_repport             MEDIUM      0%
-Generate various report using sysdoc, support or other monitors
----------> RELEASE 1.0
-
-
-- mod_netmon              LOW         0%
-Monitor network services
-- mod_coumpoundwarn       LOW         0%
+- mod_coumpoundwarn       MEDIUM      0%            a must for a VRP...
 Create alerts with events patterns
-- mod_alertclimbs         LOW         0%
-Escalade alerts module
----------> RELEASE 1.1
+- mod_alertclimbs         MEDIUM      0%            a must for a VRP...
+Escalade alerts module      
+---------> RELEASE 2.0
 
 
-- mod_routing             OPT         0%
+- targets                 LOW         0%
+Live list of targets, associate tags to traps/inform they produce.
+Will probably need a rework of "esnmp".
+- mod_icmpmon             LOW         0%            to much??
+Monitor network hosts
+- mod_netmon              LOW         0%            to much??
+Monitor network services
+---------> RELEASE 3.0
+
+
+- mod_sysdoc              OPT         0%            would rock!!!
+Documentation system
+- mod_support             OPT         0%            would rock!!!
+Ticket gestion linked to mod_sysdoc
+- mod_repport             OPT         0%            a must for a VRP...
+Generate various report using sysdoc, support or other monitors
+---------> RELEASE 4.0
+
+
+- mod_routing             MAYBE       0%
 Routing protocols monitoring/maps
-- mod_multiman            OPT         0%
+- mod_multiman            MAYBE       0%
 Manage multiple devices with identic configuration
-- mod_rmon                OPT         0%
+---------> RELEASE 5.0
+
+
+- mod_rmon                ONE DAY     0%            would rock!!!
 Collect RMON data
-- mod_syslog              OPT         0%
+- mod_syslog              ONE DAY     0%            to much?
 Collect syslog data
-- mod_time_machine        OPT         0%
+- mod_time_machine        ONE DAY     0%            scifi
 Replay events in a specific timeframe
----------> RELEASE 2
+---------> RELEASE XXX
