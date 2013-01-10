@@ -7,31 +7,32 @@ Groups      ::= SEQUENCE OF Group
 Group       ::= PrintableString (SIZE (1..50))
 Modules     ::= SEQUENCE OF Module
 Module      ::= PrintableString (SIZE (1..30))
-UserID      ::= PrintableString (SIZE (1..30))
-UserPasswd  ::= PrintableString (SIZE (1..30))
 AuthProtos  ::= SEQUENCE OF AuthProto
 AuthProto   ::= ENUMERATED {localFile(0), ldap(1)}
 Error       ::= ENUMERATED {noSuchUser(0), badPass(1), timeout(2), other(3)}
 
 IfPDU ::= CHOICE {
-    fromServer CHOICE {
+    fromServer [0] CHOICE {
         version     Version,
         authProtos  AuthProtos,
         authReq     AuthProto,
         authAck     SEQUENCE {groups Groups,  modules Modules},
-        authError   SEQUENCE {error Error, userId UserID, pass UserPasswd},
+        authError   SEQUENCE {
+            error   Error,
+            userId  PrintableString,
+            pass    PrintableString
+        },
         subscribeOk Module,
         ...
     },
-    fromClient   CHOICE {
+    fromClient  [1] CHOICE {
         subscribe   Modules,
-        unsubscribe   Modules,
+        unsubscribe Modules,
         version     Version,
         authProto   AuthProto,
-        authRep     CHOICE {
-            localFile   SEQUENCE {userId  UserID, pass  UserPasswd},
-            ldap        SEQUENCE {userId  UserID, pass  UserPasswd}
-        },
+        simpleAuth  SEQUENCE {userId PrintableString, pass PrintableString},
+        simpleString    PrintableString,
+        simpleSeq   SEQUENCE {seq1 [0] PrintableString},
         ...
     }
 }

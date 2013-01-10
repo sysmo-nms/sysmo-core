@@ -59,8 +59,12 @@ init([]) ->
     application:start(ssl),
 
     case ssl:connect("localhost", 4443, [binary, {packet, 2}], infinity) of
-        {ok, S} -> io:format("clifs started...\n"),         {ok, #clifs_state{sock = S}};
-        Other   -> io:format("clifs error ~p~n",[Other]),   error
+        {ok, S} -> 
+            io:format("clifs started...\n"), 
+            {ok, #clifs_state{sock = S}};
+        Other   ->
+            io:format("clifs error ~p~n",[Other]),
+            error
     end.
 
 handle_call(_R, _F, S) ->

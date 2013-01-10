@@ -14,9 +14,9 @@ groups, modules}).
 -record('IfPDU_fromServer_authError',{
 error, userId, pass}).
 
--record('IfPDU_fromClient_authRep_localFile',{
+-record('IfPDU_fromClient_simpleAuth',{
 userId, pass}).
 
--record('IfPDU_fromClient_authRep_ldap',{
-userId, pass}).
+-record('IfPDU_fromClient_simpleSeq',{
+seq1}).
 
