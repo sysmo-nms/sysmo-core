@@ -77,12 +77,12 @@ $ touch ifs-x.x.x/priv/asn1/AppMyapp.asn
 
 ```  
 $ cat ifs-x.x.x/priv/asn1/AppMyapp.asn
-AppMyapp DEFINITIONS AUTOMATIC TAGS ::=
+AppMyapp DEFINITIONS EXPLICIT TAGS ::=
 BEGIN
 
 MyappPDU    ::= CHOICE {
-    fromServer  PrintableString,
-    fromClient  PrintableString
+    fromServer  [0] PrintableString,
+    fromClient  [1] PrintableString
 }
 
 END
@@ -93,19 +93,27 @@ END
             definition:
 ```
 cat ifs-x.x.x/priv/asn1/NmsPDU.asn
+NmsPDU DEFINITIONS EXPLICIT TAGS ::=
+-- Use the DEFINITIONS EXPLICIT TAGS in your definition file.
+-- Due to limitation in Tcl/ASN library BER encoding functions, follow these
+-- rules if you plan to use it (Tkorder client use it):
+-- * explicitly define tags,
+-- * do not define tags in SEQUENCE constructs,
+-- * do not use SET constructs.
+
 BEGIN
 IMPORTS 
     IfPDU       FROM ModIf
     EsnmpPDU    FROM ModEsnmp
-    MyappPDU    FROM AppMyapp;      -- Newly added
+    MyappPDU    FROM AppMyapp;          -- Newly added
 
 PDU ::= CHOICE {
-    modIfPDU         IfPDU,
-    modEsnmpPDU      EsnmpPDU,
-    modMyappPDU      MyappPDU       -- Newly added. 
-}                                   -- Note the atom *modMyappPDU* will be
-                                    -- the *asnkey* for the *ifs*
-END                                 -- configuration options
+    modIfPDU         [0] IfPDU,
+    modEsnmpPDU      [1] EsnmpPDU,
+    modMyappPDU      [2] MyappPDU       -- Newly added. 
+}                                       -- Note the atom *modMyappPDU* will be
+                                        -- the *asnkey* for the *ifs*
+END                                     -- configuration options
 '''
         </li>
         <li>

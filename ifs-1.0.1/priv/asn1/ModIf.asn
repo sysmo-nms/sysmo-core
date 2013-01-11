@@ -46,7 +46,7 @@ IfPDU ::= CHOICE {
                 patch   INTEGER
         },
         authProto   [3] AuthProto,
-        simpleAuth  [4] SEQUENCE {
+        authResp    [4] SEQUENCE {
                 userId  PrintableString,
                 pass    PrintableString
         },

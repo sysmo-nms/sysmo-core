@@ -21,7 +21,14 @@
 -module(clifs).
 -behaviour(gen_server).
 
--export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
+-export([
+    init/1,
+    handle_call/3,
+    handle_cast/2,
+    handle_info/2,
+    terminate/2,
+    code_change/3]).
+
 -compile(export_all).
 
 -record(clifs_state, {
@@ -74,8 +81,8 @@ handle_call(_R, _F, S) ->
 %% TO SERVER
 % ifsPDU
 handle_cast({log_in, UserName, PassWord}, S) ->
-    send_pdu({modIfPDU, {fromClient, {authRep, 
-                {ldap, {'AuthPDU_fromClient_authRep_ldap', UserName, PassWord}}}}}, S),
+    send_pdu({modIfPDU, {fromClient, {authResp, 
+                {'IfPDU_fromClient_authResp', UserName, PassWord}}}}, S),
     {noreply, S};
 
 handle_cast({subscribe, Modules}, S) ->

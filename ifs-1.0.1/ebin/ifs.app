@@ -21,7 +21,7 @@
 {application, ifs,
 	[
 		{description, "client interface session and authentication"},
-		{vsn, "1.0.0"},
+		{vsn, "1.0.1"},
 		{modules, [
                 ifs_app,
                 ifs_sup,

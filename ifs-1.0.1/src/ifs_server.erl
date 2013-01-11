@@ -82,7 +82,7 @@ handle_msg(ClientState, {Mod, Msg}) ->
 % @doc 
 % handle PDU decoded message comming from client
 % @end
-process_msg({fromClient, {authRep, {ldap, {_, UName, UPass}}}},
+process_msg({fromClient, {authResp, {_, UName, UPass}}},
         #client_state{module = Mod} = ClientState) ->
     AuthResponce = gen_server:call(?MODULE, {auth_rep, UName, UPass}),
     case AuthResponce of

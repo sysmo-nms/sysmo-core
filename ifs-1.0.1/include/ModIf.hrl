@@ -17,7 +17,7 @@ error, userId, pass}).
 -record('IfPDU_fromClient_version',{
 major, minor, patch}).
 
--record('IfPDU_fromClient_simpleAuth',{
+-record('IfPDU_fromClient_authResp',{
 userId, pass}).
 
 -record('IfPDU_fromClient_simpleSeq',{
