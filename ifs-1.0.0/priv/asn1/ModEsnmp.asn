@@ -1,4 +1,4 @@
-ModEsnmp DEFINITIONS AUTOMATIC TAGS ::=
+ModEsnmp DEFINITIONS EXPLICIT TAGS ::=
 BEGIN
 
 TrapsTableRow   ::= SEQUENCE {
@@ -33,17 +33,17 @@ AgentConf  ::= SEQUENCE {
 }
 
 FromServer ::= CHOICE {
-    trap            SEQUENCE OF TrapsTableRow,
-    agentsConf      SEQUENCE OF AgentConf
+    trap            [0] SEQUENCE OF TrapsTableRow,
+    agentsConf      [1] SEQUENCE OF AgentConf
 }
 
 FromClient ::= CHOICE {
-    registerV2Agent AgentConf
+    registerV2Agent [0] AgentConf
 }
 
 EsnmpPDU    ::= CHOICE {
-    fromServer  FromServer,
-    fromClient  FromClient
+    fromServer  [0] FromServer,
+    fromClient  [1] FromClient
 }
 
 END

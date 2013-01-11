@@ -1,38 +1,59 @@
-ModIf DEFINITIONS AUTOMATIC TAGS ::=
+ModIf DEFINITIONS EXPLICIT TAGS ::=
 
 BEGIN
 
-Version     ::= SEQUENCE {major INTEGER, minor INTEGER, patch INTEGER}
 Groups      ::= SEQUENCE OF Group
 Group       ::= PrintableString (SIZE (1..50))
+
 Modules     ::= SEQUENCE OF Module
 Module      ::= PrintableString (SIZE (1..30))
+
 AuthProtos  ::= SEQUENCE OF AuthProto
 AuthProto   ::= ENUMERATED {localFile(0), ldap(1)}
-Error       ::= ENUMERATED {noSuchUser(0), badPass(1), timeout(2), other(3)}
 
 IfPDU ::= CHOICE {
     fromServer [0] CHOICE {
-        version     Version,
-        authProtos  AuthProtos,
-        authReq     AuthProto,
-        authAck     SEQUENCE {groups Groups,  modules Modules},
-        authError   SEQUENCE {
-            error   Error,
-            userId  PrintableString,
-            pass    PrintableString
+        version     [0] SEQUENCE {
+                major   INTEGER,
+                minor   INTEGER,
+                patch   INTEGER
         },
-        subscribeOk Module,
+        authProtos  [1] SEQUENCE OF AuthProto,
+        authReq     [2] AuthProto,
+        authAck     [3] SEQUENCE {
+                groups  Groups,
+                modules Modules
+        },
+        authError   [4] SEQUENCE {
+            error       ENUMERATED {
+                    noShuchUser(0),
+                    badPass(1),
+                    timeout(2),
+                    other(3)
+            },
+            userId      PrintableString,
+            pass        PrintableString
+        },
+        subscribeOk [5] Module,
         ...
     },
     fromClient  [1] CHOICE {
-        subscribe   Modules,
-        unsubscribe Modules,
-        version     Version,
-        authProto   AuthProto,
-        simpleAuth  SEQUENCE {userId PrintableString, pass PrintableString},
-        simpleString    PrintableString,
-        simpleSeq   SEQUENCE {seq1 [0] PrintableString},
+        subscribe   [0] Modules,
+        unsubscribe [1] Modules,
+        version     [2] SEQUENCE {
+                major   INTEGER,
+                minor   INTEGER,
+                patch   INTEGER
+        },
+        authProto   [3] AuthProto,
+        simpleAuth  [4] SEQUENCE {
+                userId  PrintableString,
+                pass    PrintableString
+        },
+        simpleStr   [5] PrintableString,
+        simpleSeq   [6] SEQUENCE {
+                seq1    PrintableString
+        },
         ...
     }
 }

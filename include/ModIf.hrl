@@ -5,7 +5,7 @@
 
 
 
--record('Version',{
+-record('IfPDU_fromServer_version',{
 major, minor, patch}).
 
 -record('IfPDU_fromServer_authAck',{
@@ -13,6 +13,9 @@ groups, modules}).
 
 -record('IfPDU_fromServer_authError',{
 error, userId, pass}).
+
+-record('IfPDU_fromClient_version',{
+major, minor, patch}).
 
 -record('IfPDU_fromClient_simpleAuth',{
 userId, pass}).
