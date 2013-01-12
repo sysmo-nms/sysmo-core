@@ -68,7 +68,7 @@ $(REL_NAME).script: $(MODS_DEF_FILE)
 
 
 # PRIVATE UTILS
-commit: clean
+commit:
 	@echo -n "coment: "; read COMENT; \
 	git add -A; git commit -m "$$COMENT"
 
