@@ -1,1 +1,12 @@
 *.swp
+*.beam
+*.pid
+*.dump
+*.html
+*.css
+*.png
+edoc-info
+*.bin
+*.asn1db
+*.script
+*.boot
