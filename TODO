@@ -1,23 +1,23 @@
 The development flow should follow this order:
 
 #MODULE/OTHER           #PRIORITY   #COMPLETED
-- ifs                     HIGHT       100%
+- ifs                     HIGH        100%
 Module events and client communication/auth
-- esnmp                   HIGHT       50%
+- esnmp                   HIGH        50%
 SNMP utility and monitoring + Live list of snmp targets
-- probes_dock             HIGHT       0%
+- probes_dock             HIGH        0%
 Monitor snmp nodes and get data
-- rrd                     HIGHT       0%
+- rrd                     HIGH        0%
 Generate RRD data whith the "probes_dock" module.
 See "github.com/Vagabond/erlang-rrdtool" and
 "github.com/archaelus/errd"
-- wmaps                   HIGHT       0%            will realy rocks!
+- wmaps                   HIGH        0%            will realy rocks!
 Create, save and generate (what format?) maps (manual links between nodes).
 The final map should look like the cacti weathermap module + visual alerts.
 ---------> RELEASE 1.0,
 
 
-- mod_sh                  HIGHT       0%
+- mod_sh                  HIGH        0%
 Provide access to managed devices using telnet/ssh, or provide enougth
 information to the client to connect to the device with his own lib.
 - mod_switching           MEDIUM      0%
