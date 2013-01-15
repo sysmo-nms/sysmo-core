@@ -149,14 +149,16 @@ ifs_register_client(Mod, S, CState) ->
 % @private
 % @doc retire l'utilisateur des couples {Mod, Roles}
 ifs_unregister_client(Mod, S, CState) ->
+    io:format("~n~nretire ~p putainnnnn~n", [Mod]), % XXX
     AllSets = ets:match(S, '$1'),
     All     = lists:map(fun(X) -> [{Key, _}] = X, Key end, AllSets),
-    All2 = lists:map(fun({Element,_}) -> 
+    All2 = lists:filter(fun({Element,_}) -> 
         case Element of
             Mod -> true;
             _   -> false
         end
     end, All),
+    io:format("~n~n aaaaaaarhhht ~p~n",[All2]),
     lists:foreach(fun(X) ->
         [{Key, List}] = ets:lookup(S, X),
         NewList = lists:delete(CState, List),
