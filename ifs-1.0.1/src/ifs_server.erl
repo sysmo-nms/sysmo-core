@@ -95,19 +95,15 @@ process_msg({fromClient, {authResp, {_, UName, UPass}}},
             io:format("unknown ~p in ~p line ~p~n", [Other, ?MODULE, ?LINE])
     end;
 
-process_msg({fromClient, {subscribe, Mods}},
+process_msg({fromClient, {subscribe, Mod}},
         #client_state{state = 'RUNNING'} = ClientState) ->
-    lists:foreach(fun(X) ->
-        Mod = erlang:list_to_atom(X),
-        ifs_rbac:register_client(ClientState, X),
-        gen_server:call(?MODULE, {subscribe_client, ClientState, Mod})
-    end, Mods);
+    Mod2 = erlang:list_to_atom(Mod),
+    ifs_rbac:register_client(ClientState, Mod),
+    gen_server:call(?MODULE, {subscribe_client, ClientState, Mod2});
 
-process_msg({fromClient, {unsubscribe, Mods}},
+process_msg({fromClient, {unsubscribe, Mod}},
         #client_state{state = 'RUNNING'} = ClientState) ->
-    %gen_server:cast(?MODULE, {subscribe, Mods, CState});
-    lists:foreach(fun(X) ->
-        ifs_rbac:unregister_client(ClientState, X) end, Mods);
+    ifs_rbac:unregister_client(ClientState, Mod);
 
 process_msg(A, S) ->
     io:format("ici ~p ~p~n", [A,S]).

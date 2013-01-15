@@ -28,11 +28,12 @@ IfPDU ::= CHOICE {
             pass        PrintableString
         },
         subscribeOk [5] Module,
+        unsubscribeOk [6] Module,
         ...
     },
     fromClient  [1] CHOICE {
-        subscribe   [0] Modules,
-        unsubscribe [1] Modules,
+        subscribe   [0] Module,
+        unsubscribe [1] Module,
         authResp    [4] SEQUENCE {
                 userId  PrintableString,
                 pass    PrintableString
