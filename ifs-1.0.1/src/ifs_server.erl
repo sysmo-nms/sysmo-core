@@ -102,8 +102,9 @@ process_msg({fromClient, {subscribe, Mod}},
     gen_server:call(?MODULE, {subscribe_client, ClientState, Mod2});
 
 process_msg({fromClient, {unsubscribe, Mod}},
-        #client_state{state = 'RUNNING'} = ClientState) ->
-    ifs_rbac:unregister_client(ClientState, Mod);
+        #client_state{state = 'RUNNING', module = CMod} = ClientState) ->
+    ifs_rbac:unregister_client(ClientState, Mod),
+    CMod:send(ClientState, {modIfPDU, {fromServer, {unsubscribeOk, Mod}}});
 
 process_msg(A, S) ->
     io:format("ici ~p ~p~n", [A,S]).
