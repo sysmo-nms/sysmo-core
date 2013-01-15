@@ -27,7 +27,6 @@
 -export([
     start_link/0, 
     handle_event/3, 
-    handle_event2/3, 
     register_client/2, 
     unregister_client/2, 
     del_client/1, 
@@ -56,10 +55,6 @@ del_client(CState) ->
 handle_event(FromMod, Data, Perm) ->
     gen_server:cast(?MODULE, {process_msg, FromMod, Data, Perm}).
 
-handle_event2(FromMod, _Data, Perm) ->
-    io:format("~p ~p ~p~n", [?MODULE, FromMod, Perm]).
-    %gen_server:cast(?MODULE, {process_msg, FromMod, Data, Perm}).
-
 % @doc debug function
 dump() ->
     gen_server:call(?MODULE, dump).
@@ -83,7 +78,6 @@ handle_cast({register_client, CState, Mod}, S) ->
     {noreply, S};
 
 handle_cast({unregister_client, CState, Mod}, S) ->
-    io:format("ifs unregister ~p ~p ~p", [CState, Mod, S]),
     ifs_unregister_client(erlang:list_to_atom(Mod), S, CState),
     {noreply, S};
 
@@ -149,7 +143,6 @@ ifs_register_client(Mod, S, CState) ->
 % @private
 % @doc retire l'utilisateur des couples {Mod, Roles}
 ifs_unregister_client(Mod, S, CState) ->
-    io:format("~n~nretire ~p putainnnnn~n", [Mod]), % XXX
     AllSets = ets:match(S, '$1'),
     All     = lists:map(fun(X) -> [{Key, _}] = X, Key end, AllSets),
     All2 = lists:filter(fun({Element,_}) -> 
@@ -158,7 +151,6 @@ ifs_unregister_client(Mod, S, CState) ->
             _   -> false
         end
     end, All),
-    io:format("~n~n aaaaaaarhhht ~p~n",[All2]),
     lists:foreach(fun(X) ->
         [{Key, List}] = ets:lookup(S, X),
         NewList = lists:delete(CState, List),
