@@ -151,7 +151,6 @@ init([Encoder, {Key, Cert, CACert}]) ->
 'WAIT_FOR_CLIENT_AUTH'({client_data, Pdu}, 
         #client_state{encoding_mod = Encoder} = State) ->
     ifs_server:handle_msg(State, Encoder:decode(Pdu)),
-    %io:format("ici pdu est: ~p ~p~n", [Pdu, Encoder]),
 	{next_state, 'WAIT_FOR_CLIENT_AUTH', State, ?TIMEOUT};
 
 'WAIT_FOR_CLIENT_AUTH'({success, Ref, Name, Roles, Mods}, 

@@ -141,11 +141,18 @@ handle_call({ext_msg, ModKey, Msg, ClientState}, _From, S) ->
 % Subscribe client to a specific module and 
 % call a ModuleCallback:initial_conn/1
 % @end
-handle_call({subscribe_client, ClientState, Module}, _From, S) ->
-    Modules = S#if_server_state.modules,
+handle_call({subscribe_client, 
+        #client_state{module = Mod} = ClientState, Module}, _From, 
+        #if_server_state{modules = Modules} = S) ->
+    %Modules = S#if_server_state.modules,
     {value, ModuleRecord} = lists:keysearch(Module, 2, Modules),
     ModuleCallback = ModuleRecord#ifs_app_record.callback_mod,
-    ModuleCallback:initial_conn(ClientState),
+    case ModuleCallback:initial_conn(ClientState) of
+        ok -> Mod:send(ClientState, 
+                {modIfPDU, {fromServer, 
+                    {subscribeOk, erlang:atom_to_list(Module)}}});
+        _O -> io:format("error ~p ~p ~p~n", [?MODULE, ?LINE, _O])
+    end,
     {reply, ok, S};
 
 handle_call(_R, _F, S) ->

@@ -8,17 +8,10 @@ Group       ::= PrintableString (SIZE (1..50))
 Modules     ::= SEQUENCE OF Module
 Module      ::= PrintableString (SIZE (1..30))
 
-AuthProtos  ::= SEQUENCE OF AuthProto
 AuthProto   ::= ENUMERATED {localFile(0), ldap(1)}
 
 IfPDU ::= CHOICE {
     fromServer [0] CHOICE {
-        version     [0] SEQUENCE {
-                major   INTEGER,
-                minor   INTEGER,
-                patch   INTEGER
-        },
-        authProtos  [1] SEQUENCE OF AuthProto,
         authReq     [2] AuthProto,
         authAck     [3] SEQUENCE {
                 groups  Groups,
@@ -40,19 +33,9 @@ IfPDU ::= CHOICE {
     fromClient  [1] CHOICE {
         subscribe   [0] Modules,
         unsubscribe [1] Modules,
-        version     [2] SEQUENCE {
-                major   INTEGER,
-                minor   INTEGER,
-                patch   INTEGER
-        },
-        authProto   [3] AuthProto,
         authResp    [4] SEQUENCE {
                 userId  PrintableString,
                 pass    PrintableString
-        },
-        simpleStr   [5] PrintableString,
-        simpleSeq   [6] SEQUENCE {
-                seq1    PrintableString
         },
         ...
     }
