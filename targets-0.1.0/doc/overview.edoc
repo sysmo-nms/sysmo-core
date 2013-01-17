@@ -1,6 +1,6 @@
 @author Sebastien Serre <sserre.bx@gmail.com>
 @version 0.1.0
-@title Welcome to the Enms <em>targets</em> module.
+@title Welcome to the enms targets module.
 @doc 
 <h1> Introduction </h1>
 <p>
@@ -8,27 +8,79 @@
     module who old the configuration of the managed nodes. He have the
     responsability to initialize other modules.
 </p>
+<p>A <em>target</em> can be <b>real</b> or <b>virtual</b>. The concept is
+    that a <b>real</b> target represent an hardware device, a <b>virtual</b>
+    allow the creation of composed <em>targets</em> (group of 
+    <b>real</b> or/and <b>virtual</b> <em>targets</em>). It has no special
+    meaning for the <em>target</em> module himself but is used by other 
+    modules, and permit to a user interface to represent it.
+</p>
 <p>A <em>target</em> has the following properties:
     <ul>
         <li>
-            An <em>unique Id</em>.
+            A <em>unique Id</em>.
         </li>
         <li>
-            Multiple <em>configuration parameters</em> represented by
-            { IpAddress, Port, Protocol, Configuration }. A target can have an
-            undefined number of configuration parameters thus allowing devices
-            with multiple Ip/Protocols/Configuration to be recognized. For
-            example, an snmp v3 device can be probed under different
+            Multiple <em>configuration parameters</em> stored in the 
+            <em>system_properties</em> represented by
+            {ConfId, IpAddress, Port, Protocol, Configuration }. A target can
+            have an undefined number of configuration parameters thus allowing
+            devices with multiple Ip/Protocols/Configuration to be recognized. 
+            For example, an snmp v3 device can be probed under different
             <em>engine IDs</em>, but still be recognised as a unique hardware
             entity.
         </li>
         <li>
-            A <em>properties</em> list. Is a list of {Key, Value} pair. Some
-            used by Enms modules to store informations. Can be any value
-            defined by the user.
+            A <em>user_properties</em> list. Is a list of {Key, Value} pair. 
+            Can be any value defined by the user for logicaly grouping
+            devices.
         </li>
         <li>
             A <em>lazy tags</em> list. Is a list of tags wich can be anything.
+        </li>
+    </ul>
+</p>
+== system_properties ==
+<p>
+    Here are the actuals system_properties for a target:
+    <ul>
+        <li>
+            <em>{target_id, Id}</em>,
+        </li>
+        <li>
+            <em>{type, real | {virtual, VirtualGroupId}}</em>,
+        </li>
+        <li>
+            <em>{user_properties, [{Key,Value}]}</em>
+        </li>
+        <li>
+            <em>{lazy_tags, [Tags]}</em>
+        </li>
+        <li>
+            <em>{virtual_groups, [VirtualGroupId]}</em>
+        </li>
+        <li>
+            <em>{conf_params, [Config]}</em> configuration parameters for the
+            target initialisation. Where <em>Config</em> is:
+            <ul>
+                <li>
+                    {target_config, ConfId, IpAddress, Port, Protocol, 
+                    Configuration},
+                </li>
+                <li>
+                    {init_mod, Fun(Conf)}, where we send the 
+                    <em>Configuration</em> options,
+                </li>
+                <li>
+                    <em>{virtual_groups, [VirtualGroupId]}</em>,
+                </li>
+                <li>
+                    <em>{user_properties, [{Key,Value}]}</em>
+                </li>
+                <li>
+                    <em>{lazy_tags, [Tags]}</em>
+                </li>
+            </ul>
         </li>
     </ul>
 </p>

@@ -18,8 +18,6 @@ clean:
 	rm -f doc/*.png
 	rm -f doc/*.css
 	rm -f doc/edoc-info
-	rm -f priv/snmp/mibs/*.bin
-
 
 # DOCUMENTATION
 doc: doc/index.html
