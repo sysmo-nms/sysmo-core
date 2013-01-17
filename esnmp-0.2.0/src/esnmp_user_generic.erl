@@ -30,8 +30,12 @@
 	 handle_inform/3,
 	 handle_report/3]).
 
-handle_error(_ReqId,  {failed_processing_message, {securityError,usmStatsUnknownEngineIDs}}, _UserData) ->
-	%info("received usmStatsUnknownEngineIDs");
+-define(DEFAULT_COMMUNITY, "unknown_agent").
+
+handle_error(_ReqId,  {failed_processing_message, 
+    {{securityError,usmStatsUnknownEngineIDs}, _Addr, _Port}}, _UserData) ->
+	%io:format("received usmStatsUnknownEngineIDs from ~p port ~p~n", 
+    %    [_Addr, _Port]),
     ok;
 
 handle_error(ReqId, Reason, UserData) ->
@@ -42,38 +46,10 @@ handle_error(ReqId, Reason, UserData) ->
 	ignore.
 
 
-handle_agent(Addr, Port, trap, SnmpInfo, UserData) ->
-    % TODO umask a configurer diferement
-    Umask   = #snmp_trap{
-        snmp_message    = [wheel,users],
-        version         = [wheel,users],
-        from_addr       = [wheel,users],
-        from_port       = [wheel,users], 
-        user_data       = [wheel],
-        tags            = [wheel],
-        permissions     = [wheel]},
-    DbRec   = #snmp_trap{
-        snmp_message    = SnmpInfo,
-        version         = v2c,
-        from_addr       = Addr,
-        from_port       = Port,
-        user_data       = UserData,
-        tags            = [],
-        permissions     = Umask
-        },
-    io:format("user generic handle trap ~p~n", [DbRec]),
-	{ok, atomic} = mnesia:transaction(fun() -> mnesia:write(snmp_trap, DbRec, write) end),
-	ignore;
-
-handle_agent(Addr, Port, Type, SnmpInfo, UserData) ->
-	info("received handle_agent:"
-	 "~n   Addr:     ~p"
-	 "~n   Port:     ~p"
-	 "~n   Type:     ~p"
-	 "~n   SnmpInfo: ~p"
-	 "~n   UserData: ~p", [Addr, Port, Type, SnmpInfo, UserData]),
+handle_agent(Addr, Port, Type, SnmpInfo, _UserData) ->
+    gen_event:notify(esnmp_events, {Type, 
+        {v2_community,"unknown_community"}, {Addr, Port}, SnmpInfo}),
 	ignore.
-
 
 handle_pdu(TargetName, ReqId, SnmpResponse, UserData) ->
 	info("received handle_pdu:"
@@ -85,10 +61,8 @@ handle_pdu(TargetName, ReqId, SnmpResponse, UserData) ->
 	ignore.
 
 
-handle_trap(_TargetName, _SnmpTrap, _UserData) ->
-    %A = #snmp_trap{snmp_message = Info, from_addr = Addr, from_port = Port, user_data = SnmpUserData},
-	%B = mnesia:transaction(fun() -> mnesia:write(snmp_trap, A, write) end),
-    io:format("iiiiiiiiiiiinsert mnesia trap: ~p~n",[_TargetName]),
+handle_trap(TargetName, SnmpTrap, _UserData) ->
+    io:format("ici ~p ~p ~ptrap: ~p~n",[?MODULE,?LINE,TargetName,SnmpTrap]),
 	ok.
 
 
