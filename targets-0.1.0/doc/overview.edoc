@@ -5,7 +5,8 @@
 <h1> Introduction </h1>
 <p>
     The <b>targets</b> module keep a database of managed nodes. It is the
-    module who old the configuration of the managed nodes. He have the
+    module who old the configuration of the managed nodes and where is defined
+    RBAC roles for each <b>targets</b> and <b>target_params</b>. He have the
     responsability to initialize other modules.
 </p>
 <p>A <em>target</em> can be <b>real</b> or <b>virtual</b>. The concept is
@@ -51,6 +52,10 @@
             <em>{type, real | {virtual, VirtualGroupId}}</em>,
         </li>
         <li>
+            <em>{perms, {read, [ReadRoles]}, {read_write, 
+            [ReadWriteRoles]}}</em>
+        </li>
+        <li>
             <em>{user_properties, [{Key,Value}]}</em>
         </li>
         <li>
@@ -61,15 +66,20 @@
         </li>
         <li>
             <em>{conf_params, [Config]}</em> configuration parameters for the
-            target initialisation. Where <em>Config</em> is:
+            target initialisation of various modules. 
+            Where <em>Config</em> is a list of:
             <ul>
+                <li>
+                    {init_mod, Fun(Conf)}, where we send the 
+                    <em>target_config</em> options,
+                </li>
+                <li>
+                    <em>{perms, {read, [ReadRoles]}, {read_write, 
+                            [ReadWriteRoles]}}</em>
+                </li>
                 <li>
                     {target_config, ConfId, IpAddress, Port, Protocol, 
                     Configuration},
-                </li>
-                <li>
-                    {init_mod, Fun(Conf)}, where we send the 
-                    <em>Configuration</em> options,
                 </li>
                 <li>
                     <em>{virtual_groups, [VirtualGroupId]}</em>,
