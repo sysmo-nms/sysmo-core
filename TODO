@@ -3,6 +3,8 @@ The development flow should follow this order:
 #MODULE/OTHER           #PRIORITY   #COMPLETED
 - ifs                     HIGH        100%
 Module events and client communication/auth
+- targets                 HIGH        0%
+Live list of targets, associate tags to traps/inform they produce.
 - esnmp                   HIGH        50%
 SNMP utility and monitoring + Live list of snmp targets
 - probes_dock             HIGH        0%
@@ -35,9 +37,6 @@ Escalade alerts module
 ---------> RELEASE 2.0
 
 
-- targets                 LOW         0%
-Live list of targets, associate tags to traps/inform they produce.
-Will probably need a rework of "esnmp".
 - mod_icmpmon             LOW         0%            to much??
 Monitor network hosts
 - mod_netmon              LOW         0%            to much??
