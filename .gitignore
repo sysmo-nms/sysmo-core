@@ -6,6 +6,7 @@
 *.css
 *.png
 edoc-info
+var/
 *.bin
 *.asn1db
 *.script
