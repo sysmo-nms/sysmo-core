@@ -4,8 +4,11 @@
 @doc 
 <h1> Introduction </h1>
 <p>
-    The <b>targets</b> module keep a database of managed nodes. A 
-    <em>target</em> has the following properties:
+    The <b>targets</b> module keep a database of managed nodes. It is the
+    module who old the configuration of the managed nodes. He have the
+    responsability to initialize other modules.
+</p>
+<p>A <em>target</em> has the following properties:
     <ul>
         <li>
             An <em>unique Id</em>,
