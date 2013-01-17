@@ -1,6 +1,6 @@
 @author Sebastien Serre <sserre.bx@gmail.com>
 @version 0.1.0
-@title Welcome to the Enms target module.
+@title Welcome to the Enms <em>targets</em> module.
 @doc 
 <h1> Introduction </h1>
 <p>
@@ -11,13 +11,16 @@
 <p>A <em>target</em> has the following properties:
     <ul>
         <li>
-            An <em>unique Id</em>,
+            An <em>unique Id</em>.
         </li>
         <li>
             Multiple <em>configuration parameters</em> represented by
             { IpAddress, Port, Protocol, Configuration }. A target can have an
             undefined number of configuration parameters thus allowing devices
-            with multiple Ip/Protocols to be recognized.
+            with multiple Ip/Protocols/Configuration to be recognized. For
+            example, an snmp v3 device can be probed under different
+            <em>engine IDs</em>, but still be recognised as a unique hardware
+            entity.
         </li>
         <li>
             A <em>properties</em> list. Is a list of {Key, Value} pair. Some
