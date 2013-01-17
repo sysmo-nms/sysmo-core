@@ -1,0 +1,28 @@
+@author Sebastien Serre <sserre.bx@gmail.com>
+@version 0.1.0
+@title Welcome to the Enms target module.
+@doc 
+<h1> Introduction </h1>
+<p>
+    The <b>targets</b> module keep a database of managed nodes. A 
+    <em>target</em> has the following properties:
+    <ul>
+        <li>
+            An <em>unique Id</em>,
+        </li>
+        <li>
+            Multiple <em>configuration parameters</em> represented by
+            { IpAddress, Port, Protocol, Configuration }. A target can have an
+            undefined number of configuration parameters thus allowing devices
+            with multiple Ip/Protocols to be recognized.
+        </li>
+        <li>
+            A <em>properties</em> list. Is a list of {Key, Value} pair. Some
+            used by Enms modules to store informations. Can be any value
+            defined by the user.
+        </li>
+        <li>
+            A <em>lazy tags</em> list. Is a list of tags wich can be anything.
+        </li>
+    </ul>
+</p>
