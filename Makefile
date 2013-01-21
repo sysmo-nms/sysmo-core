@@ -1,7 +1,7 @@
 # Makefile 
 
 REL_NAME        = enms
-MODS            = ifs esnmp 
+MODS            = ifs esnmp targets
 MODS_VER        = $(foreach app, $(MODS), $(wildcard $(app)-*))
 
 compile: recurse pdu_lib
