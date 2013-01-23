@@ -175,7 +175,7 @@ handle_cast({handle_mod_event, Mod, Event}, S) ->
         case CallbackMod:pre_process(Event) of
             {Roles, AsnMsg} ->
                 ifs_rbac:handle_event(Mod, AsnMsg, Roles);
-            ok ->
+            ignore ->
                 true;
             Other ->
                 io:format("Error: ~p ~p ~p~n", [?MODULE,?LINE,Other])

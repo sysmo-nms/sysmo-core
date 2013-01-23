@@ -18,40 +18,22 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
-{application, ifs,
+{application, targets,
 	[
-		{description, "client interface session and authentication"},
-		{vsn, "1.0.1"},
+		{description, "Data store of targets configuration"},
+		{vsn, "0.1.0"},
 		{modules, [
-                ifs_app,
-                ifs_sup,
-                ifs_server,
-                ifs_rbac,
-                ifs_auth_ldap,
-                asncli,
-                ssl_client,
-                ssl_client_sup,
-                ssl_server_sup,
-                ssl_listener,
-                tcp_client,
-                tcp_client_sup,
-                tcp_server_sup,
-                tcp_listener
+                targets_app,
+                targets_sup,
+                targets_events
             ]},
 		{registered, [
-                ifs_sup,
-                ifs_server,
-                ifs_mpd,
-                ifs_auth_ldap,
-                ssl_client_sup,
-                ssl_server_sup,
-                ssl_listener
             ]},
 		{applications, 
-            [kernel, stdlib, crypto, public_key, ssl]
+            [kernel, stdlib, mnesia]
         },
 
 		% mandatory
-		{mod, {ifs_app, []}}
+		{mod, {targets_app, []}}
 	]
 }.

@@ -19,15 +19,28 @@
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 % @private
--module(targets_app).
--behaviour(application).
+-module(targets_sup).
+-behaviour(supervisor).
 
--export([start/2, stop/1]).
+-export([start_link/1]).
+-export([init/1]).
 
-start(_Type, _Args) ->
-    {ok, GenEventListeners} = application:get_env(targets, registered_events),
-    io:format("~p~n", [GenEventListeners]),
-    targets_sup:start_link(GenEventListeners).
+start_link(GenEventListeners) ->
+    supervisor:start_link({local, ?MODULE}, ?MODULE, [GenEventListeners]).
 
-stop(_State) ->
-	ok.
+init([GenEventListeners]) ->
+    {ok, 
+        {
+            {one_for_one, 1, 60},
+            [
+                {
+                    tartets_events,
+                    {targets_events, start_link, [GenEventListeners]},
+                    permanent,
+                    2000,
+                    worker,
+                    [targets_events]
+               }
+            ]
+        }
+    }.

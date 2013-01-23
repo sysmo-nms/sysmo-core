@@ -18,16 +18,39 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
-% @private
--module(targets_app).
--behaviour(application).
+-module(targets_api_ifs).
+-behaviour(beha_ifs_module).
 
--export([start/2, stop/1]).
+%-include_lib("../include/ModTargets.hrl").
 
-start(_Type, _Args) ->
-    {ok, GenEventListeners} = application:get_env(targets, registered_events),
-    io:format("~p~n", [GenEventListeners]),
-    targets_sup:start_link(GenEventListeners).
+% beha_ifs_module export
+-export([handle_msg/2, pre_process/1, initial_conn/1]).
 
-stop(_State) ->
-	ok.
+
+% @doc
+% Handle a command from a client
+% @end
+-spec targets_api_ifs:handle_msg(Data::term(), ClientState::record()) -> 
+        AsnResponce::term() | noreply.
+handle_msg(Msg, ClientState) ->
+    io:format("~p: Message ~p from client ~p~n", [?MODULE, Msg, ClientState]),
+    noreply.
+
+
+% @doc
+% Return roles and valid asn term.
+% @end
+-spec targets_api_ifs:pre_process(Data::term()) -> 
+        {Asn::tuple(), Roles::list(Role::string())}.
+pre_process(Any) ->
+    io:format("message to pre_process ~p ~p~n", [?MODULE, Any]).
+
+
+% @doc
+% Initial connexion
+% @end
+-spec targets_api_ifs:initial_conn(ClientState::record()) -> 
+        {term(), Roles::list(Role::string())}.
+initial_conn(ClientState) ->
+    io:format("~p initialconn!!!! from ~p~n", [?MODULE, ClientState]),
+    ok.

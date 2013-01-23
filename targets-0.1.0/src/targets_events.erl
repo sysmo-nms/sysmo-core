@@ -18,16 +18,19 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
-% @private
--module(targets_app).
--behaviour(application).
+-module(targets_events).
+-export([start_link/1]).
 
--export([start/2, stop/1]).
+% @doc
+% Start the event manager and initialise the module.
+% @end
+-spec esnmp_events:start_link(EventListeners::list()) -> {ok, Pid::pid()}.
+start_link(GenEventListeners) ->
+    % START the event manager:
+    ReturnSup = gen_event:start_link({local, ?MODULE}),
 
-start(_Type, _Args) ->
-    {ok, GenEventListeners} = application:get_env(targets, registered_events),
-    io:format("~p~n", [GenEventListeners]),
-    targets_sup:start_link(GenEventListeners).
+    lists:foreach(fun(X) -> 
+        gen_event:add_handler(?MODULE, X, targets)
+    end, GenEventListeners),
 
-stop(_State) ->
-	ok.
+    ReturnSup.

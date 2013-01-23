@@ -10,11 +10,13 @@ BEGIN
 
 IMPORTS 
     IfPDU       FROM ModIf
-    EsnmpPDU    FROM ModEsnmp;
+    EsnmpPDU    FROM ModEsnmp
+    TargetsPDU  FROM ModTargets;
 
 PDU ::= CHOICE {
     modIfPDU        [0] IfPDU,
-    modEsnmpPDU     [1] EsnmpPDU
+    modEsnmpPDU     [1] EsnmpPDU,
+    modTargetsPDU   [2] TargetsPDU
 }
 
 END
