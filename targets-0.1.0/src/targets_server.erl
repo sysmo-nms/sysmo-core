@@ -21,6 +21,7 @@
 % @private
 -module(targets_server).
 -behaviour(gen_server).
+-include_lib("../include/targets.hrl").
 
 % gen_server callbacks
 -export([
