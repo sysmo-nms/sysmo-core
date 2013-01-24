@@ -43,12 +43,12 @@ init([GenEventListeners, DbDir]) ->
                     [targets_events]
                },
                {
-                    targets_server,
-                    {targets_server, start_link, [DbDir]},
+                    targets,
+                    {targets, start_link, [DbDir]},
                     permanent,
                     2000,
                     worker,
-                    [targets_server]
+                    [targets]
                }
             ]
         }

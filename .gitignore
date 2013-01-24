@@ -13,3 +13,4 @@ var/
 *.boot
 snmpm_config_db
 snmpa_local_db1
+*.bk

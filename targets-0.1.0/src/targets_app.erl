@@ -27,7 +27,6 @@
 start(_Type, _Args) ->
     {ok, GenEventListeners} = application:get_env(targets, registered_events),
     {ok, DbDir}             = application:get_env(targets, db_dir),
-    io:format("~p ----------~p~n", [GenEventListeners, DbDir]),
     targets_sup:start_link(GenEventListeners, DbDir).
 
 stop(_State) ->
