@@ -88,7 +88,7 @@ clear_locks() ->
 new() ->
     NewId = gen_server:call(?MODULE, lock_id),
     NewId.
-    
+
 set_ip(Id, Ip) ->
     Rep =   gen_server:call(?MODULE, {set_ip, Id, Ip}),
     Rep.
@@ -328,3 +328,4 @@ log(A, B) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % EUNIT TESTS                                                                %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
