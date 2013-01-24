@@ -50,7 +50,7 @@
     new/0,
     set_ip/2,
     set_hostname/2,
-    set_property/3,
+    set_property/2,
     set_tag/2,
     del_tag/2,
     del_target/1,
@@ -72,38 +72,85 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % SERVER UTILITY                                                             %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% @private
+-spec start_link(string) -> {ok, pid()} | {error, any()}.
 start_link(DbDir) ->
     gen_server:start_link({local, ?MODULE}, ?MODULE, [DbDir], []).
 
+% @private
+-spec dump_state() -> ok.
 dump_state() ->
     gen_server:cast(?MODULE, dump_state).
 
+-spec clear_locks() -> ok | {error, any()}.
+% @doc
+% Delete all entry where only the Id is set. It can append when a client 
+% activity is interupted after a new() command.
+% This command is executed at boot time.
+% @end
 clear_locks() ->
     gen_server:call(?MODULE, clear_locks).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % CLIENTS API                                                                %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% set value
+-type target_id()   :: string().
+-type ip_address()  :: {integer(), integer(), integer(), integer()}.
+-type hostname()    :: string().
+-type dets_name()   :: atom().
+-type property_key()    :: atom().
+-type property_val()    :: any().
+-type property()    :: {property_key(), property_val()}.
+-type tag()         :: any().
+
+
+-spec new() -> target_id().
+% @doc
+% Lock a new id in the database and return it's value. Later call to configure
+% the entry will be donne with this id.
+% @end
 new() ->
-    NewId = gen_server:call(?MODULE, lock_id),
-    NewId.
+    gen_server:call(?MODULE, lock_id).
 
+
+-spec set_ip(target_id(), ip_address()) -> 
+        ok | {error, bad_formating | unknown_id}.
+% @doc
+% Set the record element ip to the value Ip. Did not check if the address is
+% allready used by another entry.
+% @end
 set_ip(Id, Ip) ->
-    Rep =   gen_server:call(?MODULE, {set_ip, Id, Ip}),
-    Rep.
+    gen_server:call(?MODULE, {set_ip, Id, Ip}).
 
+
+-spec set_hostname(target_id(), hostname()) ->
+        ok | {error, bad_formating | unknown_id}.
+% @doc
+% Set the record element hostname to the value Hostname. Did not check if the 
+% name is allready used. Return "bad_formating" only if Hostname is not a
+% string().
+% @end
 set_hostname(Id, Hostname) ->
-    Rep =   gen_server:call(?MODULE, {set_hostname, Id, Hostname}),
-    Rep.
+    gen_server:call(?MODULE, {set_hostname, Id, Hostname}).
 
-set_property(Id, Property, Value) ->
-    Rep =   gen_server:call(?MODULE, {set_property, Id, Property, Value}),
-    Rep.
 
+-spec set_property(target_id(), property()) ->
+        ok | {error, any()}.
+% @doc
+% Add an element {property_key(), property_val()} to the list of the property
+% of the element. Overwrite if another property_key() exist.
+% @end
+set_property(Id, Property) ->
+    gen_server:call(?MODULE, {set_property, Id, Property}).
+
+
+-spec set_tag(target_id(), tag()) -> ok | {error, unknown_id}.
+% @doc
+% Add a new tag to the "lazy_tag" list of the entry. If the tag allready exist
+% the result will have the same value.
+% @end
 set_tag(Id, Tag) ->
-    Rep =   gen_server:call(?MODULE, {add_tag, Id, Tag}),
-    Rep.
+    gen_server:call(?MODULE, {set_tag, Id, Tag}).
 
 %% del
 del_target(Id) ->
@@ -188,6 +235,7 @@ init([DbDir]) ->
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% @private
 handle_call(lock_id, _F, #tserver_state{db_name = DbName} = S) ->
     Id = dbwrite_lock_id(DbName),
     log("lock_id ~p ~n", [Id]),
@@ -199,22 +247,26 @@ handle_call(clear_locks, _F, #tserver_state{db_name = DbName} = S) ->
     {reply, Rep, S};
 
 handle_call({set_ip, Id, Ip}, _F, #tserver_state{db_name = DbName} = S) ->
+    Rep = dbwrite_set_ip(Id, Ip, DbName),
     log("set_ip ~p ~p ~p~n", [Id, Ip, DbName]),
-    {reply, ok, S};
+    {reply, Rep, S};
 
 handle_call({set_hostname, Id, Hostname}, 
         _F, #tserver_state{db_name = DbName} = S) ->
+    Rep = dbwrite_set_hostname(Id, Hostname, DbName),
     log("set_hostname ~p ~p ~p~n", [Id, Hostname, DbName]),
-    {reply, ok, S};
+    {reply, Rep, S};
 
-handle_call({set_property, Id, Property, Value},
+handle_call({set_property, Id, Property},
         _F, #tserver_state{db_name = DbName} = S) ->
-    log("set_property ~p ~p ~p ~p~n", [Id, Property, Value, DbName]),
-    {reply, ok, S};
+    Rep = dbwrite_set_property(Id, Property, DbName),
+    log("set_property ~p ~p ~p ~n", [Id, Property, DbName]),
+    {reply, Rep, S};
 
-handle_call({add_tag, Id, Tag}, _F, #tserver_state{db_name = DbName} = S) ->
+handle_call({set_tag, Id, Tag}, _F, #tserver_state{db_name = DbName} = S) ->
+    Rep = dbwrite_set_tag(Id, Tag, DbName),
     log("add_tag ~p ~p ~p~n", [Id, Tag, DbName]),
-    {reply, ok, S};
+    {reply, Rep, S};
 
 handle_call({del_property, Id, Property},
         _F, #tserver_state{db_name = DbName} = S) ->
@@ -278,6 +330,7 @@ handle_call(Q, _F, S) ->
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% @private
 handle_cast(dump_state, #tserver_state{db_name = DbName} = S) ->
     log("state is ~p~n", [S]),
     log("targets_db is: ~n~p~n", [dets:match(DbName, '$1')]),
@@ -289,17 +342,20 @@ handle_cast(Q, S) ->
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% @private
 handle_info(I,S) ->
     log("handle_info unknown ~p ~p ~p", [?MODULE, ?LINE, I]),
     {noreply, S}.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% @private
 terminate(_R, _S) ->
     normal.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% @private
 code_change(_O, S, _E) ->
     {ok, S}.
     
@@ -307,6 +363,7 @@ code_change(_O, S, _E) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % PRIVATE FUNCTS                                                             %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-spec dbwrite_lock_id(dets_name()) -> target_id().
 dbwrite_lock_id(DetsName) ->
     Id = "target-" ++ targets_misc:generate_id(),
     % if Id exist in the table retry else return.
@@ -317,13 +374,104 @@ dbwrite_lock_id(DetsName) ->
             dbwrite_lock_id(DetsName)
     end.
 
+-spec dbwrite_clear_locks(dets_name()) -> ok | {error, any()}.
 dbwrite_clear_locks(DbName) ->
     Rep = dets:match_delete(DbName, {target, '_', undef, undef, [], []}),
     Rep.
 
+-spec dbwrite_set_ip(target_id(), ip_address(), dets_name()) 
+    -> ok | {error, bad_formating | unknown_id}.
+dbwrite_set_ip(Id, Ip, DbName) ->
+    case dets:lookup(DbName, Id) of
+        [Record] -> 
+            case is_ip(Ip) of
+                true ->
+                    UpdatedRecord = Record#target{ip = Ip},
+                    dets:insert(DbName, UpdatedRecord);
+                false ->
+                    {error, bad_formating}
+            end;
+        [] ->
+            {error, unknown_id}
+    end.
+
+-spec dbwrite_set_hostname(target_id(), hostname(), dets_name()) 
+    -> ok | {error, bad_name | unknown_id}.
+dbwrite_set_hostname(Id, Hostname, DbName) ->
+    case dets:lookup(DbName, Id) of
+        [Record] -> 
+            case is_string(Hostname) of
+                true ->
+                    UpdatedRecord = Record#target{hostname = Hostname},
+                    dets:insert(DbName, UpdatedRecord);
+                false ->
+                    {error, bad_name}
+            end;
+        [] ->
+            {error, unknown_id}
+    end.
+
+-spec dbwrite_set_property(target_id(), property(), dets_name()) 
+    -> ok | {error, bad_property | unknown_id}.
+dbwrite_set_property(Id, Property, DbName) ->
+    case dets:lookup(DbName, Id) of
+        [Record] -> 
+            case Property of
+                {Key, _} ->
+                    UpdatedProperties = 
+                        lists:keydelete(Key, 1, Record#target.properties),
+                    degs:insert(DbName, Record#target{
+                            properties = [Property | UpdatedProperties]});
+                _ ->
+                    {error, bad_property}
+            end;
+        [] ->
+            {error, unknown_id}
+    end.
+
+
+-spec dbwrite_set_tag(target_id(), tag(), dets_name()) 
+    -> ok | {error, unknown_id}.
+dbwrite_set_tag(Id, Tag, DbName) ->
+    case dets:lookup(DbName, Id) of
+        [Record] -> 
+            TagList = Record#target.lazy_tags,
+            case lists:member(Tag, TagList) of
+                true    -> ok;
+                false   ->
+                    NewRecord = Record#target{lazy_tags = [Tag | TagList]},
+                    dets:insert(DbName, NewRecord)
+            end;
+        [] ->
+            {error, unknown_id}
+    end.
+
+
+-spec is_ip(ip_address()) -> boolean().
+is_ip(_Ip) ->
+    true.
+
+-spec is_string(any()) -> boolean().
+is_string(Arg) ->
+    Fun = fun(X) ->
+        if 
+            X < 0   -> false;
+            X > 255 -> false;
+            true    -> true
+        end
+    end,
+    case is_list(Arg) of
+        true ->
+            lists:all(Fun, Arg);
+        false ->
+            false
+    end.
+
+
+
+-spec log(string(), list()) -> ok.
 log(A, B) ->
     io:format(A, B).
-% send_event(Event) ->
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % EUNIT TESTS                                                                %
