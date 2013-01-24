@@ -22,24 +22,33 @@
 -module(targets_sup).
 -behaviour(supervisor).
 
--export([start_link/1]).
+-export([start_link/2]).
 -export([init/1]).
 
-start_link(GenEventListeners) ->
-    supervisor:start_link({local, ?MODULE}, ?MODULE, [GenEventListeners]).
+start_link(GenEventListeners, DbDir) ->
+    supervisor:start_link({local, ?MODULE}, ?MODULE, 
+            [GenEventListeners, DbDir]).
 
-init([GenEventListeners]) ->
+init([GenEventListeners, DbDir]) ->
     {ok, 
         {
             {one_for_one, 1, 60},
             [
                 {
-                    tartets_events,
+                    targets_events,
                     {targets_events, start_link, [GenEventListeners]},
                     permanent,
                     2000,
                     worker,
                     [targets_events]
+               },
+               {
+                    targets_server,
+                    {targets_server, start_link, [DbDir]},
+                    permanent,
+                    2000,
+                    worker,
+                    [targets_server]
                }
             ]
         }

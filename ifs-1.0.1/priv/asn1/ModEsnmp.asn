@@ -2,48 +2,21 @@ ModEsnmp DEFINITIONS EXPLICIT TAGS ::=
 BEGIN
 
 TrapsTableRow   ::= SEQUENCE {
-    timeStamp   PrintableString,
-    version     PrintableString,
-    fromIp      PrintableString,
-    fromPort    PrintableString,
-    credentials PrintableString,
-    tags        PrintableString,
-    message     PrintableString
-}
-
-IpAddr  ::= SEQUENCE {
-    o1  INTEGER,
-    o2  INTEGER,
-    o3  INTEGER,
-    o4  INTEGER
-}
-
-AgentConf  ::= SEQUENCE {
-    targetName      PrintableString,
-    community       PrintableString,
-    ipAddr          IpAddr,
-    port            INTEGER,
-    engineID        PrintableString,
-    timeout         INTEGER,
-    maxMessageSize  INTEGER,
-    version         PrintableString,
-    secModel        PrintableString,
-    secName         PrintableString,
-    secLevel        PrintableString
+    timeStamp   [0] PrintableString,
+    version     [1] PrintableString,
+    fromIp      [2] PrintableString,
+    fromPort    [3] PrintableString,
+    credentials [4] PrintableString,
+    tags        [5] PrintableString,
+    message     [6] PrintableString
 }
 
 FromServer ::= CHOICE {
-    trap            [0] SEQUENCE OF TrapsTableRow,
-    agentsConf      [1] SEQUENCE OF AgentConf
-}
-
-FromClient ::= CHOICE {
-    registerV2Agent [0] AgentConf
+    trap            [0] SEQUENCE OF TrapsTableRow
 }
 
 EsnmpPDU    ::= CHOICE {
-    fromServer  [0] FromServer,
-    fromClient  [1] FromClient
+    fromServer  [0] FromServer
 }
 
 END

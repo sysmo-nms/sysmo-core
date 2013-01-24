@@ -30,7 +30,7 @@
 		{registered, [
             ]},
 		{applications, 
-            [kernel, stdlib, mnesia]
+            [kernel, stdlib]
         },
 
 		% mandatory

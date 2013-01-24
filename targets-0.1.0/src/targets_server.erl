@@ -19,16 +19,55 @@
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 % @private
--module(targets_app).
--behaviour(application).
+-module(targets_server).
+-behaviour(gen_server).
 
--export([start/2, stop/1]).
+% gen_server callbacks
+-export([
+    init/1,
+    handle_call/3,
+    handle_cast/2,
+    handle_info/2,
+    terminate/2,
+    code_change/3
+]).
 
-start(_Type, _Args) ->
-    {ok, GenEventListeners} = application:get_env(targets, registered_events),
-    {ok, DbDir}             = application:get_env(targets, db_dir),
-    io:format("~p ----------~p~n", [GenEventListeners, DbDir]),
-    targets_sup:start_link(GenEventListeners, DbDir).
+% API
+-export([
+    start_link/1,
+    dump/0
+]).
 
-stop(_State) ->
-	ok.
+-record(tserver_state, {
+    db_dir
+}).
+
+% API
+start_link(DbDir) ->
+    gen_server:start_link({local, ?MODULE}, ?MODULE, [DbDir], []).
+
+dump() ->
+    gen_server:cast(?MODULE, dump).
+
+% CALLBACKS
+init([DbDir]) ->
+    {ok, #tserver_state{db_dir = DbDir}}.
+
+handle_call(_Q, _F, S) ->
+    {noreply, S}.
+
+handle_cast(dump, S) ->
+    io:format("dir is ~p~n", [S#tserver_state.db_dir]),
+    {noreply, S};
+handle_cast(_Q, S) ->
+    {noreply, S}.
+
+handle_info(_I,S) ->
+    {noreply, S}.
+
+terminate(_R, _S) ->
+    normal.
+
+code_change(_O, S, _E) ->
+    {ok, S}.
+    

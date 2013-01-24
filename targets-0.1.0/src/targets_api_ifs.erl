@@ -41,16 +41,17 @@ handle_msg(Msg, ClientState) ->
 % Return roles and valid asn term.
 % @end
 -spec targets_api_ifs:pre_process(Data::term()) -> 
-        {Asn::tuple(), Roles::list(Role::string())}.
+        {Asn::tuple(), Roles::list(Role::string())} | ignore.
 pre_process(Any) ->
-    io:format("message to pre_process ~p ~p~n", [?MODULE, Any]).
+    io:format("message to pre_process ~p ~p~n", [?MODULE, Any]),
+    ignore.
 
 
 % @doc
 % Initial connexion
 % @end
 -spec targets_api_ifs:initial_conn(ClientState::record()) -> 
-        {term(), Roles::list(Role::string())}.
+        {term(), Roles::list(Role::string())} | ignore.
 initial_conn(ClientState) ->
     io:format("~p initialconn!!!! from ~p~n", [?MODULE, ClientState]),
-    ok.
+    ignore.

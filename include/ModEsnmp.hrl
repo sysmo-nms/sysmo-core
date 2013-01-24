@@ -8,9 +8,3 @@
 -record('TrapsTableRow',{
 timeStamp, version, fromIp, fromPort, credentials, tags, message}).
 
--record('IpAddr',{
-o1, o2, o3, o4}).
-
--record('AgentConf',{
-targetName, community, ipAddr, port, engineID, timeout, maxMessageSize, version, secModel, secName, secLevel}).
-

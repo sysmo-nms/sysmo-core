@@ -4,7 +4,7 @@ The development flow should follow this order:
 - ifs                     HIGH        100%
 Module events and client communication/auth
 - targets                 HIGH        0%
-Live list of targets, associate tags to traps/inform they produce and hown the
+Live list of targets, associate tags to traps/inform they produce and own the
 mermisions associated.
 - esnmp                   HIGH        50%
 SNMP utility and monitoring + Live list of snmp targets
