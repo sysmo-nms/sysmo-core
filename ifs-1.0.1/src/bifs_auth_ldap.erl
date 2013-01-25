@@ -22,7 +22,7 @@
 -module(bifs_auth_ldap).
 -behaviour(gen_server).
 -behaviour(beha_ifs_auth).
--include_lib("../include/eldap.hrl").
+-include_lib("eldap/include/eldap.hrl").
 -include_lib("../include/client_state.hrl").
 
 %% erternal api

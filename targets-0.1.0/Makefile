@@ -1,6 +1,7 @@
 # Makefile
 
 APP     = targets
+ERL     = erl
 ERLC   += erlc -Werror
 SRC     = $(shell find src -name "*.erl")
 DEST    = $(patsubst src/%.erl, ebin/%.beam, $(SRC))
@@ -29,4 +30,6 @@ doc/index.html: doc/overview.edoc src/*.erl
  'edoc:application($(APP), ".", []), init:stop()'
 
 # TEST
-test:
+test: compile
+	@$(ERL) -noinput -pa ebin -eval \
+    'eunit:test(targets, [verbose]), init:stop()'

@@ -20,6 +20,7 @@
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 -module(targets).
 -behaviour(gen_server).
+-include_lib("eunit/include/eunit.hrl").
 -include_lib("../include/targets.hrl").
 
 -record(tserver_state, {
@@ -64,7 +65,7 @@
     get_property/2,
     possess_tag/2,
     possess_property/3,
-    filter/2,
+    filter/1,
     filter/3
 ]).
 
@@ -91,8 +92,10 @@ dump_state() ->
 clear_locks() ->
     gen_server:call(?MODULE, clear_locks).
 
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% CLIENTS API                                                                %
+% API EXPORTED TO THE CLIENT                                                 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -type target_id()   :: string().
 -type ip_address()  :: {integer(), integer(), integer(), integer()}.
@@ -104,7 +107,7 @@ clear_locks() ->
 -type tag()         :: any().
 
 
--spec new() -> target_id().
+-spec new() -> {ok, target_id()}.
 % @doc
 % Lock a new id in the database and return it's value. Later call to configure
 % the entry will be donne with this id.
@@ -128,7 +131,7 @@ set_ip(Id, Ip) ->
 % @doc
 % Set the record element hostname to the value Hostname. Did not check if the 
 % name is allready used. Return "bad_formating" only if Hostname is not a
-% string().
+% valid_hostname_string().
 % @end
 set_hostname(Id, Hostname) ->
     gen_server:call(?MODULE, {set_hostname, Id, Hostname}).
@@ -152,67 +155,125 @@ set_property(Id, Property) ->
 set_tag(Id, Tag) ->
     gen_server:call(?MODULE, {set_tag, Id, Tag}).
 
-%% del
+
+-spec del_target(target_id()) -> ok | {error, any()}.
+% @doc
+% Delete a target from the database. Return ok | {error, Reason} where Reason
+% is the error returned by dets:delete(Name,Key).
+% @end
 del_target(Id) ->
-    Rep =   gen_server:call(?MODULE, {del_target, Id}),
-    Rep.
+    gen_server:call(?MODULE, {del_target, Id}).
     
+
+-spec del_property(target_id(), property_key()) -> ok | {error, any()}.
+% @doc
+% Delete a property by its key name. Return ok even if the property key did
+% not exist.
+% @end
 del_property(Id, Property) ->
-    Rep =   gen_server:call(?MODULE, {del_property, Id, Property}),
-    Rep.
+    gen_server:call(?MODULE, {del_property, Id, Property}).
 
+
+-spec del_tag(target_id(), tag()) -> ok | {error, any()}.
+% @doc
+% Delete a tag from the tag list. Return ok event if the tag did not exist.
+% @end
 del_tag(Id, Tag) ->
-    Rep =   gen_server:call(?MODULE, {del_tag, Id, Tag}),
-    Rep.
+    gen_server:call(?MODULE, {del_tag, Id, Tag}).
 
-%% get
+
+-spec info() -> [#target{}].
+% @doc
+% Return a list of all target records registered.
+% @end
 info() ->
-    TargetList   = gen_server:call(?MODULE, info),
-    TargetList.
+    gen_server:call(?MODULE, info).
 
+-spec info(target_id()) -> {ok, #target{}} | {error, unknown_id}.
+% @doc
+% Return the target record wich match the id Id.
+% @end
 info(Id) ->
-    Record = gen_server:call(?MODULE, {info, Id}),
-    Record.
+    gen_server:call(?MODULE, {info, Id}).
 
-% return all ids
+-spec get_ids() -> [target_id()].
+% @doc
+% Return a list containing all ids.
+% @end
 get_ids() ->
-    IdList = gen_server:call(?MODULE, {get_id}),
-    IdList.
+    gen_server:call(?MODULE, {get_id}).
 
+-spec get_ip(target_id())
+        -> {ok, ip_address() | undef} | {error | any()}.
+% @doc
+% Return the address ip of the target specified by Id.
+% @end
 get_ip(Id) ->
-    Ip =    gen_server:call(?MODULE, {get_ip, Id}),
-    Ip.
+    gen_server:call(?MODULE, {get_ip, Id}).
 
+-spec get_hostname(target_id()) 
+        -> {ok, hostname() | undef} | {error | any()}.
+% @doc
+% Return the hostname of the target specified by Id.
+% @end
 get_hostname(Id) ->
-    Hostname = gen_server:call(?MODULE, {get_hostname, Id}),
-    Hostname.
+    gen_server:call(?MODULE, {get_hostname, Id}).
 
+-spec get_tags(target_id()) 
+        -> {ok, [tag()]} | {error | any()}.
+% @doc
+% Return the tag list of the target specified by Id.
+% @end
 get_tags(Id) ->
-    TagsList = gen_server:call(?MODULE, {get_tags, Id}),
-    TagsList.
+    gen_server:call(?MODULE, {get_tags, Id}).
 
+-spec get_property(target_id(), property_key())
+        -> {ok, property_val() | false} | {error, unknown_id}.
+% @doc
+% Get property with key Key from the target specified by Id.
+% @end
 get_property(Id, PropertyKey) ->
-    PropertyVal = gen_server:call(?MODULE, {get_property, Id, PropertyKey}),
-    PropertyVal.
+    gen_server:call(?MODULE, {get_property, Id, PropertyKey}).
 
+% @doc
+% Return true if the tag Tag is found in the target tag list.
+% @end
+-spec possess_tag(target_id(), tag())
+        -> boolean() | {error, unknown_id}.
 possess_tag(Id, Tag) ->
-    Bool = gen_server:call(?MODULE, {possess_tag, Id, Tag}),
-    Bool.
+    gen_server:call(?MODULE, {possess_tag, Id, Tag}).
 
-% Type = property_key | property_tuple
+-spec possess_property(
+    property_key | property_tuple,
+    target_id(),
+    property() | property_key())
+        -> boolean() | {error, unknown_id}.
+% @doc
+% Search the property list of the target spcified by Id.
+% if Type = property_key, Arg must be a property_key(),
+% if Type = property, Arg must be a property() tuple.
+% @end
 possess_property(Type, Id, Arg) ->
-    Bool = gen_server:call(?MODULE, {possess_property, Type, Id, Arg}),
-    Bool.
+    gen_server:call(?MODULE, {possess_property, Type, Id, Arg}).
 
-% Type = tag | property_key | property_tuple
-filter(Type, ArgList) ->
-    TargetList = gen_server:call(?MODULE, {filter, all, Type, ArgList}),
-    TargetList.
+-spec filter(
+    [
+        {tag, tag()} | 
+        {property_key,   property_key()} |
+        {property_tuple, property()}
+    ])
+        -> [#target{}].
+% @doc
+% Return a list of #target{} wich possess every elements specified in Arglist.
+% @end
+filter(ArgList) ->
+    gen_server:call(?MODULE, {filter, all, ArgList}).
 
 % Type = tag | property_key | property_tuple
 filter(TargetIds, Type, ArgList) ->
     TargetList = gen_server:call(?MODULE, {filter, TargetIds, Type, ArgList}),
     TargetList.
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % CALLBACKS                                                                  %
@@ -225,8 +286,7 @@ init([DbDir]) ->
             {file, DbFile},
             {access, read_write},
             {type, set},
-            {keypos, 2},    % we will store records
-            {repair, force}]),
+            {keypos, 2}]),    % we will store records
     dbwrite_clear_locks(DbName),
     {ok, #tserver_state{
             db_dir  = DbDir2,
@@ -239,7 +299,7 @@ init([DbDir]) ->
 handle_call(lock_id, _F, #tserver_state{db_name = DbName} = S) ->
     Id = dbwrite_lock_id(DbName),
     log("lock_id ~p ~n", [Id]),
-    {reply, Id, S};
+    {reply, {ok, Id}, S};
 
 handle_call(clear_locks, _F, #tserver_state{db_name = DbName} = S) ->
     Rep = dbwrite_clear_locks(DbName),
@@ -268,61 +328,75 @@ handle_call({set_tag, Id, Tag}, _F, #tserver_state{db_name = DbName} = S) ->
     log("add_tag ~p ~p ~p~n", [Id, Tag, DbName]),
     {reply, Rep, S};
 
-handle_call({del_property, Id, Property},
+handle_call({del_target, Id}, _F, #tserver_state{db_name = DbName} = S) ->
+    Rep = dbwrite_del_target(Id, DbName),
+    log("del_target ~p ~p~n", [Id, DbName]),
+    {reply, Rep, S};
+
+handle_call({del_property, Id, PropertyKey},
         _F, #tserver_state{db_name = DbName} = S) ->
-    log("del_property ~p ~p ~p~n", [Id, Property, DbName]),
-    {reply, ok, S};
+    Rep = dbwrite_del_property(Id, PropertyKey, DbName),
+    log("del_property ~p ~p ~p~n", [Id, PropertyKey, DbName]),
+    {reply, Rep, S};
 
 handle_call({del_tag, Id, Tag}, _F, #tserver_state{db_name = DbName} = S) ->
+    Rep = dbwrite_del_tag(Id, Tag, DbName),
     log("del_tag ~p ~p ~p~n", [Id, Tag, DbName]),
-    {reply, ok, S};
-
-handle_call({del_target, Id}, _F, #tserver_state{db_name = DbName} = S) ->
-    log("del_target ~p ~p~n", [Id, DbName]),
-    {reply, ok, S};
+    {reply, Rep, S};
 
 handle_call(info, _F, #tserver_state{db_name = DbName} = S) ->
+    Rep = dbread_info(DbName),
     log("info/0 ~p~n", [DbName]),
-    {reply, tableRowsAsList, S};
+    {reply, Rep, S};
 
 handle_call({info, Id}, _F, #tserver_state{db_name = DbName} = S) ->
+    Rep = dbread_info(Id, DbName),
     log("info/1 ~p ~p~n", [Id, DbName]),
-    {reply, target_record, S};
+    {reply, Rep, S};
 
 handle_call(get_ids, _F, #tserver_state{db_name = DbName} = S) ->
+    Rep = dbread_get_ids(DbName),
     log("get_ids ~p~n", [DbName]),
-    {reply, target_ip, S};
+    {reply, Rep, S};
 
 handle_call({get_ip, Id}, _F, #tserver_state{db_name = DbName} = S) ->
+    Rep = dbread_get_ip(Id, DbName),
     log("get_ip ~p ~p~n", [Id, DbName]),
-    {reply, target_ip, S};
+    {reply, Rep, S};
 
 handle_call({get_hostname, Id}, _F, #tserver_state{db_name = DbName} = S) ->
+    Rep = dbread_get_hostname(Id, DbName),
     log("get_hostname ~p ~p~n", [Id, DbName]),
-    {reply, target_hostname, S};
+    {reply, Rep, S};
 
 handle_call({get_tags, Id}, _F, #tserver_state{db_name = DbName} = S) ->
+    Rep = dbread_get_tags(Id, DbName),
     log("get_tags ~p ~p~n", [Id, DbName]),
-    {reply, tag_list, S};
+    {reply, Rep, S};
 
-handle_call({get_property, Id}, _F, #tserver_state{db_name = DbName} = S) ->
+handle_call({get_property, Id, PropertyKey}, _F, 
+        #tserver_state{db_name = DbName} = S) ->
+    Rep = dbread_get_property(Id, PropertyKey, DbName),
     log("get_property ~p ~p~n", [Id, DbName]),
-    {reply, property_value, S};
+    {reply, Rep, S};
 
 handle_call({possess_tag, Id, Tag}, 
         _F, #tserver_state{db_name = DbName} = S) ->
+    Rep = dbread_possess_tag(Id, Tag, DbName),
     log("possess_tag ~p ~p ~p~n", [Id, Tag, DbName]),
-    {reply, bolean, S};
+    {reply, Rep, S};
 
 handle_call({possess_property, Type, Id, Arg}, 
         _F, #tserver_state{db_name = DbName} = S) ->
+    Rep = dbread_possess_property(Type, Id, Arg, DbName),
     log("possess_property ~p ~p ~p ~p~n", [Type, Id, Arg, DbName]),
-    {reply, bolean, S};
+    {reply, Rep, S};
 
-handle_call({filter, Targets, Type, ArgList}, 
+handle_call({filter, Targets, ArgList}, 
         _F, #tserver_state{db_name = DbName} = S) ->
-    log("filter ~p ~p ~p ~p~n", [Targets, Type, ArgList, DbName]),
-    {reply, target_list, S};
+    Rep = dbread_filter(Targets, ArgList, DbName),
+    log("filter ~p ~p ~p ~p~n", [Targets, ArgList, DbName]),
+    {reply, Rep, S};
 
 handle_call(Q, _F, S) ->
     log("handle_call unknown msg: ~p ~p ~p", [?MODULE, ?LINE, Q]),
@@ -335,6 +409,9 @@ handle_cast(dump_state, #tserver_state{db_name = DbName} = S) ->
     log("state is ~p~n", [S]),
     log("targets_db is: ~n~p~n", [dets:match(DbName, '$1')]),
     {noreply, S};
+
+handle_cast(stop, S) ->
+    {stop, normal, S};
 
 handle_cast(Q, S) ->
     log("handle_cast unknown ~p ~p ~p", [?MODULE, ?LINE, Q]),
@@ -376,11 +453,12 @@ dbwrite_lock_id(DetsName) ->
 
 -spec dbwrite_clear_locks(dets_name()) -> ok | {error, any()}.
 dbwrite_clear_locks(DbName) ->
-    Rep = dets:match_delete(DbName, {target, '_', undef, undef, [], []}),
+    Rep = dets:match_delete(DbName, 
+            {target, '_', undef, undef, [], [], [], []}),
     Rep.
 
 -spec dbwrite_set_ip(target_id(), ip_address(), dets_name()) 
-    -> ok | {error, bad_formating | unknown_id}.
+        -> ok | {error, bad_formating | unknown_id}.
 dbwrite_set_ip(Id, Ip, DbName) ->
     case dets:lookup(DbName, Id) of
         [Record] -> 
@@ -396,11 +474,11 @@ dbwrite_set_ip(Id, Ip, DbName) ->
     end.
 
 -spec dbwrite_set_hostname(target_id(), hostname(), dets_name()) 
-    -> ok | {error, bad_name | unknown_id}.
+        -> ok | {error, bad_name | unknown_id}.
 dbwrite_set_hostname(Id, Hostname, DbName) ->
     case dets:lookup(DbName, Id) of
         [Record] -> 
-            case is_string(Hostname) of
+            case valid_hostname_string(Hostname) of
                 true ->
                     UpdatedRecord = Record#target{hostname = Hostname},
                     dets:insert(DbName, UpdatedRecord);
@@ -412,7 +490,7 @@ dbwrite_set_hostname(Id, Hostname, DbName) ->
     end.
 
 -spec dbwrite_set_property(target_id(), property(), dets_name()) 
-    -> ok | {error, bad_property | unknown_id}.
+        -> ok | {error, bad_property | unknown_id}.
 dbwrite_set_property(Id, Property, DbName) ->
     case dets:lookup(DbName, Id) of
         [Record] -> 
@@ -431,7 +509,7 @@ dbwrite_set_property(Id, Property, DbName) ->
 
 
 -spec dbwrite_set_tag(target_id(), tag(), dets_name()) 
-    -> ok | {error, unknown_id}.
+        -> ok | {error, unknown_id}.
 dbwrite_set_tag(Id, Tag, DbName) ->
     case dets:lookup(DbName, Id) of
         [Record] -> 
@@ -447,17 +525,169 @@ dbwrite_set_tag(Id, Tag, DbName) ->
     end.
 
 
+-spec dbwrite_del_target(target_id(), dets_name()) 
+        -> ok | {error, any()}.
+dbwrite_del_target(Id, DbName) ->
+    dets:delete(DbName, Id).
+
+
+-spec dbwrite_del_property(target_id(), property_key(), dets_name())
+        -> ok | {error, any()}.
+dbwrite_del_property(Id, PropertyKey, DbName) ->
+    case dets:lookup(DbName, Id) of
+        [Record] ->
+            Properties = Record#target.properties,
+            NewProperties = list:keydelete(PropertyKey, 1, Properties),
+            NewRecord = Record#target{properties = NewProperties},
+            dets:insert(DbName, NewRecord);
+        [] ->
+            {error, unknown_id}
+    end.
+
+
+-spec dbwrite_del_tag(target_id(), tag(), dets_name()) -> ok | {error, any()}.
+dbwrite_del_tag(Id, Tag, DbName) ->
+    case dets:lookup(DbName, Id) of
+        [Record] ->
+            TagList     = Record#target.lazy_tags,
+            NewTagList  = lists:delete(Tag, TagList),
+            NewRecord   = Record#target{lazy_tags = NewTagList},
+            dets:insert(DbName, NewRecord);
+        [] ->
+            {error, unknown_id}
+    end.
+
+
+-spec dbread_info(dets_name()) -> [#target{}].
+dbread_info(DbName) ->
+    dets:match(DbName, '$1').
+
+
+-spec dbread_info(target_id(), dets_name()) 
+        -> {ok, #target{}} | {error, unknown_id}.
+dbread_info(Id, DbName) ->
+    case dets:lookup(DbName, Id) of
+        [Record] ->
+            {ok, Record};
+        [] ->
+            {error, unknown_id}
+    end.
+
+
+-spec dbread_get_ids(dets_name()) -> [target_id()].
+dbread_get_ids(DbName) ->
+    dets:match(DbName, {'_', '$1', '_', '_', '_', '_', '_', '_'}).
+
+
+-spec dbread_get_ip(target_id(), dets_name()) 
+        -> { ok, ip_address() | undef} | {error, unknown_id}.
+dbread_get_ip(Id, DbName) ->
+    case dets:lookup(DbName, Id) of
+        [Record] ->
+            {ok, Record#target.ip};
+        [] ->
+            {error, unknown_id}
+    end.
+    
+
+-spec dbread_get_hostname(target_id(), dets_name())
+        -> { ok, hostname() | undef} | {error, unknown_id}.
+dbread_get_hostname(Id, DbName) ->
+    case dets:lookup(DbName, Id) of
+        [Record] ->
+            {ok, Record#target.hostname};
+        [] ->
+            {error, unknown_id}
+    end.
+
+
+-spec dbread_get_tags(target_id(), dets_name())
+        -> { ok, [tag()]} | {error, unknown_id}.
+dbread_get_tags(Id, DbName) ->
+    case dets:lookup(DbName, Id) of
+        [Record] ->
+            {ok, Record#target.lazy_tags};
+        [] ->
+            {error, unknown_id}
+    end.
+
+
+-spec dbread_get_property(target_id(), property_key(), dets_name())
+    -> {ok, property_val() | false} | {error, unknown_id}.
+dbread_get_property(Id, PropertyKey, DbName) ->
+    case dets:lookup(DbName, Id) of
+        [Record] ->
+            Properties = Record#target.properties,
+            PropertyVal = lists:keyfind(PropertyKey, 1, Properties),
+            {ok, PropertyVal};
+        [] ->
+            {error, unknown_id}
+    end.
+
+
+-spec dbread_possess_tag(target_id(), tag(), dets_name())
+    -> boolean() | {error, unknown_id}.
+dbread_possess_tag(Id, Tag, DbName) ->
+    case dets:lookup(DbName, Id) of
+        [Record] ->
+            Tags = Record#target.lazy_tags,
+            lists:member(Tag, Tags);
+        [] ->
+            {error, unknown_id}
+    end.
+
+
+-spec dbread_possess_property(
+    property_key | property_tuple,
+    target_id(),
+    property_key() | property(),
+    dets_name())
+    -> boolean() | {error, unknown_id}.
+dbread_possess_property(Type, Id, Arg, DbName) ->
+    case dets:lookup(DbName, Id) of
+        [Record] ->
+            Properties = Record#target.properties,
+            case Type of
+                property_key ->
+                    lists:keymember(Arg, 1, Properties);
+                property_tuple ->
+                    lists:member(Arg, Properties)
+            end;
+        [] ->
+            {error, unknown_id}
+    end.
+
+
+-spec dbread_filter([#target{}], [
+    {tag, tag()} | 
+    {property_key, property_key()} | 
+    {property_tuple, property()}], dets_name()) -> [#target{}].
+dbread_filter(all, Args, DbName) ->
+    dbread_filter(info(), Args, DbName);
+% TODO
+dbread_filter(_Targets, Args, _DbName) ->
+    _TagSearch       = lists:keytake(tag, 1, Args),
+    _PropKeySearch   = lists:keytake(property_key, 1, Args),
+    _PropTupleSearch = lists:keytake(property_tuple, 1, Args).
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% HELPERS                                                                    %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec is_ip(ip_address()) -> boolean().
 is_ip(_Ip) ->
     true.
 
--spec is_string(any()) -> boolean().
-is_string(Arg) ->
+-spec valid_hostname_string(any()) -> boolean().
+valid_hostname_string(Arg) ->
     Fun = fun(X) ->
         if 
-            X < 0   -> false;
-            X > 255 -> false;
-            true    -> true
+            X >= 48, X =< 90    -> true; 
+            X >= 97, X =< 122   -> true;
+            X == 45             -> true;
+            X == 95             -> true;
+            true                -> false
         end
     end,
     case is_list(Arg) of
@@ -467,13 +697,51 @@ is_string(Arg) ->
             false
     end.
 
-
-
 -spec log(string(), list()) -> ok.
 log(A, B) ->
     io:format(A, B).
 
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % EUNIT TESTS                                                                %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-define(EUNIT_DIR, "/tmp").
 
+-spec start_stop_test() -> ok.
+start_stop_test() ->
+    DbFile = filename:absname_join(?EUNIT_DIR, "targets_db"),
+    file:delete(DbFile),
+    % start stop with no file
+    ?assertMatch({ok, _},   start_link(?EUNIT_DIR)),
+    ?assertMatch(true,      dets:is_dets_file(DbFile)),
+    ?assertMatch(ok,        gen_server:cast(?MODULE, stop)),
+    timer:sleep(100),
+    % start stop with file
+    ?assertMatch({ok, _},   start_link(?EUNIT_DIR)),
+    ?assertMatch(true,      dets:is_dets_file(DbFile)),
+    ?assertMatch(ok,        gen_server:cast(?MODULE, stop)),
+    ?assertMatch(ok,        file:delete(DbFile)).
+
+-spec valid_hostname_string_test() -> ok.
+valid_hostname_string_test() ->
+    ?assertMatch(false, valid_hostname_string([1,3,67])),
+    ?assertMatch(false, valid_hostname_string("lkdfj_lsfjé")),
+    ?assertMatch(false, valid_hostname_string("jfi786/")),
+    ?assertMatch(false, valid_hostname_string([48,90, 97, 122, 45, 96])),
+    ?assertMatch(false, valid_hostname_string(<<"lkj">>)),
+    ?assertMatch(false, valid_hostname_string(<<91>>)),
+    ?assertMatch(false, valid_hostname_string(an_atom_x)),
+    ?assertMatch(true,  valid_hostname_string([48,90, 97, 122, 45, 95])),
+    ?assertMatch(true,  valid_hostname_string("223-688-545")),
+    ?assertMatch(true,  valid_hostname_string("AdF52dF-_")).
+
+-spec activity1_test() -> ok.
+activity1_test() ->
+    DbFile = filename:absname_join(?EUNIT_DIR, "targets_db"),
+    file:delete(DbFile),
+    ?assertMatch({ok, _},   start_link(?EUNIT_DIR)),
+    ?assertMatch({ok, _},   new()),
+    ?assertMatch({ok, _},   new()),
+    % simulated activity
+    ?assertMatch(ok,        gen_server:cast(?MODULE, stop)),
+    ?assertMatch(ok,        file:delete(DbFile)).
