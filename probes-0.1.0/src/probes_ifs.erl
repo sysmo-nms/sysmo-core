@@ -18,39 +18,40 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
--module(activity_logger).
--behaviour(gen_event).
+-module(probes_ifs).
+-behaviour(beha_ifs_module).
 
--export([
-    init/1,
-    handle_event/2,
-    handle_call/2,
-    handle_info/2,
-    terminate/2,
-    code_change/3]).
+%-include_lib("../include/ModTargets.hrl").
 
-init(Mod) ->
-    {ok, Mod}.
+% beha_ifs_module export
+-export([handle_msg/2, pre_process/1, initial_conn/1]).
 
-handle_event(Event, S) ->
-    log({Event, S}),
-    {ok, S}.
+-include_lib("../../ifs-1.0.1/include/client_state.hrl").
 
 
-%% not used
-handle_call(_Request, S) ->
-    {ok, ok, S}.
-
-handle_info(_Info, S) ->
-    {ok, S}.
-
-terminate(_Args, _S) ->
+% @doc
+% Handle a command from a client. Asynchronous.
+% @end
+-spec handle_msg(term(), #client_state{}) -> ok.
+handle_msg(Msg, ClientState) ->
+    io:format("~p: Message ~p from client ~p~n", [?MODULE, Msg, ClientState]),
     ok.
 
-code_change(_OldVsn, S, _ExtraA) ->
-    {ok, S}.
 
-log({Event, Mod}) ->
-    %{ok, Fd} = file:open(filename:absname_join(filename:absname(""), "var/activity.log"), append),
-    %io:fwrite(Fd, "***ACTIVITY LOGGER: ~p***~n~p~n", [Mod, Event]).
-    io:format("***ACTIVITY LOGGER: ~p***~n~W~n", [Mod, {Mod, Event}, 9]).
+% @doc
+% Return roles and valid asn term. Synchronous.
+% @end
+-spec pre_process(term()) -> 
+        {Asn::tuple(), Roles::list(Role::string())} | ignore.
+pre_process(Any) ->
+    io:format("message to pre_process ~p ~p~n", [?MODULE, Any]),
+    ignore.
+
+
+% @doc
+% Initial connexion. Asynchronous.
+% @end
+-spec initial_conn(#client_state{}) -> ok. 
+initial_conn(ClientState) ->
+    io:format("~p initialconn!!!! from ~p~n", [?MODULE, ClientState]),
+    ok.

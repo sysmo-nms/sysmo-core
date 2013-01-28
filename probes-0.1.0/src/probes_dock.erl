@@ -1,4 +1,6 @@
 % This file is part of "Enms" (http://sourceforge.net/projects/enms/)
+% Based on the work from Serge Aleynikov <saleyn at gmail.com> on the article
+% www.trapexit.org/Building_a_Non-blocking_TCP_server_using_OTP_principles
 % Copyright (C) 2012 <Sébastien Serre sserre.bx@gmail.com>
 % 
 % Enms is a Network Management System aimed to manage and monitor SNMP
@@ -18,39 +20,30 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
--module(activity_logger).
--behaviour(gen_event).
+% @private
+-module(probes_dock).
+-behaviour(supervisor).
 
--export([
-    init/1,
-    handle_event/2,
-    handle_call/2,
-    handle_info/2,
-    terminate/2,
-    code_change/3]).
+-export([start_link/0, launch/1]).
+-export([init/1]).
 
-init(Mod) ->
-    {ok, Mod}.
+start_link() ->
+	supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
-handle_event(Event, S) ->
-    log({Event, S}),
-    {ok, S}.
+launch(Config) ->
+	supervisor:start_child(?MODULE, [Config]).
 
-
-%% not used
-handle_call(_Request, S) ->
-    {ok, ok, S}.
-
-handle_info(_Info, S) ->
-    {ok, S}.
-
-terminate(_Args, _S) ->
-    ok.
-
-code_change(_OldVsn, S, _ExtraA) ->
-    {ok, S}.
-
-log({Event, Mod}) ->
-    %{ok, Fd} = file:open(filename:absname_join(filename:absname(""), "var/activity.log"), append),
-    %io:fwrite(Fd, "***ACTIVITY LOGGER: ~p***~n~p~n", [Mod, Event]).
-    io:format("***ACTIVITY LOGGER: ~p***~n~W~n", [Mod, {Mod, Event}, 9]).
+init(Config) ->
+	{ok, {
+		{simple_one_for_one, 10, 60},
+			[
+				{probes_unit,
+					{probes_unit, start_link, [Config]},
+					temporary,
+					brutal_kill,
+					worker,
+					[probes_unit]
+				}
+			]
+		}
+	}.

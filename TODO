@@ -3,12 +3,12 @@ The development flow should follow this order:
 #MODULE/OTHER           #PRIORITY   #COMPLETED
 - ifs                     HIGH        100%
 Module events and client communication/auth
-- targets                 HIGH        0%
+- targets                 HIGH        50%
 Live list of targets, associate tags to traps/inform they produce and own the
 mermisions associated.
 - esnmp                   HIGH        50%
 SNMP utility and monitoring + Live list of snmp targets
-- probes_dock             HIGH        0%
+- probes_dock             HIGH        20%
 Monitor snmp nodes and get data
 - rrd                     HIGH        0%
 Generate RRD data whith the "probes_dock" module.

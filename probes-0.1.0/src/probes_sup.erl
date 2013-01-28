@@ -2,7 +2,7 @@
 % Copyright (C) 2012 <Sébastien Serre sserre.bx@gmail.com>
 % 
 % Enms is a Network Management System aimed to manage and monitor SNMP
-% targets, monitor network hosts and services, provide a consistent
+% probes, monitor network hosts and services, provide a consistent
 % documentation system and tools to help network professionals
 % to have a wide perspective of the networks they manage.
 % 
@@ -18,39 +18,37 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
--module(activity_logger).
--behaviour(gen_event).
+% @private
+-module(probes_sup).
+-behaviour(supervisor).
 
--export([
-    init/1,
-    handle_event/2,
-    handle_call/2,
-    handle_info/2,
-    terminate/2,
-    code_change/3]).
+-export([start_link/1]).
+-export([init/1]).
 
-init(Mod) ->
-    {ok, Mod}.
+start_link(GenEventListeners) ->
+    supervisor:start_link({local, ?MODULE}, ?MODULE, [GenEventListeners]).
 
-handle_event(Event, S) ->
-    log({Event, S}),
-    {ok, S}.
-
-
-%% not used
-handle_call(_Request, S) ->
-    {ok, ok, S}.
-
-handle_info(_Info, S) ->
-    {ok, S}.
-
-terminate(_Args, _S) ->
-    ok.
-
-code_change(_OldVsn, S, _ExtraA) ->
-    {ok, S}.
-
-log({Event, Mod}) ->
-    %{ok, Fd} = file:open(filename:absname_join(filename:absname(""), "var/activity.log"), append),
-    %io:fwrite(Fd, "***ACTIVITY LOGGER: ~p***~n~p~n", [Mod, Event]).
-    io:format("***ACTIVITY LOGGER: ~p***~n~W~n", [Mod, {Mod, Event}, 9]).
+init([GenEventListeners]) ->
+    {ok, 
+        {
+            {one_for_one, 1, 60},
+            [
+                {
+                    probes_dock,
+                    {probes_dock, start_link, []},
+                    permanent,
+                    infinity,
+                    supervisor,
+                    [probes_dock]
+                },
+                {
+                    probes_events,
+                    {probes_events, start_link, [GenEventListeners]},
+                    permanent,
+                    2000,
+                    worker,
+                    [probes_events]
+                }
+            ]
+        }
+    }.

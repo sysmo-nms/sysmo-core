@@ -2,7 +2,7 @@
 % Copyright (C) 2012 <Sébastien Serre sserre.bx@gmail.com>
 % 
 % Enms is a Network Management System aimed to manage and monitor SNMP
-% targets, monitor network hosts and services, provide a consistent
+% probes, monitor network hosts and services, provide a consistent
 % documentation system and tools to help network professionals
 % to have a wide perspective of the networks they manage.
 % 
@@ -18,39 +18,19 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
--module(activity_logger).
--behaviour(gen_event).
+-module(probes_events).
+-export([start_link/1]).
 
--export([
-    init/1,
-    handle_event/2,
-    handle_call/2,
-    handle_info/2,
-    terminate/2,
-    code_change/3]).
+% @doc
+% Start the event manager and initialise the module.
+% @end
+-spec start_link(list()) -> {ok, pid()}.
+start_link(GenEventListeners) ->
+    % START the event manager:
+    ReturnSup = gen_event:start_link({local, ?MODULE}),
 
-init(Mod) ->
-    {ok, Mod}.
+    lists:foreach(fun(X) -> 
+        gen_event:add_handler(?MODULE, X, probes)
+    end, GenEventListeners),
 
-handle_event(Event, S) ->
-    log({Event, S}),
-    {ok, S}.
-
-
-%% not used
-handle_call(_Request, S) ->
-    {ok, ok, S}.
-
-handle_info(_Info, S) ->
-    {ok, S}.
-
-terminate(_Args, _S) ->
-    ok.
-
-code_change(_OldVsn, S, _ExtraA) ->
-    {ok, S}.
-
-log({Event, Mod}) ->
-    %{ok, Fd} = file:open(filename:absname_join(filename:absname(""), "var/activity.log"), append),
-    %io:fwrite(Fd, "***ACTIVITY LOGGER: ~p***~n~p~n", [Mod, Event]).
-    io:format("***ACTIVITY LOGGER: ~p***~n~W~n", [Mod, {Mod, Event}, 9]).
+    ReturnSup.
