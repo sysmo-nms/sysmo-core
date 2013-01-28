@@ -26,21 +26,22 @@
 % beha_ifs_module export
 -export([handle_msg/2, pre_process/1, initial_conn/1]).
 
+-include_lib("../../ifs-1.0.1/include/client_state.hrl").
+
 
 % @doc
-% Handle a command from a client
+% Handle a command from a client. Asynchronous.
 % @end
--spec targets_api_ifs:handle_msg(Data::term(), ClientState::record()) -> 
-        AsnResponce::term() | noreply.
+-spec handle_msg(term(), #client_state{}) -> ok.
 handle_msg(Msg, ClientState) ->
     io:format("~p: Message ~p from client ~p~n", [?MODULE, Msg, ClientState]),
-    noreply.
+    ok.
 
 
 % @doc
-% Return roles and valid asn term.
+% Return roles and valid asn term. Synchronous.
 % @end
--spec targets_api_ifs:pre_process(Data::term()) -> 
+-spec pre_process(term()) -> 
         {Asn::tuple(), Roles::list(Role::string())} | ignore.
 pre_process(Any) ->
     io:format("message to pre_process ~p ~p~n", [?MODULE, Any]),
@@ -48,10 +49,9 @@ pre_process(Any) ->
 
 
 % @doc
-% Initial connexion
+% Initial connexion. Asynchronous.
 % @end
--spec targets_api_ifs:initial_conn(ClientState::record()) -> 
-        {term(), Roles::list(Role::string())} | ignore.
+-spec initial_conn(#client_state{}) -> ok. 
 initial_conn(ClientState) ->
     io:format("~p initialconn!!!! from ~p~n", [?MODULE, ClientState]),
-    ignore.
+    ok.

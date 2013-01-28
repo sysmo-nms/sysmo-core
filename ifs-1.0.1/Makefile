@@ -43,7 +43,7 @@ $(ASN_DEST): ebin/%.beam: priv/asn1/%.asn
 
 
 # TEST
-test:
+test: compile
 
 
 # DOCUMENTATION

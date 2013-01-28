@@ -24,7 +24,7 @@
 % @doc
 % Start the event manager and initialise the module.
 % @end
--spec esnmp_events:start_link(EventListeners::list()) -> {ok, Pid::pid()}.
+-spec esnmp_events:start_link(list()) -> {ok, pid()}.
 start_link(GenEventListeners) ->
     % START the event manager:
     ReturnSup = gen_event:start_link({local, ?MODULE}),

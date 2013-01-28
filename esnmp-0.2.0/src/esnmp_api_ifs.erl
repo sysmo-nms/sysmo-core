@@ -37,7 +37,7 @@ handle_msg(Msg, ClientState) ->
 % Return roles and valid asn term.
 % @end
 -spec esnmp_api_ifs:pre_process(Data::term()) -> 
-        {Asn::tuple(), Roles::list(Role::string())}.
+        {Asn::tuple(), Roles::list(Role::string())} | ignore.
 pre_process({trap, {v2_community, Community}, {Ip, Port}, Payload}) ->
     Roles = community_to_roles(Community),
     %Tags  = esnmp_conf:get_tags(Source),

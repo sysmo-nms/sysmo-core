@@ -25,7 +25,7 @@ clean:
 	rm -f priv/snmp/mibs/*.bin
 
 # TEST
-test:
+test: compile
 
 # DOCUMENTATION
 doc: doc/index.html
