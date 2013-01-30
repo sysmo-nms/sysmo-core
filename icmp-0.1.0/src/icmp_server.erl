@@ -34,40 +34,49 @@
 
 % API
 -export([
-    start_link/0
+    start_link/0,
+    ping/2,
+    dump/0
 ]).
 
-% -record(icmp, {
-%         valid,
-%         type, code, checksum,
-%         id, sequence,
-%         gateway,
-%         un,
-%         mtu
-%     }).
 
--record(icmp_server_state, {
+-record(icmp_server, {
         socket,         % socket
         icmp_requests   % icmp message waiting for responce
     }).
 
-%-record(icmp_request_state, {
-    %ip
-%}).
+-record(icmp_request, {
+    id,
+    pid,            % pid of the caller
+    ip,             % ip required
+    timeout         % wait for reply
+}).
 
 -define(ICMP_ECHO_REPLY, 0).
 -define(ICMP_ECHO, 8).
 
--type microseconds()    :: integer().
+-type microseconds_delay()    :: integer().
 
 -spec start_link() -> {ok, pid()}.
-% @doc start the gen_server.
+% @doc
+% start the gen_server.
+% @end
 start_link() ->
-    gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
+    gen_server:start_link({global, ?MODULE}, ?MODULE, [], []).
 
--spec ping(ip4_address | hostname()) -> {ok, microseconds()} | {error, any()}.
-ping(Ip) ->
-    gen_server:
+-spec ping(inet:ip4_address() | inet:hostname(), integer()) -> 
+        {ok, microseconds_delay()} | {error, any()}.
+% @doc 
+% Do a call with noreply. handle_info should receive the responce and
+% do a gen_server:reply/2 to reply the client. Client will allways have a
+% responce, and call(_,_,Timeout+1) should prevent a gen_server:call timeout
+% to occur.
+% @end
+ping(Ip, TimeOut) ->
+    Id = crypto:rand_uniform(0, 16#FFFF),
+    gen_server:call({global, ?MODULE}, 
+            {ping, Id, Ip, TimeOut}, TimeOut + 1000).
+
 %%--------------------------------------------
 %% GEN_SERVER CALLBACKS
 %%--------------------------------------------
@@ -80,15 +89,70 @@ init([]) ->
         ]
     ),
     {ok, S} = gen_udp:open(0, [binary, {fd, FD}]),
-    {ok, #icmp_server_state{socket = S, icmp_requests = []}}.
+    {ok, #icmp_server{socket = S, icmp_requests = []}}.
+
+%%
+%% handle_cast will respond
+handle_call({ping, Id, Ip, TimeOut}, From, 
+        #icmp_server{icmp_requests = IcmpReqs} = S) ->
+    Request = #icmp_request{
+        id = Id,
+        ip = Ip,
+        pid = From,
+        timeout = TimeOut
+    },
+    gen_server:cast({global, ?MODULE}, {init_ping, Request}),
+    {noreply, S#icmp_server{icmp_requests = [Request | IcmpReqs]}};
+
+handle_call(dump, _F, S) ->
+    {reply, S, S};
 
 handle_call(_R, _F, S) ->
     {reply, ok, S}.
 
+%%
+%% start spawn(init_ping)
+handle_cast({init_ping, #icmp_request{id = Id, ip = Ip} = Request}, 
+                            #icmp_server{socket = Sock} = S) ->
+    Packet = make_icmp_packet(Id, 0),
+    ok = gen_udp:send(Sock, Ip, 0, Packet),
+    spawn(fun() -> ping_timeout(Request) end),
+    {noreply, S};
+
+%% called from init_ping. When received, search if the request is in the 
+%% #icmp_server.icmp_requests. If it is, remove it and gen_server:reply()
+handle_cast({ping_timeout, #icmp_request{id = Id} = Request}, 
+        #icmp_server{icmp_requests = ReqList} = S) ->
+    NewReqList = lists:keydelete(Id, 2, ReqList),
+    gen_server:reply(Request#icmp_request.pid, {error, noreply}),
+    {noreply, S#icmp_server{icmp_requests = NewReqList}};
+
 handle_cast(_R, S) ->
     {noreply, S}.
 
-% OTHER
+%%
+%%
+handle_info({udp, _Sock, _Ip, _Port, <<_:20/bytes, Data/binary>>}, 
+                    #icmp_server{icmp_requests = ReqList} = S) ->
+    % known icmp pdu?
+    case decode_icmp_pdu(Data) of
+        {ok, {Id, {Mega, Sec, Micro}}} ->
+            case lists:keyfind(Id, 2, ReqList) of
+                false ->
+                    {noreply, S};
+                ReqRecord ->
+                    NewReqList = lists:keydelete(Id, 2, ReqList),
+                    From = ReqRecord#icmp_request.pid,
+                    gen_server:reply(From, {ok, 
+                        timer:now_diff(erlang:now(), {Mega, Sec, Micro})}),
+                    {noreply, S#icmp_server{icmp_requests = NewReqList}}
+            end;
+        false ->
+            {noreply, S};
+        _ ->
+            {noreply, S}
+    end;
+
 handle_info(_I, S) ->
     {noreply, S}.
 
@@ -98,71 +162,53 @@ terminate(_R, _S) ->
 code_change(_O, S, _E) ->
     {ok, S}.
 
-% ping(IP) ->
-%     Id = crypto:rand_uniform(0, 16#FFFF),
-%     {ok, FD} = procket:open(0, [
-%             {protocol, icmp}, {type, raw}, {family, inet}]),
-%     {ok, S} = gen_udp:open(0, [binary, {fd, FD}]),
-%     send(#state{
-%             s = S,
-%             id = Id,
-%             ip = IP 
-%         }).
-% 
-% 
-% send(#state{s = S, id = Id, ip = IP} = _State) ->
-%     Packet = make_packet(Id, 0),
-%     ok = gen_udp:send(S, IP, 0, Packet),
-%     receive
-%         {udp, S, _IP, _Port, <<_:20/bytes, Data/binary>>} ->
-%             case icmp(Data) of
-%                 {_ICMP, <<Mega:32/integer, Sec:32/integer, 
-%                         Micro:32/integer, _Payload/binary>>} ->
-%                     {ok, timer:now_diff(erlang:now(), {Mega,Sec,Micro})};
-%                 _ ->
-%                     error_somewhere
-%             end
-%     after
-%         5000 ->
-%             {noresponse, Packet}
-%     end.
-% 
-% make_packet(Id, Seq) ->
-%     {Mega,Sec,USec} = erlang:now(),
-% 
-%     % Pad packet to 64 bytes
-%     Payload = list_to_binary(lists:seq($\s, $K)),
-% 
-%     CS = makesum(<<?ICMP_ECHO:8, 0:8, 0:16, Id:16, 
-%                     Seq:16, Mega:32, Sec:32, USec:32, Payload/binary>>),
-%     <<
-%     8:8,    % Type
-%     0:8,    % Code
-%     CS:16,  % Checksum
-%     Id:16,  % Id
-%     Seq:16, % Sequence
-% 
-%     Mega:32, Sec:32, USec:32,   % Payload: time
-%     Payload/binary
-%     >>.
-% 
-% 
-% makesum(Hdr) -> 16#FFFF - checksum(Hdr).
-% 
-% checksum(Hdr) ->
-%     lists:foldl(fun compl/2, 0, [ W || <<W:16>> <= Hdr ]).
-% 
-% compl(N) when N =< 16#FFFF -> N;
-% 
-% compl(N) -> (N band 16#FFFF) + (N bsr 16).
-% 
-% compl(N,S) -> compl(N+S).
-% 
-% icmp(<<?ICMP_ECHO_REPLY:8, 0:8, Checksum:16, Id:16, 
-%                 Sequence:16, Payload/binary>>) ->
-%     {#icmp{
-%             type = ?ICMP_ECHO_REPLY, code = 0, checksum = Checksum, id = Id,
-%             sequence = Sequence
-%         }, Payload};
-% icmp(_) ->
-%     false.
+
+%% PRIVATE FUNCTIONS
+%% when timer reched, send a ping_timeout cast.
+ping_timeout(Request) ->
+    timer:sleep(Request#icmp_request.timeout),
+    gen_server:cast({global, ?MODULE}, {ping_timeout, Request}).
+
+make_icmp_packet(Id, Seq) ->
+    {Mega,Sec,USec} = erlang:now(),
+
+    % Pad packet to 64 bytes
+    Payload = list_to_binary(lists:seq($\s, $K)),
+
+    CS = makesum(<<?ICMP_ECHO:8, 0:8, 0:16, Id:16, 
+                    Seq:16, Mega:32, Sec:32, USec:32, Payload/binary>>),
+    <<
+    8:8,    % Type
+    0:8,    % Code
+    CS:16,  % Checksum
+    Id:16,  % Id
+    Seq:16, % Sequence
+
+    Mega:32, Sec:32, USec:32,   % Payload: time
+    Payload/binary
+    >>.
+
+makesum(Hdr) -> 16#FFFF - checksum(Hdr).
+
+checksum(Hdr) ->
+    lists:foldl(fun compl/2, 0, [ W || <<W:16>> <= Hdr ]).
+
+compl(N) when N =< 16#FFFF -> N;
+
+compl(N) -> (N band 16#FFFF) + (N bsr 16).
+
+compl(N,S) -> compl(N+S).
+
+decode_icmp_pdu(<<?ICMP_ECHO_REPLY:8, 0:8, _CheckSum:16, 
+                    Id:16, _Sequence:16, Mega:32/integer, Sec:32/integer, 
+                            Micro:32/integer, _Payload/binary>>) ->
+    {ok, {Id, {Mega, Sec, Micro}}};
+    
+
+decode_icmp_pdu(_) ->
+    false.
+
+
+%% DBUG
+dump() ->
+    gen_server:call({global, ?MODULE}, dump).

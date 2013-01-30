@@ -18,23 +18,16 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
-{application, icmp,
-	[
-		{description, "icmp utils"},
-		{vsn, "0.1.0"},
-		{modules, 
-            [
-                icmp_server
-            ]
-        },
-		{registered, 
-            [
-                icmp_server
-            ]
-        },
-		{applications, 
-            [kernel, stdlib, procket]
-        },
-        {mod, {icmp_app, []}}
-	]
-}.
+% @private
+-module(icmp_app).
+-behaviour(application).
+
+-export([
+    start/2,
+    stop/1]).
+
+start(_Type, _Args) ->
+    icmp_sup:start_link().
+
+stop(_State) ->
+	ok.
