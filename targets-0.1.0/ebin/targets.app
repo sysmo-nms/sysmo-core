@@ -32,7 +32,7 @@
 		{registered, [
             ]},
 		{applications, 
-            [kernel, stdlib]
+            [kernel, stdlib, icmp]
         },
         {start_phases, [{init_elements, []}]},
 		{mod, {targets_app, []}}

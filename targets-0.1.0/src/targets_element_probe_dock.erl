@@ -22,11 +22,17 @@
 -module(targets_element_probe_dock).
 -behaviour(supervisor).
 
--export([start_link/0]).
+-export([
+    start_link/0,
+    launch/1
+]).
 -export([init/1]).
 
 start_link() ->
     supervisor:start_link(?MODULE, []).
+
+launch(Args) ->
+    supervisor:start_child(?MODULE, Args).
 
 init([]) ->
     {ok, 

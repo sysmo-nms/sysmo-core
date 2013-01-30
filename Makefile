@@ -1,7 +1,7 @@
 # Makefile 
 
 REL_NAME        = enms
-MODS            = ifs esnmp targets activity_logger procket icmp
+MODS            = ifs esnmp targets activity_logger procket icmp errd
 MODS_VER        = $(foreach app, $(MODS), $(wildcard $(app)-*))
 
 compile: recurse pdu_lib
