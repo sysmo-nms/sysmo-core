@@ -5,6 +5,9 @@
 
 
 
+-record('ChanInfo',{
+module, channel}).
+
 -record('IfPDU_fromServer_authAck',{
 groups, modules}).
 

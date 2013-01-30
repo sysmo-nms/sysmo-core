@@ -38,7 +38,7 @@ init([GenEventListeners]) ->
                     permanent,
                     2000,
                     worker,
-                    [esnmp_events]
+                    dynamic
                 }
             ]
         }

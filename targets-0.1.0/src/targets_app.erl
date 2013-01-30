@@ -22,12 +22,21 @@
 -module(targets_app).
 -behaviour(application).
 
--export([start/2, stop/1]).
+-export([
+    start/2,
+    start_phase/3,
+    stop/1]).
 
 start(_Type, _Args) ->
     {ok, GenEventListeners} = application:get_env(targets, registered_events),
     {ok, DbDir}             = application:get_env(targets, db_dir),
     targets_sup:start_link(GenEventListeners, DbDir).
+
+start_phase(init_elements, normal, []) ->
+    AllTargets = targets_store:info(),
+    lists:foreach(fun(X) ->
+        targets_element_dock:new(X)
+    end, AllTargets).
 
 stop(_State) ->
 	ok.

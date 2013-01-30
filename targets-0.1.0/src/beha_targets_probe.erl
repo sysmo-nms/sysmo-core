@@ -2,7 +2,7 @@
 % Copyright (C) 2012 <Sébastien Serre sserre.bx@gmail.com>
 % 
 % Enms is a Network Management System aimed to manage and monitor SNMP
-% probes, monitor network hosts and services, provide a consistent
+% targets, monitor network hosts and services, provide a consistent
 % documentation system and tools to help network professionals
 % to have a wide perspective of the networks they manage.
 % 
@@ -18,19 +18,14 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
--module(probes_events).
--export([start_link/1]).
+-module(beha_targets_probe).
+-export([behaviour_info/1]).
 
-% @doc
-% Start the event manager and initialise the module.
-% @end
--spec start_link(list()) -> {ok, pid()}.
-start_link(GenEventListeners) ->
-    % START the event manager:
-    ReturnSup = gen_event:start_link({local, ?MODULE}),
+behaviour_info(callbacks) ->
+    [
+        {launch_probe, 2},
+        {stop_probe, 0}
+    ];
 
-    lists:foreach(fun(X) -> 
-        gen_event:add_handler(?MODULE, X, probes)
-    end, GenEventListeners),
-
-    ReturnSup.
+behaviour_info(_) ->
+    undefined.

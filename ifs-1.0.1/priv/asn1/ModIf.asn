@@ -7,11 +7,16 @@ Group       ::= PrintableString (SIZE (1..50))
 
 Modules     ::= SEQUENCE OF Module
 Module      ::= PrintableString (SIZE (1..30))
+Channels    ::= SEQUENCE OF Channel
+Channel     ::= PrintableString (SIZE (1..30))
 
 AuthProto   ::= ENUMERATED {localFile(0), ldap(1)}
 
+ChanInfo    ::= SEQUENCE {module Module, channel Channel}
+
 IfPDU ::= CHOICE {
     fromServer [0] CHOICE {
+        chanInfo    [1] ChanInfo,
         authReq     [2] AuthProto,
         authAck     [3] SEQUENCE {
                 groups  Groups,

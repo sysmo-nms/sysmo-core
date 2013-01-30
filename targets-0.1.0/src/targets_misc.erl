@@ -20,18 +20,18 @@
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 -module(targets_misc).
 -export([
-    generate_id/0
+    generate_id/0,
+    fill_targets_store/1
 ]).
 
-%%--------------------------------------------------------------
-%% @doc generate_id. genere un ash pour le navigateur client
-%%		tips: pour etre sur de retourner une valeur unique on
-%%		peut utiliser le #user record + le erlang:universaltime.
-%%		L'existance du resultat dans mnesia est verifié. Si il
-%%		existe, il est relancé.
-%%. .   .   binary()
-%% @end
-%%--------------------------------------------------------------
+-spec generate_id() -> string().
+% @doc generate_id. genere un ash pour le navigateur client
+%		tips: pour etre sur de retourner une valeur unique on
+%		peut utiliser le #user record + le erlang:universaltime.
+%		L'existance du resultat dans mnesia est verifié. Si il
+%		existe, il est relancé.
+%. .   .   binary()
+% @end
 generate_id() ->
 	generate_id({erlang:universaltime(), random:uniform()}).
 
@@ -41,10 +41,18 @@ generate_id(Term) ->
 	HexList = lists:map(fun(X) -> dec_to_hex(X) end, List),
 	FinalList = concat_id(HexList),
 	Id = list_to_binary(FinalList),
-	erlang:binary_to_list(Id).
+	erlang:list_to_atom("target-" ++ erlang:binary_to_list(Id)).
 
+-spec fill_targets_store(integer()) -> ok | any().
+% @doc
+% fill target_store with empty target records.
+% @end
+fill_targets_store(0) ->
+    ok;
 
-
+fill_targets_store(Num) ->
+    targets_store:new(),
+    fill_targets_store(Num - 1).
 
 
 

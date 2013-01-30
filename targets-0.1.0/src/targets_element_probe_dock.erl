@@ -18,38 +18,29 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
--module(probes_unit).
--behaviour(gen_server).
+% @private
+-module(targets_element_probe_dock).
+-behaviour(supervisor).
 
-%% External API
 -export([start_link/0]).
-
-%% gen_server callbacks
--export([
-    init/1, 
-    handle_call/3, 
-    handle_cast/2, 
-    handle_info/2, 
-    terminate/2,
-    code_change/3]).
+-export([init/1]).
 
 start_link() ->
-    gen_server:start_link({local, ?MODULE}, ?MODULE, []).
+    supervisor:start_link(?MODULE, []).
 
 init([]) ->
-    {ok, state}. 
-
-handle_call(_R, _F, S) ->
-    {noreply, S}.
-
-handle_cast(_Msg, State) ->
-    {noreply, State}.
-
-handle_info(_Info, State) ->
-    {noreply, State}.
-
-terminate(_Reason, _State) ->
-    ok.
-
-code_change(_OldVsn, State, _Extra) ->
-    {ok, State}.
+    {ok, 
+        {
+            {simple_one_for_one, 1, 60},
+            [
+                {
+                    targets_probe,
+                    {targets_probe, start_link, []},
+                    permanent,
+                    2000,
+                    worker,
+                    [targets_probe]
+               }
+            ]
+        }
+    }.

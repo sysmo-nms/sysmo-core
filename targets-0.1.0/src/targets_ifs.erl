@@ -1,6 +1,4 @@
 % This file is part of "Enms" (http://sourceforge.net/projects/enms/)
-% Based on the work from Serge Aleynikov <saleyn at gmail.com> on the article
-% www.trapexit.org/Building_a_Non-blocking_TCP_server_using_OTP_principles
 % Copyright (C) 2012 <Sébastien Serre sserre.bx@gmail.com>
 % 
 % Enms is a Network Management System aimed to manage and monitor SNMP
@@ -20,30 +18,40 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
-% @private
--module(probes_dock).
--behaviour(supervisor).
+-module(targets_ifs).
+-behaviour(beha_ifs_module).
 
--export([start_link/0, launch/1]).
--export([init/1]).
+%-include_lib("../include/ModTargets.hrl").
 
-start_link() ->
-	supervisor:start_link({local, ?MODULE}, ?MODULE, []).
+% beha_ifs_module export
+-export([handle_msg/2, pre_process/1, initial_conn/1]).
 
-launch(Config) ->
-	supervisor:start_child(?MODULE, [Config]).
+-include_lib("../../ifs-1.0.1/include/client_state.hrl").
 
-init(Config) ->
-	{ok, {
-		{simple_one_for_one, 10, 60},
-			[
-				{probes_unit,
-					{probes_unit, start_link, [Config]},
-					temporary,
-					brutal_kill,
-					worker,
-					[probes_unit]
-				}
-			]
-		}
-	}.
+
+% @doc
+% Handle a command from a client. Asynchronous.
+% @end
+-spec handle_msg(term(), #client_state{}) -> ok.
+handle_msg(Msg, ClientState) ->
+    io:format("~p: Message ~p from client ~p~n", [?MODULE, Msg, ClientState]),
+    ok.
+
+
+% @doc
+% Return roles and valid asn term. Synchronous.
+% @end
+-spec pre_process(term()) -> 
+        {Asn::tuple(), Roles::list(Role::string())} | ignore.
+pre_process(Any) ->
+    io:format("message to pre_process ~p ~p~n", [?MODULE, Any]),
+    ignore.
+
+
+% @doc
+% Initial connexion. Asynchronous.
+% @end
+-spec initial_conn(#client_state{}) -> ok. 
+initial_conn(ClientState) ->
+    io:format("~p initialconn!!!! from ~p~n", [?MODULE, ClientState]),
+    ok.

@@ -2,7 +2,7 @@
 % Copyright (C) 2012 <Sébastien Serre sserre.bx@gmail.com>
 % 
 % Enms is a Network Management System aimed to manage and monitor SNMP
-% probes, monitor network hosts and services, provide a consistent
+% targets, monitor network hosts and services, provide a consistent
 % documentation system and tools to help network professionals
 % to have a wide perspective of the networks they manage.
 % 
@@ -18,37 +18,17 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
-% @private
--module(probes_sup).
--behaviour(supervisor).
-
--export([start_link/1]).
--export([init/1]).
-
-start_link(GenEventListeners) ->
-    supervisor:start_link({local, ?MODULE}, ?MODULE, [GenEventListeners]).
-
-init([GenEventListeners]) ->
-    {ok, 
-        {
-            {one_for_one, 1, 60},
-            [
-                {
-                    probes_dock,
-                    {probes_dock, start_link, []},
-                    permanent,
-                    infinity,
-                    supervisor,
-                    [probes_dock]
-                },
-                {
-                    probes_events,
-                    {probes_events, start_link, [GenEventListeners]},
-                    permanent,
-                    2000,
-                    worker,
-                    [probes_events]
-                }
-            ]
+{application, icmp,
+	[
+		{description, "icmp utils"},
+		{vsn, "0.1.0"},
+		{modules, [
+                icmp
+            ]},
+		{registered, [
+            ]},
+		{applications, 
+            [kernel, stdlib, procket]
         }
-    }.
+	]
+}.

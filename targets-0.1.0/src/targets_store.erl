@@ -33,7 +33,7 @@
 % and tags are user definissable.
 % </p>
 % @end
--module(targets).
+-module(targets_store).
 -behaviour(gen_server).
 -include_lib("eunit/include/eunit.hrl").
 -include_lib("../include/targets.hrl").
@@ -131,7 +131,7 @@ clear_locks() ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % MODULE API. NOT ALL FUN NEED TO BE EXPORTED TO THE CLIENT                  %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--type target_id()   :: string().
+-type target_id()   :: atom().
 -type ip_address()  :: {integer(), integer(), integer(), integer()}.
 -type hostname()    :: string().
 -type dets_name()   :: atom().
@@ -418,7 +418,7 @@ init([DbDir]) ->
             {access, read_write},
             {type, set},
             {keypos, 2}]),    % we will store records
-    dbwrite_clear_locks(DbName),
+    %dbwrite_clear_locks(DbName),
     {ok, #tserver_state{
             db_dir  = DbDir2,
             db_file = DbFile,
@@ -602,7 +602,7 @@ code_change(_O, S, _E) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec dbwrite_lock_id(dets_name()) -> target_id().
 dbwrite_lock_id(DetsName) ->
-    Id = "target-" ++ targets_misc:generate_id(),
+    Id = targets_misc:generate_id(),
     % if Id exist in the table retry else return.
     TargetRecord = #target{id = Id},
     case dets:insert_new(DetsName, TargetRecord) of

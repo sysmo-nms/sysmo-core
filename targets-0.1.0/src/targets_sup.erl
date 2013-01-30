@@ -40,16 +40,32 @@ init([GenEventListeners, DbDir]) ->
                     permanent,
                     2000,
                     worker,
-                    [targets_events]
-               },
-               {
-                    targets,
-                    {targets, start_link, [DbDir]},
+                    dynamic
+                },
+                {
+                    targets_element_registry,
+                    {targets_element_registry, start_link, []},
                     permanent,
                     2000,
                     worker,
-                    [targets]
-               }
+                    [targets_element_registry]
+                },
+                {
+                    targets_element_dock,
+                    {targets_element_dock, start_link, []},
+                    permanent,
+                    infinity,
+                    supervisor,
+                    [targets_element_dock]
+                },
+                {
+                    targets_store,
+                    {targets_store, start_link, [DbDir]},
+                    permanent,
+                    2000,
+                    worker,
+                    [targets_store]
+                }
             ]
         }
     }.

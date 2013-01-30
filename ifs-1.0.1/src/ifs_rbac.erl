@@ -37,6 +37,7 @@
 %%-------------------------------------------------------------
 % @doc start the server. No arguments.
 start_link() ->
+    log("---------------ifs_rbac start~n"),
     gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
 % @doc Ajoute un client au service si il n'y est pas deja et sourcris au module Mod
@@ -167,3 +168,9 @@ ifs_del_client(S, CState) ->
         NewList = lists:delete(CState, List),
         ets:update_element(S, Key, {2, NewList})
     end, All).
+
+log(A) ->
+    log(A, []).
+
+log(A,B) ->
+    io:format(A,B).

@@ -2,7 +2,7 @@
 % Copyright (C) 2012 <Sébastien Serre sserre.bx@gmail.com>
 % 
 % Enms is a Network Management System aimed to manage and monitor SNMP
-% probes, monitor network hosts and services, provide a consistent
+% targets, monitor network hosts and services, provide a consistent
 % documentation system and tools to help network professionals
 % to have a wide perspective of the networks they manage.
 % 
@@ -18,25 +18,36 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
-{application, probes,
-	[
-		{description, "Enms query data system"},
-		{vsn, "0.1.0"},
-		{modules, [
-                probes_app,
-                probes_sup,
-                probes_dock,
-                probes_unit
-            ]},
-		{registered, [
-                probes_sup,
-                probes_dock
-            ]},
-		{applications, 
-            [kernel, stdlib]
-        },
+% @private
+-module(targets_element_dock).
+-behaviour(supervisor).
 
-		% mandatory
-		{mod, {probes_app, []}}
-	]
-}.
+-export([
+    start_link/0,
+    new/1
+]).
+-export([init/1]).
+
+start_link() ->
+    supervisor:start_link({local, ?MODULE}, ?MODULE, []).
+
+new(TargetRecord) ->
+    supervisor:start_child(?MODULE, [TargetRecord]).
+
+
+init([]) ->
+    {ok, 
+        {
+            {simple_one_for_one, 1, 60},
+            [
+                {
+                    targets_element_sup,
+                    {targets_element_sup, start_link, []},
+                    permanent,
+                    infinity,
+                    supervisor,
+                    [targets_element_sup]
+                }
+            ]
+        }
+    }.

@@ -23,8 +23,10 @@
 		{description, "Data store of targets configuration"},
 		{vsn, "0.1.0"},
 		{modules, [
+                targets,
                 targets_app,
                 targets_sup,
+                targets_ifs,
                 targets_events
             ]},
 		{registered, [
@@ -32,8 +34,7 @@
 		{applications, 
             [kernel, stdlib]
         },
-
-		% mandatory
+        {start_phases, [{init_elements, []}]},
 		{mod, {targets_app, []}}
 	]
 }.

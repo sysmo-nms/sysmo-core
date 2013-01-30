@@ -19,7 +19,7 @@
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 % @private
--module(ifs_server).
+-module(ifs_mpd).
 -behaviour(gen_server).
 -include_lib("../include/client_state.hrl").
 
@@ -43,10 +43,8 @@
 -record(ifs_app_record, {
     app_name,           % presented to the client
     callback_mod,       % callback ifs module
-    asnkey,             % asnkey for client request
-    channels,           % channels from the module
-    perms}).            % who is allowed to read this module
-
+    asnkey}).             % asnkey for client request
+%    channels}).         % channels from the module
 
 -record(if_server_state, {
     authmod,            % authentication module
@@ -163,8 +161,10 @@ handle_call(_R, _F, S) ->
 % @doc Send an Ack PDU to the client defined by ClientState
 handle_cast({send_ack, Roles,
         #client_state{module = CliMod} = ClientState, Name}, S) ->
-    Modules = lists:map(fun(X) -> erlang:atom_to_list(X#ifs_app_record.app_name)
-        end, S#if_server_state.modules),
+    log("-----------oqisdufoqisdfu-------~p", S),
+    Modules = lists:map(fun(X) -> 
+        erlang:atom_to_list(X#ifs_app_record.app_name)
+    end, S#if_server_state.modules),
     CliMod:auth_set(success, ClientState, Name, Roles, Modules),
     CliMod:send(ClientState, {modIfPDU, {fromServer, {authAck,
         {'AuthPDU_fromServer_authAck', Roles, Modules}}}}),
