@@ -123,20 +123,25 @@ handle_cast({init_ping, #icmp_request{id = Id, ip = Ip} = Request},
 %% #icmp_server.icmp_requests. If it is, remove it and gen_server:reply()
 handle_cast({ping_timeout, #icmp_request{id = Id} = Request}, 
         #icmp_server{icmp_requests = ReqList} = S) ->
-    NewReqList = lists:keydelete(Id, 2, ReqList),
-    gen_server:reply(Request#icmp_request.pid, {error, noreply}),
-    {noreply, S#icmp_server{icmp_requests = NewReqList}};
+    case lists:keyfind(Id, 2, ReqList) of
+        false ->
+            {noreply, S};
+        ReqRecord ->
+            NewReqList = lists:delete(ReqRecord, ReqList),
+            gen_server:reply(Request#icmp_request.pid, {error, noreply}),
+            {noreply, S#icmp_server{icmp_requests = NewReqList}}
+    end;
 
 handle_cast(_R, S) ->
     {noreply, S}.
 
-%%
-%%
+%% INFO
 handle_info({udp, _Sock, _Ip, _Port, <<_:20/bytes, Data/binary>>}, 
                     #icmp_server{icmp_requests = ReqList} = S) ->
     % known icmp pdu?
     case decode_icmp_pdu(Data) of
         {ok, {Id, {Mega, Sec, Micro}}} ->
+            % did cast(ping_timeout) removed it from the server_state?
             case lists:keyfind(Id, 2, ReqList) of
                 false ->
                     {noreply, S};
