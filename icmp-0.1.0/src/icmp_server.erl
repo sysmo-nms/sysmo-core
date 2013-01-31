@@ -77,6 +77,9 @@ ping(Ip, TimeOut) ->
     gen_server:call({global, ?MODULE}, 
             {ping, Id, Ip, TimeOut}, TimeOut + 1000).
 
+%% DBUG
+dump() ->
+    gen_server:call({global, ?MODULE}, dump).
 %%--------------------------------------------
 %% GEN_SERVER CALLBACKS
 %%--------------------------------------------
@@ -99,8 +102,7 @@ handle_call({ping, Id, Ip, TimeOut}, From,
         id = Id,
         ip = Ip,
         pid = From,
-        timeout = TimeOut
-    },
+        timeout = TimeOut },
     gen_server:cast({global, ?MODULE}, {init_ping, Request}),
     {noreply, S#icmp_server{icmp_requests = [Request | IcmpReqs]}};
 
@@ -153,8 +155,6 @@ handle_info({udp, _Sock, _Ip, _Port, <<_:20/bytes, Data/binary>>},
                     {noreply, S#icmp_server{icmp_requests = NewReqList}}
             end;
         false ->
-            {noreply, S};
-        _ ->
             {noreply, S}
     end;
 
@@ -214,6 +214,3 @@ decode_icmp_pdu(_) ->
     false.
 
 
-%% DBUG
-dump() ->
-    gen_server:call({global, ?MODULE}, dump).

@@ -4,11 +4,13 @@ APP     = targets
 ERL     = erl
 ERLC   += erlc -Werror
 SRC     = $(shell find src -name "*.erl")
-DEST    = $(patsubst src/%.erl, ebin/%.beam, $(SRC))
+ALL_DEST    = $(patsubst src/%.erl, ebin/%.beam, $(SRC))
+BEHAVIOURS  = $(filter ebin/%behaviour.beam, $(ALL_DEST))
+OTHER_DEST  = $(filter-out ebin/%behaviour.beam, $(ALL_DEST))
 INCLUDE = $(wildcard include/*.hrl)
-EPATH  += -pa ../ifs-1.0.1/ebin
+EPATH  += -pa ../ifs-1.0.1/ebin -pa ebin
 
-compile: $(DEST)
+compile: $(BEHAVIOURS) $(OTHER_DEST)
 
 ebin/%.beam: src/%.erl $(INCLUDE)
 	$(ERLC) $(EPATH) -o ebin/ src/$*.erl

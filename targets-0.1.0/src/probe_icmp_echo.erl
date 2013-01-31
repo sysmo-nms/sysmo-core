@@ -18,14 +18,20 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
--module(beha_targets_probe).
--export([behaviour_info/1]).
+% @private
+-module(probe_icmp_echo).
+-behaviour(probe_behaviour).
+-export([
+    process/1
+]).
 
-behaviour_info(callbacks) ->
-    [
-        {launch_probe, 2},
-        {stop_probe, 0}
-    ];
-
-behaviour_info(_) ->
-    undefined.
+% @doc
+% process() must
+% @end
+process([Ip, TimeOut]) ->
+    case icmp_server:ping(Ip, TimeOut) of
+        {ok, Latency} ->
+            {ok, Latency};
+        _ ->
+            timeout
+    end.

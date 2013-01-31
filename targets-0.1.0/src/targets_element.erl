@@ -33,7 +33,8 @@
 ]).
 
 -export([
-    start_link/1
+    start_link/1,
+    add_probe/2
 ]).
 
 %%-------------------------------------------------------------
@@ -41,10 +42,11 @@
 %%-------------------------------------------------------------
 % @doc start the server.
 start_link(TargetRecord) ->
-    gen_server:start_link({
-        via, targets_element_registry, 
-        TargetRecord#target.id}, 
+    gen_server:start_link({local, TargetRecord#target.id}, 
         ?MODULE, [TargetRecord], []).
+
+add_probe(Id, {ProbeName, ProbeFun, TimeSeq}) ->
+    gen_server:cast(Id, {add_probe, ProbeName, ProbeFun, TimeSeq}).
 
 %% GEN_SERVER CALLBACKS
 %%-------------------------------------------------------------
@@ -56,6 +58,13 @@ handle_call(R, _F, S) ->
     {noreply, S}.
 
 % CAST
+%handle_cast({add_probe, ProbeName, ProbeFun, TimeSeq},
+%                            #target{probes = Probes} = S) ->
+    %case lists:keyfind(ProbeName, 1, Probes) of
+        %false -> ok;
+        %{ProbeName, ProbeId} ->
+%    {noreply, S#target{probes = [ProbeConf | Probes]}};
+
 handle_cast(R, S) ->
     io:format("handle_cast ~p ~p ~p~n", [?MODULE, R, S]),
     {noreply, S}.
