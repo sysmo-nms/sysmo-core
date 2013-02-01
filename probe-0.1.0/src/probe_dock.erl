@@ -19,20 +19,27 @@
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 % @private
--module(targets_element_probe_dock).
+-module(probe_dock).
 -behaviour(supervisor).
 
 -export([
     start_link/0,
-    launch/1
+    new/1,
+    init_target/1
 ]).
 -export([init/1]).
 
 start_link() ->
-    supervisor:start_link(?MODULE, []).
+    supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
-launch(Args) ->
-    supervisor:start_child(?MODULE, Args).
+new(TargetRecord) ->
+    supervisor:start_child(?MODULE, TargetRecord).
+
+% @doc
+% Extract the probes config from the records and initate the probes.
+% @end
+init_target(_TargetRecord) ->
+    ok.
 
 init([]) ->
     {ok, 
@@ -40,12 +47,12 @@ init([]) ->
             {simple_one_for_one, 1, 60},
             [
                 {
-                    targets_probe,
-                    {targets_probe, start_link, []},
+                    probe,
+                    {probe, start_link, []},
                     permanent,
                     2000,
                     worker,
-                    [targets_probe]
+                    [probe]
                }
             ]
         }

@@ -34,7 +34,7 @@
 		{applications, 
             [kernel, stdlib, icmp]
         },
-        {start_phases, [{init_elements, []}]},
+        {start_phases, [{init_probes, []}]},
 		{mod, {targets_app, []}}
 	]
 }.

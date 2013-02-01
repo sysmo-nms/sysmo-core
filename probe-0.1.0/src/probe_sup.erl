@@ -19,36 +19,28 @@
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 % @private
--module(targets_element_sup).
+-module(probe_sup).
 -behaviour(supervisor).
 
--export([start_link/1]).
+-export([start_link/0]).
 -export([init/1]).
 
-start_link([TargetRecord]) ->
-    supervisor:start_link(?MODULE, [TargetRecord]).
+start_link() ->
+    supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
-init([TargetRecord]) ->
+init([]) ->
     {ok, 
         {
             {one_for_one, 1, 60},
             [
                 {
-                    targets_element,
-                    {targets_element, start_link, [TargetRecord]},
+                    probe_dock,
+                    {probe_dock, start_link, []},
                     permanent,
                     2000,
                     worker,
-                    [targets_element]
-               },
-               {
-                    targets_element_probe_dock,
-                    {targets_element_probe_dock, start_link, []},
-                    permanent,
-                    infinity,
-                    supervisor,
-                    [targets_element_probe_dock]
-               }
+                    [probe_dock]
+                }
             ]
         }
     }.

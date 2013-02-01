@@ -32,10 +32,10 @@ start(_Type, _Args) ->
     {ok, DbDir}             = application:get_env(targets, db_dir),
     targets_sup:start_link(GenEventListeners, DbDir).
 
-start_phase(init_elements, normal, []) ->
+start_phase(init_probes, normal, []) ->
     AllTargets = targets_store:info(),
     lists:foreach(fun(X) ->
-        targets_element_dock:new(X)
+        probe_dock:init_target(X)
     end, AllTargets).
 
 stop(_State) ->

@@ -19,19 +19,15 @@
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 % @private
--module(probe_icmp_echo).
--behaviour(probe_behaviour).
--export([
-    process/1
-]).
+-module(probe_app).
+-behaviour(application).
 
-% @doc
-% process() must
-% @end
-process([Ip, TimeOut]) ->
-    case icmp_server:ping(Ip, TimeOut) of
-        {ok, Latency} ->
-            {ok, Latency};
-        _ ->
-            timeout
-    end.
+-export([
+    start/2,
+    stop/1]).
+
+start(_Type, _Args) ->
+    probe_sup:start_link().
+
+stop(_State) ->
+	ok.

@@ -19,9 +19,8 @@
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 % @private
--module(targets_element).
+-module(probe).
 -behaviour(gen_server).
--include_lib("../include/targets.hrl").
 
 -export([
     init/1,
@@ -34,39 +33,35 @@
 
 -export([
     start_link/1,
-    add_probe/2
+    launch/1
 ]).
 
 %%-------------------------------------------------------------
 %% API
 %%-------------------------------------------------------------
 % @doc start the server.
-start_link(TargetRecord) ->
-    gen_server:start_link({local, TargetRecord#target.id}, 
-        ?MODULE, [TargetRecord], []).
+start_link({Id, Fun}) ->
+    gen_server:start_link({local, Id}, [{Fun}], []).
 
-add_probe(Id, {ProbeName, ProbeFun, TimeSeq}) ->
-    gen_server:cast(Id, {add_probe, ProbeName, ProbeFun, TimeSeq}).
+% after the genserver finished, the probe must be initated with this procedure
+launch(Id) ->
+    gen_server:call(Id, launch).
 
 %% GEN_SERVER CALLBACKS
 %%-------------------------------------------------------------
-init([TargetRecord]) ->
-    {ok, [TargetRecord]}.
+init([Conf]) ->
+    {ok, Conf}.
+
+handle_call(launch, _F, S) ->
+    %spawn(Fun(self())),
+    {reply, ok, S};
 
 handle_call(R, _F, S) ->
     io:format("handle_call ~p ~p ~p ~p~n", [?MODULE, R, _F, S]),
     {noreply, S}.
 
-% CAST
-%handle_cast({add_probe, ProbeName, ProbeFun, TimeSeq},
-%                            #target{probes = Probes} = S) ->
-    %case lists:keyfind(ProbeName, 1, Probes) of
-        %false -> ok;
-        %{ProbeName, ProbeId} ->
-%    {noreply, S#target{probes = [ProbeConf | Probes]}};
-
-handle_cast(R, S) ->
-    io:format("handle_cast ~p ~p ~p~n", [?MODULE, R, S]),
+handle_cast(reply_from_fun, S) ->
+    %spawn(Fun(self())),
     {noreply, S}.
 
 % OTHER
@@ -75,7 +70,9 @@ handle_info(I, S) ->
     {noreply, S}.
 
 terminate(_R, _S) ->
+    io:format("terminate ~p ~p ~p~n", [?MODULE, _R, _S]),
     normal.
 
 code_change(_O, S, _E) ->
+    io:format("code_change ~p ~p ~p ~p~n", [?MODULE, _O, _E, S]),
     {ok, S}.

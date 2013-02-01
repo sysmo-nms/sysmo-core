@@ -98,12 +98,6 @@
     filter/3
 ]).
 
--ifdef(EUNIT).
--define(EVENT_COMM, log).
--else.
--define(EVENT_COMM, gen_event:notiry).
--endif.
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % SERVER UTILITY                                                             %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1066,7 +1060,7 @@ valid_hostname_string(Arg) ->
 -spec generate_event({insert | update, #target{}} | {delete, target_id()}) 
         -> ok.
 generate_event(Event) ->
-    ?EVENT_COMM(targets_events, Event).
+    gen_event:notify(targets_events, Event).
 
 -spec log(string(), list()) -> ok.
 log(targets_events, Event) ->

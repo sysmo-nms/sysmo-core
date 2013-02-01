@@ -19,35 +19,18 @@
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 % @private
--module(targets_element_dock).
--behaviour(supervisor).
-
+-module(probe_icmp_echo).
 -export([
-    start_link/0,
-    new/1
+    process/1
 ]).
--export([init/1]).
 
-start_link() ->
-    supervisor:start_link({local, ?MODULE}, ?MODULE, []).
-
-new(TargetRecord) ->
-    supervisor:start_child(?MODULE, [TargetRecord]).
-
-
-init([TargetRecord]) ->
-    {ok, 
-        {
-            {one_for_one, 1, 60},
-            [
-                {
-                    targets_element,
-                    {targets_element, start_link, [TargetRecord]},
-                    permanent,
-                    2000,
-                    worker,
-                    [targets_element]
-               }
-            ]
-        }
-    }.
+% @doc
+% process() must
+% @end
+process([Ip, TimeOut]) ->
+    case icmp_server:ping(Ip, TimeOut) of
+        {ok, Latency} ->
+            {ok, Latency};
+        _ ->
+            timeout
+    end.
