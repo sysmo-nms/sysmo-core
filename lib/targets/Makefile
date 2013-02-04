@@ -8,7 +8,7 @@ ALL_DEST    = $(patsubst src/%.erl, ebin/%.beam, $(SRC))
 BEHAVIOURS  = $(filter ebin/%behaviour.beam, $(ALL_DEST))
 OTHER_DEST  = $(filter-out ebin/%behaviour.beam, $(ALL_DEST))
 INCLUDE = $(wildcard include/*.hrl)
-EPATH  += -pa ../ifs-1.0.1/ebin -pa ebin
+EPATH  += -pa ../ifs/ebin -pa ebin
 
 compile: $(BEHAVIOURS) $(OTHER_DEST)
 

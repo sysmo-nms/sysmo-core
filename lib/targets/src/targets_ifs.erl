@@ -18,36 +18,40 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
--ifndef( _ELDAP_HRL ).
--define( _ELDAP_HRL , 1 ).
+-module(targets_ifs).
+-behaviour(beha_ifs_module).
 
-%%%
-%%% Search input parameters
-%%%
--record(eldap_search, {
-	  base = [],             % Baseobject
-	  filter = [],           % Search conditions
-	  scope=wholeSubtree,    % Search scope
-	  deref=derefAlways,     % Dereference
-	  attributes = [],       % Attributes to be returned
-	  types_only = false,    % Return types+values or types
-	  timeout = 0            % Timelimit for search
-	 }).
+%-include_lib("../include/ModTargets.hrl").
 
-%%%
-%%% Returned search result
-%%%
--record(eldap_search_result, {
-	  entries = [],          % List of #eldap_entry{} records
-	  referrals = []         % List of referrals
-	  }).
+% beha_ifs_module export
+-export([handle_msg/2, pre_process/1, initial_conn/1]).
 
-%%%
-%%% LDAP entry
-%%%
--record(eldap_entry, {
-	  object_name = "",      % The DN for the entry
-	  attributes = []        % List of {Attribute, Value} pairs
-	 }).
+-include_lib("../../ifs/include/client_state.hrl").
 
--endif.
+
+% @doc
+% Handle a command from a client. Asynchronous.
+% @end
+-spec handle_msg(term(), #client_state{}) -> ok.
+handle_msg(Msg, ClientState) ->
+    io:format("~p: Message ~p from client ~p~n", [?MODULE, Msg, ClientState]),
+    ok.
+
+
+% @doc
+% Return roles and valid asn term. Synchronous.
+% @end
+-spec pre_process(term()) -> 
+        {Asn::tuple(), Roles::list(Role::string())} | ignore.
+pre_process(Any) ->
+    io:format("message to pre_process ~p ~p~n", [?MODULE, Any]),
+    ignore.
+
+
+% @doc
+% Initial connexion. Asynchronous.
+% @end
+-spec initial_conn(#client_state{}) -> ok. 
+initial_conn(ClientState) ->
+    io:format("~p initialconn!!!! from ~p~n", [?MODULE, ClientState]),
+    ok.

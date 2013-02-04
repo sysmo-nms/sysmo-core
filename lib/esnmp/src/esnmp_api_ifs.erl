@@ -20,7 +20,7 @@
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 -module(esnmp_api_ifs).
 -behaviour(beha_ifs_module).
--include_lib("../include/ModEsnmp.hrl").
+-include_lib("../../include/ModEsnmp.hrl").
 
 % beha_ifs_module export
 -export([handle_msg/2, pre_process/1, initial_conn/1]).

@@ -62,7 +62,7 @@
 % start the gen_server.
 % @end
 start_link() ->
-    gen_server:start_link({global, ?MODULE}, ?MODULE, [], []).
+    gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
 -spec ping(inet:ip4_address() | inet:hostname(), integer()) -> 
         {ok, microseconds_delay()} | {error, any()}.

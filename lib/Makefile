@@ -3,54 +3,50 @@
 REL_NAME        = enms
 MODS            = ifs esnmp targets activity_logger procket icmp errd probe
 
+compile: recurse
 
-all: compile pdu_lib
+all: compile doc test local-release www
 
-compile:
-	@cd lib; make
+recurse:
+	@for i in $(MODS); do cd $$i; make compile; cd ../; done
 
 test:
-	@cd lib; make test
+	@for i in $(MODS); do cd $$i; make test; cd ../; done
 
 doc:
-	@cd lib; make doc
+	@for i in $(MODS); do cd $$i; make doc; cd ../; done
 
 clean:
-	rm -f erl_crash.dump
-	rm -f $(REL_NAME).script
-	rm -f $(REL_NAME).boot
-	rm -f stim.pid
-	rm -rf www/htdocs/edoc/*
-	rm -rf www/htdocs/documentation.html
-	@cd lib; make clean
+	@for i in $(MODS); do cd $$i; make clean; cd ../; done
 
     
 
 
 # Shared includes from IFS
-IFS_DIR             = $(filter ifs, $(MODS))
-IFS_INCLUDES_DIR    = $(addsuffix /include, $(addprefix ./lib/, $(IFS_DIR)))
+IFS_DIR             = $(filter ifs%, $(MODS))
+IFS_INCLUDES_DIR    = $(addsuffix /include, $(addprefix ./, $(IFS_DIR)))
 IFS_INCLUDES_SRC    = $(wildcard $(IFS_INCLUDES_DIR)/*.hrl)
-IFS_INCLUDES_DST    = $(addprefix ./include/, $(notdir $(IFS_INCLUDES_SRC)))
+IFS_INCLUDES_DST    = $(addprefix ../include/, $(notdir $(IFS_INCLUDES_SRC)))
 
 pdu_lib: $(IFS_INCLUDES_DST)
 
-$(IFS_INCLUDES_DST): ./include/%.hrl: $(IFS_INCLUDES_DIR)/%.hrl
-	@cp $(IFS_INCLUDES_DIR)/$*.hrl ./include/$*.hrl
+$(IFS_INCLUDES_DST): ../include/%.hrl: $(IFS_INCLUDES_DIR)/%.hrl
+	@cp $(IFS_INCLUDES_DIR)/$*.hrl ../include/$*.hrl
 
-dd:
-	@echo $(IFS_INCLUDES_DIR)
-
+	
 
 # UTILS
 ERL             = erl
-MODS_EBIN_DIR	= $(addprefix ./lib/, $(addsuffix /ebin, $(MODS)))
+MODS_EBIN_DIR	= $(addprefix ./, $(addsuffix /ebin, $(MODS)))
 MODS_DEF_FILE	= $(foreach app, $(MODS_EBIN_DIR), $(wildcard $(app)/*.app))
 ERL_NMS_PATH	= $(addprefix -pa ,$(MODS_EBIN_DIR))
 ERL_REL_COMM    = 'systools:make_script("$(REL_NAME)", [local]), init:stop()'
 
 start: local-release
 	@sudo $(ERL) -sname server -boot ./$(REL_NAME) -config ./sys
+
+clifs: compile
+	@$(ERL) $(ERL_NMS_PATH) -sname client -eval 'clifs:start_link()'
 
 
 
@@ -70,5 +66,5 @@ commit:
 	git add -A; git commit -m "$$COMENT"
 
 www: doc
-	@for i in $(MODS); do cp -r lib/$$i/doc www/htdocs/edoc/$$i; done
+	@for i in $(MODS); do cp -r $$i/doc www/htdocs/edoc/$$i; done
 	@ ./www/gen-htdoc $(MODS)

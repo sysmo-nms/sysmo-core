@@ -6,7 +6,7 @@ ERLC   += erlc -Werror
 SRC     = $(shell find src -name "*.erl")
 ALL_DEST    = $(patsubst src/%.erl, ebin/%.beam, $(SRC))
 INCLUDE = $(wildcard include/*.hrl)
-EPATH  += -pa ../ifs-1.0.1/ebin -pa ebin
+EPATH  += -pa ../ifs/ebin -pa ebin
 
 compile: $(ALL_DEST)
 
