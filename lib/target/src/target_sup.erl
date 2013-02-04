@@ -2,7 +2,7 @@
 % Copyright (C) 2012 <Sébastien Serre sserre.bx@gmail.com>
 % 
 % Enms is a Network Management System aimed to manage and monitor SNMP
-% targets, monitor network hosts and services, provide a consistent
+% target, monitor network hosts and services, provide a consistent
 % documentation system and tools to help network professionals
 % to have a wide perspective of the networks they manage.
 % 
@@ -19,36 +19,52 @@
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 % @private
--module(targets_sup).
+-module(target_sup).
 -behaviour(supervisor).
 
--export([start_link/2]).
+-export([start_link/3]).
 -export([init/1]).
 
-start_link(GenEventListeners, DbDir) ->
+start_link(GenEventListeners, DbDir, RrdDir) ->
     supervisor:start_link({local, ?MODULE}, ?MODULE, 
-            [GenEventListeners, DbDir]).
+            [GenEventListeners, DbDir, RrdDir]).
 
-init([GenEventListeners, DbDir]) ->
+init([GenEventListeners, DbDir, RrdDir]) ->
     {ok, 
         {
             {one_for_one, 1, 60},
             [
                 {
-                    targets_events,
-                    {targets_events, start_link, [GenEventListeners]},
+                    target_events,
+                    {target_events, start_link, [GenEventListeners]},
                     permanent,
                     2000,
                     worker,
                     dynamic
                 },
                 {
-                    targets_store,
-                    {targets_store, start_link, [DbDir]},
+                    target_store,
+                    {target_store, start_link, [DbDir]},
                     permanent,
                     2000,
                     worker,
-                    [targets_store]
+                    [target_store]
+                },
+                {
+                    target_channel_sup,
+                    {target_channel_sup, start_link, [RrdDir]},
+                    permanent,
+                    2000,
+                    supervisor,
+                    [target_channel_sup]
+                },
+                {
+                    target_probe_dock,
+                    {target_probe_dock, start_link, []},
+                    permanent,
+                    2000,
+                    supervisor,
+                    [target_probe_dock]
                 }
             ]
         }

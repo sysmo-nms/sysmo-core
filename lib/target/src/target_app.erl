@@ -2,7 +2,7 @@
 % Copyright (C) 2012 <Sébastien Serre sserre.bx@gmail.com>
 % 
 % Enms is a Network Management System aimed to manage and monitor SNMP
-% targets, monitor network hosts and services, provide a consistent
+% target, monitor network hosts and services, provide a consistent
 % documentation system and tools to help network professionals
 % to have a wide perspective of the networks they manage.
 % 
@@ -19,15 +19,25 @@
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 % @private
--module(probe_app).
+-module(target_app).
 -behaviour(application).
 
 -export([
     start/2,
+    start_phase/3,
     stop/1]).
 
 start(_Type, _Args) ->
-    probe_sup:start_link().
+    {ok, GenEventListeners} = application:get_env(target, registered_events),
+    {ok, DbDir}             = application:get_env(target, db_dir),
+    {ok, RrdDir}            = application:get_env(target, rrd_dir),
+    target_sup:start_link(GenEventListeners, DbDir, RrdDir).
+
+start_phase(init_channels, normal, []) ->
+    AllTargets = target_store:info(),
+    lists:foreach(fun(X) ->
+        target_channel_sup:new(X)
+    end, AllTargets).
 
 stop(_State) ->
 	ok.

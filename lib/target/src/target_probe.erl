@@ -2,7 +2,7 @@
 % Copyright (C) 2012 <Sébastien Serre sserre.bx@gmail.com>
 % 
 % Enms is a Network Management System aimed to manage and monitor SNMP
-% targets, monitor network hosts and services, provide a consistent
+% target, monitor network hosts and services, provide a consistent
 % documentation system and tools to help network professionals
 % to have a wide perspective of the networks they manage.
 % 
@@ -19,8 +19,9 @@
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 % @private
--module(probe).
+-module(target_probe).
 -behaviour(gen_server).
+-include_lib("../include/target.hrl").
 
 -export([
     init/1,
@@ -40,12 +41,12 @@
 %% API
 %%-------------------------------------------------------------
 % @doc start the server.
-start_link({Id, Fun}) ->
-    gen_server:start_link({local, Id}, [{Fun}], []).
+start_link([ProbeRecord]) ->
+    gen_server:start_link(?MODULE, [ProbeRecord], []).
 
 % after the genserver finished, the probe must be initated with this procedure
-launch(Id) ->
-    gen_server:call(Id, launch).
+launch(Pid) ->
+    gen_server:call(Pid, launch).
 
 %% GEN_SERVER CALLBACKS
 %%-------------------------------------------------------------
@@ -53,7 +54,7 @@ init([Conf]) ->
     {ok, Conf}.
 
 handle_call(launch, _F, S) ->
-    %spawn(Fun(self())),
+    
     {reply, ok, S};
 
 handle_call(R, _F, S) ->
@@ -76,3 +77,4 @@ terminate(_R, _S) ->
 code_change(_O, S, _E) ->
     io:format("code_change ~p ~p ~p ~p~n", [?MODULE, _O, _E, S]),
     {ok, S}.
+

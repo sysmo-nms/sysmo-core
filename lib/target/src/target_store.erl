@@ -2,7 +2,7 @@
 % Copyright (C) 2012 <Sébastien Serre sserre.bx@gmail.com>
 % 
 % Enms is a Network Management System aimed to manage and monitor SNMP
-% targets, monitor network hosts and services, provide a consistent
+% target, monitor network hosts and services, provide a consistent
 % documentation system and tools to help network professionals
 % to have a wide perspective of the networks they manage.
 % 
@@ -22,7 +22,7 @@
 % @doc
 % <p>
 % Enms data store. This module contain any informations related to node 
-% ("targets") configuration and an API. The data type are #target{} records, 
+% ("target") configuration and an API. The data type are #target{} records, 
 % stored in a dets file.
 % </p>
 % <h4>Here is the initial target record:</h4>
@@ -33,10 +33,10 @@
 % and tags are user definissable.
 % </p>
 % @end
--module(targets_store).
+-module(target_store).
 -behaviour(gen_server).
 -include_lib("eunit/include/eunit.hrl").
--include_lib("../include/targets.hrl").
+-include_lib("../include/target.hrl").
 
 -record(tserver_state, {
     db_dir,
@@ -125,14 +125,8 @@ clear_locks() ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % MODULE API. NOT ALL FUN NEED TO BE EXPORTED TO THE CLIENT                  %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--type target_id()   :: atom().
--type ip_address()  :: {integer(), integer(), integer(), integer()}.
--type hostname()    :: string().
+
 -type dets_name()   :: atom().
--type property_key()    :: atom().
--type property_val()    :: any().
--type property()    :: {property_key(), property_val()}.
--type tag()         :: any().
 
 
 -spec new() -> {ok, target_id()}.
@@ -144,7 +138,7 @@ new() ->
     gen_server:call(?MODULE, lock_id).
 
 
--spec set_ip(target_id(), ip_address()) -> 
+-spec set_ip(target_id(), inet:ip_address()) -> 
         ok | {error, bad_formating | unknown_id}.
 % @doc
 % Set the record element ip to the value Ip. Did not check if the address is
@@ -154,7 +148,7 @@ set_ip(Id, Ip) ->
     gen_server:call(?MODULE, {set_ip, Id, Ip}).
 
 
--spec set_hostname(target_id(), hostname()) ->
+-spec set_hostname(target_id(), inet:hostname()) ->
         ok | {error, bad_formating | unknown_id}.
 % @doc
 % Set the record element hostname to the value Hostname. Did not check if the 
@@ -264,7 +258,7 @@ get_ids() ->
     gen_server:call(?MODULE, get_ids).
 
 -spec get_ip(target_id())
-        -> {ok, ip_address() | undef} | {error | any()}.
+        -> {ok, inet:ip_address() | undef} | {error | any()}.
 % @doc
 % Return the address ip of the target specified by Id.
 % @end
@@ -272,7 +266,7 @@ get_ip(Id) ->
     gen_server:call(?MODULE, {get_ip, Id}).
 
 -spec get_hostname(target_id()) 
-        -> {ok, hostname() | undef} | {error | any()}.
+        -> {ok, inet:hostname() | undef} | {error | any()}.
 % @doc
 % Return the hostname of the target specified by Id.
 % @end
@@ -405,9 +399,9 @@ filter(TargetIds, Type, ArgList) ->
 % @private
 init([DbDir]) ->
     DbDir2 = filename:absname(DbDir),
-    DbFile = filename:absname_join(DbDir2, "targets_db"),
-    DbName = targets_db,
-    {ok, targets_db} = dets:open_file(DbName, [
+    DbFile = filename:absname_join(DbDir2, "target_db"),
+    DbName = target_db,
+    {ok, target_db} = dets:open_file(DbName, [
             {file, DbFile},
             {access, read_write},
             {type, set},
@@ -561,7 +555,7 @@ handle_call(Q, _F, S) ->
 % @private
 handle_cast(dump_state, #tserver_state{db_name = DbName} = S) ->
     log("state is ~p~n", [S]),
-    log("targets_db is: ~n~p~n", [dets:match(DbName, '$1')]),
+    log("target_db is: ~n~p~n", [dets:match(DbName, '$1')]),
     {noreply, S};
 
 handle_cast(stop, S) ->
@@ -596,7 +590,7 @@ code_change(_O, S, _E) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec dbwrite_lock_id(dets_name()) -> target_id().
 dbwrite_lock_id(DetsName) ->
-    Id = targets_misc:generate_id(),
+    Id = target_misc:generate_id(),
     % if Id exist in the table retry else return.
     TargetRecord = #target{id = Id},
     case dets:insert_new(DetsName, TargetRecord) of
@@ -618,7 +612,7 @@ dbwrite_clear_locks(DbName) ->
             {target, '_', undef, undef, [], [], [], []}),
     Rep.
 
--spec dbwrite_set_ip(target_id(), ip_address(), dets_name()) 
+-spec dbwrite_set_ip(target_id(), inet:ip_address(), dets_name()) 
         -> ok | {error, bad_formating | unknown_id}.
 dbwrite_set_ip(Id, Ip, DbName) ->
     case dets:lookup(DbName, Id) of
@@ -639,7 +633,7 @@ dbwrite_set_ip(Id, Ip, DbName) ->
             {error, unknown_id}
     end.
 
--spec dbwrite_set_hostname(target_id(), hostname(), dets_name()) 
+-spec dbwrite_set_hostname(target_id(), inet:hostname(), dets_name()) 
         -> ok | {error, bad_name | unknown_id}.
 dbwrite_set_hostname(Id, Hostname, DbName) ->
     case dets:lookup(DbName, Id) of
@@ -840,7 +834,7 @@ dbwrite_del_sys_tag(Id, Tag, DbName) ->
 
 -spec dbread_info(dets_name()) -> [#target{}].
 dbread_info(DbName) ->
-    dets:match(DbName, '$1').
+    lists:flatten(dets:match(DbName, '$1')).
 
 
 -spec dbread_info(target_id(), dets_name()) 
@@ -860,7 +854,7 @@ dbread_get_ids(DbName) ->
 
 
 -spec dbread_get_ip(target_id(), dets_name()) 
-        -> { ok, ip_address() | undef} | {error, unknown_id}.
+        -> { ok, inet:ip_address() | undef} | {error, unknown_id}.
 dbread_get_ip(Id, DbName) ->
     case dets:lookup(DbName, Id) of
         [Record] ->
@@ -871,7 +865,7 @@ dbread_get_ip(Id, DbName) ->
     
 
 -spec dbread_get_hostname(target_id(), dets_name())
-        -> { ok, hostname() | undef} | {error, unknown_id}.
+        -> { ok, inet:hostname() | undef} | {error, unknown_id}.
 dbread_get_hostname(Id, DbName) ->
     case dets:lookup(DbName, Id) of
         [Record] ->
@@ -1034,7 +1028,7 @@ dbread_filter(_Targets, Args, _DbName) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % HELPERS                                                                    %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec is_ip(ip_address()) -> boolean().
+-spec is_ip(inet:ip_address()) -> boolean().
 % TODO
 is_ip(_Ip) ->
     true.
@@ -1060,10 +1054,10 @@ valid_hostname_string(Arg) ->
 -spec generate_event({insert | update, #target{}} | {delete, target_id()}) 
         -> ok.
 generate_event(Event) ->
-    gen_event:notify(targets_events, Event).
+    gen_event:notify(target_events, Event).
 
 -spec log(string(), list()) -> ok.
-log(targets_events, Event) ->
+log(target_events, Event) ->
     io:format("~p~n", [Event]);
 log(A, B) ->
     io:format(A, B).
@@ -1076,7 +1070,7 @@ log(A, B) ->
 
 -spec start_stop_test() -> ok.
 start_stop_test() ->
-    DbFile = filename:absname_join(?EUNIT_DIR, "targets_db"),
+    DbFile = filename:absname_join(?EUNIT_DIR, "target_db"),
     file:delete(DbFile),
     % start stop with no file
     ?assertMatch({ok, _},   start_link(?EUNIT_DIR)),
@@ -1104,7 +1098,7 @@ valid_hostname_string_test() ->
 
 -spec add_remove_target_test() -> ok.
 add_remove_target_test() ->
-    DbFile = filename:absname_join(?EUNIT_DIR, "targets_db"),
+    DbFile = filename:absname_join(?EUNIT_DIR, "target_db"),
     file:delete(DbFile),
     ?assertMatch({ok, _},   start_link(?EUNIT_DIR)),
 
@@ -1125,7 +1119,7 @@ add_remove_target_test() ->
 
 -spec clear_locks_test() -> ok.
 clear_locks_test() ->
-    DbFile = filename:absname_join(?EUNIT_DIR, "targets_db"),
+    DbFile = filename:absname_join(?EUNIT_DIR, "target_db"),
     file:delete(DbFile),
     ?assertMatch({ok, _},   start_link(?EUNIT_DIR)),
     {ok, A} = new(),
@@ -1138,7 +1132,7 @@ clear_locks_test() ->
 
 -spec get_set_del_possess_tag_test() -> ok.
 get_set_del_possess_tag_test() ->
-    DbFile = filename:absname_join(?EUNIT_DIR, "targets_db"),
+    DbFile = filename:absname_join(?EUNIT_DIR, "target_db"),
     file:delete(DbFile),
     ?assertMatch({ok, _},   start_link(?EUNIT_DIR)),
     {ok, A} = new(),
@@ -1154,7 +1148,7 @@ get_set_del_possess_tag_test() ->
 
 -spec get_set_del_possess_sys_tag_test() -> ok.
 get_set_del_possess_sys_tag_test() ->
-    DbFile = filename:absname_join(?EUNIT_DIR, "targets_db"),
+    DbFile = filename:absname_join(?EUNIT_DIR, "target_db"),
     file:delete(DbFile),
     ?assertMatch({ok, _},   start_link(?EUNIT_DIR)),
     {ok, A} = new(),
@@ -1170,7 +1164,7 @@ get_set_del_possess_sys_tag_test() ->
 
 -spec get_set_del_possess_property_test() -> ok.
 get_set_del_possess_property_test() ->
-    DbFile = filename:absname_join(?EUNIT_DIR, "targets_db"),
+    DbFile = filename:absname_join(?EUNIT_DIR, "target_db"),
     file:delete(DbFile),
     ?assertMatch({ok, _},   start_link(?EUNIT_DIR)),
     {ok, A} = new(),
@@ -1188,7 +1182,7 @@ get_set_del_possess_property_test() ->
 
 -spec get_set_del_possess_sys_property_test() -> ok.
 get_set_del_possess_sys_property_test() ->
-    DbFile = filename:absname_join(?EUNIT_DIR, "targets_db"),
+    DbFile = filename:absname_join(?EUNIT_DIR, "target_db"),
     file:delete(DbFile),
     ?assertMatch({ok, _},   start_link(?EUNIT_DIR)),
     {ok, A} = new(),
@@ -1207,7 +1201,7 @@ get_set_del_possess_sys_property_test() ->
 
 -spec get_set_hostname_test() -> ok.
 get_set_hostname_test() ->
-    DbFile = filename:absname_join(?EUNIT_DIR, "targets_db"),
+    DbFile = filename:absname_join(?EUNIT_DIR, "target_db"),
     file:delete(DbFile),
     ?assertMatch({ok, _},   start_link(?EUNIT_DIR)),
     {ok, A} = new(),
@@ -1225,7 +1219,7 @@ get_set_hostname_test() ->
 
 -spec get_ids_test() -> ok.
 get_ids_test() ->
-    DbFile = filename:absname_join(?EUNIT_DIR, "targets_db"),
+    DbFile = filename:absname_join(?EUNIT_DIR, "target_db"),
     file:delete(DbFile),
     ?assertMatch({ok, _},   start_link(?EUNIT_DIR)),
 

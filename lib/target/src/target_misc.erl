@@ -2,7 +2,7 @@
 % Copyright (C) 2012 <Sébastien Serre sserre.bx@gmail.com>
 % 
 % Enms is a Network Management System aimed to manage and monitor SNMP
-% targets, monitor network hosts and services, provide a consistent
+% target, monitor network hosts and services, provide a consistent
 % documentation system and tools to help network professionals
 % to have a wide perspective of the networks they manage.
 % 
@@ -18,10 +18,10 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
--module(targets_misc).
+-module(target_misc).
 -export([
     generate_id/0,
-    fill_targets_store/1
+    fill_target_store/1
 ]).
 
 -spec generate_id() -> string().
@@ -43,16 +43,16 @@ generate_id(Term) ->
 	Id = list_to_binary(FinalList),
 	erlang:list_to_atom("target-" ++ erlang:binary_to_list(Id)).
 
--spec fill_targets_store(integer()) -> ok | any().
+-spec fill_target_store(integer()) -> ok | any().
 % @doc
 % fill target_store with empty target records.
 % @end
-fill_targets_store(0) ->
+fill_target_store(0) ->
     ok;
 
-fill_targets_store(Num) ->
-    targets_store:new(),
-    fill_targets_store(Num - 1).
+fill_target_store(Num) ->
+    target_store:new(),
+    fill_target_store(Num - 1).
 
 
 

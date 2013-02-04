@@ -1,8 +1,7 @@
 # Makefile 
 
 REL_NAME        = enms
-MODS            = ifs esnmp targets activity_logger procket icmp errd probe
-
+MODS            = ifs esnmp icmp ifs procket target activity_logger errd
 
 all: compile pdu_lib
 
@@ -28,15 +27,14 @@ clean:
 
 
 # Shared includes from IFS
-IFS_DIR             = $(filter ifs, $(MODS))
-IFS_INCLUDES_DIR    = $(addsuffix /include, $(addprefix ./lib/, $(IFS_DIR)))
+IFS_INCLUDES_DIR    = ./lib/ifs/include
 IFS_INCLUDES_SRC    = $(wildcard $(IFS_INCLUDES_DIR)/*.hrl)
 IFS_INCLUDES_DST    = $(addprefix ./include/, $(notdir $(IFS_INCLUDES_SRC)))
 
 pdu_lib: $(IFS_INCLUDES_DST)
 
 $(IFS_INCLUDES_DST): ./include/%.hrl: $(IFS_INCLUDES_DIR)/%.hrl
-	@cp $(IFS_INCLUDES_DIR)/$*.hrl ./include/$*.hrl
+	cp $(IFS_INCLUDES_DIR)/$*.hrl ./include/$*.hrl
 
 dd:
 	@echo $(IFS_INCLUDES_DIR)

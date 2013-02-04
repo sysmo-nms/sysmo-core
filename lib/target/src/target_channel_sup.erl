@@ -2,7 +2,7 @@
 % Copyright (C) 2012 <Sébastien Serre sserre.bx@gmail.com>
 % 
 % Enms is a Network Management System aimed to manage and monitor SNMP
-% targets, monitor network hosts and services, provide a consistent
+% target, monitor network hosts and services, provide a consistent
 % documentation system and tools to help network professionals
 % to have a wide perspective of the networks they manage.
 % 
@@ -19,41 +19,35 @@
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 % @private
--module(probe_dock).
+-module(target_channel_sup).
 -behaviour(supervisor).
 
 -export([
-    start_link/0,
-    new/1,
-    init_target/1
+    start_link/1,
+    new/1
 ]).
+
 -export([init/1]).
 
-start_link() ->
-    supervisor:start_link({local, ?MODULE}, ?MODULE, []).
+start_link(RrdDir) ->
+    supervisor:start_link({local, ?MODULE}, ?MODULE, [RrdDir]).
 
-new(TargetRecord) ->
-    supervisor:start_child(?MODULE, TargetRecord).
+new(Target) ->
+    supervisor:start_child(?MODULE, [Target]).
 
-% @doc
-% Extract the probes config from the records and initate the probes.
-% @end
-init_target(_TargetRecord) ->
-    ok.
-
-init([]) ->
+init([RrdDir]) ->
     {ok, 
         {
             {simple_one_for_one, 1, 60},
             [
                 {
-                    probe,
-                    {probe, start_link, []},
-                    permanent,
+                    target_channel,
+                    {target_channel, start_link, [RrdDir]},
+                    transient,
                     2000,
                     worker,
-                    [probe]
-               }
+                    [target_channel]
+                }
             ]
         }
     }.
