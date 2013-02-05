@@ -34,36 +34,106 @@
 
 -export([
     start_link/1,
-    launch/1
+    launch/1,
+    probe_pass/3
 ]).
+
+-record(state, {
+    target,
+    probe,
+    frequency,
+    timeout_current,
+    timeout_max,  % max series of timeout ocuring before trigger an alert
+    timeout_wait, % wait for a responce in timeout_wait
+    status        % ok | error.
+}).
 
 %%-------------------------------------------------------------
 %% API
 %%-------------------------------------------------------------
 % @doc start the server.
-start_link([ProbeRecord]) ->
-    gen_server:start_link(?MODULE, [ProbeRecord], []).
+start_link({Target, Probe}) ->
+    gen_server:start_link(?MODULE, [Target, Probe], []).
 
-% after the genserver finished, the probe must be initated with this procedure
 launch(Pid) ->
-    gen_server:call(Pid, launch).
+    gen_server:cast(Pid, init_launch),
+    ok.
 
+%%-------------------------------------------------------------
 %% GEN_SERVER CALLBACKS
 %%-------------------------------------------------------------
-init([Conf]) ->
-    {ok, Conf}.
-
-handle_call(launch, _F, S) ->
+init([Target, Probe]) ->
+    io:format("start probe ~p~p~n", [Target, Probe]),
+    {ok, 
+        #state{
+            target          = Target,
+            probe           = Probe, 
+            frequency       = Probe#probe.frequency,
+            timeout_max     = Probe#probe.timeout_max,
+            timeout_wait    = Probe#probe.timeout_wait,
+            timeout_current = 0,
+            status          = error
+        }
+    }.
     
-    {reply, ok, S};
-
-handle_call(R, _F, S) ->
-    io:format("handle_call ~p ~p ~p ~p~n", [?MODULE, R, _F, S]),
+handle_call(_R, _F, S) ->
     {noreply, S}.
 
-handle_cast(reply_from_fun, S) ->
-    %spawn(Fun(self())),
+
+%%-------------------------------------------------------------
+% HANDLE_CAST
+%%-------------------------------------------------------------
+% launch a probe for the first time. Randomise start
+handle_cast(init_launch, #state{probe = Probe, target = Target, 
+            frequency = Frequency} = S) ->
+    InitialLaunch = target_misc:random(Frequency * 1000),
+    timer:apply_after(InitialLaunch, 
+            ?MODULE, probe_pass, [Target, Probe, self()]),
+    {noreply, S};
+
+% launch a probe normal
+handle_cast(launch, #state{probe = Probe, target = Target, 
+            frequency = Frequency} = S) ->
+    timer:apply_after(Frequency * 1000, 
+            ?MODULE, probe_pass, [Target, Probe, self()]),
+    {noreply, S};
+
+% error, max timeout reached, and status is ok
+handle_cast({probe_response, {error, Val}}, 
+        #state{timeout_current = T, timeout_max = T, status = ok} = S) ->
+    %% ici une alerte est declanchee
+    io:format("ALERT: reached max timeout ~p ~p~n", [Val, self()]),
+    gen_server:cast(self(), launch),
+    {noreply, S#state{status = error}};
+
+% error, max timeout reached but status is allready error, do nothing
+handle_cast({probe_response, {error, _}}, 
+        #state{timeout_current = T, timeout_max = T, status = error} = S) ->
+    gen_server:cast(self(), launch),
+    {noreply, S};
+
+% error, max timeout not reached
+handle_cast({probe_response, {error, Val}}, 
+        #state{timeout_current = T} = S) ->
+    io:format("WARNING error ~p ~p~n", [Val, self()]),
+    gen_server:cast(self(), launch),
+    {noreply, S#state{timeout_current = T + 1}};
+
+% ok but status was error, then it is a recovery
+handle_cast({probe_response, {ok, Val}}, #state{status = error} = S) ->
+    io:format("Recovery ~p ~p~n", [Val, self()]),
+    gen_server:cast(self(), launch),
+    {noreply, S#state{timeout_current = 0, status = ok}};
+
+% ok standard, reset the timeout_current count
+handle_cast({probe_response, {ok, Val}}, S) ->
+    io:format("OK ~p ~p~n", [Val, self()]),
+    gen_server:cast(self(), launch),
+    {noreply, S#state{timeout_current = 0}};
+
+handle_cast(_R, S) ->
     {noreply, S}.
+
 
 % OTHER
 handle_info(I, S) ->
@@ -78,3 +148,9 @@ code_change(_O, S, _E) ->
     io:format("code_change ~p ~p ~p ~p~n", [?MODULE, _O, _E, S]),
     {ok, S}.
 
+
+% @private
+probe_pass(Target, Probe, Pid) ->
+    Fun     = Probe#probe.func,
+    Result  = Fun({Target, Probe}),
+    gen_server:cast(Pid, {probe_response, Result}).

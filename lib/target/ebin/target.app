@@ -35,7 +35,7 @@
             %[kernel, stdlib, icmp]
             [kernel, stdlib]
         },
-        {start_phases, [{init_channels, []}]},
+        {start_phases, [{init_chans, []}, {launch_probes, []}]},
 		{mod, {target_app, []}}
 	]
 }.

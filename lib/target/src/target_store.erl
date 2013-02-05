@@ -76,7 +76,7 @@
 
 % Client and server API
 -export([
-    new/0,
+    new/1,
     set_ip/2,
     set_hostname/2,
     set_property/2,
@@ -129,13 +129,13 @@ clear_locks() ->
 -type dets_name()   :: atom().
 
 
--spec new() -> {ok, target_id()}.
+-spec new(inet:ip_address()) -> {ok, target_id()}.
 % @doc
 % Lock a new id in the database and return it's value. Later call to configure
 % the entry will be donne with this id.
 % @end
-new() ->
-    gen_server:call(?MODULE, lock_id).
+new(Ip) ->
+    gen_server:call(?MODULE, {lock_id, Ip}).
 
 
 -spec set_ip(target_id(), inet:ip_address()) -> 
@@ -415,8 +415,8 @@ init([DbDir]) ->
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % @private
-handle_call(lock_id, _F, #tserver_state{db_name = DbName} = S) ->
-    Id = dbwrite_lock_id(DbName),
+handle_call({lock_id, Ip}, _F, #tserver_state{db_name = DbName} = S) ->
+    Id = dbwrite_lock_id(DbName, Ip),
     {reply, {ok, Id}, S};
 
 handle_call(clear_locks, _F, #tserver_state{db_name = DbName} = S) ->
@@ -588,17 +588,19 @@ code_change(_O, S, _E) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % PRIVATE FUNCTS                                                             %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec dbwrite_lock_id(dets_name()) -> target_id().
-dbwrite_lock_id(DetsName) ->
+-spec dbwrite_lock_id(dets_name(), inet:ip_address()) -> target_id().
+dbwrite_lock_id(DetsName, Ip) ->
     Id = target_misc:generate_id(),
     % if Id exist in the table retry else return.
-    TargetRecord = #target{id = Id},
+    TargetRecord = #target{
+        id = Id,
+        ip = Ip},
     case dets:insert_new(DetsName, TargetRecord) of
         true    ->
             generate_event({insert, TargetRecord}),
             Id;
         false   ->
-            dbwrite_lock_id(DetsName)
+            dbwrite_lock_id(DetsName, Ip)
     end.
 
 -spec dbwrite_clear_locks(dets_name()) -> ok | {error, any()}.
@@ -850,7 +852,9 @@ dbread_info(Id, DbName) ->
 
 -spec dbread_get_ids(dets_name()) -> [target_id()].
 dbread_get_ids(DbName) ->
-    dets:match(DbName, {'_', '$1', '_', '_', '_', '_', '_', '_'}).
+    Rep = dets:match(DbName, 
+        {'_', '$1', '_', '_', '_', '_', '_', '_', '_', '_'}),
+    lists:flatten(Rep).
 
 
 -spec dbread_get_ip(target_id(), dets_name()) 
@@ -1102,13 +1106,13 @@ add_remove_target_test() ->
     file:delete(DbFile),
     ?assertMatch({ok, _},   start_link(?EUNIT_DIR)),
 
-    ?assertMatch({ok, _},   new()),
-    ?assertMatch({ok, _},   new()),
+    ?assertMatch({ok, _},   new({1,1,1,1})),
+    ?assertMatch({ok, _},   new({1,1,1,1})),
     ?assertMatch([_, _],    info()),
     ?assertMatch(ok,        clear_locks()),
     ?assertMatch([],        info()),
-    {ok, A} = new(),
-    {ok, B} = new(),
+    {ok, A} = new({1,1,1,1}),
+    {ok, B} = new({1,1,1,1}),
     ?assertMatch(ok,        del_target(A)),
     ?assertMatch([_],       info()),
     ?assertMatch(ok,        del_target(B)),
@@ -1122,8 +1126,8 @@ clear_locks_test() ->
     DbFile = filename:absname_join(?EUNIT_DIR, "target_db"),
     file:delete(DbFile),
     ?assertMatch({ok, _},   start_link(?EUNIT_DIR)),
-    {ok, A} = new(),
-    {ok, _} = new(),
+    {ok, A} = new({1,1,1,1}),
+    {ok, _} = new({1,1,1,1}),
     ?assertMatch(ok,        set_tag(A, test)),
     ?assertMatch(ok,        clear_locks()),
     ?assertMatch([_],       info()),
@@ -1135,7 +1139,7 @@ get_set_del_possess_tag_test() ->
     DbFile = filename:absname_join(?EUNIT_DIR, "target_db"),
     file:delete(DbFile),
     ?assertMatch({ok, _},   start_link(?EUNIT_DIR)),
-    {ok, A} = new(),
+    {ok, A} = new({1,1,1,1}),
     ?assertMatch(ok,        set_tag(A, test)),
     ?assertMatch(true,      possess_tag(A, test)),
     ?assertMatch(false,     possess_tag(A, test2)),
@@ -1151,7 +1155,7 @@ get_set_del_possess_sys_tag_test() ->
     DbFile = filename:absname_join(?EUNIT_DIR, "target_db"),
     file:delete(DbFile),
     ?assertMatch({ok, _},   start_link(?EUNIT_DIR)),
-    {ok, A} = new(),
+    {ok, A} = new({1,1,1,1}),
     ?assertMatch(ok,        set_sys_tag(A, test)),
     ?assertMatch(true,      possess_sys_tag(A, test)),
     ?assertMatch(false,     possess_sys_tag(A, test2)),
@@ -1167,7 +1171,7 @@ get_set_del_possess_property_test() ->
     DbFile = filename:absname_join(?EUNIT_DIR, "target_db"),
     file:delete(DbFile),
     ?assertMatch({ok, _},   start_link(?EUNIT_DIR)),
-    {ok, A} = new(),
+    {ok, A} = new({1,1,1,1}),
     ?assertMatch(ok,        set_property(A, {key1, val1})),
     ?assertMatch(true,      possess_property(property_key, A, key1)),
     ?assertMatch(true,      possess_property(property_tuple, A, {key1,val1})),
@@ -1185,7 +1189,7 @@ get_set_del_possess_sys_property_test() ->
     DbFile = filename:absname_join(?EUNIT_DIR, "target_db"),
     file:delete(DbFile),
     ?assertMatch({ok, _},   start_link(?EUNIT_DIR)),
-    {ok, A} = new(),
+    {ok, A} = new({1,1,1,1}),
     ?assertMatch(ok,        set_sys_property(A, {key1, val1})),
     ?assertMatch(true,      possess_sys_property(property_key, A, key1)),
     ?assertMatch(true,      possess_sys_property(
@@ -1204,8 +1208,8 @@ get_set_hostname_test() ->
     DbFile = filename:absname_join(?EUNIT_DIR, "target_db"),
     file:delete(DbFile),
     ?assertMatch({ok, _},   start_link(?EUNIT_DIR)),
-    {ok, A} = new(),
-    {ok, B} = new(),
+    {ok, A} = new({1,1,1,1}),
+    {ok, B} = new({1,1,1,1}),
     ?assertMatch({ok, undef},   get_hostname(A)),
     ?assertMatch({ok, undef},   get_hostname(B)),
     ?assertMatch(ok,        set_hostname(B, "bebelerigolo")),
@@ -1223,8 +1227,8 @@ get_ids_test() ->
     file:delete(DbFile),
     ?assertMatch({ok, _},   start_link(?EUNIT_DIR)),
 
-    {ok, A} = new(),
-    {ok, B} = new(),
+    {ok, A} = new({1,1,1,1}),
+    {ok, B} = new({1,1,1,1}),
     ?assertMatch([_,_],     get_ids()),
     ?assertMatch(ok,        del_target(A)),
     ?assertMatch([_],       get_ids()),

@@ -18,29 +18,13 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
-% @private
--module(target_app).
--behaviour(application).
-
+-module(probe_icmp_echo).
+-include_lib("../include/target.hrl").
 -export([
-    start/2,
-    start_phase/3,
-    stop/1]).
+    exec/1
+]).
 
-start(_Type, _Args) ->
-    {ok, GenEventListeners} = application:get_env(target, registered_events),
-    {ok, DbDir}             = application:get_env(target, db_dir),
-    {ok, RrdDir}            = application:get_env(target, rrd_dir),
-    target_sup:start_link(GenEventListeners, DbDir, RrdDir).
+% icmp_server:ping(Ip, Timeout) -> must return {ok, Val} | {error, Error}
+exec({#target{ ip = Ip}, #probe{timeout_wait = Timeout}}) ->
+    icmp_server:ping(Ip, Timeout * 1000).
 
-start_phase(init_chans, normal, []) ->
-    AllTargets = target_store:info(),
-    lists:foreach(fun(X) ->
-        target_channel_sup:new(X)
-    end, AllTargets);
-
-start_phase(launch_probes, normal, []) ->
-    target_channel_sup:init_launch_probes().
-
-stop(_State) ->
-	ok.

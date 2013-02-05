@@ -19,7 +19,7 @@
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 % @private
--module(target_probe_dock).
+-module(target_probe_sup).
 -behaviour(supervisor).
 
 -export([
@@ -32,7 +32,7 @@ start_link() ->
     supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
 new(Probe) ->
-    supervisor:start_child(?MODULE, Probe).
+    supervisor:start_child(?MODULE, [Probe]).
 
 init([]) ->
     {ok, 

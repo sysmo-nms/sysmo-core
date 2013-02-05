@@ -24,7 +24,9 @@
 
 -export([
     start_link/1,
-    new/1
+    new/1,
+    init_launch_probes/0
+
 ]).
 
 -export([init/1]).
@@ -35,6 +37,12 @@ start_link(RrdDir) ->
 new(Target) ->
     supervisor:start_child(?MODULE, [Target]).
 
+init_launch_probes() ->
+    Channels = supervisor:which_children(?MODULE),
+    lists:foreach(fun({_,ChanPid,_,_}) ->
+        target_channel:launch_probes(ChanPid)
+    end, Channels).
+    
 init([RrdDir]) ->
     {ok, 
         {

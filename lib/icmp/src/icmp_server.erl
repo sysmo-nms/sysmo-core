@@ -43,7 +43,7 @@
 -record(icmp_server, {
         socket,         % socket
         icmp_requests   % icmp message waiting for responce
-    }).
+}).
 
 -record(icmp_request, {
     id,
@@ -74,12 +74,12 @@ start_link() ->
 % @end
 ping(Ip, TimeOut) ->
     Id = crypto:rand_uniform(0, 16#FFFF),
-    gen_server:call({global, ?MODULE}, 
+    gen_server:call(?MODULE, 
             {ping, Id, Ip, TimeOut}, TimeOut + 1000).
 
 %% DBUG
 dump() ->
-    gen_server:call({global, ?MODULE}, dump).
+    gen_server:call(?MODULE, dump).
 %%--------------------------------------------
 %% GEN_SERVER CALLBACKS
 %%--------------------------------------------
@@ -103,7 +103,7 @@ handle_call({ping, Id, Ip, TimeOut}, From,
         ip = Ip,
         pid = From,
         timeout = TimeOut },
-    gen_server:cast({global, ?MODULE}, {init_ping, Request}),
+    gen_server:cast(?MODULE, {init_ping, Request}),
     {noreply, S#icmp_server{icmp_requests = [Request | IcmpReqs]}};
 
 handle_call(dump, _F, S) ->
@@ -172,7 +172,7 @@ code_change(_O, S, _E) ->
 %% when timer reched, send a ping_timeout cast.
 ping_timeout(Request) ->
     timer:sleep(Request#icmp_request.timeout),
-    gen_server:cast({global, ?MODULE}, {ping_timeout, Request}).
+    gen_server:cast(?MODULE, {ping_timeout, Request}).
 
 make_icmp_packet(Id, Seq) ->
     {Mega,Sec,USec} = erlang:now(),

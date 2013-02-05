@@ -19,10 +19,67 @@
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 -module(target_misc).
+-behaviour(gen_server).
+-include_lib("../include/target.hrl").
+
 -export([
+    start_link/0,
     generate_id/0,
-    fill_target_store/1
+    fill_target_store/0,
+    clear_target_store/0,
+    some_ips/0,
+    random/1
 ]).
+
+-export([
+    init/1,
+    handle_call/3, 
+    handle_cast/2, 
+    handle_info/2, 
+    terminate/2, 
+    code_change/3
+]).
+
+%%-------------------------------------------------------------
+%% without this small server utility, random:uniform is called
+%% at the same time at startup and return identical values.
+%%-------------------------------------------------------------
+start_link() ->
+    gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
+
+random(V) ->
+    gen_server:call(?MODULE, {random, V}).
+
+init([]) ->
+    random:seed(),
+    {ok, state}.
+    
+handle_call({random, V}, _F, S) ->
+    {reply, random:uniform(V), S};
+handle_call(_R, _F, S) ->
+    {noreply, S}.
+
+handle_cast(_R, S) ->
+    {noreply, S}.
+
+handle_info(_I, S) ->
+    {noreply, S}.
+
+terminate(_R, _S) ->
+    normal.
+
+code_change(_O, S, _E) ->
+    {ok, S}.
+%%-------------------------------------------------------------
+%% end of gen_server
+%%-------------------------------------------------------------
+
+
+
+
+
+
+
 
 -spec generate_id() -> string().
 % @doc generate_id. genere un ash pour le navigateur client
@@ -43,19 +100,17 @@ generate_id(Term) ->
 	Id = list_to_binary(FinalList),
 	erlang:list_to_atom("target-" ++ erlang:binary_to_list(Id)).
 
--spec fill_target_store(integer()) -> ok | any().
+-spec fill_target_store() -> ok | any().
 % @doc
 % fill target_store with empty target records.
 % @end
-fill_target_store(0) ->
-    ok;
+fill_target_store() ->
+    lists:foreach(fun(X) -> target_store:new(X) end, some_ips()).
 
-fill_target_store(Num) ->
-    target_store:new(),
-    fill_target_store(Num - 1).
-
-
-
+clear_target_store() ->
+    lists:foreach(fun(X) ->
+        target_store:del_target(X)
+    end, target_store:get_ids()).
 
 
 
@@ -106,3 +161,15 @@ concat_id([], Final) ->
 
 concat_id([A | B], Final) ->
 	concat_id(B, A ++ Final).
+
+
+some_ips() ->
+    [
+        {173,194,34,63},
+        {173,194,34,56},
+        {173,194,34,55},
+        {212,27,48,10},
+        {77,238,178,122},
+        {77,238,178,122},
+        {87,248,120,148}
+    ].

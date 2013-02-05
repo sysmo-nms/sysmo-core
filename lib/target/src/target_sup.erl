@@ -59,12 +59,20 @@ init([GenEventListeners, DbDir, RrdDir]) ->
                     [target_channel_sup]
                 },
                 {
-                    target_probe_dock,
-                    {target_probe_dock, start_link, []},
+                    target_probe_sup,
+                    {target_probe_sup, start_link, []},
                     permanent,
                     2000,
                     supervisor,
-                    [target_probe_dock]
+                    [target_probe_sup]
+                },
+                {
+                    target_misc,
+                    {target_misc, start_link, []},
+                    permanent,
+                    2000,
+                    worker,
+                    [target_misc]
                 }
             ]
         }

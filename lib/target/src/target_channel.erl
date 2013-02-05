@@ -32,7 +32,8 @@
     code_change/3]).
 
 -export([
-    start_link/2
+    start_link/2,
+    launch_probes/1
 ]).
 
 -record(chan_state, {
@@ -50,10 +51,19 @@
 start_link(RrdDir, #target{id = Id} = Target) ->
     gen_server:start_link({local, Id}, ?MODULE, [RrdDir, Target], []).
 
+-spec launch_probes(target_id()) -> ok | {error, any()}.
+% @doc
+% Once the server running, call him to initialize his probes.
+% @end
+launch_probes(Id) ->
+    %io:format("launch probe ~pn", [Id]).
+    gen_server:call(Id, launch_probes).
+
 %%-------------------------------------------------------------
 %% GEN_SERVER CALLBACKS
 %%-------------------------------------------------------------
 init([RrdDir, #target{id = Id} = Target]) ->
+    gen_event:notify(target_events, {chan_init, Id}),
     {ok, 
         #chan_state{
             chan_id = Id,
@@ -64,14 +74,14 @@ init([RrdDir, #target{id = Id} = Target]) ->
     }.
 
 handle_call(launch_probes, _F, #chan_state{target = Target} = S) ->
-    ProbesPid = lists:map(fun(Probe) ->
-        {ok, Pid} = probe_dock:new(Target, Probe),
-        {Probe, Pid}
-    end, #target.probes),
-    list:foreach(fun({_,Pid}) ->
-        probe:init(self(), Pid)
-    end, ProbesPid),
-    {reply, ok, S#chan_state{probes_store = ProbesPid}};
+    Probes = Target#target.probes,
+    ProbesStore = lists:foldl(fun(X, Accum) ->
+        {ok, Pid} = target_probe_sup:new({Target, X}),
+        target_probe:launch(Pid),
+        ProbeId = X#probe.id,
+        [{ProbeId, Pid} | Accum]
+    end, [], Probes),
+    {reply, ok, S#chan_state{probes_store = ProbesStore}};
 
 handle_call(_R, _F, S) ->
     {noreply, S}.
