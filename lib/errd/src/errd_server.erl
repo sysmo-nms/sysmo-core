@@ -1,7 +1,6 @@
 %%%-------------------------------------------------------------------
 %% @copyright Geoff Cant
 %% @author Geoff Cant <nem@erlang.geek.nz>
-%% @version {@vsn}, {@date} {@time}
 %% @doc Manages an rrdtool process.
 %% @end
 %%%-------------------------------------------------------------------
@@ -17,32 +16,39 @@
 %%--------------------------------------------------------------------
 %% External exports
 %%--------------------------------------------------------------------
--export([start_link/0
-         ,start/0
-         ,stop/1
-         ,cd/2
-         ,raw/2
-         ,info/2
-         ,format_raw/3
-         ,command/2
-        ]).
+-export([
+    start_link/0,
+    stop/1,
+    cd/2,
+    raw/2,
+    info/2,
+    format_raw/3,
+    command/2
+]).
 
 %%--------------------------------------------------------------------
 %% gen_server callbacks
 %%--------------------------------------------------------------------
--export([init/1, handle_call/3, handle_cast/2,
-         handle_info/2, terminate/2, code_change/3]).
+-export([
+    init/1, 
+    handle_call/3, 
+    handle_cast/2,
+    handle_info/2, 
+    terminate/2, 
+    code_change/3
+]).
 
 %%--------------------------------------------------------------------
 %% record definitions
 %%--------------------------------------------------------------------
--record(state, {rrd_port}).
+-record(state, {
+    rrd_port = undefined    :: port()
+}).
 
 %%--------------------------------------------------------------------
 %% macro definitions
 %%--------------------------------------------------------------------
--define(SERVER, ?MODULE).
--define(RRD_COMMAND_TIMEOUT, 5 * 1000).
+-define(RRD_COMMAND_TIMEOUT, 5000).
 
 %%====================================================================
 %% External functions
@@ -54,14 +60,6 @@
 %%--------------------------------------------------------------------
 start_link() ->
     gen_server:start_link(?MODULE, [], []).
-
-%%--------------------------------------------------------------------
-%% @doc Starts the server.
-%% @spec start() -> {ok, pid()} | {error, Reason}
-%% @end
-%%--------------------------------------------------------------------
-start() ->
-    gen_server:start(?MODULE, [], []).
 
 %%--------------------------------------------------------------------
 %% @doc Stops the server.
@@ -122,7 +120,8 @@ init([]) ->
 %%          {stop, Reason, Reply, State}   | (terminate/2 is called)
 %%          {stop, Reason, State}            (terminate/2 is called)
 %%--------------------------------------------------------------------
-%handle_call({create, Spec = #rrd_create{}}, _From, State=#state{rrd_port=Port}) ->
+%handle_call({create, Spec = #rrd_create{}}, _From, 
+%               State=#state{rrd_port=Port}) ->
 %    Fmt = ok, Args = ok,
 %    {reply, rrd_command(Port, Fmt, Args), State};
 handle_call({raw, Fmt, Args}, _From, State=#state{rrd_port=Port}) ->
@@ -212,6 +211,7 @@ wait_rrd_command(Port, Cmd, Lines, SoFar) ->
 parse_rrd_response(_Cmd, {ok, _PerfData}, Lines) ->
     %?INFO("Command [~s] completed: ~s~n~s~n", [Cmd, PerfData, Lines]),
     {ok, Lines};
+
 parse_rrd_response(Cmd, {error, Error}, Lines) ->
     ?WARN("Command [~s] failed: ~s~n~s~n", [Cmd, Error, Lines]),
     {error, Error}.

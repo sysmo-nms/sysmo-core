@@ -19,7 +19,7 @@
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 % @private
--module(tracker_target).
+-module(tracker_target_channel).
 -behaviour(gen_server).
 -include_lib("../include/tracker.hrl").
 
@@ -47,28 +47,35 @@
 %%-------------------------------------------------------------
 %% API
 %%-------------------------------------------------------------
-% @doc start the server. No arguments.
+-spec start_link(string(), #target{}) -> 
+        {ok, pid()} | ignore | {error, any()}.
+% @doc
+% Start the server.
+% @end
 start_link(RrdDir, #target{id = Id} = Target) ->
     gen_server:start_link({local, Id}, ?MODULE, [RrdDir, Target], []).
+
 
 -spec launch_probes(target_id()) -> ok | {error, any()}.
 % @doc
 % Once the server running, call him to initialize his probes.
 % @end
 launch_probes(Id) ->
-    %io:format("launch probe ~pn", [Id]).
     gen_server:call(Id, launch_probes).
+
 
 %%-------------------------------------------------------------
 %% GEN_SERVER CALLBACKS
 %%-------------------------------------------------------------
-init([RrdDir, #target{id = Id} = Target]) ->
+init([RootRrdDir, #target{id = Id} = Target]) ->
+    RrdTargetDir = filename:join(RootRrdDir, atom_to_list(Id)),
+    ok = rrd_dir_exist(RrdTargetDir),
     gen_event:notify(tracker_events, {chan_init, Id}),
     {ok, 
         #chan_state{
             chan_id = Id,
             target = Target,
-            rrd_dir = RrdDir,
+            rrd_dir = RrdTargetDir,
             probes_store = []
         }
     }.
@@ -76,9 +83,9 @@ init([RrdDir, #target{id = Id} = Target]) ->
 handle_call(launch_probes, _F, #chan_state{target = Target} = S) ->
     Probes = Target#target.probes,
     ProbesStore = lists:foldl(fun(X, Accum) ->
-        {ok, Pid} = tracker_probe_sup:new({Target, X}),
+        ProbeId     = X#probe.id,
+        {ok, Pid}   = tracker_probe_sup:new({Target, X}),
         tracker_probe:launch(Pid),
-        ProbeId = X#probe.id,
         [{ProbeId, Pid} | Accum]
     end, [], Probes),
     {reply, ok, S#chan_state{probes_store = ProbesStore}};
@@ -98,3 +105,15 @@ terminate(_R, _S) ->
 
 code_change(_O, S, _E) ->
     {ok, S}.
+
+
+-spec rrd_dir_exist(string()) -> ok | {error, any()}.
+rrd_dir_exist(RrdDir) ->
+    case file:read_file_info(RrdDir) of
+        {ok, _} ->
+            ok;
+        {error, enoent} ->
+            file:make_dir(RrdDir);
+        Other ->
+            Other
+    end.

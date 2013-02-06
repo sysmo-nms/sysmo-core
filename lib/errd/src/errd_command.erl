@@ -1,7 +1,6 @@
 %%%-------------------------------------------------------------------
 %% @copyright Geoff Cant
 %% @author Geoff Cant <geoff@catalyst.net.nz>
-%% @version {@vsn}, {@date} {@time}
 %% @doc Library to turn rrd datastructures into rrd command strings.
 %% @end
 %%%-------------------------------------------------------------------

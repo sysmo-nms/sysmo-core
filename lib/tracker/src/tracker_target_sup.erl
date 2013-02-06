@@ -39,7 +39,7 @@ new(Target) ->
 init_launch_probes() ->
     Channels = supervisor:which_children(?MODULE),
     lists:foreach(fun({_,ChanPid,_,_}) ->
-        tracker_target:launch_probes(ChanPid)
+        tracker_target_channel:launch_probes(ChanPid)
     end, Channels).
     
 init([RrdDir]) ->
@@ -48,12 +48,12 @@ init([RrdDir]) ->
             {simple_one_for_one, 1, 60},
             [
                 {
-                    tracker_target,
-                    {tracker_target, start_link, [RrdDir]},
+                    tracker_target_channel,
+                    {tracker_target_channel, start_link, [RrdDir]},
                     transient,
                     2000,
                     worker,
-                    [tracker_target]
+                    [tracker_target_channel]
                 }
             ]
         }

@@ -1,7 +1,6 @@
 %%%-------------------------------------------------------------------
 %% @copyright Geoff Cant
 %% @author Geoff Cant <nem@erlang.geek.nz>
-%% @version {@vsn}, {@date} {@time}
 %% @doc ERRD DB API
 %% @end
 %%%-------------------------------------------------------------------
@@ -10,14 +9,16 @@
 -include_lib("eunit/include/eunit.hrl").
 
 %% API
--export([create/1,
-         create/2,
-         read_config/1,
-         write_config/2,
-         config_name/1,
-         rrd_name/1,
-         read/1,
-         delete/1]).
+-export([
+    create/1,
+    create/2,
+    read_config/1,
+    write_config/2,
+    config_name/1,
+    rrd_name/1,
+    read/1,
+    delete/1
+]).
 
 %% Format:
 %%   errd_db_name/

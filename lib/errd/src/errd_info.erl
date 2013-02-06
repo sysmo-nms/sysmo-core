@@ -1,7 +1,6 @@
 %%%-------------------------------------------------------------------
 %% @copyright Geoff Cant
 %% @author Geoff Cant <nem@erlang.geek.nz>
-%% @version {@vsn}, {@date} {@time}
 %% @doc RRDtool Info Parser.
 %% @end
 %%%-------------------------------------------------------------------

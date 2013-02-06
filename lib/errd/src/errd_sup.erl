@@ -51,22 +51,19 @@ start_link() ->
 %%          {error, Reason}   
 %%--------------------------------------------------------------------
 init([]) ->
-    RestartStrategy    = one_for_one,
-    MaxRestarts        = 1000,
-    MaxTimeBetRestarts = 3600,
-    
-    SupFlags = {RestartStrategy, MaxRestarts, MaxTimeBetRestarts},
-    
-    ChildSpecs =
-	[
-	 {errd_server_sup,
-	  {errd_server_sup, start_link, []},
-	  permanent,
-	  1000,
-	  supervisor,
-	  [errd_server]}
-	 ],
-    {ok,{SupFlags, ChildSpecs}}.
+    {ok,
+        {
+            {one_for_one, 1000, 3600},
+	        [
+	            {errd_server_sup,
+	            {errd_server_sup, start_link, []},
+	            permanent,
+	            1000,
+	            supervisor,
+	            [errd_server]}
+	        ]
+        }
+    }.
 %%====================================================================
 %% Internal functions
 %%====================================================================

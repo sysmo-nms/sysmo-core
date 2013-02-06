@@ -31,10 +31,13 @@ start(_Type, _Args) ->
     {ok, GenEventListeners} = application:get_env(tracker, registered_events),
     {ok, DbDir}             = application:get_env(tracker, db_dir),
     {ok, RrdDir}            = application:get_env(tracker, rrd_dir),
-    tracker_sup:start_link(GenEventListeners, DbDir, RrdDir).
+    tracker_sup:start_link(
+        GenEventListeners,
+        filename:absname(DbDir), 
+        filename:absname(RrdDir)
+    ).
 
 start_phase(init_chans, normal, []) ->
-    io:format("pppppppppppphase init_chans~n"),
     AllTargets = tracker_target_store:info(),
     lists:foreach(fun(X) ->
         tracker_target_sup:new(X)

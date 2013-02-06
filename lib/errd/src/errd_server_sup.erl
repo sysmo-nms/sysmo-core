@@ -1,7 +1,6 @@
 %%%-------------------------------------------------------------------
 %% @copyright Geoff Cant
 %% @author Geoff Cant <nem@erlang.geek.nz>
-%% @version {@vsn}, {@date} {@time}
 %% @doc errd_server supervisor
 %% @end
 %%%-------------------------------------------------------------------
@@ -10,12 +9,13 @@
 -behaviour(supervisor).
 
 %% API
--export([start_link/0]).
+-export([
+    start_link/0,
+    create_instance/0
+]).
 
 %% Supervisor callbacks
 -export([init/1]).
-
--define(SERVER, ?MODULE).
 
 %%====================================================================
 %% API functions
@@ -26,7 +26,11 @@
 %% @end
 %%--------------------------------------------------------------------
 start_link() ->
-    supervisor:start_link({local, ?SERVER}, ?MODULE, []).
+    supervisor:start_link({local, ?MODULE}, ?MODULE, []).
+
+-spec create_instance() -> {ok, pid()} | ignore | {error, any()}.
+create_instance() ->
+    supervisor:start_child(?MODULE, []).
 
 %%====================================================================
 %% Supervisor callbacks
@@ -43,11 +47,21 @@ start_link() ->
 %% @end
 %%--------------------------------------------------------------------
 init([]) ->
-    AChild = {"RRD Server",
-              {errd_server,start_link,[]},
-              permanent,2000,worker,
-              [errd_server, errd_command]},
-    {ok,{{simple_one_for_one,1,2}, [AChild]}}.
+    {ok,
+        {
+            {simple_one_for_one, 1, 2},
+            [
+                {
+                    errd_server,
+                    {errd_server,start_link,[]},
+                    permanent,
+                    2000,
+                    worker,
+                    [errd_server, errd_command]
+                }
+            ]
+        }
+    }.
 
 %%====================================================================
 %% Internal functions
