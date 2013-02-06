@@ -19,7 +19,7 @@
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 % @private
--module(target_probe_sup).
+-module(tracker_probe_sup).
 -behaviour(supervisor).
 
 -export([
@@ -40,12 +40,12 @@ init([]) ->
             {simple_one_for_one, 1, 60},
             [
                 {
-                    target_probe,
-                    {target_probe, start_link, []},
+                    tracker_probe,
+                    {tracker_probe, start_link, []},
                     transient,
                     2000,
                     worker,
-                    [target_probe]
+                    [tracker_probe]
                }
             ]
         }

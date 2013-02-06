@@ -33,10 +33,10 @@
 % and tags are user definissable.
 % </p>
 % @end
--module(target_store).
+-module(tracker_target_store).
 -behaviour(gen_server).
 -include_lib("eunit/include/eunit.hrl").
--include_lib("../include/target.hrl").
+-include_lib("../include/tracker.hrl").
 
 -record(tserver_state, {
     db_dir,
@@ -590,7 +590,7 @@ code_change(_O, S, _E) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec dbwrite_lock_id(dets_name(), inet:ip_address()) -> target_id().
 dbwrite_lock_id(DetsName, Ip) ->
-    Id = target_misc:generate_id(),
+    Id = tracker_misc:generate_id(),
     % if Id exist in the table retry else return.
     TargetRecord = #target{
         id = Id,
@@ -1058,10 +1058,10 @@ valid_hostname_string(Arg) ->
 -spec generate_event({insert | update, #target{}} | {delete, target_id()}) 
         -> ok.
 generate_event(Event) ->
-    gen_event:notify(target_events, Event).
+    gen_event:notify(tracker_events, Event).
 
 -spec log(string(), list()) -> ok.
-log(target_events, Event) ->
+log(tracker_events, Event) ->
     io:format("~p~n", [Event]);
 log(A, B) ->
     io:format(A, B).

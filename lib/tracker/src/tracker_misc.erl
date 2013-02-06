@@ -18,9 +18,9 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
--module(target_misc).
+-module(tracker_misc).
 -behaviour(gen_server).
--include_lib("../include/target.hrl").
+-include_lib("../include/tracker.hrl").
 
 -export([
     start_link/0,
@@ -105,12 +105,12 @@ generate_id(Term) ->
 % fill target_store with empty target records.
 % @end
 fill_target_store() ->
-    lists:foreach(fun(X) -> target_store:new(X) end, some_ips()).
+    lists:foreach(fun(X) -> tracker_target_store:new(X) end, some_ips()).
 
 clear_target_store() ->
     lists:foreach(fun(X) ->
-        target_store:del_target(X)
-    end, target_store:get_ids()).
+        tracker_target_store:del_target(X)
+    end, tracker_target_store:get_ids()).
 
 
 

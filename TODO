@@ -3,7 +3,7 @@ The development flow should follow this order:
 #MODULE/OTHER           #PRIORITY   #COMPLETED
 - ifs                     HIGH        100%
 Module events and client communication/auth
-- targets                 HIGH        50%
+- trackers                 HIGH        50%
 Live list of targets, associate tags to traps/inform they produce and own the
 mermisions associated.
 - icmp                    HIGH        100%            to much??

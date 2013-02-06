@@ -18,44 +18,13 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
-% @private
--module(target_channel_sup).
--behaviour(supervisor).
-
+-module(probe_icmp_echo).
+-include_lib("../include/tracker.hrl").
 -export([
-    start_link/1,
-    new/1,
-    init_launch_probes/0
-
+    exec/1
 ]).
 
--export([init/1]).
+% icmp_server:ping(Ip, Timeout) -> must return {ok, Val} | {error, Error}
+exec({#target{ ip = Ip}, #probe{timeout_wait = Timeout}}) ->
+    icmp_server:ping(Ip, Timeout * 1000).
 
-start_link(RrdDir) ->
-    supervisor:start_link({local, ?MODULE}, ?MODULE, [RrdDir]).
-
-new(Target) ->
-    supervisor:start_child(?MODULE, [Target]).
-
-init_launch_probes() ->
-    Channels = supervisor:which_children(?MODULE),
-    lists:foreach(fun({_,ChanPid,_,_}) ->
-        target_channel:launch_probes(ChanPid)
-    end, Channels).
-    
-init([RrdDir]) ->
-    {ok, 
-        {
-            {simple_one_for_one, 1, 60},
-            [
-                {
-                    target_channel,
-                    {target_channel, start_link, [RrdDir]},
-                    transient,
-                    2000,
-                    worker,
-                    [target_channel]
-                }
-            ]
-        }
-    }.

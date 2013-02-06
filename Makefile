@@ -1,7 +1,7 @@
 # Makefile 
 
 REL_NAME        = enms
-MODS            = ifs esnmp icmp ifs procket target activity_logger errd
+MODS            = ifs esnmp icmp ifs procket tracker activity_logger errd
 
 all: compile pdu_lib
 

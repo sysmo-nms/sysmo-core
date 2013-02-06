@@ -18,19 +18,30 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
--module(target_events).
--export([start_link/1]).
+% @private
+-module(tracker_app).
+-behaviour(application).
 
-% @doc
-% Start the event manager and initialise the module.
-% @end
--spec esnmp_events:start_link(list()) -> {ok, pid()}.
-start_link(GenEventListeners) ->
-    % START the event manager:
-    ReturnSup = gen_event:start_link({local, ?MODULE}),
+-export([
+    start/2,
+    start_phase/3,
+    stop/1]).
 
-    lists:foreach(fun(X) -> 
-        gen_event:add_handler(?MODULE, X, target)
-    end, GenEventListeners),
+start(_Type, _Args) ->
+    {ok, GenEventListeners} = application:get_env(tracker, registered_events),
+    {ok, DbDir}             = application:get_env(tracker, db_dir),
+    {ok, RrdDir}            = application:get_env(tracker, rrd_dir),
+    tracker_sup:start_link(GenEventListeners, DbDir, RrdDir).
 
-    ReturnSup.
+start_phase(init_chans, normal, []) ->
+    io:format("pppppppppppphase init_chans~n"),
+    AllTargets = tracker_target_store:info(),
+    lists:foreach(fun(X) ->
+        tracker_target_sup:new(X)
+    end, AllTargets);
+
+start_phase(launch_probes, normal, []) ->
+    tracker_target_sup:init_launch_probes().
+
+stop(_State) ->
+	ok.

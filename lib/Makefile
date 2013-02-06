@@ -1,7 +1,7 @@
 # Makefile 
 
 REL_NAME        = enms
-MODS            = ifs esnmp target activity_logger procket icmp errd
+MODS            = ifs esnmp tracker activity_logger procket icmp errd
 
 compile: recurse
 

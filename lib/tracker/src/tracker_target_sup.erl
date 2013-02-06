@@ -19,28 +19,42 @@
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 % @private
--module(target_app).
--behaviour(application).
+-module(tracker_target_sup).
+-behaviour(supervisor).
 
 -export([
-    start/2,
-    start_phase/3,
-    stop/1]).
+    start_link/1,
+    new/1,
+    init_launch_probes/0
+]).
 
-start(_Type, _Args) ->
-    {ok, GenEventListeners} = application:get_env(target, registered_events),
-    {ok, DbDir}             = application:get_env(target, db_dir),
-    {ok, RrdDir}            = application:get_env(target, rrd_dir),
-    target_sup:start_link(GenEventListeners, DbDir, RrdDir).
+-export([init/1]).
 
-start_phase(init_chans, normal, []) ->
-    AllTargets = target_store:info(),
-    lists:foreach(fun(X) ->
-        target_channel_sup:new(X)
-    end, AllTargets);
+start_link(RrdDir) ->
+    supervisor:start_link({local, ?MODULE}, ?MODULE, [RrdDir]).
 
-start_phase(launch_probes, normal, []) ->
-    target_channel_sup:init_launch_probes().
+new(Target) ->
+    supervisor:start_child(?MODULE, [Target]).
 
-stop(_State) ->
-	ok.
+init_launch_probes() ->
+    Channels = supervisor:which_children(?MODULE),
+    lists:foreach(fun({_,ChanPid,_,_}) ->
+        tracker_target:launch_probes(ChanPid)
+    end, Channels).
+    
+init([RrdDir]) ->
+    {ok, 
+        {
+            {simple_one_for_one, 1, 60},
+            [
+                {
+                    tracker_target,
+                    {tracker_target, start_link, [RrdDir]},
+                    transient,
+                    2000,
+                    worker,
+                    [tracker_target]
+                }
+            ]
+        }
+    }.

@@ -2,7 +2,7 @@
 % Copyright (C) 2012 <Sébastien Serre sserre.bx@gmail.com>
 % 
 % Enms is a Network Management System aimed to manage and monitor SNMP
-% target, monitor network hosts and services, provide a consistent
+% trackers, monitor network hosts and services, provide a consistent
 % documentation system and tools to help network professionals
 % to have a wide perspective of the networks they manage.
 % 
@@ -18,13 +18,24 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
--module(probe_icmp_echo).
--include_lib("../include/target.hrl").
--export([
-    exec/1
-]).
-
-% icmp_server:ping(Ip, Timeout) -> must return {ok, Val} | {error, Error}
-exec({#target{ ip = Ip}, #probe{timeout_wait = Timeout}}) ->
-    icmp_server:ping(Ip, Timeout * 1000).
-
+{application, tracker,
+	[
+		{description, "Data store of trackers configuration"},
+		{vsn, "0.1.0"},
+		{modules, [
+                tracker,
+                tracker_app,
+                tracker_sup,
+                tracker_ifs,
+                tracker_events
+            ]},
+		{registered, [
+            ]},
+		{applications, 
+            %[kernel, stdlib, icmp]
+            [kernel, stdlib]
+        },
+        {start_phases, [{init_chans, []}, {launch_probes, []}]},
+		{mod, {tracker_app, []}}
+	]
+}.

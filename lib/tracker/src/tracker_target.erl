@@ -19,9 +19,9 @@
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 % @private
--module(target_channel).
+-module(tracker_target).
 -behaviour(gen_server).
--include_lib("../include/target.hrl").
+-include_lib("../include/tracker.hrl").
 
 -export([
     init/1, 
@@ -63,7 +63,7 @@ launch_probes(Id) ->
 %% GEN_SERVER CALLBACKS
 %%-------------------------------------------------------------
 init([RrdDir, #target{id = Id} = Target]) ->
-    gen_event:notify(target_events, {chan_init, Id}),
+    gen_event:notify(tracker_events, {chan_init, Id}),
     {ok, 
         #chan_state{
             chan_id = Id,
@@ -76,8 +76,8 @@ init([RrdDir, #target{id = Id} = Target]) ->
 handle_call(launch_probes, _F, #chan_state{target = Target} = S) ->
     Probes = Target#target.probes,
     ProbesStore = lists:foldl(fun(X, Accum) ->
-        {ok, Pid} = target_probe_sup:new({Target, X}),
-        target_probe:launch(Pid),
+        {ok, Pid} = tracker_probe_sup:new({Target, X}),
+        tracker_probe:launch(Pid),
         ProbeId = X#probe.id,
         [{ProbeId, Pid} | Accum]
     end, [], Probes),

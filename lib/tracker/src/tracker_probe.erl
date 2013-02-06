@@ -19,9 +19,9 @@
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 % @private
--module(target_probe).
+-module(tracker_probe).
 -behaviour(gen_server).
--include_lib("../include/target.hrl").
+-include_lib("../include/tracker.hrl").
 
 -export([
     init/1,
@@ -56,6 +56,7 @@ start_link({Target, Probe}) ->
     gen_server:start_link(?MODULE, [Target, Probe], []).
 
 launch(Pid) ->
+    io:format("lllllllllllllllaunch~n~n"),
     gen_server:cast(Pid, init_launch),
     ok.
 
@@ -86,7 +87,7 @@ handle_call(_R, _F, S) ->
 % launch a probe for the first time. Randomise start
 handle_cast(init_launch, #state{probe = Probe, target = Target, 
             frequency = Frequency} = S) ->
-    InitialLaunch = target_misc:random(Frequency * 1000),
+    InitialLaunch = tracker_misc:random(Frequency * 1000),
     timer:apply_after(InitialLaunch, 
             ?MODULE, probe_pass, [Target, Probe, self()]),
     {noreply, S};

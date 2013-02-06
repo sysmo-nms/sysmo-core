@@ -2,7 +2,7 @@
 % Copyright (C) 2012 <Sébastien Serre sserre.bx@gmail.com>
 % 
 % Enms is a Network Management System aimed to manage and monitor SNMP
-% targets, monitor network hosts and services, provide a consistent
+% target, monitor network hosts and services, provide a consistent
 % documentation system and tools to help network professionals
 % to have a wide perspective of the networks they manage.
 % 
@@ -18,24 +18,19 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
-{application, target,
-	[
-		{description, "Data store of targets configuration"},
-		{vsn, "0.1.0"},
-		{modules, [
-                target,
-                target_app,
-                target_sup,
-                target_ifs,
-                target_events
-            ]},
-		{registered, [
-            ]},
-		{applications, 
-            %[kernel, stdlib, icmp]
-            [kernel, stdlib]
-        },
-        {start_phases, [{init_chans, []}, {launch_probes, []}]},
-		{mod, {target_app, []}}
-	]
-}.
+-module(tracker_events).
+-export([start_link/1]).
+
+% @doc
+% Start the event manager and initialise the module.
+% @end
+-spec esnmp_events:start_link(list()) -> {ok, pid()}.
+start_link(GenEventListeners) ->
+    % START the event manager:
+    ReturnSup = gen_event:start_link({local, ?MODULE}),
+
+    lists:foreach(fun(X) -> 
+        gen_event:add_handler(?MODULE, X, tracker)
+    end, GenEventListeners),
+
+    ReturnSup.
