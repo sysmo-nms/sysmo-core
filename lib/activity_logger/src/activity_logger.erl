@@ -51,7 +51,7 @@ code_change(_OldVsn, S, _ExtraA) ->
     {ok, S}.
 
 log({Event, Mod}) ->
-    Chars = io_lib:format("***ACTIVITY LOGGER: ~p***~n~W~n", 
-                [Mod, {Mod, Event}, 9]),
+    Chars = io_lib:format("~W~n", 
+                [{Mod, Event}, 9]),
     activity_logger_fd:log(Chars).
 

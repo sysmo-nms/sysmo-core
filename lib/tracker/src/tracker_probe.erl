@@ -18,7 +18,8 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
-% @private
+% @doc
+% @end
 -module(tracker_probe).
 -behaviour(gen_server).
 -include("../include/tracker.hrl").
@@ -187,7 +188,7 @@ probe_pass(Target, Probe, Pid) ->
 % Notification to the tracker_target_channel module who initiate this server.
 % @end
 notify_chan(ChanPid, Msg) ->
-    gen_server:cast(ChanPid, {probe_evt, self(), Msg}).
+    gen_server:cast(ChanPid, {?MODULE, self(), Msg}).
 
 -spec flipflap(init | inspect, #probe_server_state{}) 
         -> #probe_server_state{}.

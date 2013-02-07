@@ -80,8 +80,17 @@ launch_probes(Id) ->
 -spec subscribe(target_id(), any()) -> ok.
 % @doc
 % ifs module related.
-% A client call. Will increase the subscriber_count by 1 and return only
-% when all available information of the targets are sent.
+% TODO: A client call. Will increase the subscriber_count by 1 and return only
+% when all available informations of the targets are sent.
+%
+% The logic is here:
+% - lock the server
+% - dump every informations pending,
+% - send all target related data to client,
+% - increment subscriber_count
+% - unlock the server
+% All this must be done in a single gen_server:call()
+%
 % Once the #chan_state.subscriber_count > 0, every messages related to
 % this target will be forwarded to ifs.
 % @end
@@ -91,8 +100,8 @@ subscribe(TargetId, Client) ->
 -spec unsubscribe(target_id()) -> ok.
 % @doc
 % ifs module related.
-% Decrease the #chan_state.subscriber_count by 1. When the result = 0
-% messages from this channel will not be forwarded to ifs.
+% TODO: Decrease the #chan_state.subscriber_count by 1. When the result = 0
+% messages from this channel will no more be forwarded to ifs.
 % @end
 unsubscribe(TargetId) ->
     gen_server:call(TargetId, {one_subscriber_less}).
@@ -106,7 +115,7 @@ unsubscribe(TargetId) ->
 init([RootRrdDir, #target{id = Id} = Target]) ->
     RrdTargetDir = filename:join(RootRrdDir, atom_to_list(Id)),
     ok = rrd_dir_exist(RrdTargetDir),
-    gen_event:notify(tracker_events, {chan_init, Id}),
+    gen_event:notify(tracker_events, {?MODULE, init, Id}),
     {ok, 
         #chan_state{
             chan_id = Id,
@@ -116,6 +125,7 @@ init([RootRrdDir, #target{id = Id} = Target]) ->
             probes_store = []
         }
     }.
+
 
 
 
@@ -136,8 +146,12 @@ handle_call(_R, _F, S) ->
 
 
 
+
 % CAST
-handle_cast({probe_evt, ProbePid, Msg}, 
+% @doc
+% Message sent by the modules.
+% @end
+handle_cast({tracker_probe, ProbePid, Msg}, 
         #chan_state{probes_store = ProbeStore} = S) ->
     {ProbePid, Probe, _Status} = lists:keyfind(ProbePid, 1, ProbeStore),
     probe_event(S, Probe, Msg),
@@ -145,6 +159,7 @@ handle_cast({probe_evt, ProbePid, Msg},
 
 handle_cast(_R, S) ->
     {noreply, S}.
+
 
 
 
@@ -174,47 +189,42 @@ rrd_dir_exist(RrdDir) ->
 
 -spec probe_event(#probe{}, #chan_state{}, any()) -> ok.
 % @private
-% probe event is an error message. We log.
-probe_event(Chan, Probe, {Level = 'CRITICAL', Msg}) ->
-    gen_event:notify(tracker_events, 
-        {probe_event, status, {Level = Msg}, 
-            {Chan#chan_state.chan_id, Probe#probe.id}}); 
+probe_event(Chan, Probe, {'CRITICAL', _} = Msg) ->
+    notify(status, Msg, Chan, Probe);
 
-probe_event(Chan, Probe, {Level = 'WARNING', Msg}) ->
-    gen_event:notify(tracker_events, 
-        {probe_event, status, {Level, Msg}, 
-            {Chan#chan_state.chan_id, Probe#probe.id}}); 
+probe_event(Chan, Probe, {'WARNING', _}  = Msg) ->
+    notify(status, Msg, Chan, Probe);
 
-probe_event(Chan, Probe, {Level = 'RECOVERY', Msg}) ->
-    case Probe#probe.type of
-        status ->
-            gen_event:notify(tracker_events, 
-                    {probe_event, status, {Level, Msg}, 
-                        {Chan#chan_state.chan_id, Probe#probe.id}});
-        fetch ->
-            % rrdupdate
-            gen_event:notify(tracker_events, 
-                    {probe_event, status, {Level, Msg},
-                        {Chan#chan_state.chan_id, Probe#probe.id}})
-    end;
+probe_event(Chan, #probe{type = status} = Probe, {'RECOVERY', _} = Msg) ->
+    notify(status, Msg, Chan, Probe);
 
-probe_event(Chan, Probe, {Level = 'OK', Msg}) ->
-    case Probe#probe.type of
-        status ->
-            gen_event:notify(tracker_events, 
-                    {probe_event, status, {Level, Msg}, 
-                        {Chan#chan_state.chan_id, Probe#probe.id}});
-        fetch ->
-            % rrdupdate
-            gen_event:notify(tracker_events, 
-                    {probe_event, status, {Level, Msg},
-                        {Chan#chan_state.chan_id, Probe#probe.id}})
-    end;
+probe_event(Chan, #probe{type = fetch} = Probe, {'RECOVERY', _} = Msg) ->
+    % TODO rrdupdate
+    notify(fetch, Msg, Chan, Probe);
 
-probe_event(Chan, Probe, {Level = 'INFO', Msg}) ->
-    gen_event:notify(tracker_events, 
-        {probe_event, status, {Level, Msg}, 
-            {Chan#chan_state.chan_id, Probe#probe.id}}); 
+probe_event(Chan, #probe{type = status} = Probe, {'OK', _} = Msg) ->
+    notify(status, Msg, Chan, Probe);
+
+probe_event(Chan, #probe{type = fetch} = Probe, {'OK', _} = Msg) ->
+    % TODO rrdupdate
+    notify(fetch, Msg, Chan, Probe);
+
+probe_event(Chan, Probe, {'INFO', _} = Msg) ->
+    notify(fetch, Msg, Chan, Probe);
 
 probe_event(_A,_B,C) ->
     io:format("Other ~p~n", [C]).
+
+
+-spec notify(atom(), tuple(), #chan_state{}, #probe{}) -> ok.
+% @doc
+% Will log everything and also to ifs if #chan_state.subscribers_count > 0
+% @end
+notify(Type, Msg, #chan_state{subscriber_count = 0} = Chan, Probe) ->
+    gen_event:notify(tracker_events, {tracker_probe, Type, Msg,
+            {Chan#chan_state.chan_id, Probe#probe.id}});
+
+notify(Type, Msg, Chan, Probe) ->
+    % TODO notify ifs
+    gen_event:notify(tracker_events, {tracker_probe, Type, Msg,
+            {Chan#chan_state.chan_id, Probe#probe.id}}).
