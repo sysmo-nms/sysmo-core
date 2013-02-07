@@ -57,7 +57,6 @@
 %%-----------------------------------------------------
 % @doc start the server. No arguments.
 start_link(AuthMod, ManagedMods) ->
-    log("------------------------------ifs_server start~n"),
     gen_server:start_link({local, ?MODULE}, ?MODULE, 
                                 [AuthMod, ManagedMods], []).
 
@@ -93,8 +92,11 @@ process_msg({fromClient, {authResp, {_, UName, UPass}}},
         {ok, Roles} ->
             gen_server:cast(?MODULE, {send_ack, Roles, ClientState, UName});
         fail ->
-            Mod:send(ClientState, {modIfPDU, {fromServer, {authError,
-                    {'AuthPDU_fromServer_authError', badPass, UName, UPass}}}});
+            Mod:send(ClientState, {modIfPDU, 
+                {fromServer,
+                    {authError,
+                        {'AuthPDU_fromServer_authError', 
+                            badPass, UName, UPass}}}});
         Other ->
             io:format("unknown ~p in ~p line ~p~n", [Other, ?MODULE, ?LINE])
     end;
@@ -163,8 +165,9 @@ handle_call(_R, _F, S) ->
 % @doc Send an Ack PDU to the client defined by ClientState
 handle_cast({send_ack, Roles,
         #client_state{module = CliMod} = ClientState, Name}, S) ->
-    Modules = lists:map(fun(X) -> erlang:atom_to_list(X#ifs_app_record.app_name)
-        end, S#if_server_state.modules),
+    Modules = lists:map(fun(X) -> 
+        erlang:atom_to_list(X#ifs_app_record.app_name)
+    end, S#if_server_state.modules),
     CliMod:auth_set(success, ClientState, Name, Roles, Modules),
     CliMod:send(ClientState, {modIfPDU, {fromServer, {authAck,
         {'AuthPDU_fromServer_authAck', Roles, Modules}}}}),
@@ -202,8 +205,8 @@ terminate(_R, _S) ->
 code_change(_O, S, _E) ->
     {ok, S}.
 
-log(A) ->
-    log(A,[]).
+% log(A) ->
+    % log(A,[]).
 
-log(A,B) ->
-    io:format(A,B).
+% log(A,B) ->
+    % io:format(A,B).

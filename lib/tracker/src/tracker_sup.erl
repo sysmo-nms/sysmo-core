@@ -26,10 +26,8 @@
 -export([init/1]).
 
 start_link(GenEventListeners, DbDir, RrdDir) ->
-    Ret = supervisor:start_link({local, ?MODULE}, ?MODULE, 
-            [GenEventListeners, DbDir, RrdDir]),
-    io:format("ret is ~p~n", [Ret]),
-    Ret.
+    supervisor:start_link({local, ?MODULE}, ?MODULE, 
+            [GenEventListeners, DbDir, RrdDir]).
 
 init([GenEventListeners, DbDir, RrdDir]) ->
     {ok, 

@@ -1,22 +1,21 @@
 The development flow should follow this order:
 
 #MODULE/OTHER           #PRIORITY   #COMPLETED
-- ifs                     HIGH        100%
+- ifs                     HIGH         90%      waiting for tracker to finish
 Module events and client communication/auth
-- trackers                 HIGH        50%
+- tracker                 HIGH         60%
 Live list of targets, associate tags to traps/inform they produce and own the
 mermisions associated.
-- icmp                    HIGH        100%            to much??
+- icmp                    HIGH        100%
 Monitor network hosts
 - esnmp                   HIGH        50%
 SNMP utility and monitoring + Live list of snmp targets
-- rrd                     HIGH        0%
+- rrd                     HIGH        30%
 Generate RRD data whith the system probes.
-See "github.com/Vagabond/erlang-rrdtool" and
-"github.com/archaelus/errd"
+See "github.com/archaelus/errd"
 - wmaps                   HIGH        0%            will realy rocks!
 Create, save and generate (what format?) maps (manual links between nodes).
-The final map should look like the cacti weathermap module + visual alerts.
+The final map should look like the cacti/weathermap module + visual alerts.
 ---------> RELEASE 1.0,
 
 

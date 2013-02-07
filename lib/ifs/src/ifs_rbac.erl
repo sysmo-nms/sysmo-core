@@ -23,7 +23,15 @@
 -behaviour(gen_server).
 -include_lib("../include/client_state.hrl").
 
--export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
+-export([
+    init/1,
+    handle_call/3, 
+    handle_cast/2, 
+    handle_info/2, 
+    terminate/2, 
+    code_change/3
+]).
+
 -export([
     start_link/0, 
     handle_event/3, 
@@ -37,10 +45,11 @@
 %%-------------------------------------------------------------
 % @doc start the server. No arguments.
 start_link() ->
-    log("---------------ifs_rbac start~n"),
     gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
-% @doc Ajoute un client au service si il n'y est pas deja et sourcris au module Mod
+% @doc 
+% Ajoute un client au service si il n'y est pas deja et sourcris au module Mod
+% @end
 register_client(ClientState, Mod) ->
     gen_server:cast(?MODULE, {register_client, ClientState, Mod}).
 
@@ -52,7 +61,10 @@ unregister_client(CState, Mod) ->
 del_client(CState) ->
     gen_server:cast(?MODULE, {del_client, CState}).
 
-% @doc FromMod doit etre l atome avec lequel s'est enregistre le module via ifs_server:regiter_mod/1.
+% @doc 
+% FromMod doit etre l atome avec lequel s'est enregistre le module via 
+% ifs_server:regiter_mod/1.
+% @end
 handle_event(FromMod, Data, Perm) ->
     gen_server:cast(?MODULE, {process_msg, FromMod, Data, Perm}).
 
@@ -109,7 +121,10 @@ code_change(_O, S, _E) ->
 %% PRIVATE
 %%-------------------------------------------------------------
 % @private
-% @doc cherche dans ets "S" le couple {Mod, Perm} de [Perms]. Si il y a des clients, fait un send_msg
+% @doc 
+% cherche dans ets "S" le couple {Mod, Perm} de [Perms]. Si il y a des 
+% clients, fait un send_msg.
+% @end
 ifs_process_msg(Mod, Perms, Data, S) ->
     Acu = lists:foldl(fun(X, Acc) ->
         A = ets:match(S, {{Mod, X}, '$1'}),
@@ -126,7 +141,10 @@ ifs_process_msg(Mod, Perms, Data, S) ->
     end.
 
 % @private
-% @doc ajoute le client aux couples {Mod, role} les crees si ils n existent pas encore
+% @doc 
+% ajoute le client aux couples {Mod, role} les crees si ils n existent pas 
+% encore
+% @end
 ifs_register_client(Mod, S, CState) ->
     lists:foreach(fun(Role) ->
         case ets:lookup(S, {Mod, Role}) of
@@ -169,8 +187,8 @@ ifs_del_client(S, CState) ->
         ets:update_element(S, Key, {2, NewList})
     end, All).
 
-log(A) ->
-    log(A, []).
-
-log(A,B) ->
-    io:format(A,B).
+% log(A) ->
+%     log(A, []).
+% 
+% log(A,B) ->
+%     io:format(A,B).

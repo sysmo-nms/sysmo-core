@@ -47,8 +47,6 @@
 %% @end
 %%----------------------------------------------------------------------
 start_link(Port, Module, ConnLimit) ->
-    error_logger:info_msg("~p llllisten at ~p~n", 
-        [Module, Port]),
     gen_server:start_link({local, ?MODULE}, ?MODULE, 
         [Port, Module, ConnLimit], []).
 
@@ -155,15 +153,19 @@ handle_info({inet_async, ListSock, Ref, {ok, CliSocket}},
             end;
         false ->
             gen_tcp:close(CliSocket),
-            error_logger:warning_msg("~p connexion limit exeded~n", [CliSocket]),
+            error_logger:warning_msg("~p connexion limit exeded~n", 
+                    [CliSocket]),
             case prim_inet:async_accept(ListSock, -1) of
-                {ok,    NewRef} -> ok;
-                {error, NewRef} -> exit({async_accept, inet:format_error(NewRef)})
+                {ok,    NewRef} -> 
+                    ok;
+                {error, NewRef} -> 
+                    exit({async_accept, inet:format_error(NewRef)})
             end,
             {noreply, State#state{acceptor=NewRef}}
     end;
 
-handle_info({inet_async, ListSock, Ref, Error}, #state{listener=ListSock, acceptor=Ref} = State) ->
+handle_info({inet_async, ListSock, Ref, Error}, 
+        #state{listener=ListSock, acceptor=Ref} = State) ->
     error_logger:error_msg("Error in socket acceptor: ~p.\n", [Error]),
     {stop, Error, State};
 
@@ -199,7 +201,8 @@ code_change(_OldVsn, State, _Extra) ->
 %% listening socket to the new client socket.
 set_sockopt(ListSock, CliSocket) ->
     true = inet_db:register_socket(CliSocket, inet_tcp),
-    case prim_inet:getopts(ListSock, [active, nodelay, keepalive, delay_send, priority, tos]) of
+    case prim_inet:getopts(ListSock, 
+        [active, nodelay, keepalive, delay_send, priority, tos]) of
     {ok, Opts} ->
         case prim_inet:setopts(CliSocket, Opts) of
         ok    -> ok;

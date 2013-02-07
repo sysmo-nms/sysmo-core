@@ -15,7 +15,7 @@
 -type ip_add()                  :: undefined | inet:ip_address().
 -type max_timeouts()            :: integer() | undefined.
 -type probe_id()                :: undefined | integer().
--type probe_type()              :: undefined | rrd_fetch | status.
+-type probe_type()              :: undefined | fetch | status.
 -type property()                :: {property_key(), property_val()}.
 -type property_key()            :: any().
 -type property_val()            :: any().
@@ -57,7 +57,7 @@
     timeout_max     = undefined     :: undefined | integer(),
     flipflap_mod    = flipflap_off  :: module(),
 
-    % if type = rrd_fetch
+    % if type = fetch
     rrd_create          = ""            :: rrd_command(),
     rrd_update          = ""            :: rrd_command(),
     rrd_graph           = ""            :: rrd_command(),
@@ -77,7 +77,7 @@
         #probe{                     % initial probe_icmp_echo()
             id = 1,
             name = "probe_icmp_echo",
-            type = rrd_fetch,
+            type = fetch,
             permissions =   #perm_conf{
                                 read = "admin",
                                 write = "admin"

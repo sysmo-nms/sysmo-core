@@ -47,8 +47,8 @@
 %% @end
 %%----------------------------------------------------------------------
 start_link(Port, Module, ConnLimit) when is_integer(Port), is_atom(Module) ->
-    error_logger:info_msg("~p listen at ~p~n", [Module, Port]),
-    gen_server:start_link({local, ?MODULE}, ?MODULE, [Port, Module, ConnLimit], []).
+    gen_server:start_link({local, ?MODULE}, ?MODULE, 
+            [Port, Module, ConnLimit], []).
 
 %%%------------------------------------------------------------------------
 %%% Callback functions from gen_server
@@ -117,8 +117,11 @@ handle_cast(_Msg, State) ->
 %% @end
 %% @private
 %%-------------------------------------------------------------------------
-handle_info({inet_async, ListSock, Ref, {ok, CliSocket}},
-            #state{listener=ListSock, acceptor=Ref, module=Module, connection_limit = ConnLimit} = State) ->
+handle_info({inet_async, ListSock, Ref, {ok, CliSocket}}, #state{
+        listener            = ListSock, 
+        acceptor            = Ref, 
+        module              = Module, 
+        connection_limit    = ConnLimit} = State) ->
 
     ActiveC = erlang:length(supervisor:which_children(ssl_client_sup)),
     %% test the max conn limit
@@ -130,17 +133,20 @@ handle_info({inet_async, ListSock, Ref, {ok, CliSocket}},
                 {error, Reason} -> exit({set_sockopt, Reason})
                 end,
 
-                %% New client connected - spawn a new process using the simple_one_for_one
-                %% supervisor.
+                %% New client connected - spawn a new process using the 
+                %% simple_one_for_one supervisor.
                 {ok, Pid} = ssl_client_sup:start_client(),
                 gen_tcp:controlling_process(CliSocket, Pid),
                 %% Instruct the new FSM that it owns the socket.
                 Module:set_socket(Pid, CliSocket),
         
-                %% Signal the network driver that we are ready to accept another connection
+                %% Signal the network driver that we are ready to accept 
+                %% another connection
                 case prim_inet:async_accept(ListSock, -1) of
-                    {ok,    NewRef} -> ok;
-                    {error, NewRef} -> exit({async_accept, inet:format_error(NewRef)})
+                    {ok,    NewRef} -> 
+                        ok;
+                    {error, NewRef} -> 
+                        exit({async_accept, inet:format_error(NewRef)})
                 end,
 
                 {noreply, State#state{acceptor=NewRef}}
@@ -150,15 +156,19 @@ handle_info({inet_async, ListSock, Ref, {ok, CliSocket}},
             end;
         false ->
             gen_tcp:close(CliSocket),
-            error_logger:warning_msg("~p connexion limit exeded~n", [CliSocket]),
+            error_logger:warning_msg("~p connexion limit exeded~n", 
+                    [CliSocket]),
             case prim_inet:async_accept(ListSock, -1) of
-                {ok,    NewRef} -> ok;
-                {error, NewRef} -> exit({async_accept, inet:format_error(NewRef)})
+                {ok,    NewRef} ->
+                    ok;
+                {error, NewRef} -> 
+                    exit({async_accept, inet:format_error(NewRef)})
             end,
             {noreply, State#state{acceptor=NewRef}}
     end;
 
-handle_info({inet_async, ListSock, Ref, Error}, #state{listener=ListSock, acceptor=Ref} = State) ->
+handle_info({inet_async, ListSock, Ref, Error}, 
+        #state{listener=ListSock, acceptor=Ref} = State) ->
     error_logger:error_msg("Error in socket acceptor: ~p.\n", [Error]),
     {stop, Error, State};
 
@@ -194,7 +204,8 @@ code_change(_OldVsn, State, _Extra) ->
 %% listening socket to the new client socket.
 set_sockopt(ListSock, CliSocket) ->
     true = inet_db:register_socket(CliSocket, inet_tcp),
-    case prim_inet:getopts(ListSock, [active, nodelay, keepalive, delay_send, priority, tos]) of
+    case prim_inet:getopts(ListSock, 
+            [active, nodelay, keepalive, delay_send, priority, tos]) of
     {ok, Opts} ->
         case prim_inet:setopts(CliSocket, Opts) of
         ok    -> ok;
