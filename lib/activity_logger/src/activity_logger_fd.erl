@@ -38,11 +38,6 @@
 log(Msg) ->
      gen_server:call(?MODULE, {log, Msg}).
         
-
-%%-------------------------------------------------------------
-%% without this small server utility, random:uniform is called
-%% at the same time at startup and return identical values.
-%%-------------------------------------------------------------
 start_link(LogFile) ->
     gen_server:start_link({local, ?MODULE}, ?MODULE, [LogFile], []).
 
@@ -69,6 +64,3 @@ terminate(_R, S) ->
 
 code_change(_O, S, _E) ->
     {ok, S}.
-%%-------------------------------------------------------------
-%% end of gen_server
-%%-------------------------------------------------------------

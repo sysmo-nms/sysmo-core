@@ -56,7 +56,7 @@ start_link({Target, Probe, Pid}) ->
 % in an infinite loop.
 % @end
 launch(Pid) ->
-    gen_server:call(Pid, init_launch).
+    gen_server:call(Pid, start).
 
 %%-------------------------------------------------------------
 %% GEN_SERVER CALLBACKS
@@ -76,7 +76,7 @@ init([Target, Probe, Pid]) ->
         
     
 % launch a probe for the first time. Randomise start
-handle_call(init_launch, _F, #probe_server_state{
+handle_call(start, _F, #probe_server_state{
         probe       = Probe, 
         target      = Target, 
         step        = Step, 
@@ -84,7 +84,7 @@ handle_call(init_launch, _F, #probe_server_state{
     InitialLaunch = tracker_misc:random(Step * 1000),
     timer:apply_after(InitialLaunch, ?MODULE, 
             probe_pass, [Target, Probe, self()]),
-    notify_chan(ChanPid, probe_init_ok),
+    notify_chan(ChanPid, {'INFO', start}),
     {reply, ok, S};
 
 handle_call(_R, _F, S) ->
@@ -114,11 +114,13 @@ handle_cast({probe_response, {error, Val}}, #probe_server_state{
     gen_server:cast(self(), launch),
     {noreply, flipflap(inspect, S#probe_server_state{status = error})};
 
-% error, max timeout reached but status is allready error, do nothing
-handle_cast({probe_response, {error, _}}, #probe_server_state{
+% error, max timeout reached and status is allready error, renew a WARNING.
+handle_cast({probe_response, {error, Val}}, #probe_server_state{
+            target_chan     = ChanPid,
             timeout_current = T, 
             timeout_max     = T, 
             status          = error} = S) ->
+    notify_chan(ChanPid, {'CRITICAL', Val}),
     gen_server:cast(self(), launch),
     {noreply, flipflap(inspect, S)};
 
@@ -132,7 +134,7 @@ handle_cast({probe_response, {error, Val}}, #probe_server_state{
         S#probe_server_state{timeout_current = T + 1}
     )};
 
-% ok but status was error, then it is a recovery
+% ok but status was error, then it is a recovery. 
 handle_cast({probe_response, {ok, Val}}, #probe_server_state{
         status      = error, 
         target_chan = ChanPid} = S) ->
@@ -142,7 +144,7 @@ handle_cast({probe_response, {ok, Val}}, #probe_server_state{
         S#probe_server_state{timeout_current = 0, status = ok}
     )};
 
-% ok standard, reset the timeout_current count. It is an informational msg
+% ok standard, reset the timeout_current count. It is an informational msg.
 handle_cast({probe_response, {ok, Val}}, #probe_server_state{
         target_chan = ChanPid} = S) ->
     notify_chan(ChanPid, {'OK', Val}),
@@ -158,14 +160,17 @@ handle_info(I, S) ->
     io:format("handle_info ~p ~p ~p~n", [?MODULE, I, S]),
     {noreply, S}.
 
-terminate(_R, _S) ->
-    io:format("terminate ~p ~p ~p~n", [?MODULE, _R, _S]),
+terminate(_R, #probe_server_state{target_chan = ChanPid} = _S) ->
+    notify_chan(ChanPid, {'INFO', terminate}),
     normal.
 
 code_change(_O, S, _E) ->
     io:format("code_change ~p ~p ~p ~p~n", [?MODULE, _O, _E, S]),
     {ok, S}.
 
+
+
+%% PRIVATE FUNCT
 
 -spec probe_pass(#target{}, #probe{}, pid()) -> ok.
 % @doc
@@ -196,3 +201,8 @@ flipflap(init, #probe_server_state{probe = Probe} = State) ->
 flipflap(inspect, #probe_server_state{probe = Probe} = State) ->
     {ok, NewState} = (Probe#probe.flipflap_mod):inspect(State),
     NewState.
+
+
+% @doc
+% Called before a critical will be sent. If for example a
+% @end
