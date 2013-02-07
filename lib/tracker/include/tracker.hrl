@@ -1,6 +1,16 @@
 -include_lib("kernel/include/inet.hrl").
 -include_lib("kernel/include/file.hrl").
 
+% syslog like security levels
+-define(EMERGENCY,  0).
+-define(ALERT,      1).
+-define(CRITICAL,   2).
+-define(ERROR,      3).
+-define(WARNING,    4).
+-define(NOTICE,     5).
+-define(INFO,       6).
+-define(DEBUG,      7).
+
 -type hostname()                :: undefined | inet:hostname().
 -type ip_add()                  :: undefined | inet:ip_address().
 -type max_timeouts()            :: integer() | undefined.
@@ -41,10 +51,11 @@
     permissions     = #perm_conf{}  :: #perm_conf{},
     func            = undefined     :: tfun(),
 
-    % frequency and timeouts
-    frequency       = undefined     :: undefined | integer(),
+    % step, timeouts, timeout before CRITICAL, flip flap detection
+    step            = undefined     :: undefined | integer(),
     timeout_wait    = undefined     :: undefined | integer(),
     timeout_max     = undefined     :: undefined | integer(),
+    flipflap_mod    = flipflap_off  :: module(),
 
     % if type = rrd_fetch
     rrd_create          = ""            :: rrd_command(),
@@ -74,7 +85,7 @@
             func = fun(X) -> probe_icmp_echo:exec(X) end,
 
             % timeouts and frequency
-            frequency       = 5, % 5 seconds
+            step            = 5, % 5 seconds
             timeout_wait    = 5, % wait 5 seconds for responce
             timeout_max     = 5, % 5 timeouts trigger an alert
 
@@ -97,11 +108,33 @@
         }
     ]                           :: [#probe{}],
 
-    sys_properties = []         :: [property()],
-    sys_tags    = []            :: [tag()],
+    sys_properties  = []        :: [property()],
+    sys_tags        = []        :: [tag()],
 
-    properties  = []            :: [property()],
-    tags        = []            :: [tag()]
+    properties      = []        :: [property()],
+    tags            = []        :: [tag()]
 }).
+
+% this record have redundant data in it 2 records of #probe{}. 
+% It is here because it is used by the gen_flipflap behaviour modules.
+-record(probe_server_state, {
+    target_chan     = undefined     :: undefined | pid(),
+    target          = undefined     :: undefined | #target{},
+    probe           = undefined     :: undefined | #probe{},
+    step            = undefined     :: undefined | integer(),
+    % max series of timeout ocuring before trigger an alert
+    timeout_max     = undefined     :: undefined | integer(),  
+    % wait for a responce in timeout_wait
+    timeout_wait    = undefined     :: undefined | integer(),
+    timeout_current = 0             :: integer(),
+    % module implementing the gen_flipflap behaviour will modify this record
+    flipflap_state  = undefined     :: any(),
+    status          = error         :: error     | ok       % ok | error
+}).
+
+
+
+
+
 
 

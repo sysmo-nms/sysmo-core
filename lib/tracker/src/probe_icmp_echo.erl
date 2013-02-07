@@ -19,6 +19,7 @@
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 -module(probe_icmp_echo).
+-behaviour(gen_probe).
 -include_lib("../include/tracker.hrl").
 -export([
     exec/1

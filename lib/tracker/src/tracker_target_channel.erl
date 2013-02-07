@@ -21,7 +21,7 @@
 % @private
 -module(tracker_target_channel).
 -behaviour(gen_server).
--include_lib("../include/tracker.hrl").
+-include("../include/tracker.hrl").
 
 -export([
     init/1, 
@@ -84,7 +84,7 @@ handle_call(launch_probes, _F, #chan_state{target = Target} = S) ->
     Probes = Target#target.probes,
     ProbesStore = lists:foldl(fun(X, Accum) ->
         ProbeId     = X#probe.id,
-        {ok, Pid}   = tracker_probe_sup:new({Target, X}),
+        {ok, Pid}   = tracker_probe_sup:new({Target, X, self()}),
         tracker_probe:launch(Pid),
         [{ProbeId, Pid} | Accum]
     end, [], Probes),
@@ -93,6 +93,11 @@ handle_call(launch_probes, _F, #chan_state{target = Target} = S) ->
 handle_call(_R, _F, S) ->
     {noreply, S}.
 % CAST
+handle_cast({probe_evt, ProbePid, Msg}, 
+        #chan_state{chan_id = ChanId, probes_store = ProbeStore} = S) ->
+    {ProbeId, _} = lists:keyfind(ProbePid, 2, ProbeStore),
+    gen_event:notify(tracker_events, {probe_event, Msg, {ChanId, ProbeId}}), 
+    {noreply, S};
 handle_cast(_R, S) ->
     {noreply, S}.
 

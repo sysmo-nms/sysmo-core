@@ -21,7 +21,7 @@
 % @private
 -module(tracker_probe).
 -behaviour(gen_server).
--include_lib("../include/tracker.hrl").
+-include("../include/tracker.hrl").
 
 -export([
     init/1,
@@ -38,45 +38,55 @@
     probe_pass/3
 ]).
 
--record(state, {
-    target,
-    probe,
-    frequency,
-    timeout_current,
-    timeout_max,  % max series of timeout ocuring before trigger an alert
-    timeout_wait, % wait for a responce in timeout_wait
-    status        % ok | error.
-}).
-
 %%-------------------------------------------------------------
 %% API
 %%-------------------------------------------------------------
-% @doc start the server.
-start_link({Target, Probe}) ->
-    gen_server:start_link(?MODULE, [Target, Probe], []).
+-spec start_link({#target{}, #probe{}, pid()}) -> {ok, pid()}.
+% @doc 
+% Start the probe server.
+% #target{} and #probe{} records will be sent as arguments to the "gen_probe"
+% mobule of this server.
+% @end
+start_link({Target, Probe, Pid}) ->
+    gen_server:start_link(?MODULE, [Target, Probe, Pid], []).
 
+-spec launch(pid()) -> ok.
+% @doc
+% Once the server is started, it need to be initialized so he can then enter
+% in an infinite loop.
+% @end
 launch(Pid) ->
-    io:format("lllllllllllllllaunch~n~n"),
-    gen_server:cast(Pid, init_launch),
-    ok.
+    gen_server:call(Pid, init_launch).
 
 %%-------------------------------------------------------------
 %% GEN_SERVER CALLBACKS
 %%-------------------------------------------------------------
-init([Target, Probe]) ->
-    io:format("start probe ~p~p~n", [Target, Probe]),
-    {ok, 
-        #state{
-            target          = Target,
-            probe           = Probe, 
-            frequency       = Probe#probe.frequency,
-            timeout_max     = Probe#probe.timeout_max,
-            timeout_wait    = Probe#probe.timeout_wait,
-            timeout_current = 0,
-            status          = error
-        }
-    }.
+init([Target, Probe, Pid]) ->
+    State = flipflap(init, #probe_server_state{
+        target_chan     = Pid,
+        target          = Target,
+        probe           = Probe, 
+        step            = Probe#probe.step,
+        timeout_max     = Probe#probe.timeout_max,
+        timeout_wait    = Probe#probe.timeout_wait,
+        timeout_current = 0,
+        status          = error
+    }),
+    {ok, State}.
+        
     
+% launch a probe for the first time. Randomise start
+handle_call(init_launch, _F, #probe_server_state{
+        probe       = Probe, 
+        target      = Target, 
+        step        = Step, 
+        target_chan = ChanPid} = S) ->
+    InitialLaunch = tracker_misc:random(Step * 1000),
+    timer:apply_after(InitialLaunch, ?MODULE, 
+            probe_pass, [Target, Probe, self()]),
+    notify_chan(ChanPid, probe_init_ok),
+    {reply, ok, S};
+
 handle_call(_R, _F, S) ->
     {noreply, S}.
 
@@ -84,53 +94,60 @@ handle_call(_R, _F, S) ->
 %%-------------------------------------------------------------
 % HANDLE_CAST
 %%-------------------------------------------------------------
-% launch a probe for the first time. Randomise start
-handle_cast(init_launch, #state{probe = Probe, target = Target, 
-            frequency = Frequency} = S) ->
-    InitialLaunch = tracker_misc:random(Frequency * 1000),
-    timer:apply_after(InitialLaunch, 
-            ?MODULE, probe_pass, [Target, Probe, self()]),
-    {noreply, S};
-
 % launch a probe normal
-handle_cast(launch, #state{probe = Probe, target = Target, 
-            frequency = Frequency} = S) ->
+handle_cast(launch, #probe_server_state{
+        probe   = Probe, 
+        target  = Target, 
+        step    = Frequency} = S) ->
     timer:apply_after(Frequency * 1000, 
             ?MODULE, probe_pass, [Target, Probe, self()]),
     {noreply, S};
 
 % error, max timeout reached, and status is ok
-handle_cast({probe_response, {error, Val}}, 
-        #state{timeout_current = T, timeout_max = T, status = ok} = S) ->
+handle_cast({probe_response, {error, Val}}, #probe_server_state{
+        timeout_current = T, 
+        timeout_max     = T, 
+        target_chan     = ChanPid, 
+        status          = ok} = S) ->
     %% ici une alerte est declanchee
-    io:format("ALERT: reached max timeout ~p ~p~n", [Val, self()]),
+    notify_chan(ChanPid, {'CRITICAL', Val}),
     gen_server:cast(self(), launch),
-    {noreply, S#state{status = error}};
+    {noreply, flipflap(inspect, S#probe_server_state{status = error})};
 
 % error, max timeout reached but status is allready error, do nothing
-handle_cast({probe_response, {error, _}}, 
-        #state{timeout_current = T, timeout_max = T, status = error} = S) ->
+handle_cast({probe_response, {error, _}}, #probe_server_state{
+            timeout_current = T, 
+            timeout_max     = T, 
+            status          = error} = S) ->
     gen_server:cast(self(), launch),
-    {noreply, S};
+    {noreply, flipflap(inspect, S)};
 
-% error, max timeout not reached
-handle_cast({probe_response, {error, Val}}, 
-        #state{timeout_current = T} = S) ->
-    io:format("WARNING error ~p ~p~n", [Val, self()]),
+% error, but  max number of timeout not reached. It is a warning.
+handle_cast({probe_response, {error, Val}}, #probe_server_state{
+            timeout_current = T, 
+            target_chan     = ChanPid} = S) ->
+    notify_chan(ChanPid, {'WARNING', Val}),
     gen_server:cast(self(), launch),
-    {noreply, S#state{timeout_current = T + 1}};
+    {noreply, flipflap(inspect, 
+        S#probe_server_state{timeout_current = T + 1}
+    )};
 
 % ok but status was error, then it is a recovery
-handle_cast({probe_response, {ok, Val}}, #state{status = error} = S) ->
-    io:format("Recovery ~p ~p~n", [Val, self()]),
+handle_cast({probe_response, {ok, Val}}, #probe_server_state{
+        status      = error, 
+        target_chan = ChanPid} = S) ->
+    notify_chan(ChanPid, {'RECOVERY', Val}),
     gen_server:cast(self(), launch),
-    {noreply, S#state{timeout_current = 0, status = ok}};
+    {noreply, flipflap(inspect, 
+        S#probe_server_state{timeout_current = 0, status = ok}
+    )};
 
-% ok standard, reset the timeout_current count
-handle_cast({probe_response, {ok, Val}}, S) ->
-    io:format("OK ~p ~p~n", [Val, self()]),
+% ok standard, reset the timeout_current count. It is an informational msg
+handle_cast({probe_response, {ok, Val}}, #probe_server_state{
+        target_chan = ChanPid} = S) ->
+    notify_chan(ChanPid, {'OK', Val}),
     gen_server:cast(self(), launch),
-    {noreply, S#state{timeout_current = 0}};
+    {noreply, flipflap(inspect, S#probe_server_state{timeout_current = 0})};
 
 handle_cast(_R, S) ->
     {noreply, S}.
@@ -150,8 +167,32 @@ code_change(_O, S, _E) ->
     {ok, S}.
 
 
-% @private
+-spec probe_pass(#target{}, #probe{}, pid()) -> ok.
+% @doc
+% It is the spawned proc who call the "gen_probe" module defined in the 
+% #probe{} record.
+% @end
 probe_pass(Target, Probe, Pid) ->
     Fun     = Probe#probe.func,
     Result  = Fun({Target, Probe}),
     gen_server:cast(Pid, {probe_response, Result}).
+
+-spec notify_chan(pid(), any()) -> ok.
+% @doc
+% Notification to the tracker_target_channel module who initiate this server.
+% @end
+notify_chan(ChanPid, Msg) ->
+    gen_server:cast(ChanPid, {probe_evt, self(), Msg}).
+
+-spec flipflap(init | inspect, #probe_server_state{}) 
+        -> #probe_server_state{}.
+% @doc
+% Called at each probe_pass to detect flipflap. 
+% @end
+flipflap(init, #probe_server_state{probe = Probe} = State) ->
+    {ok, NewState} = (Probe#probe.flipflap_mod):init(State),
+    NewState;
+
+flipflap(inspect, #probe_server_state{probe = Probe} = State) ->
+    {ok, NewState} = (Probe#probe.flipflap_mod):inspect(State),
+    NewState.

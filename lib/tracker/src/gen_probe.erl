@@ -2,7 +2,7 @@
 % Copyright (C) 2012 <Sébastien Serre sserre.bx@gmail.com>
 % 
 % Enms is a Network Management System aimed to manage and monitor SNMP
-% target, monitor network hosts and services, provide a consistent
+% targets, monitor network hosts and services, provide a consistent
 % documentation system and tools to help network professionals
 % to have a wide perspective of the networks they manage.
 % 
@@ -18,35 +18,36 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
+% @doc
+% A module implementing this behaviour can be used as a probe module.
+% <p>
+% It used from a tracker_probe module and executed every 
+% (#probe.step seconds + process_time).
+% </p>
+% @end
+-module(gen_probe).
+-include("../include/tracker.hrl").
+
+-export([behaviour_info/1]).
+
+% export here for documentation only:
+-export([exec/1]).
+
 % @private
--module(tracker_probe_sup).
--behaviour(supervisor).
+behaviour_info(callbacks) ->
+    [
+        {exec, 1}
+    ];
 
--export([
-    start_link/0,
-    new/1
-]).
--export([init/1]).
+behaviour_info(_) ->
+    undefined.
 
-start_link() ->
-    supervisor:start_link({local, ?MODULE}, ?MODULE, []).
-
-new({Target, Probe, Pid}) ->
-    supervisor:start_child(?MODULE, [{Target, Probe, Pid}]).
-
-init([]) ->
-    {ok, 
-        {
-            {simple_one_for_one, 1, 60},
-            [
-                {
-                    tracker_probe,
-                    {tracker_probe, start_link, []},
-                    transient,
-                    2000,
-                    worker,
-                    [tracker_probe]
-               }
-            ]
-        }
-    }.
+-spec exec({TargetRecord::#target{}, ProbeRecord::#probe{}}) -> 
+    {ok, Val::integer()} | {error, Error::any()}.
+% @doc
+% The return from this function will trigger another probe execution after a
+% delay defined by the #probe.step entry.
+% <em>exec</em> will then be called (#probe.step + (time for exec to return))
+% time.
+% @end
+exec(_) -> {ok, 1}.
