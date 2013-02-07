@@ -2,7 +2,7 @@
 % Copyright (C) 2012 <Sébastien Serre sserre.bx@gmail.com>
 % 
 % Enms is a Network Management System aimed to manage and monitor SNMP
-% targets, monitor network hosts and services, provide a consistent
+% target, monitor network hosts and services, provide a consistent
 % documentation system and tools to help network professionals
 % to have a wide perspective of the networks they manage.
 % 
@@ -18,40 +18,29 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
--module(activity_logger).
--behaviour(gen_event).
+% @private
+-module(activity_logger_sup).
+-behaviour(supervisor).
 
--export([
-    init/1,
-    handle_event/2,
-    handle_call/2,
-    handle_info/2,
-    terminate/2,
-    code_change/3]).
+-export([start_link/1]).
+-export([init/1]).
 
-init(Mod) ->
-    {ok, Mod}.
+start_link(LogFile) ->
+    supervisor:start_link({local, ?MODULE}, ?MODULE, [LogFile]).
 
-handle_event(Event, S) ->
-    log({Event, S}),
-    {ok, S}.
-
-
-%% not used
-handle_call(_Request, S) ->
-    {ok, ok, S}.
-
-handle_info(_Info, S) ->
-    {ok, S}.
-
-terminate(_Args, _S) ->
-    ok.
-
-code_change(_OldVsn, S, _ExtraA) ->
-    {ok, S}.
-
-log({Event, Mod}) ->
-    Chars = io_lib:format("***ACTIVITY LOGGER: ~p***~n~W~n", 
-                [Mod, {Mod, Event}, 9]),
-    activity_logger_fd:log(Chars).
-
+init([LogFile]) ->
+    {ok, 
+        {
+            {one_for_one, 1, 60},
+            [
+                {
+                    activity_logger_fd,
+                    {activity_logger_fd, start_link, [LogFile]},
+                    permanent,
+                    2000,
+                    worker,
+                    [activity_logger_fd]
+                }
+            ]
+        }
+    }.

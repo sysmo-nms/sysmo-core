@@ -19,3 +19,7 @@ clean:
 	rm -f doc/*.png
 	rm -f doc/*.css
 	rm -f doc/edoc-info
+
+doc:
+
+test:

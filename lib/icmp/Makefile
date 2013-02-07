@@ -27,3 +27,5 @@ doc/index.html: doc/overview.edoc src/*.erl
 	@echo "Building documentation..."
 	@erl -noinput -pa ebin -eval \
  'edoc:application($(APP), ".", []), init:stop()'
+
+test:

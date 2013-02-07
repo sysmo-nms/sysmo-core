@@ -8,13 +8,13 @@
         {crypto, "2.2"},
         {ssl, "5.1"},
         {public_key, "0.16"},
+        {activity_logger, "1.0.0"},
         {procket, "0.3"},
         {icmp, "0.1.0"},
         {snmp, "4.22.1"},
         {esnmp, "0.2.0"},
         {ifs, "1.0.1"},
         {tracker, "0.1.0"},
-        {activity_logger, "1.0.0"},
         {errd, "0.1"}
     ]
 }.

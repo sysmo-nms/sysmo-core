@@ -5,3 +5,5 @@ compile:
 clean:
 
 test:
+
+doc:

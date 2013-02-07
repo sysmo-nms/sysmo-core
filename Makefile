@@ -3,10 +3,11 @@
 REL_NAME        = enms
 MODS            = ifs esnmp icmp ifs procket tracker activity_logger errd
 
-all: compile pdu_lib
 
 compile:
 	@cd lib; make
+
+all: compile pdu_lib test local-release doc www
 
 test:
 	@cd lib; make test
@@ -36,9 +37,6 @@ pdu_lib: $(IFS_INCLUDES_DST)
 $(IFS_INCLUDES_DST): ./include/%.hrl: $(IFS_INCLUDES_DIR)/%.hrl
 	cp $(IFS_INCLUDES_DIR)/$*.hrl ./include/$*.hrl
 
-dd:
-	@echo $(IFS_INCLUDES_DIR)
-
 
 # UTILS
 ERL             = erl
@@ -56,7 +54,7 @@ start: local-release
 # RELEASES
 local-release: compile $(REL_NAME).script 
 
-$(REL_NAME).script: $(MODS_DEF_FILE)
+$(REL_NAME).script: $(MODS_DEF_FILE) $(REL_NAME).rel
 	@echo "Generating $(REL_NAME).script and $(REL_NAME).boot files..."
 	@$(ERL) -noinput $(ERL_NMS_PATH) -eval $(ERL_REL_COMM)
 

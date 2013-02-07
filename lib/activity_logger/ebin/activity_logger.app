@@ -25,11 +25,8 @@
 		{modules, [
                 activity_logger
             ]},
-		{registered, [
-            activity_logger
-        ]},
-		{applications, 
-            [kernel, stdlib]
-        }
+		{registered, [activity_logger]},
+		{applications, [kernel, stdlib]},
+        {mod, {activity_logger_app, []}}
 	]
 }.
