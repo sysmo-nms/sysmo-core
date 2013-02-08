@@ -18,24 +18,43 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
--module(flipflap_off).
--behaviour(gen_flipflap).
--include("../include/tracker.hrl").
+% @private
+-module(tracker_target_channel_sup).
+-behaviour(supervisor).
+
 -export([
-    init/1,
-    inspect/1
+    start_link/1,
+    new/1,
+    init_launch_probes/0
 ]).
 
--spec init(#probe_server_state{}) -> {ok, #probe_server_state{}}.
-% @doc 
-% Called by a probe starting to initalise the #probe_state.flipflap record.
-% @end
-init(S) ->
-    {ok, S}.
+-export([init/1]).
 
--spec inspect(#probe_server_state{}) -> {ok, #probe_server_state{}}.
-% @doc
-% Called by the probe each time an event occur.
-% @end
-inspect(S) ->
-    {ok, S}.
+start_link(RrdDir) ->
+    supervisor:start_link({local, ?MODULE}, ?MODULE, [RrdDir]).
+
+new(Target) ->
+    supervisor:start_child(?MODULE, [Target]).
+
+init_launch_probes() ->
+    Channels = supervisor:which_children(?MODULE),
+    lists:foreach(fun({_,ChanPid,_,_}) ->
+        tracker_target_channel:launch_probes(ChanPid)
+    end, Channels).
+    
+init([RrdDir]) ->
+    {ok, 
+        {
+            {simple_one_for_one, 1, 60},
+            [
+                {
+                    tracker_target_channel,
+                    {tracker_target_channel, start_link, [RrdDir]},
+                    transient,
+                    2000,
+                    worker,
+                    [tracker_target_channel]
+                }
+            ]
+        }
+    }.

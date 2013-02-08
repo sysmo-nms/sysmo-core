@@ -46,6 +46,7 @@
 -export([
     start_link/2,
     launch_probes/1,
+    new_event/3,
     subscribe/2,
     unsubscribe/1
 ]).
@@ -61,6 +62,7 @@
 %%-------------------------------------------------------------
 %% API
 %%-------------------------------------------------------------
+% @private
 -spec start_link(string(), #target{}) -> 
         {ok, pid()} | ignore | {error, any()}.
 % @doc
@@ -70,12 +72,22 @@ start_link(RrdDir, #target{id = Id} = Target) ->
     gen_server:start_link({local, Id}, ?MODULE, [RrdDir, Target], []).
 
 
+% @private
 -spec launch_probes(target_id()) -> ok | {error, any()}.
 % @doc
 % Once the server running, call him to initialize his probes.
 % @end
 launch_probes(Id) ->
     gen_server:call(Id, launch_probes).
+
+% @private
+-spec new_event(Self::pid(), ProbePid::pid(), Msg::tuple()) -> ok.
+% @doc
+% Called by one of the tracker_probes belonging to the tracker_target_channel
+% identified by Self.
+% @end
+new_event(Self, ProbePid, Message) ->
+    gen_server:cast(Self, {tracker_probe, ProbePid, Message}).
 
 -spec subscribe(target_id(), any()) -> ok.
 % @doc
@@ -109,6 +121,7 @@ unsubscribe(TargetId) ->
 %%-------------------------------------------------------------
 %% GEN_SERVER CALLBACKS
 %%-------------------------------------------------------------
+% @private
 % @doc
 % Initiate the gen server.
 % @end
@@ -129,6 +142,7 @@ init([RootRrdDir, #target{id = Id} = Target]) ->
 
 
 
+% @private
 % @doc
 % Initialize the probes.
 % @end
@@ -147,6 +161,7 @@ handle_call(_R, _F, S) ->
 
 
 
+% @private
 % CAST
 % @doc
 % Message sent by the modules.
@@ -164,10 +179,13 @@ handle_cast(_R, S) ->
 
 
 % OTHER
+% @private
 handle_info(_I, S) ->
     {noreply, S}.
+% @private
 terminate(_R, _S) ->
     normal.
+% @private
 code_change(_O, S, _E) ->
     {ok, S}.
 
@@ -176,6 +194,7 @@ code_change(_O, S, _E) ->
 
 
 %% PRIVATE FUNCTIONS
+% @private
 -spec rrd_dir_exist(string()) -> ok | {error, any()}.
 rrd_dir_exist(RrdDir) ->
     case file:read_file_info(RrdDir) of
@@ -187,8 +206,8 @@ rrd_dir_exist(RrdDir) ->
             Other
     end.
 
--spec probe_event(#probe{}, #chan_state{}, any()) -> ok.
 % @private
+-spec probe_event(#probe{}, #chan_state{}, any()) -> ok.
 probe_event(Chan, Probe, {'CRITICAL', _} = Msg) ->
     notify(status, Msg, Chan, Probe);
 
@@ -216,6 +235,7 @@ probe_event(_A,_B,C) ->
     io:format("Other ~p~n", [C]).
 
 
+% @private
 -spec notify(atom(), tuple(), #chan_state{}, #probe{}) -> ok.
 % @doc
 % Will log everything and also to ifs if #chan_state.subscribers_count > 0

@@ -18,6 +18,7 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
+% @private
 -module(tracker_misc).
 -behaviour(gen_server).
 -include_lib("../include/tracker.hrl").
@@ -166,6 +167,7 @@ concat_id([A | B], Final) ->
 
 some_ips() ->
     [
+        {192,168,1,2},
         {173,194,34,63},
         {173,194,34,56},
         {173,194,34,55},

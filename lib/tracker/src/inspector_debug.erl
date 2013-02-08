@@ -19,42 +19,32 @@
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 % @private
--module(tracker_target_sup).
--behaviour(supervisor).
-
+-module(inspector_debug).
+-behaviour(gen_inspector).
+-include("../include/tracker.hrl").
 -export([
-    start_link/1,
-    new/1,
-    init_launch_probes/0
+    init/2,
+    inspect/3
 ]).
 
--export([init/1]).
+-spec init([any()], #probe_server_state{}) -> {ok, #probe_server_state{}}.
+% @doc 
+% Called by a probe starting to initalise the #probe_state.inspector_state
+% if needed.
+% @end
+init(_C, #probe_server_state{inspectors_state = IState} = S) ->
+    io:format("init inspect~n"),
+    {ok, S#probe_server_state{inspectors_state = [more | IState]}}.
 
-start_link(RrdDir) ->
-    supervisor:start_link({local, ?MODULE}, ?MODULE, [RrdDir]).
+-spec inspect(
+        Orig::#probe_server_state{},
+        Modifed::#probe_server_state{},
+        Msg::tuple()) -> 
+    {ok, Other::#probe_server_state{}}.
+% @doc
+% Called by the probe each time an event occur.
+% @end
+inspect(_S1, S2, _Msg) ->
+    io:format("inspect~n"),
+    {ok, S2}.
 
-new(Target) ->
-    supervisor:start_child(?MODULE, [Target]).
-
-init_launch_probes() ->
-    Channels = supervisor:which_children(?MODULE),
-    lists:foreach(fun({_,ChanPid,_,_}) ->
-        tracker_target_channel:launch_probes(ChanPid)
-    end, Channels).
-    
-init([RrdDir]) ->
-    {ok, 
-        {
-            {simple_one_for_one, 1, 60},
-            [
-                {
-                    tracker_target_channel,
-                    {tracker_target_channel, start_link, [RrdDir]},
-                    transient,
-                    2000,
-                    worker,
-                    [tracker_target_channel]
-                }
-            ]
-        }
-    }.

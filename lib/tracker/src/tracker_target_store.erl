@@ -412,7 +412,6 @@ init([DbDir]) ->
             db_file = DbFile,
             db_name = DbName}}.
 
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % @private
 handle_call({lock_id, Ip}, _F, #tserver_state{db_name = DbName} = S) ->
@@ -575,7 +574,8 @@ handle_info(I,S) ->
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % @private
-terminate(_R, _S) ->
+terminate(_R, #tserver_state{db_name = DbName}) ->
+    dets:close(DbName),
     normal.
 
 

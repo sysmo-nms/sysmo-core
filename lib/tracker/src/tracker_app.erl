@@ -40,11 +40,11 @@ start(_Type, _Args) ->
 start_phase(init_chans, normal, []) ->
     AllTargets = tracker_target_store:info(),
     lists:foreach(fun(X) ->
-        tracker_target_sup:new(X)
+        tracker_target_channel_sup:new(X)
     end, AllTargets);
 
 start_phase(launch_probes, normal, []) ->
-    tracker_target_sup:init_launch_probes().
+    tracker_target_channel_sup:init_launch_probes().
 
 stop(_State) ->
 	ok.

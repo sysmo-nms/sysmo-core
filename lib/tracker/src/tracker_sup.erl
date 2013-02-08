@@ -51,12 +51,12 @@ init([GenEventListeners, DbDir, RrdDir]) ->
                     [tracker_target_store]
                 },
                 {
-                    tracker_target_sup,
-                    {tracker_target_sup, start_link, [RrdDir]},
+                    tracker_target_channel_sup,
+                    {tracker_target_channel_sup, start_link, [RrdDir]},
                     permanent,
                     2000,
                     supervisor,
-                    [tracker_target_sup]
+                    [tracker_target_channel_sup]
                 },
                 {
                     tracker_probe_sup,

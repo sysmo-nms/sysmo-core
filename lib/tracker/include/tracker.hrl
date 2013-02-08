@@ -27,6 +27,7 @@
 -type tfun()                    :: fun() | undefined.
 -type timeout_alert()           :: fun() | undefined.
 -type timeout_threshold()       :: integer() | undefined.
+-type inspector()               :: {module(), [any()]}.
 
 % can be applied on the targets and the probes
 -record(perm_conf, {
@@ -55,7 +56,8 @@
     step            = undefined     :: undefined | integer(),
     timeout_wait    = undefined     :: undefined | integer(),
     timeout_max     = undefined     :: undefined | integer(),
-    flipflap_mod    = flipflap_off  :: module(),
+    % for testing
+    inspectors      = []            :: [inspector()],
 
     % if type = fetch
     rrd_create          = ""            :: rrd_command(),
@@ -89,6 +91,11 @@
             timeout_wait    = 5, % wait 5 seconds for responce
             timeout_max     = 5, % 5 timeouts trigger an alert
 
+            inspectors      = [],
+            %    {inspector_debug, []},
+            %    {inspector_debug, []},
+            %    {inspector_debug, []}
+            %],
 
             % Create a rrd for this probe with:
             % - primary data points every 5 seconds (--step 5)
@@ -128,7 +135,8 @@
     timeout_wait    = undefined     :: undefined | integer(),
     timeout_current = 0             :: integer(),
     % module implementing the gen_flipflap behaviour will modify this record
-    flipflap_state  = undefined     :: any(),
+    inspectors      = []            :: [module()],
+    inspectors_state = []           :: [any()],
     status          = error         :: error     | ok       % ok | error
 }).
 
