@@ -1,0 +1,55 @@
+@author Sebastien Serre <sserre.bx@gmail.com>
+@version 0.1.0
+@title Welcome to the tracker application
+@doc 
+<h1> Introduction </h1>
+<p>
+    "tracker" is an application wich store <em>targets</em> and
+    <em>probes</em> in the context of supervision of network elements.
+</p>
+<h1> Definitions </h1>
+<p>
+    In the context of the <em>tracker</em> application:
+    <ul>
+        <li><b>target</b>: a network element with his properties defined
+        in the <b>#target{}</b> record (see tracker.hrl).
+        </li>
+        <li><b>probe</b>: a probe configuration wich is hold by a <b>
+        target</b>. Defined by the <em>#probe{}</em> record. It is then 
+        launched and managed by the <b>target_channel</b>.
+        </li>
+        <li><b>target_channel</b>: a erlang <em>gen_server</em> module who
+        hold the state of a <b>target</b>. It is responsible of launching and 
+        handling <b>tracker_probe</b> messages, and implement the 
+        <em>gen_ifs_channel</em> behaviour.
+        </li>
+        <li><b>tracker_probe</b>: is a loop who hold the state of a 
+        <b>probe</b> config. It is responsible of calling the 
+        <b>#probe.fun</b> at regular intervals, and notify the
+        <b>target_channel</b> of any events or state changes.
+        </li>
+    </ul>
+</p>
+<h1> Behaviours </h1>
+<p>
+    This application contain two custom behaviour:
+    <ul>
+        <li>
+            <b>gen_probe</b>: a module implementing this behaviour can serve
+            as a probe fun() in a #probe.fun record.
+        </li>
+        <li>
+            <b>gen_inspector</b>: a module implementing this behaviour is used
+            by the <b>tracker_probe</b> module before processing any events
+            fetched by the <b>#probe.fun</b>. He can modify the internal state
+            of the probe or send notifications in his name. It will be used
+            for example for flip flap detection or shaded device detection.
+        </li>
+    </ul>
+</p>
+<h1> Configuration </h1>
+<p>
+    Configuring a target and his associated probes can be done using the
+    <b>tracker</b> module API.
+</p>
+@end
