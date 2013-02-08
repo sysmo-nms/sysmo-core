@@ -1,6 +1,6 @@
 # Makefile
 
-APP     = targets
+APP     = tracker
 ERL     = erl
 ERLC   += erlc -Werror
 SRC     = $(shell find src -name "*.erl")
@@ -34,4 +34,4 @@ doc/index.html: doc/overview.edoc src/*.erl
 # TEST
 test: compile
 	@$(ERL) -noinput -pa ebin -eval \
-    'eunit:test(targets, [verbose]), init:stop()'
+    'eunit:test(tracker, [verbose]), init:stop()'

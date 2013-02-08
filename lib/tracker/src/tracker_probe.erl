@@ -103,7 +103,7 @@ init([Target, Probe, Pid]) ->
         timeout_wait    = Probe#probe.timeout_wait,
         inspectors      = Probe#probe.inspectors,
         timeout_current = 0,
-        status          = error
+        status          = unknown
     },
     {ok, State}.
         
@@ -143,45 +143,76 @@ handle_cast({notify, Message}, #probe_server_state{
     tracker_target_channel:new_event(ChanPid, self(), Message),
     {noreply, S};
 
-% error, max timeout reached, and status is ok
-handle_cast({probe_response, {error, Val} = Msg}, #probe_server_state{
+
+
+% inspect and eventualy modify state before the probe_responce is processed.
+handle_cast({inspect, Msg}, S) ->
+    gen_server:cast(self(), {probe_response, Msg}),
+    {noreply, inspect(S, Msg)};
+
+% error, max timeout reached, and status is ok, trigger critical
+handle_cast({probe_response, {error, Val}}, #probe_server_state{
         timeout_current = T, 
         timeout_max     = T, 
         status          = ok} = S) ->
     %% ici une alerte est declanchee
     notify(self(), {'CRITICAL', Val}),
     gen_server:cast(self(), launch),
-    {noreply, inspect(S#probe_server_state{status = error}, Msg) };
+    {noreply, S#probe_server_state{status = error}};
 
-% error, max timeout reached and status is allready error, renew a WARNING.
-handle_cast({probe_response, {error, Val} = Msg}, #probe_server_state{
+% error, max timeout reached, and status is unknown, trigger critical
+handle_cast({probe_response, {error, Val}}, #probe_server_state{
+        timeout_current = T, 
+        timeout_max     = T, 
+        status          = unknown} = S) ->
+    %% ici une alerte est declanchee
+    notify(self(), {'CRITICAL', Val}),
+    gen_server:cast(self(), launch),
+    {noreply, S#probe_server_state{status = error}};
+
+% error, max timeout reached and status is allready error, do nothing.
+handle_cast({probe_response, {error, _}}, #probe_server_state{
             timeout_current = T, 
             timeout_max     = T, 
             status          = error} = S) ->
-    notify(self(), {'CRITICAL', Val}),
     gen_server:cast(self(), launch),
-    {noreply, inspect(S, Msg)};
+    {noreply, S};
 
-% error, but  max number of timeout not reached. It is a warning.
-handle_cast({probe_response, {error, Val} = Msg}, #probe_server_state{
-            timeout_current = T} = S) ->
+% error, status is unknown, max number of timeout not reached. It is a warning
+handle_cast({probe_response, {error, Val}}, #probe_server_state{
+            timeout_current     = T,
+            status              = unknown} = S) ->
     notify(self(), {'WARNING', Val}),
     gen_server:cast(self(), launch),
-    {noreply, inspect(S#probe_server_state{timeout_current = T + 1}, Msg)};
+    {noreply, S#probe_server_state{timeout_current = T + 1}};
+
+% error, status is ok, max number of timeout not reached. It is a warning
+handle_cast({probe_response, {error, Val}}, #probe_server_state{
+            timeout_current     = T,
+            status              = ok} = S) ->
+    notify(self(), {'WARNING', Val}),
+    gen_server:cast(self(), launch),
+    {noreply, S#probe_server_state{timeout_current = T + 1}};
 
 % ok but status was error, then it is a recovery. 
-handle_cast({probe_response, {ok, Val} = Msg}, #probe_server_state{
+handle_cast({probe_response, {ok, Val}}, #probe_server_state{
         status      = error} = S) ->
     notify(self(), {'RECOVERY', Val}),
     gen_server:cast(self(), launch),
-    {noreply, 
-        inspect(S#probe_server_state{timeout_current = 0, status = ok}, Msg)};
+    {noreply, S#probe_server_state{timeout_current = 0, status = ok}};
+
+% ok but status was unknown, then it is a recovery. 
+handle_cast({probe_response, {ok, Val}}, #probe_server_state{
+        status      = unknown} = S) ->
+    notify(self(), {'RECOVERY', Val}),
+    gen_server:cast(self(), launch),
+    {noreply, S#probe_server_state{timeout_current = 0, status = ok}};
 
 % ok standard, reset the timeout_current count. It is an informational msg.
-handle_cast({probe_response, {ok, Val} = Msg}, S) ->
+handle_cast({probe_response, {ok, Val}}, S) ->
     notify(self(), {'OK', Val}),
     gen_server:cast(self(), launch),
-    {noreply, inspect(S#probe_server_state{timeout_current = 0}, Msg)};
+    {noreply, S#probe_server_state{timeout_current = 0}};
 
 handle_cast(_R, S) ->
     io:format("Unknown message ~p ~p ~p ~p~n", [?MODULE, ?LINE, _R, S]),
@@ -195,8 +226,9 @@ handle_info(I, S) ->
     {noreply, S}.
 
 % @private
-terminate(_R, _S) ->
-    %notify(self(), {'INFO', terminate}),
+terminate(R, #probe_server_state{target_chan = ChanPid}) ->
+    tracker_target_channel:new_event(ChanPid, self(), 
+            {'INFO', {terminate, R}}),
     normal.
 
 % @private
@@ -217,7 +249,7 @@ code_change(_O, S, _E) ->
 probe_pass(Target, Probe, Pid) ->
     Fun     = Probe#probe.func,
     Result  = Fun({Target, Probe}),
-    gen_server:cast(Pid, {probe_response, Result}).
+    gen_server:cast(Pid, {inspect, Result}).
 
 
 % @private
