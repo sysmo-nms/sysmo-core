@@ -11,6 +11,7 @@ var/
 lib/esnmp/priv/good_mibs
 lib/esnmp/priv/all_mibs
 lib/esnmp/priv/work
+activity.log
 *.bin
 *.asn1db
 *.script
