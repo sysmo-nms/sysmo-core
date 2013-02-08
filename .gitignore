@@ -8,9 +8,9 @@
 edoc-info
 MEMO
 var/
-enms/lib/esnmp/priv/good_mibs
-enms/lib/esnmp/priv/all_mibs
-enms/lib/esnmp/priv/work
+lib/esnmp/priv/good_mibs
+lib/esnmp/priv/all_mibs
+lib/esnmp/priv/work
 *.bin
 *.asn1db
 *.script
