@@ -2,7 +2,7 @@
 % Copyright (C) 2012 <Sébastien Serre sserre.bx@gmail.com>
 % 
 % Enms is a Network Management System aimed to manage and monitor SNMP
-% target, monitor network hosts and services, provide a consistent
+% targets, monitor network hosts and services, provide a consistent
 % documentation system and tools to help network professionals
 % to have a wide perspective of the networks they manage.
 % 
@@ -18,33 +18,36 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
-% @private
--module(inspector_debug).
--behaviour(gen_inspector).
--include("../include/tracker.hrl").
--export([
-    init/2,
-    inspect/3
-]).
-
--spec init([any()], #probe_server_state{}) -> {ok, #probe_server_state{}}.
-% @doc 
-% Called by a probe starting to initalise the #probe_state.inspector_state
-% if needed.
-% @end
-init(_C, #probe_server_state{inspectors_state = IState} = S) ->
-    io:format("init inspect~n"),
-    {ok, S#probe_server_state{inspectors_state = [more | IState]}}.
-
--spec inspect(
-        Orig::#probe_server_state{},
-        Modifed::#probe_server_state{},
-        Msg::tuple()) -> 
-    {ok, Other::#probe_server_state{}}.
 % @doc
-% Called by the probe each time an event occur.
+% A module implementing this behaviour can be used as a probe module.
+% <p>
+% It used from a tracker_probe module and executed every 
+% (#probe.step seconds + process_time).
+% </p>
 % @end
-inspect(_S1, S2, _Msg) ->
-    io:format("inspect~n"),
-    {ok, S2}.
+-module(beha_tracker_probe).
+-include("../include/tracker.hrl").
 
+-export([behaviour_info/1]).
+
+% export here for documentation only:
+-export([exec/1]).
+
+% @private
+behaviour_info(callbacks) ->
+    [
+        {exec, 1}
+    ];
+
+behaviour_info(_) ->
+    undefined.
+
+-spec exec({TargetRecord::#target{}, ProbeRecord::#probe{}}) -> 
+    {ok, Val::integer()} | {error, Error::any()}.
+% @doc
+% The return from this function will trigger another probe execution after a
+% delay defined by the #probe.step entry.
+% <em>exec</em> will then be called (#probe.step + (time for exec to return))
+% time.
+% @end
+exec(_) -> {ok, 1}.

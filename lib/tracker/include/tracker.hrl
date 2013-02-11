@@ -28,6 +28,7 @@
 -type timeout_alert()           :: fun() | undefined.
 -type timeout_threshold()       :: integer() | undefined.
 -type inspector()               :: {module(), [any()]}.
+-type probe_status() :: 'UNKNOWN' | 'CRITICAL' | 'WARNING' | 'RECOVERY' | 'OK'.
 
 % can be applied on the targets and the probes
 -record(perm_conf, {
@@ -76,7 +77,7 @@
             write = "admin"
         }                       :: #perm_conf{},
     probes      = [
-        #probe{                     % initial probe_icmp_echo()
+        #probe{                     % initial btracker_probe_icmp_echo()
             id = 1,
             name = "probe_icmp_echo",
             type = fetch,
@@ -84,7 +85,7 @@
                                 read = "admin",
                                 write = "admin"
                             },
-            func = fun(X) -> probe_icmp_echo:exec(X) end,
+            func = fun(X) -> btracker_probe_icmp_echo:exec(X) end,
 
             % timeouts and frequency
             step            = 5, % 5 seconds
@@ -137,7 +138,7 @@
     % module implementing the gen_flipflap behaviour will modify this record
     inspectors      = []            :: [module()],
     inspectors_state = []           :: [any()],
-    status          = error         :: error     | ok       % ok | error
+    status          = 'UNKNOWN'     :: probe_status()
 }).
 
 

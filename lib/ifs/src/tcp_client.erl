@@ -27,7 +27,7 @@
 %%% @end
 -module(tcp_client).
 -behaviour(gen_fsm).
--include_lib("../include/client_state.hrl").
+-include("../include/client_state.hrl").
 
 -export([start_link/1, set_socket/2, auth_set/2, send/2, raw_send/2]).
 -export([init/1, handle_event/3, handle_sync_event/4, 

@@ -21,7 +21,7 @@
 % @private
 -module(ifs_mpd).
 -behaviour(gen_server).
--include_lib("../include/client_state.hrl").
+-include("../include/client_state.hrl").
 
 % gen_server callbacks
 -export([

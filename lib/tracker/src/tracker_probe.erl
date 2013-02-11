@@ -37,6 +37,7 @@
     start_link/1,
     launch/1,
     notify/2,
+    status/1,
     probe_pass/3 % do not use. Only exported for timer:apply_after()
 ]).
 
@@ -89,6 +90,15 @@ launch(Pid) ->
 notify(ProbePid, Message) ->
     gen_server:cast(ProbePid, {notify, Message}).
 
+-spec status(pid()) -> {ok, probe_status()}.
+% @doc
+% This function is called by a "tracker_target_channel" to get the status of
+% his probes. I then do not have to keep this state when he need this type
+% of information. It is mainly implemented to initialize an ifs client.
+% @end
+status(ProbePid) ->
+    gen_server:call(ProbePid, status).
+
 %%-------------------------------------------------------------
 %% GEN_SERVER CALLBACKS
 %%-------------------------------------------------------------
@@ -103,7 +113,7 @@ init([Target, Probe, Pid]) ->
         timeout_wait    = Probe#probe.timeout_wait,
         inspectors      = Probe#probe.inspectors,
         timeout_current = 0,
-        status          = unknown
+        status          = 'UNKNOWN'
     },
     {ok, State}.
         
@@ -118,8 +128,11 @@ handle_call(start, _F, #probe_server_state{
     InitialLaunch = tracker_misc:random(Step * 1000),
     timer:apply_after(InitialLaunch, ?MODULE, 
             probe_pass, [Target, Probe, self()]),
-    notify(self(), {'INFO', start}),
+    notify(self(), {S#probe_server_state.status, starting}),
     {reply, ok, init_inspect(S)};
+
+handle_call(status, _F, #probe_server_state{status = Status} = S) ->
+    {reply, {ok, Status}, S};
 
 handle_call(_R, _F, S) ->
     {noreply, S}.
@@ -150,66 +163,102 @@ handle_cast({inspect, Msg}, S) ->
     gen_server:cast(self(), {probe_response, Msg}),
     {noreply, inspect(S, Msg)};
 
-% error, max timeout reached, and status is ok, trigger critical
+% error, max timeout reached, and status is 'WARNING', trigger critical
 handle_cast({probe_response, {error, Val}}, #probe_server_state{
         timeout_current = T, 
         timeout_max     = T, 
-        status          = ok} = S) ->
+        status          = 'WARNING'} = S) ->
     %% ici une alerte est declanchee
     notify(self(), {'CRITICAL', Val}),
     gen_server:cast(self(), launch),
-    {noreply, S#probe_server_state{status = error}};
+    {noreply, S#probe_server_state{status = 'CRITICAL'}};
 
-% error, max timeout reached, and status is unknown, trigger critical
-handle_cast({probe_response, {error, Val}}, #probe_server_state{
-        timeout_current = T, 
-        timeout_max     = T, 
-        status          = unknown} = S) ->
-    %% ici une alerte est declanchee
-    notify(self(), {'CRITICAL', Val}),
-    gen_server:cast(self(), launch),
-    {noreply, S#probe_server_state{status = error}};
-
-% error, max timeout reached and status is allready error, do nothing.
+% error, max timeout reached and status is allready 'CRITICAL', do nothing.
 handle_cast({probe_response, {error, _}}, #probe_server_state{
             timeout_current = T, 
             timeout_max     = T, 
-            status          = error} = S) ->
+            status          = 'CRITICAL'} = S) ->
     gen_server:cast(self(), launch),
     {noreply, S};
 
-% error, status is unknown, max number of timeout not reached. It is a warning
+% error status is 'RECOVERY' timeout not reached. go to 'WARNING'
 handle_cast({probe_response, {error, Val}}, #probe_server_state{
             timeout_current     = T,
-            status              = unknown} = S) ->
+            status              = 'RECOVERY'} = S) ->
+    notify(self(), {'WARNING', Val}),
+    gen_server:cast(self(), launch),
+    {noreply, S#probe_server_state{
+        timeout_current = T + 1,
+        status          = 'WARNING'}};
+
+% error status is 'WARNING' timeout not reached. Renew 'WARNING'
+handle_cast({probe_response, {error, Val}}, #probe_server_state{
+            timeout_current     = T,
+            status              = 'WARNING'} = S) ->
     notify(self(), {'WARNING', Val}),
     gen_server:cast(self(), launch),
     {noreply, S#probe_server_state{timeout_current = T + 1}};
 
-% error, status is ok, max number of timeout not reached. It is a warning
+% error status is 'UNKNOWN' max number of timeout not reached.
+% it is a WARNING
 handle_cast({probe_response, {error, Val}}, #probe_server_state{
             timeout_current     = T,
-            status              = ok} = S) ->
+            status              = 'UNKNOWN'} = S) ->
     notify(self(), {'WARNING', Val}),
     gen_server:cast(self(), launch),
-    {noreply, S#probe_server_state{timeout_current = T + 1}};
+    {noreply, S#probe_server_state{
+        timeout_current = T + 1,
+        status          = 'WARNING'}};
 
-% ok but status was error, then it is a recovery. 
+% error, status is OK, max number of timeout not reached. pass to WARNING
+handle_cast({probe_response, {error, Val}}, #probe_server_state{
+            timeout_current     = T,
+            status              = 'OK'} = S) ->
+    notify(self(), {'WARNING', Val}),
+    gen_server:cast(self(), launch),
+    {noreply, S#probe_server_state{
+        timeout_current = T + 1,
+        status          = 'WARNING'}};
+
+% ok but status was CRITICAL, then it is a RECOVERY. 
 handle_cast({probe_response, {ok, Val}}, #probe_server_state{
-        status      = error} = S) ->
+        status      = 'CRITICAL'} = S) ->
     notify(self(), {'RECOVERY', Val}),
     gen_server:cast(self(), launch),
-    {noreply, S#probe_server_state{timeout_current = 0, status = ok}};
+    {noreply, S#probe_server_state{
+        timeout_current = 0, 
+        status          = 'RECOVERY'}};
 
-% ok but status was unknown, then it is a recovery. 
+% ok but status was WARNING, then it is a RECOVERY. 
 handle_cast({probe_response, {ok, Val}}, #probe_server_state{
-        status      = unknown} = S) ->
+        status      = 'WARNING'} = S) ->
     notify(self(), {'RECOVERY', Val}),
     gen_server:cast(self(), launch),
-    {noreply, S#probe_server_state{timeout_current = 0, status = ok}};
+    {noreply, S#probe_server_state{
+        timeout_current = 0, 
+        status          = 'RECOVERY'}};
+
+% ok but status was UNKNOWN, then it is a RECOVERY. 
+handle_cast({probe_response, {ok, Val}}, #probe_server_state{
+        status      = 'UNKNOWN'} = S) ->
+    notify(self(), {'RECOVERY', Val}),
+    gen_server:cast(self(), launch),
+    {noreply, S#probe_server_state{
+        timeout_current = 0, 
+        status          = 'RECOVERY'}};
+
+% ok but the state was RECOVERY pass to OK.
+handle_cast({probe_response, {ok, Val}}, #probe_server_state{
+        status      = 'RECOVERY'} = S) ->
+    notify(self(), {'OK', Val}),
+    gen_server:cast(self(), launch),
+    {noreply, S#probe_server_state{
+        timeout_current     = 0,
+        status              = 'OK'}};
 
 % ok standard, reset the timeout_current count. It is an informational msg.
-handle_cast({probe_response, {ok, Val}}, S) ->
+handle_cast({probe_response, {ok, Val}}, #probe_server_state{
+        status      = 'OK'} = S) ->
     notify(self(), {'OK', Val}),
     gen_server:cast(self(), launch),
     {noreply, S#probe_server_state{timeout_current = 0}};

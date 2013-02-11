@@ -27,6 +27,7 @@
     start_link/0,
     generate_id/0,
     fill_target_store/0,
+    fill_target_more/0,
     clear_target_store/0,
     some_ips/0,
     more_ips/0,
@@ -108,6 +109,9 @@ generate_id(Term) ->
 % @end
 fill_target_store() ->
     lists:foreach(fun(X) -> tracker_target_store:new(X) end, some_ips()).
+
+fill_target_more() ->
+    lists:foreach(fun(X) -> tracker_target_store:new(X) end, more_ips()).
 
 clear_target_store() ->
     lists:foreach(fun(X) ->

@@ -95,7 +95,7 @@
 % <em>tracker_target_store :: module()</em> API.
 % </p>
 % @end
--module(gen_inspector).
+-module(beha_tracker_inspector).
 -include("../include/tracker.hrl").
 
 -export([behaviour_info/1]).

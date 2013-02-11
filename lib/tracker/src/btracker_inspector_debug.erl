@@ -19,14 +19,32 @@
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 % @private
--module(probe_icmp_echo).
--behaviour(gen_probe).
--include_lib("../include/tracker.hrl").
+-module(btracker_inspector_debug).
+-behaviour(beha_tracker_inspector).
+-include("../include/tracker.hrl").
 -export([
-    exec/1
+    init/2,
+    inspect/3
 ]).
 
-% icmp_server:ping(Ip, Timeout) -> must return {ok, Val} | {error, Error}
-exec({#target{ ip = Ip}, #probe{timeout_wait = Timeout}}) ->
-    icmp_server:ping(Ip, Timeout * 1000).
+-spec init([any()], #probe_server_state{}) -> {ok, #probe_server_state{}}.
+% @doc 
+% Called by a probe starting to initalise the #probe_state.inspector_state
+% if needed.
+% @end
+init(_C, #probe_server_state{inspectors_state = IState} = S) ->
+    io:format("init inspect~n"),
+    {ok, S#probe_server_state{inspectors_state = [more | IState]}}.
+
+-spec inspect(
+        Orig::#probe_server_state{},
+        Modifed::#probe_server_state{},
+        Msg::tuple()) -> 
+    {ok, Other::#probe_server_state{}}.
+% @doc
+% Called by the probe each time an event occur.
+% @end
+inspect(_S1, S2, _Msg) ->
+    io:format("inspect~n"),
+    {ok, S2}.
 

@@ -23,7 +23,7 @@
 -behaviour(gen_server).
 -behaviour(beha_ifs_auth).
 -include_lib("eldap/include/eldap.hrl").
--include_lib("../include/client_state.hrl").
+-include("../include/client_state.hrl").
 
 %% erternal api
 -compile(export_all).

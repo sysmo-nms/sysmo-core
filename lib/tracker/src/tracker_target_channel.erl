@@ -228,7 +228,7 @@ probe_event(Chan, #probe{type = fetch} = Probe, {'OK', _} = Msg) ->
     % TODO rrdupdate
     notify(fetch, Msg, Chan, Probe);
 
-probe_event(Chan, Probe, {'INFO', _} = Msg) ->
+probe_event(Chan, Probe, {'UNKNOWN', _} = Msg) ->
     notify(fetch, Msg, Chan, Probe);
 
 probe_event(_A,_B,C) ->
