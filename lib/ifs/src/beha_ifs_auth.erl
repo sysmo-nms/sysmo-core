@@ -20,19 +20,20 @@
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 %% @doc
 %% A module using this behaviour can be used by <em>ifs</em> to
-%% authenticate clients.
+%% authenticate clients. The return will be used by the beha_ifs_acctrl
+%% module used by the application
 %% 
 %% == authenticate/2 ==
 %%
 %% The only function to be exported is <em>authenticate/2</em>.
 %%
 %% <code>
-%% authenticate(Uname, UPass) -> Roles | fail
-%% <br></br>
-%% Roles = list of Role,<br></br>
-%% Role  = string,<br></br>
-%% Uname = string,<br></br>
-%% UPass = string,<br></br>
+%% authenticate(Uname, UPass) -> Any::term() | fail
+%% 
+%% <p>
+%% Note that the returned term() can be anything but must be understandable 
+%% by the beha_ifs_acctrl module used by the application.
+%% </p>
 %% </code>
 %% @end
 -module(beha_ifs_auth).

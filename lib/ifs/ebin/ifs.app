@@ -20,8 +20,8 @@
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 {application, ifs,
 	[
-		{description, "client interface session and authentication"},
-		{vsn, "1.0.1"},
+		{description, "IFS, InterFace Session/authentication"},
+		{vsn, "2.0.0"},
 		{modules, [
                 ifs_app,
                 ifs_sup,
@@ -50,8 +50,6 @@
 		{applications, 
             [kernel, stdlib, crypto, public_key, ssl]
         },
-
-		% mandatory
 		{mod, {ifs_app, []}}
 	]
 }.

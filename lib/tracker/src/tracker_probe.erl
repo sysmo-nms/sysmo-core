@@ -296,8 +296,8 @@ code_change(_O, S, _E) ->
 % #probe{} record.
 % @end
 probe_pass(Target, Probe, Pid) ->
-    Fun     = Probe#probe.func,
-    Result  = Fun({Target, Probe}),
+    Mod     = Probe#probe.tracker_probe_mod,
+    Result  = Mod:exec({Target, Probe}),
     gen_server:cast(Pid, {inspect, Result}).
 
 

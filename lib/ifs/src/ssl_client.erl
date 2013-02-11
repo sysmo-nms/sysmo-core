@@ -1,6 +1,6 @@
 % This file is part of "Enms" (http://sourceforge.net/projects/enms/)
 % Based on the work from Serge Aleynikov <saleyn at gmail.com> on the article
-% from http://www.trapexit.org/Building_a_Non-blocking_TCP_server_using_OTP_principles
+% http://www.trapexit.org/Building_a_Non-blocking_TCP_server_using_OTP_principles
 % Copyright (C) 2012 <Sébastien Serre sserre.bx@gmail.com>
 % 
 % Enms is a Network Management System aimed to manage and monitor SNMP
@@ -26,19 +26,40 @@
 %%% <ul>
 %%%     <li><b>openssl genrsa -out key.pem 1024</b></li>
 %%%     <li><b>openssl req -new -key key.pem -out request.pem</b>
-%%%         <em> (ici Common Name est mandatory, "localhost" pour les tests)</em></li>
-%%%     <li><b>openssl x509 -req -days 30 -in request.pem -signkey key.pem -out certificate.pem</b></li>
+%%%         <em> (ici Common Name est mandatory, "localhost" pour les 
+%%%         tests)</em></li>
+%%%     <li><b>openssl x509 -req -days 30 -in request.pem -signkey key.pem 
+%%%         -out certificate.pem</b></li>
 %%% </ul>
 %%% </p>
 %%% @end
 -module(ssl_client).
 -behaviour(gen_fsm).
--include("../include/client_state.hrl").
+-include("../include/ifs.hrl").
 
--export([start_link/2, set_socket/2, auth_set/2, auth_set/5, send/2, raw_send/2]).
--export([init/1, handle_event/3, handle_sync_event/4, 
-            handle_info/3, terminate/3, code_change/4]).
--export(['WAIT_FOR_SOCKET'/2, 'WAIT_FOR_CLIENT_AUTH'/2, 'RUNNING'/2]).
+-export([
+    start_link/2,
+    set_socket/2,
+    auth_set/2,
+    auth_set/5,
+    send/2,
+    raw_send/2
+]).
+
+-export([
+    init/1,
+    handle_event/3,
+    handle_sync_event/4, 
+    handle_info/3,
+    terminate/3,
+    code_change/4
+]).
+
+-export([
+    'WAIT_FOR_SOCKET'/2,
+    'WAIT_FOR_CLIENT_AUTH'/2,
+    'RUNNING'/2
+]).
 
 -define(TIMEOUT, 30000).
 -define(MAX_AUTH_ATEMPT, 3).
@@ -136,7 +157,7 @@ init([Encoder, {Key, Cert, CACert}]) ->
         pid             = self(),
         module          = ?MODULE,
         state           = 'WAIT_FOR_CLIENT_AUTH'},
-    ifs_server:notify_connection(NextState),
+    ifs_server:client_msg(connect, NextState),
 	{next_state, 'WAIT_FOR_CLIENT_AUTH', NextState, ?TIMEOUT};
 
 'WAIT_FOR_SOCKET'(Other, State) ->
@@ -150,7 +171,7 @@ init([Encoder, {Key, Cert, CACert}]) ->
 %%-------------------------------------------------------------------------
 'WAIT_FOR_CLIENT_AUTH'({client_data, Pdu}, 
         #client_state{encoding_mod = Encoder} = State) ->
-    ifs_server:handle_msg(State, Encoder:decode(Pdu)),
+    ifs_server:client_msg({message, Encoder:decode(Pdu)}, State),
 	{next_state, 'WAIT_FOR_CLIENT_AUTH', State, ?TIMEOUT};
 
 'WAIT_FOR_CLIENT_AUTH'({success, Ref, Name, Roles, Mods}, 
@@ -184,7 +205,7 @@ init([Encoder, {Key, Cert, CACert}]) ->
 'WAIT_FOR_CLIENT_AUTH'(timeout, State) ->
     NextState = State#client_state{auth_request_count = 
                     State#client_state.auth_request_count + 1},
-    ifs_server:notify_connection(NextState),
+    ifs_server:client_msg(connect, NextState),
 	{next_state, 'WAIT_FOR_CLIENT_AUTH', NextState, ?TIMEOUT};
 
 'WAIT_FOR_CLIENT_AUTH'(Data, State) ->
@@ -197,7 +218,7 @@ init([Encoder, {Key, Cert, CACert}]) ->
 % message from the client:
 'RUNNING'({client_data, Data}, 
         #client_state{encoding_mod = Encoder} = State) ->
-    ifs_server:handle_msg(State, Encoder:decode(Data)),
+    ifs_server:client_msg({message, Encoder:decode(Data)}, State),
 	{next_state, 'RUNNING', State};
 
 % message from the server:
@@ -277,7 +298,7 @@ handle_info(Info, StateName, StateData) ->
 terminate(_Reason, _StateName, #client_state{socket=Socket} = State) ->
 	io:format("terminate ~p ~p~n", [?MODULE, _Reason]),
 	(catch ssl:close(Socket)),
-    ifs_server:notify_disconnection(State),
+    ifs_server:client_msg(disconnect, State),
 	ok.
 
 %%-------------------------------------------------------------------------

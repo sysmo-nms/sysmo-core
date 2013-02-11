@@ -30,6 +30,9 @@ clean:
 	rm -f doc/edoc-info
 	rm -f priv/asn1/build/*
 
+clifs:
+	@$(ERL) -pa ebin -eval \
+ 'clifs:s(), timer:sleep(500), clifs:adm()'
 # ASN PDUs
 ASN_DEFS    = $(shell find priv/asn1 -name "*.asn")
 ASN_DEST    = $(patsubst priv/asn1/%.asn, ebin/%.beam, $(ASN_DEFS))
@@ -44,6 +47,8 @@ $(ASN_DEST): ebin/%.beam: priv/asn1/%.asn
 
 # TEST
 test: compile
+	@$(ERL) -noinput -pa ebin -eval \
+        'eunit:test(bifs_acctrl_rbac, [verbose]), init:stop()'
 
 # DOCUMENTATION
 doc: doc/index.html

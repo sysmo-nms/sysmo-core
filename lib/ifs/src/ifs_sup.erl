@@ -25,32 +25,33 @@
 -export([start_link/4]).
 -export([init/1]).
 
-start_link(AuthModule, TcpClientConf, SslClientConf, ManagedMods) ->
+start_link(ServerConf, AccessControlMod, TcpClientConf, SslClientConf) ->
     supervisor:start_link(
         {local, ?MODULE}, ?MODULE, 
-            [AuthModule, TcpClientConf, SslClientConf, ManagedMods]).
+            [ServerConf, AccessControlMod, TcpClientConf, SslClientConf]).
 
-init([AuthModule, TcpClientConf, SslClientConf, ManagedMods]) ->
-    IfsRbac = {
-        ifs_rbac,
-        {ifs_rbac, start_link, []},
-        permanent,
-        2000,
-        worker,
-        [ifs_rbac]
-    },
+init([ServerConf, AccessControlMod, TcpClientConf, SslClientConf]) ->
     IfsServer = {
         ifs_server,
-        {ifs_server,start_link, [AuthModule, ManagedMods]},
+        {ifs_server,start_link, [ServerConf]},
         permanent,
         2000,
         worker,
         [ifs_server]
     },
+    IfsMpd = {
+        ifs_mpd,
+        {ifs_mpd,start_link, [AccessControlMod]},
+        permanent,
+        2000,
+        worker,
+        [ifs_mpd]
+    },
+
 
     ModList1 = create_ssl_client(SslClientConf, []),
     ModList2 = create_tcp_client(TcpClientConf, ModList1),
-    ModList3 = [IfsRbac     | ModList2],
+    ModList3 = [IfsMpd     | ModList2],
     ModList4 = [IfsServer   | ModList3],
 
     {ok,

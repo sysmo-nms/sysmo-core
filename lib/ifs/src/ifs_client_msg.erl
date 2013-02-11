@@ -18,20 +18,8 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
-% @private
--module(ifs_app).
--behaviour(application).
+-module(ifs_client_msg).
+-export([handle/1]).
 
--export([start/2, stop/1]).
-
-start(_Type, _Args) ->
-    {ok, AuthModule}    = application:get_env(ifs, auth_module),
-    {ok, AccessControlMod} = application:get_env(ifs, acctrl_module),
-    {ok, TcpClientConf} = application:get_env(ifs, tcp_client),
-    {ok, SslClientConf} = application:get_env(ifs, ssl_client),
-    {ok, Applications}  = application:get_env(ifs, applications),
-    ifs_sup:start_link({AuthModule, Applications}, AccessControlMod,
-                            TcpClientConf, SslClientConf).
-
-stop(_State) ->
-	ok.
+handle(_) ->
+    ok.

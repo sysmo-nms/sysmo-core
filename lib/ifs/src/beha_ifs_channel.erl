@@ -18,20 +18,30 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
--record(client_state,  {
-    socket,                         % client socket
-    addr,                           % client address
-    port,                           % client port
-    certificate,                    % ssl certificate
-    ca_certificate,                 % for self signed certs
-    key,                            % ssl key
-    ref,                            % reference ovoiding socket swap in the middle of a async call
-    user_name = [],                 % user attached to the socket
-    user_roles = [],                % groups wich the user belong
-    user_modules,                   % modules allowed at client connexion
-    auth_request_count = 1,         % used by max request count
-    module,                         % callback mod to send data
-    encoding_mod,                   %
-    state,                          %
-    pid                             % pid() of the gen_server howner of the socket
-}). 
+%% @doc
+%% A module using this behaviour can be used by <em>ifs</em> to
+%% authenticate clients.
+%% 
+%% == authenticate/2 ==
+%%
+%% The only function to be exported is <em>authenticate/2</em>.
+%%
+%% <code>
+%% authenticate(Uname, UPass) -> Roles | fail
+%% <br></br>
+%% Roles = list of Role,<br></br>
+%% Role  = string,<br></br>
+%% Uname = string,<br></br>
+%% UPass = string,<br></br>
+%% </code>
+%% @end
+-module(beha_ifs_channel).
+-export([behaviour_info/1]).
+
+behaviour_info(callbacks) ->
+    [
+        {}
+    ];
+
+behaviour_info(_) ->
+    undefined.

@@ -51,7 +51,7 @@
     name            = undefined     :: string(),
     type            = undefined     :: probe_type(), % store rrd data?
     permissions     = #perm_conf{}  :: #perm_conf{},
-    func            = undefined     :: tfun(),
+    tracker_probe_mod = undefined     :: undefined | module(),
 
     % step, timeouts, timeout before CRITICAL, flip flap detection
     step            = undefined     :: undefined | integer(),
@@ -85,7 +85,8 @@
                                 read = "admin",
                                 write = "admin"
                             },
-            func = fun(X) -> btracker_probe_icmp_echo:exec(X) end,
+            %mod = fun(X) -> btracker_probe_icmp_echo:exec(X) end,
+            tracker_probe_mod = btracker_probe_icmp_echo,
 
             % timeouts and frequency
             step            = 5, % 5 seconds

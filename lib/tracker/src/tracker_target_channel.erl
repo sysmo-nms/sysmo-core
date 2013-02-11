@@ -125,10 +125,13 @@ unsubscribe(TargetId) ->
 % @doc
 % Initiate the gen server.
 % @end
-init([RootRrdDir, #target{id = Id} = Target]) ->
+init([RootRrdDir, #target{id = Id, global_perm = Perm} = Target]) ->
     RrdTargetDir = filename:join(RootRrdDir, atom_to_list(Id)),
     ok = rrd_dir_exist(RrdTargetDir),
+    % general logging
     gen_event:notify(tracker_events, {?MODULE, init, Id}),
+    % ifs related
+    ok = ifs_server:create_chan(tracker, Id, Perm),
     {ok, 
         #chan_state{
             chan_id = Id,
@@ -182,9 +185,12 @@ handle_cast(_R, S) ->
 % @private
 handle_info(_I, S) ->
     {noreply, S}.
+
 % @private
-terminate(_R, _S) ->
+terminate(_R, #chan_state{target = Target} = _S) ->
+    ok = ifs_server:chan_delete(tracker, Target#target.id),
     normal.
+
 % @private
 code_change(_O, S, _E) ->
     {ok, S}.

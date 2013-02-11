@@ -38,6 +38,9 @@
             user_name
         }).
 
+s() ->
+    start_link().
+
 start_link() ->
     gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
@@ -105,9 +108,13 @@ handle_cast({modIfPDU, {fromServer, {authReq, ldap}}}, S) ->
     io:format("Authentication request proto: ldap~n"),
     {noreply, S};
 
-handle_cast({modIfPDU, {fromServer, {authAck, {'IfPDU_fromServer_authAck', Roles, Modules}}}}, S) ->
+handle_cast({modIfPDU, {fromServer, {authAck, 
+        {'IfPDU_fromServer_authAck', Roles, Modules}}}}, S) ->
     io:format("Authentication ack roles: ~p modules: ~p~n", [Roles, Modules]),
-    send_pdu({modIfPDU, {fromClient, {subscribe, Modules}}}, S),
+    % subscribe to all modules
+    lists:foreach(fun(X) ->
+        send_pdu({modIfPDU, {fromClient, {subscribe, X}}}, S)
+    end, Modules),
     {noreply, S#clifs_state{roles = Roles, modules = Modules}};
 
 
@@ -138,4 +145,6 @@ code_change(_O, S, _E) ->
 send_pdu(PDU, S) ->
     io:format("sending ~p~n", [PDU]),
     {ok, B} = 'NmsPDU':encode('PDU', PDU),
+    {ok, M} = 'NmsPDU':decode('PDU', B),
+    io:format("sendddddddddddddddd pdu ~p~n", [M]),
     ssl:send(S#clifs_state.sock, B).

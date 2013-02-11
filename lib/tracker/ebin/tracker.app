@@ -35,7 +35,12 @@
             %[kernel, stdlib, icmp]
             [kernel, stdlib]
         },
-        {start_phases, [{init_chans, []}, {launch_probes, []}]},
+        {start_phases, 
+            [
+                {init_chans, []},
+                {launch_probes, []}
+            ]
+        },
 		{mod, {tracker_app, []}}
 	]
 }.
