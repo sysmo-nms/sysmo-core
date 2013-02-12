@@ -18,6 +18,16 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
+-record(perm_conf, {
+    read    = []    :: [term()],
+    write   = []    :: [term()]
+}).
+
+-record(chan, {
+    id          = undefined :: atom(),
+    perm        = undefined :: undefined | #perm_conf{}
+}).
+
 -record(client_state,  {
     socket,                     % client socket
     addr,                       % client address
@@ -42,16 +52,6 @@
     callback    = undefined :: undefined | module(),
     asnkey      = undefined :: undefined | atom(),
     subscribers = []        :: [#client_state{}],
-    chans       = []        :: [atom()]
+    chans       = []        :: [#chan{}]
 }).
 
--record(perm_conf, {
-    read    = []    :: [term()],
-    write   = []    :: [term()]
-}).
-
-
--record(chan, {
-    id          = undefined :: atom(),
-    perm        = undefined :: undefined | #perm_conf{}
-}).

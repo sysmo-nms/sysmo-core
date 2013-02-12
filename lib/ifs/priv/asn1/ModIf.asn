@@ -7,12 +7,22 @@ Group       ::= PrintableString (SIZE (1..50))
 
 Modules     ::= SEQUENCE OF Module
 Module      ::= PrintableString (SIZE (1..30))
-Channels    ::= SEQUENCE OF Channel
-Channel     ::= PrintableString (SIZE (1..30))
+
 
 AuthProto   ::= ENUMERATED {localFile(0), ldap(1)}
 
-ChanInfo    ::= SEQUENCE {module Module, channel Channel}
+Chan        ::= PrintableString (SIZE (1..100))
+ChanInfoType    ::= ENUMERATED {create(0), delete(1), update(2)}
+ChanInfo    ::= SEQUENCE {
+    module  Module,
+    channel Chan,
+    type    ChanInfoType
+}
+
+ChanId ::= SEQUENCE {
+    module  Module,
+    chan    Chan
+}
 
 IfPDU ::= CHOICE {
     fromServer [0] CHOICE {
@@ -32,14 +42,22 @@ IfPDU ::= CHOICE {
             userId      PrintableString,
             pass        PrintableString
         },
-        subscribeOk [5] Module,
-        unsubscribeOk [6] Module,
+        subscribeOk     [5] Module,
+        subscribeErr    [6] Module,
+        unsubscribeOk   [7] Module,
+        unsubscribeErr  [8] Module,
+        subscribeChanOk     [9]     ChanId,
+        subscribeChanErr    [10]    ChanId,
+        unsubscribeChanOk   [11]    ChanId,
+        unsubscribeChanErr  [12]    ChanId,
         ...
     },
     fromClient  [1] CHOICE {
-        subscribe   [0] Module,
-        unsubscribe [1] Module,
-        authResp    [4] SEQUENCE {
+        subscribe       [0] Module,
+        unsubscribe     [1] Module,
+        subscribeChan   [2] ChanId,
+        unsubscribeChan [3] ChanId,
+        authResp        [4] SEQUENCE {
                 userId  PrintableString,
                 pass    PrintableString
         },

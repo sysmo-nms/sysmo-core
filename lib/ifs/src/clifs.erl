@@ -59,6 +59,13 @@ subscribe(Modules) ->
 unsubscribe(Modules) ->
     gen_server:cast(?MODULE, {unsubscribe, Modules}).
 
+% subscribe to module
+subscribe_chan(Mod, Chan) ->
+    gen_server:cast(?MODULE, {subscribe_chan, Mod, Chan}).
+
+unsubscribe_chan(Mod, Chan) ->
+    gen_server:cast(?MODULE, {unsubscribe_chan, Mod, Chan}).
+
 add_v2_agent(Ip, Community) ->
     gen_server:cast(?MODULE, {add_v2_agent, Ip, Community}).
 
@@ -96,6 +103,16 @@ handle_cast({unsubscribe, Modules}, S) ->
     send_pdu({modIfPDU, {fromClient, {unsubscribe, Modules}}}, S),
     {noreply, S};
 
+handle_cast({subscribe_chan, Module, Chan}, S) ->
+    send_pdu({modIfPDU, {fromClient, 
+        {subscribeChan, {'ChanId', Module, Chan}}}}, S),
+    {noreply, S};
+
+handle_cast({unsubscribe_chan, Module, Chan}, S) ->
+    send_pdu({modIfPDU, {fromClient, 
+        {unsubscribeChan, {'ChanId', Module, Chan}}}}, S),
+    {noreply, S};
+
 % snmpPDU
 handle_cast({add_v2_agent, Ip, Community}, S) ->
     send_pdu({modEsnmpPDU, {fromClient, {registerV2Agent, 
@@ -105,12 +122,10 @@ handle_cast({add_v2_agent, Ip, Community}, S) ->
 
 %% FROM SERVER
 handle_cast({modIfPDU, {fromServer, {authReq, ldap}}}, S) ->
-    io:format("Authentication request proto: ldap~n"),
     {noreply, S};
 
 handle_cast({modIfPDU, {fromServer, {authAck, 
         {'IfPDU_fromServer_authAck', Roles, Modules}}}}, S) ->
-    io:format("Authentication ack roles: ~p modules: ~p~n", [Roles, Modules]),
     % subscribe to all modules
     lists:foreach(fun(X) ->
         send_pdu({modIfPDU, {fromClient, {subscribe, X}}}, S)
@@ -127,6 +142,7 @@ handle_cast(Any, S) ->
 %% INFO
 handle_info({ssl, _, BinPdu}, S) ->
     {ok, AsnPdu} = 'NmsPDU':decode('PDU', BinPdu),
+    io:format("RECEIVED: ~p~n",[AsnPdu]),
     gen_server:cast(?MODULE, AsnPdu),
     {noreply, S};
 
@@ -143,8 +159,6 @@ code_change(_O, S, _E) ->
 
 %% PRIVATE
 send_pdu(PDU, S) ->
-    io:format("sending ~p~n", [PDU]),
+    io:format("SENDING: ~p~n", [PDU]),
     {ok, B} = 'NmsPDU':encode('PDU', PDU),
-    {ok, M} = 'NmsPDU':decode('PDU', B),
-    io:format("sendddddddddddddddd pdu ~p~n", [M]),
     ssl:send(S#clifs_state.sock, B).
