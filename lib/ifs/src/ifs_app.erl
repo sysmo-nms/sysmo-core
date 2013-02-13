@@ -26,11 +26,11 @@
 
 start(_Type, _Args) ->
     {ok, AuthModule}    = application:get_env(ifs, auth_module),
-    {ok, AccessControlMod} = application:get_env(ifs, acctrl_module),
+    {ok, AcctrlMod}     = application:get_env(ifs, acctrl_module),
     {ok, TcpClientConf} = application:get_env(ifs, tcp_client),
     {ok, SslClientConf} = application:get_env(ifs, ssl_client),
     {ok, Applications}  = application:get_env(ifs, applications),
-    ifs_sup:start_link({AuthModule, Applications}, AccessControlMod,
+    ifs_sup:start_link({AuthModule, AcctrlMod, Applications}, AcctrlMod,
                             TcpClientConf, SslClientConf).
 
 stop(_State) ->

@@ -34,6 +34,7 @@
 -module(tracker_target_channel).
 -behaviour(gen_server).
 -include("../include/tracker.hrl").
+-include("../../errd/include/errd.hrl").
 
 -export([
     init/1, 
@@ -47,6 +48,7 @@
     start_link/2,
     launch_probes/1,
     new_event/3,
+    update_rrd_file/2,
     subscribe/2,
     unsubscribe/1
 ]).
@@ -55,8 +57,8 @@
     chan_id,
     subscriber_count,
     target,
-    rrd_dir,
-    probes_store
+    probes_store,
+    rrd_server
 }).
 
 %%-------------------------------------------------------------
@@ -89,22 +91,19 @@ launch_probes(Id) ->
 new_event(Self, ProbePid, Message) ->
     gen_server:cast(Self, {tracker_probe, ProbePid, Message}).
 
+update_rrd_file(Server, RRD_update) ->
+    gen_server:cast(Server, {rrd_update, RRD_update}).
+
+
 -spec subscribe(target_id(), any()) -> ok.
 % @doc
 % ifs module related.
-% TODO: A client call. Will increase the subscriber_count by 1 and return only
-% when all available informations of the targets are sent.
-%
 % The logic is here:
 % - lock the server
 % - dump every informations pending,
 % - send all target related data to client,
-% - increment subscriber_count
 % - unlock the server
 % All this must be done in a single gen_server:call()
-%
-% Once the #chan_state.subscriber_count > 0, every messages related to
-% this target will be forwarded to ifs.
 % @end
 subscribe(TargetId, Client) ->
     gen_server:call(TargetId, {new_subscriber, Client}).
@@ -125,24 +124,37 @@ unsubscribe(TargetId) ->
 % @doc
 % Initiate the gen server.
 % @end
-init([RootRrdDir, #target{id = Id, global_perm = Perm} = Target]) ->
-    RrdTargetDir = filename:join(RootRrdDir, atom_to_list(Id)),
-    ok = rrd_dir_exist(RrdTargetDir),
+init([RootRrdDir, 
+        #target{id = Id, global_perm = Perm, probes = Probes} = Target]) ->
     % general logging
     gen_event:notify(tracker_events, {?MODULE, init, Id}),
     % ifs related
     ok = ifs_server:create_chan(tracker, Id, Perm),
+    % rrd server
+    RrdTargetDir = filename:join(RootRrdDir, atom_to_list(Id)),
+    ok = rrd_dir_exist(RrdTargetDir),
+    {ok, Pid} = errd_server_sup:create_instance(),
+    errd_server:cd(Pid, RrdTargetDir),
+    lists:foreach(fun(P) ->
+        RCreate = P#probe.rrd_create,
+        FName = filename:join(RrdTargetDir, RCreate#rrd_create.file),
+        case filelib:is_file(FName) of
+            true ->
+                ok;
+            false ->
+                errd_server:command(Pid, P#probe.rrd_create)
+        end
+    end, Probes),
+    
     {ok, 
         #chan_state{
-            chan_id = Id,
-            subscriber_count = 0,
-            target = Target,
-            rrd_dir = RrdTargetDir,
-            probes_store = []
+            chan_id             = Id,
+            subscriber_count    = 0,
+            target              = Target,
+            probes_store        = [],
+            rrd_server          = Pid
         }
     }.
-
-
 
 
 % @private
@@ -173,6 +185,10 @@ handle_cast({tracker_probe, ProbePid, Msg},
         #chan_state{probes_store = ProbeStore} = S) ->
     {ProbePid, Probe, _Status} = lists:keyfind(ProbePid, 1, ProbeStore),
     probe_event(S, Probe, Msg),
+    {noreply, S};
+
+handle_cast({rrd_update, RRupdate}, #chan_state{rrd_server=RrdServer} = S) ->
+    errd_server:command(RrdServer, RRupdate),
     {noreply, S};
 
 handle_cast(_R, S) ->
@@ -223,15 +239,17 @@ probe_event(Chan, Probe, {'WARNING', _}  = Msg) ->
 probe_event(Chan, #probe{type = status} = Probe, {'RECOVERY', _} = Msg) ->
     notify(status, Msg, Chan, Probe);
 
-probe_event(Chan, #probe{type = fetch} = Probe, {'RECOVERY', _} = Msg) ->
-    % TODO rrdupdate
+probe_event(Chan, #probe{type = fetch, rrd_update = RUpdate} = Probe, 
+        {'RECOVERY', Val} = Msg) ->
+    tracker_target_channel:update_rrd_file(Chan#chan_state.chan_id, RUpdate(Val)),
     notify(fetch, Msg, Chan, Probe);
 
 probe_event(Chan, #probe{type = status} = Probe, {'OK', _} = Msg) ->
     notify(status, Msg, Chan, Probe);
 
-probe_event(Chan, #probe{type = fetch} = Probe, {'OK', _} = Msg) ->
-    % TODO rrdupdate
+probe_event(Chan, #probe{type = fetch, rrd_update = RUpdate} = Probe, 
+        {'OK', Val} = Msg) ->
+    tracker_target_channel:update_rrd_file(Chan#chan_state.chan_id, RUpdate(Val)),
     notify(fetch, Msg, Chan, Probe);
 
 probe_event(Chan, Probe, {'UNKNOWN', _} = Msg) ->

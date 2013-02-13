@@ -24,10 +24,10 @@
 %%  a string that can be executed by rrdtool.
 %% @end 
 format(#rrd_create{file=File,start_time=undefined,
-                   step=Step,ds_defs=DSs,rra_defs=RRAs}) when is_integer(Step) ->
+            step=Step,ds_defs=DSs,rra_defs=RRAs}) when is_integer(Step) ->
     Dstr = lists:flatten(string:join(lists:map(fun (D) -> format(D) end, DSs), " ")),
     RRAstr = lists:flatten(string:join(lists:map(fun (D) -> format(D) end, RRAs), " ")),
-    lists:flatten(io_lib:format("create ~s --step ~p ~s ~s~n", [File, Step, Dstr, RRAstr]));
+    lists:flatten(io_lib:format("create ~s --step ~p --no-overwrite ~s ~s~n", [File, Step, Dstr, RRAstr]));
 
 format(#rrd_ds{name=Name,type=Type,args=Args}) when is_atom(Type) ->
     io_lib:format("DS:~s:~s:~s", [Name, to_list(Type), Args]);

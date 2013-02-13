@@ -113,7 +113,35 @@
             % - can store 3600 points = 3600 * 1 second = 60 minutes
             % - can store 1440 points consolidated with 12 primary = 
             %       12 * 1440 = 17280 seconds = 288 min = 24 h
-            rrd_create = "--step 5 DS:latency:GAUGE:25:0:U RRA:MAX:0:1:3600 RRA:MAX:0:12:1440"
+            %rrd_create = "--step 5 DS:latency:GAUGE:25:0:U RRA:MAX:0:1:3600 RRA:MAX:0:12:1440"
+            rrd_update = fun(X) ->
+                {rrd_update,
+                "probe_icmp_echo-1.rrd",    % file
+                now,                        % time
+                [
+                    {rrd_ds_update, "latency", X}
+                ]
+
+                } end,
+            rrd_create = 
+                {rrd_create, 
+                    "probe_icmp_echo-1.rrd",  % file
+                    undefined,        % start_time
+                    5,          % step
+                    [{rrd_ds,
+                        "latency",    % name
+                        'gauge',    % type
+                        25,         % hearthbeat
+                        0,          % min
+                        10000,      % max
+                        "25:0:U"  % args
+                     }],         
+                    [
+                        {rrd_rra, 'max',"0:1:3600"},
+                        {rrd_rra,'max',"0:12:1440"}
+                    ]
+                }
+            % end of rrd_create
         }
     ]                           :: [#probe{}],
 

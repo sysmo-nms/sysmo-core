@@ -21,7 +21,7 @@
 % @private
 -module(tracker_misc).
 -behaviour(gen_server).
--include_lib("../include/tracker.hrl").
+-include("../include/tracker.hrl").
 
 -export([
     start_link/0,

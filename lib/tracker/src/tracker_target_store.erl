@@ -36,7 +36,7 @@
 -module(tracker_target_store).
 -behaviour(gen_server).
 -include_lib("eunit/include/eunit.hrl").
--include_lib("../include/tracker.hrl").
+-include("../include/tracker.hrl").
 
 -record(tserver_state, {
     db_dir,

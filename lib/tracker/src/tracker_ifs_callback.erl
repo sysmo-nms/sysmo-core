@@ -19,14 +19,10 @@
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 % @private
--module(btracker_probe_icmp_echo).
--behaviour(beha_tracker_probe).
+-module(tracker_ifs_callback).
+%-behaviour(beha_tracker_probe).
 -include("../include/tracker.hrl").
--export([
-    exec/1
-]).
+-compile(export_all).
 
-% icmp_server:ping(Ip, Timeout) -> must return {ok, Val} | {error, Error}
-exec({#target{ ip = Ip}, #probe{timeout_wait = Timeout}}) ->
-    icmp_server:ping(Ip, Timeout * 1000).
-
+ok() ->
+    ok.

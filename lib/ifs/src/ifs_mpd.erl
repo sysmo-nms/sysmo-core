@@ -36,13 +36,21 @@
     start_link/1,
     new_subscriber/4,
     del_subscriber/3,
-    chan_delete/2
+    chan_delete/2,
+    handle_msg/1,
+    dump/0
 ]).
 
 -record(state, {
     access_control,
-    chan_list
+    chan_element_list
 }).
+
+%-record(chan_element, {
+    %mod,
+    %chans,
+    %callback
+%}).
 %%-------------------------------------------------------------
 %% API
 %%-------------------------------------------------------------
@@ -60,6 +68,12 @@ del_subscriber(Mod, Chan, ClientState) ->
 
 chan_delete(Mod,Chan) ->
     gen_server:call(?MODULE, {chan_delete, Mod, Chan}).
+
+handle_msg(Msg) ->
+    io:format("~p ~p handle_msg ~p~n", [?MODULE, ?LINE, Msg]).
+
+dump() ->
+    gen_server:call(?MODULE, dump).
 %%-------------------------------------------------------------
 %% GEN_SERVER CALLBACKS
 %%-------------------------------------------------------------
@@ -68,21 +82,24 @@ init(Args) ->
     {ok, 
         #state{
             access_control  = Args,
-            chan_list       = []
+            chan_element_list   = []
         }
     }.
 
-handle_call({chan_delete, Mod, Chan}, _F, S) ->
-    io:format("chan_delete ~p~p~n", [Mod, Chan]),
-    {noreply, S};
+handle_call(dump, _F, S) ->
+    {reply, S, S};
+
+handle_call({chan_delete, _Mod, _Chan},_F, S) ->
+    {reply, ok, S};
 
 handle_call(_R, _F, S) ->
     io:format("handle_call ~p~p~n", [?MODULE, _R]),
-    {noreply, S}.
+    {reply, error, S}.
 
 % CAST
 handle_cast({new_subscriber, Mod, Chan, IfsCallback, ClientState}, S) ->
-    io:format("new_subscriber ~p :~p ~p ~p~n", [ClientState, IfsCallback, Mod, Chan]),
+    io:format("new_subscriber ~p :~p ~p ~p~n",
+        [ClientState, IfsCallback, Mod, Chan]),
     {noreply, S};
 
 handle_cast({del_subscriber, Mod, Chan, ClientState}, S) ->

@@ -45,7 +45,8 @@
 
 -record(state, {
     modules,
-    auth_mod
+    auth_mod,
+    acctrl_mod
 }).
     
     
@@ -89,7 +90,7 @@ dump() ->
 %% GEN_SERVER CALLBACKS
 %%-------------------------------------------------------------
 % @private
-init({AuthModule, IfsModules}) ->
+init({AuthModule, AcctrlMod, IfsModules}) ->
     Ret = lists:foldl(fun({ModName, Callback, AsnKey}, ModList) ->
         [
             #ifs_module{
@@ -101,7 +102,12 @@ init({AuthModule, IfsModules}) ->
             }  | ModList
         ]
     end, [], IfsModules),
-    {ok, #state{modules = Ret, auth_mod = AuthModule}}.
+    {ok, #state{
+        modules     = Ret,
+        auth_mod    = AuthModule,
+        acctrl_mod  = AcctrlMod
+        }
+    }.
 
 % @private
 handle_call(dump, _F, S) ->
@@ -154,14 +160,19 @@ handle_call({unsubscribe, Mod, ClientState}, _F,
     end;
 
 handle_call({subscribe_chan, Mod, Chan, ClientState}, _F, 
-        #state{modules = Modules} = S) ->
+        #state{modules = Modules, acctrl_mod = AcctrlMod} = S) ->
     case chan_exist({Mod, Chan}, Modules) of
         true ->
-            IfsMod = lists:keyfind(Mod, 2, Modules),
-            ifs_mpd:new_subscriber(
-                Mod, Chan, IfsMod#ifs_module.callback, ClientState
-            ),
-            {reply, ok, S};
+            IfsMod  = lists:keyfind(Mod, 2, Modules),
+            IfsChan = lists:keyfind(Chan, 2, IfsMod#ifs_module.chans),
+            case AcctrlMod:satisfy(read, [ClientState], IfsChan#chan.perm) of
+                {ok, [ClientState]} ->
+                    ifs_mpd:new_subscriber(
+                        Mod, Chan, IfsMod#ifs_module.callback, ClientState),
+                    {reply, ok, S};
+                {ok, []} ->
+                    {reply, error, S}
+            end;
         false ->
             {reply, error, S}
     end;
