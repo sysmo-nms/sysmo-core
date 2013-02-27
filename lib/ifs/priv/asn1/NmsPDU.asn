@@ -11,12 +11,12 @@ BEGIN
 IMPORTS 
     IfPDU       FROM ModIf
     EsnmpPDU    FROM ModEsnmp
-    TargetsPDU  FROM ModTargets;
+    TrackerPDU  FROM ModTracker;
 
 PDU ::= CHOICE {
     modIfPDU        [0] IfPDU,
     modEsnmpPDU     [1] EsnmpPDU,
-    modTargetsPDU   [2] TargetsPDU
+    modTrackerPDU   [2] TrackerPDU
 }
 
 END

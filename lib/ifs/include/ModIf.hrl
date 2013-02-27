@@ -5,18 +5,18 @@
 
 
 
+-record('AuthAck',{
+groups, staticChans}).
+
+-record('AuthError',{
+error, userId, pass}).
+
+-record('AuthResp',{
+userId, pass}).
+
 -record('ChanInfo',{
-module, channel, type}).
+channel, type}).
 
 -record('ChanId',{
 module, chan}).
-
--record('IfPDU_fromServer_authAck',{
-groups, modules}).
-
--record('IfPDU_fromServer_authError',{
-error, userId, pass}).
-
--record('IfPDU_fromClient_authResp',{
-userId, pass}).
 

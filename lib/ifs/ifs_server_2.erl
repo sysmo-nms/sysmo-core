@@ -170,7 +170,8 @@ handle_client_msg(
         {message, 
             {modIfPDU, 
                 {fromClient,
-                    { Other
+                    {
+                        Other
         }   }   }   }, _) ->
     io:format("received ~p~n", [Other]).
 
@@ -202,6 +203,18 @@ pdu(authErr, {Name, Password}) ->
                     badPass,
                     Name,
                     Password }}}};
+
+pdu(staticSubscribeOk, StaticChan) ->
+    {modIfPDU, 
+        {fromServer, 
+            {staticSubscribeOk, 
+                StaticChan }}};
+
+pdu(staticSubscribeErr, StaticChan) ->
+    {modIfPDU, 
+        {fromServer, 
+            {staticSubscribeErr, 
+                StaticChan }}};
 
 pdu(subscribeOk, Module) ->
     {modIfPDU, 
@@ -235,3 +248,29 @@ pdu(chanInfo, {Module, Channel, Type}) ->
                     Module,
                     Channel,
                     Type }}}}.
+
+% static_subscribe(StaticChan, ClientState) ->
+%     case gen_server:call(?MODULE, 
+%             {static_subscribe, StaticChan, ClientState}) of
+%         true ->
+%             Ret = ifs_mpd:client_subscribtion(StaticChan, ClientState),
+%             Ret;
+%         false -> false
+%     end.
+
+
+
+% static_chan_filter(Roles, Mods) ->
+%     static_chan_filter(Roles, Mods, []).
+% 
+% static_chan_filter(_, [], Result) ->
+%     Result;
+% static_chan_filter(Roles, [Mod |Mods], Result) ->
+%     case lists:any(fun(Role) ->
+%             lists:member(Role, Mod#ifs_module.perm) end, Roles) of
+%         true  ->
+%             static_chan_filter(Roles, Mods, 
+%                 [Mod#ifs_module.static_chan | Result]);
+%         false ->
+%             static_chan_filter(Roles, Mods, Result)
+%     end.

@@ -5,6 +5,27 @@ BEGIN
 Groups      ::= SEQUENCE OF Group
 Group       ::= PrintableString (SIZE (1..50))
 
+AuthAck     ::= SEQUENCE {
+    groups      Groups,
+    staticChans SEQUENCE OF ChanInfo
+}
+
+AuthError   ::= SEQUENCE {
+    error ENUMERATED {
+        noShuchUser(0),
+        badPass(1),
+        timeout(2),
+        other(3)
+    },
+    userId      PrintableString,
+    pass        PrintableString
+}
+
+AuthResp    ::= SEQUENCE {
+    userId  PrintableString,
+    pass    PrintableString
+}
+
 Modules     ::= SEQUENCE OF Module
 Module      ::= PrintableString (SIZE (1..30))
 
@@ -14,7 +35,6 @@ AuthProto   ::= ENUMERATED {localFile(0), ldap(1)}
 Chan        ::= PrintableString (SIZE (1..100))
 ChanInfoType    ::= ENUMERATED {create(0), delete(1), update(2)}
 ChanInfo    ::= SEQUENCE {
-    module  Module,
     channel Chan,
     type    ChanInfoType
 }
@@ -28,39 +48,24 @@ IfPDU ::= CHOICE {
     fromServer [0] CHOICE {
         chanInfo    [1] ChanInfo,
         authReq     [2] AuthProto,
-        authAck     [3] SEQUENCE {
-                groups  Groups,
-                modules Modules
-        },
-        authError   [4] SEQUENCE {
-            error       ENUMERATED {
-                    noShuchUser(0),
-                    badPass(1),
-                    timeout(2),
-                    other(3)
-            },
-            userId      PrintableString,
-            pass        PrintableString
-        },
+        authAck     [3] AuthAck,
+        authError   [4] AuthError,
         subscribeOk     [5] Module,
         subscribeErr    [6] Module,
         unsubscribeOk   [7] Module,
         unsubscribeErr  [8] Module,
-        subscribeChanOk     [9]     ChanId,
-        subscribeChanErr    [10]    ChanId,
-        unsubscribeChanOk   [11]    ChanId,
-        unsubscribeChanErr  [12]    ChanId,
+        staticSubscribeOk     [9]   Chan,
+        staticSubscribeErr    [10]  Chan,
+        staticUnsubscribeOk   [11]  Chan,
+        staticUnsubscribeErr  [12]  Chan,
         ...
     },
     fromClient  [1] CHOICE {
-        subscribe       [0] Module,
-        unsubscribe     [1] Module,
-        subscribeChan   [2] ChanId,
-        unsubscribeChan [3] ChanId,
-        authResp        [4] SEQUENCE {
-                userId  PrintableString,
-                pass    PrintableString
-        },
+        subscribe       [0] Chan,
+        unsubscribe     [1] Chan,
+        staticSubscribe     [2] Chan,
+        staticUnsubscribe   [3] Chan,
+        authResp        [4] AuthResp,
         ...
     }
 }

@@ -48,10 +48,9 @@
 }). 
 
 -record(ifs_module, {
-    name        = undefined :: undefined | atom(),
-    callback    = undefined :: undefined | module(),
-    asnkey      = undefined :: undefined | atom(),
-    subscribers = []        :: [#client_state{}],
-    chans       = []        :: [#chan{}]
+    name        = undefined :: atom(),
+    callback    = undefined :: module(),
+    asnkey      = undefined :: atom(),
+    static_chan = undefined :: pid() | reference(),
+    perm        = []        :: [string()]
 }).
-

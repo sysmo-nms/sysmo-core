@@ -34,7 +34,7 @@
 -record(clifs_state, {
             sock,
             roles =  [],
-            modules = [],
+            static_chans = [],
             user_name
         }).
 
@@ -92,7 +92,7 @@ handle_call(_R, _F, S) ->
 % ifsPDU
 handle_cast({log_in, UserName, PassWord}, S) ->
     send_pdu({modIfPDU, {fromClient, {authResp, 
-                {'IfPDU_fromClient_authResp', UserName, PassWord}}}}, S),
+                {'AuthResp', UserName, PassWord}}}}, S),
     {noreply, S};
 
 handle_cast({subscribe, Modules}, S) ->
@@ -125,12 +125,13 @@ handle_cast({modIfPDU, {fromServer, {authReq, ldap}}}, S) ->
     {noreply, S};
 
 handle_cast({modIfPDU, {fromServer, {authAck, 
-        {'IfPDU_fromServer_authAck', Roles, Modules}}}}, S) ->
-    % subscribe to all modules
-    lists:foreach(fun(X) ->
-        send_pdu({modIfPDU, {fromClient, {subscribe, X}}}, S)
-    end, Modules),
-    {noreply, S#clifs_state{roles = Roles, modules = Modules}};
+        {'AuthAck', Roles, StaticChans}}}}, S) ->
+    % subscribe to all static chans
+    io:format("lllllllllllllllllllllaaaaaaaaaaaa~n"),
+    lists:foreach(fun({_,X,_}) ->
+        send_pdu({modIfPDU, {fromClient, {staticSubscribe, X}}}, S)
+    end, StaticChans),
+    {noreply, S#clifs_state{roles = Roles, static_chans = StaticChans}};
 
 
 %% DEFAULT
@@ -159,6 +160,6 @@ code_change(_O, S, _E) ->
 
 %% PRIVATE
 send_pdu(PDU, S) ->
-    io:format("SENDING: ~p~n", [PDU]),
     {ok, B} = 'NmsPDU':encode('PDU', PDU),
+    io:format("SENDING: ~p~n", [PDU]),
     ssl:send(S#clifs_state.sock, B).

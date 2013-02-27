@@ -1,5 +1,7 @@
 -include_lib("kernel/include/inet.hrl").
 -include_lib("kernel/include/file.hrl").
+-include("../ifs/include/ifs.hrl").
+-include("../errd/include/errd.hrl").
 
 % syslog like security levels
 -define(EMERGENCY,  0).
@@ -20,7 +22,6 @@
 -type property_key()            :: any().
 -type property_val()            :: any().
 -type role()                    :: string().
--type rrd_command()             :: string().
 -type seconds()                 :: integer().
 -type tag()                     :: any().
 -type target_id()               :: atom().
@@ -29,12 +30,6 @@
 -type timeout_threshold()       :: integer() | undefined.
 -type inspector()               :: {module(), [any()]}.
 -type probe_status() :: 'UNKNOWN' | 'CRITICAL' | 'WARNING' | 'RECOVERY' | 'OK'.
-
-% can be applied on the targets and the probes
--record(perm_conf, {
-    read    = []    :: [role()],
-    write   = []    :: [role()]
-}).
 
 -record(exceed, {
     type    = undefined         :: undefined | min | max, % < or > value?
@@ -61,9 +56,9 @@
     inspectors      = []            :: [inspector()],
 
     % if type = fetch
-    rrd_create          = ""            :: rrd_command(),
-    rrd_update          = ""            :: rrd_command(),
-    rrd_graph           = ""            :: rrd_command(),
+    rrd_create          = ""            :: #rrd_create{},
+    rrd_update          = ""            :: #rrd_ds_update{},
+    rrd_graph           = ""            :: string(),
     max_threshold       = undefined     :: undefined | #exceed{},
     min_threshold       = undefined     :: undefined | #exceed{}
 }).
@@ -115,32 +110,37 @@
             %       12 * 1440 = 17280 seconds = 288 min = 24 h
             %rrd_create = "--step 5 DS:latency:GAUGE:25:0:U RRA:MAX:0:1:3600 RRA:MAX:0:12:1440"
             rrd_update = fun(X) ->
-                {rrd_update,
-                "probe_icmp_echo-1.rrd",    % file
-                now,                        % time
-                [
-                    {rrd_ds_update, "latency", X}
-                ]
-
-                } end,
-            rrd_create = 
-                {rrd_create, 
-                    "probe_icmp_echo-1.rrd",  % file
-                    undefined,        % start_time
-                    5,          % step
-                    [{rrd_ds,
-                        "latency",    % name
-                        'gauge',    % type
-                        25,         % hearthbeat
-                        0,          % min
-                        10000,      % max
-                        "25:0:U"  % args
-                     }],         
-                    [
-                        {rrd_rra, 'max',"0:1:3600"},
-                        {rrd_rra,'max',"0:12:1440"}
+                #rrd_update{
+                    file        = "probe_icmp_echo-1.rrd",
+                    time        = now,
+                    updates     = [
+                        #rrd_ds_update{
+                            name    = "latency",
+                            value   = X
+                        }
                     ]
-                }
+                } 
+            end,
+
+            rrd_create = #rrd_create{
+                    file        = "probe_icmp_echo-1.rrd",
+                    start_time  = undefined,
+                    step        = 5,
+                    ds_defs     = [
+                        #rrd_ds{
+                            name        = "latency",
+                            type        = 'gauge',
+                            heartbeat   = 25,
+                            min         = 0,
+                            max         = 10000000,
+                            args        = "25:0:U"
+                        }
+                    ],
+                    rra_defs    = [
+                        #rrd_rra{cf = 'max', args = "0:1:3600"},
+                        #rrd_rra{cf = 'max', args = "0:12:1440"}
+                    ]
+            }
             % end of rrd_create
         }
     ]                           :: [#probe{}],

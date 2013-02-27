@@ -34,7 +34,6 @@
 -module(tracker_target_channel).
 -behaviour(gen_server).
 -include("../include/tracker.hrl").
--include("../../errd/include/errd.hrl").
 
 -export([
     init/1, 
@@ -124,12 +123,14 @@ unsubscribe(TargetId) ->
 % @doc
 % Initiate the gen server.
 % @end
-init([RootRrdDir, 
-        #target{id = Id, global_perm = Perm, probes = Probes} = Target]) ->
+init([RootRrdDir, #target{
+        id          = Id, 
+        global_perm = Perm, 
+        probes      = Probes} = Target]) ->
     % general logging
     gen_event:notify(tracker_events, {?MODULE, init, Id}),
     % ifs related
-    ok = ifs_server:create_chan(tracker, Id, Perm),
+    ok = tracker_ifs_channel:chan_add({Id, Perm}),
     % rrd server
     RrdTargetDir = filename:join(RootRrdDir, atom_to_list(Id)),
     ok = rrd_dir_exist(RrdTargetDir),
@@ -146,6 +147,7 @@ init([RootRrdDir,
         end
     end, Probes),
     
+    % return
     {ok, 
         #chan_state{
             chan_id             = Id,
@@ -192,6 +194,7 @@ handle_cast({rrd_update, RRupdate}, #chan_state{rrd_server=RrdServer} = S) ->
     {noreply, S};
 
 handle_cast(_R, S) ->
+    io:format("unknown cast ~p~n", [_R]),
     {noreply, S}.
 
 
@@ -204,7 +207,7 @@ handle_info(_I, S) ->
 
 % @private
 terminate(_R, #chan_state{target = Target} = _S) ->
-    ok = ifs_server:chan_delete(tracker, Target#target.id),
+    ok = tracker_ifs_channel:chan_del(Target#target.id),
     normal.
 
 % @private
@@ -264,7 +267,29 @@ probe_event(_A,_B,C) ->
 % @doc
 % Will log everything and also to ifs if #chan_state.subscribers_count > 0
 % @end
-notify(Type, Msg, #chan_state{subscriber_count = 0} = Chan, Probe) ->
+notify(Type, {'OK',Val} = Msg, #chan_state{subscriber_count = 0} = Chan, Probe) ->
+    ifs_mpd:handle_msg(
+        {modTrackerPDU,
+            {fromServer,
+                {probeInfo, 
+                    {'ProbeInfo',
+                        atom_to_list(Chan#chan_state.chan_id),
+                        Probe#probe.id,
+                        Type,
+                        Val }}}}),
+    gen_event:notify(tracker_events, {tracker_probe, Type, Msg,
+            {Chan#chan_state.chan_id, Probe#probe.id}});
+
+notify(Type, {'RECOVERY',Val} = Msg, #chan_state{subscriber_count = 0} = Chan, Probe) ->
+    ifs_mpd:handle_msg(
+        {modTrackerPDU,
+            {fromServer,
+                {probeInfo, 
+                    {'ProbeInfo',
+                        atom_to_list(Chan#chan_state.chan_id),
+                        Probe#probe.id,
+                        Type,
+                        Val }}}}),
     gen_event:notify(tracker_events, {tracker_probe, Type, Msg,
             {Chan#chan_state.chan_id, Probe#probe.id}});
 

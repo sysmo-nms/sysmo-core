@@ -1,9 +1,0 @@
-ModTargets DEFINITIONS EXPLICIT TAGS ::=
-BEGIN
-
-TargetsPDU ::= CHOICE {
-    fromServer  [0] PrintableString,
-    fromClient  [1] PrintableString
-}
-
-END
