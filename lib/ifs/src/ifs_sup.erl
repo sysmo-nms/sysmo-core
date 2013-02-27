@@ -25,15 +25,14 @@
 -export([start_link/4]).
 -export([init/1]).
 
-start_link(ServerConf, AccessControlMod, TcpClientConf, SslClientConf) ->
-    supervisor:start_link(
-        {local, ?MODULE}, ?MODULE, 
-            [ServerConf, AccessControlMod, TcpClientConf, SslClientConf]).
+start_link( AuthMod, MpdConf, TcpClientConf, SslClientConf) ->
+    supervisor:start_link({local, ?MODULE}, ?MODULE, 
+            [AuthMod, MpdConf, TcpClientConf, SslClientConf]).
 
-init([ServerConf, AccessControlMod, TcpClientConf, SslClientConf]) ->
+init([AuthMod, MpdConf, TcpClientConf, SslClientConf]) ->
     IfsServer = {
         ifs_server,
-        {ifs_server,start_link, [ServerConf]},
+        {ifs_server,start_link, [AuthMod]},
         permanent,
         2000,
         worker,
@@ -41,7 +40,7 @@ init([ServerConf, AccessControlMod, TcpClientConf, SslClientConf]) ->
     },
     IfsMpd = {
         ifs_mpd,
-        {ifs_mpd,start_link, [AccessControlMod]},
+        {ifs_mpd,start_link, [MpdConf]},
         permanent,
         2000,
         worker,

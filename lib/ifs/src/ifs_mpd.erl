@@ -18,7 +18,6 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
-% @private
 -module(ifs_mpd).
 -behaviour(gen_server).
 -include("../include/ifs.hrl").
@@ -34,51 +33,143 @@
 
 -export([
     start_link/1,
-    client_subscribtion/2,
-    handle_msg/1,
+    multicast_msg/2,
+    unicast_msg/2,
+    subscribe_stage1/2,
+    subscribe_stage2/2,
+    unsubscribe/2,
+    main_chans/0,
+    client_disconnect/1,
     dump/0
 ]).
 
-%-record(chan_element, {
-    %mod,
-    %chans,
-    %callback
-%}).
+-record(state, {
+    acctrl,
+    switch,
+    main_chans,
+    chans
+}).
 %%-------------------------------------------------------------
 %% API
 %%-------------------------------------------------------------
 % @private
-start_link(AccessControlMod) ->
-    gen_server:start_link({local, ?MODULE}, ?MODULE, AccessControlMod, []).
+start_link(MpdConf) ->
+    gen_server:start_link({local, ?MODULE}, ?MODULE, MpdConf, []).
 
-client_subscribtion(Chan, ClientState) ->
-    % TODO verify if the client is allowed (see the state) then..
-    % now once a client subscribe to any channel he will receive everything
-    Chan ! {ifs_subscribe, ClientState},
-    gen_server:cast(?MODULE, {new_subscriber, ClientState}),
-    true.
+-spec main_chans() -> [atom()].
+% @doc
+% Called by ifs_server.
+% Called at the initial connexion of a client. Give him the main (static) 
+% channels. If dynamic channels exist in the application, this is the role
+% of one of these channels to inform the client. Note that depending on the
+% gen_channel module perm/0 function return, a client might not be able to
+% subscribe to a channel apearing here. It is checked at the 
+% subscribe_stage1/1 call.
+% @end
+main_chans() ->
+    gen_server:call(?MODULE, main_chans).
 
-handle_msg(Msg) ->
-    % TODO send the message only to the subscribed and allowed clients. Now
-    % send every messages to every clients.
-    gen_server:call(?MODULE, {send, Msg}).
+-spec subscribe_stage1(atom(), #client_state{}) -> ok | error.
+% @doc
+% Called by a client via ifs_server.
+% If return is ok, the channel will the begin initialisation.
+% If return is error, do nothing more.
+% In both case, ifs_server interpret the return and send subscribeErr or 
+% subscribeOk to the client.
+% @end
+subscribe_stage1(Channel, CState) ->
+    Perm = gen_channel:call(Channel, get_perms),
+    gen_server:call(?MODULE, {subscribe_stage1, Channel, CState, Perm}).
 
+-spec subscribe_stage2(atom(), #client_state{}) -> ok.
+% @doc
+% Called by ifs_server after a ifs_mpd:subscribe/2 success.
+% In fact, the client will really be subscribed here.
+% @end
+subscribe_stage2(Channel, CState) ->
+    gen_server:call(?MODULE, {subscribe_stage2, Channel, CState}).
+
+-spec multicast_msg(atom(), {#perm_conf{}, tuple()}) -> ok.
+% @doc
+% Called by a gen_channel module with a message that can be of interest for
+% clients that have subscribed to the channel.
+% Will be send depending of the right of the user.
+% @end
+multicast_msg(Chan, {Perm, Pdu}) ->
+    gen_server:cast(?MODULE, {multicast, Chan, Perm, Pdu}).
+
+-spec unicast_msg(#client_state{}, tuple()) -> ok.
+% @doc
+% Called by a gen_channel module with a message for a single client. Message
+% will or will not be sent to the client depending on the permissions.
+% Note that the channel is not checked. Thus a client wich is not subscriber
+% of any channels can receive these messages.
+% Typicaly used when the gen_channel need to synchronize the client using his
+% handle_cast({synchronize, CState}, State) function.
+% @end
+unicast_msg(CState, {Perm, Pdu}) ->
+    gen_server:cast(?MODULE, {unicast, CState, Perm, Pdu}).
+
+-spec client_disconnect(#client_state{}) -> ok.
+% @doc
+% Called by ifs_server when the client disconnect.
+% Result in removing the client state from all the initialized channels.
+% @end
+client_disconnect(CState) ->
+    gen_server:call(?MODULE, {client_disconnect, CState}).
+
+-spec unsubscribe(atom(), #client_state{}) -> ok.
+% @doc
+% Called by a client using the ifs asn API via ifs_server.
+% @end
+unsubscribe(Chan, CState) ->
+    gen_server:call(?MODULE, {unsubscribe, Chan, CState}).
+
+% @private
 dump() ->
     gen_server:call(?MODULE, dump).
 %%-------------------------------------------------------------
 %% GEN_SERVER CALLBACKS
 %%-------------------------------------------------------------
-init(Args) ->
-    io:format("~p     jjjjjjjjjj ~p~n", [?MODULE, Args]),
-    {ok, []}.
+init({AcctrlMod, PduDispatch, MainChan}) ->
+    {ok, #state{
+            acctrl = AcctrlMod,
+            switch = PduDispatch,
+            main_chans = MainChan,
+            chans = []
+        }
+    }.
+
+handle_call(main_chans, _F, #state{main_chans = Chans} = S) ->
+    {reply, Chans, S};
+
+
+
+handle_call({subscribe_stage1, _Channel, CState, PermConf},  _F, 
+        #state{acctrl = Acctrl} = S) ->
+    case Acctrl:satisfy(read, [CState], PermConf) of
+        {ok, []} ->
+            {reply, error, S};
+        {ok, [CState]} ->
+            {reply, ok, S}
+    end;
+handle_call({subscribe_stage2, Channel, CState}, _F, S) ->
+    gen_channel:cast(Channel, {synchronize, CState}),
+    Chans = new_chan_subscriber(CState, Channel, S#state.chans),
+    {reply, ok, S#state{chans = Chans}};
+
+
+handle_call({unsubscribe, Channel, CState}, _F, S) ->
+    Chans = del_chan_subscriber(CState, Channel, S#state.chans),
+    {reply, ok, S#state{chans = Chans}};
+
+
+
+handle_call({client_disconnect, CState}, _F, S) ->
+    Chans = del_subscriber(CState, S#state.chans),
+    {reply, ok, S#state{chans = Chans}};
 
 handle_call(dump, _F, S) ->
-    {reply, S, S};
-
-handle_call({send, Msg}, _F, S) ->
-    lists:foreach(fun(#client_state{module = CMod} = ClientState) ->
-        spawn(fun() -> CMod:send(ClientState, Msg) end)
-    end, S),
     {reply, S, S};
 
 handle_call(_R, _F, S) ->
@@ -86,8 +177,34 @@ handle_call(_R, _F, S) ->
     {reply, error, S}.
 
 % CAST
-handle_cast({new_subscriber, ClientState}, S) ->
-    {noreply, [ClientState | S]};
+% called by himself
+handle_cast({unicast, #client_state{module = CMod} = CState, Perm, Pdu}, 
+    #state{acctrl = AcctrlMod} = S) ->
+    io:format("acctrl is ~p~n", [AcctrlMod]),
+    case AcctrlMod:satisfy(read, [CState], Perm) of
+        {ok, []} ->
+            {noreply, S};
+        {ok, [CState]} ->
+            CMod:send(CState, Pdu),
+            {noreply, S}
+    end;
+
+handle_cast({multicast, Chan, Perm, Pdu}, 
+        #state{chans = Chans, acctrl = AcctrlMod} = S) ->
+    % the chan have allready been initialized?
+    case lists:keyfind(Chan, 1, Chans) of
+        % no do nothing
+        false -> ok;
+        % yes do:
+        {Chan, CList} ->
+            % take the list of clients wich satisfy Perm
+            {ok, Clients} = AcctrlMod:satisfy(read, CList, Perm),
+            % and send them the message
+            lists:foreach(fun(#client_state{module = Mod} = CS) ->
+                Mod:send(CS, Pdu)
+            end, Clients)
+    end,
+    {noreply, S};
 
 handle_cast(_R, S) ->
     io:format("handle_cast ~p~p~n", [?MODULE, _R]),
@@ -102,3 +219,40 @@ terminate(_R, _S) ->
 
 code_change(_O, S, _E) ->
     {ok, S}.
+
+
+
+
+
+
+
+% PRIVATE
+new_chan_subscriber(CState, Channel, Chans) ->
+    % does the chan allready exist?
+    case lists:keyfind(Channel, 1, Chans) of
+        false ->
+            % then create it
+            NewChan = {Channel, [CState]},
+            % return the new chan list
+            [NewChan |Chans];
+        {Channel, CList} ->
+            % then add the new client
+            NewChan = {Channel, [CState | CList]},
+            % return a new Chans list with updated tuple
+            lists:keyreplace(Channel, 1, Chans, NewChan)
+    end.
+            
+del_chan_subscriber(CState, Channel, Chans) ->
+    case lists:keyfind(Channel, 1, Chans) of
+        false ->
+            Chans;
+        {Channel, CList} ->
+            NewChan = {Channel, lists:delete(CState, CList)},
+            lists:keyreplace(Channel, 1, Chans, NewChan)
+    end.
+
+del_subscriber(CState, Chans) ->
+    lists:foldl(fun({Id, CList}, Acc) ->
+        N = lists:delete(CState, CList),
+        [{Id, N} | Acc]
+    end, [], Chans).

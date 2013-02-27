@@ -34,15 +34,12 @@
 
 -export([
     start_link/1,
-    which_modules/0,
     client_msg/2,
     dump/0
 ]).
 
 -record(state, {
-    modules,
-    auth_mod,
-    acctrl_mod
+    auth_mod
 }).
  
 
@@ -54,17 +51,13 @@ start_link(ServerConf) ->
     gen_server:start_link({local, ?MODULE}, ?MODULE, ServerConf, []).
 
 
-% API FROM MODULES
-which_modules() ->
-    gen_server:call(?MODULE, {get, modules_name}).
-
 which_auth() ->
     gen_server:call(?MODULE, {get, auth_mod}).
 
 
 % API FROM CLIENTS
 client_msg(Msg, ClientState) ->
-    io:format("RECEIVED: ~p~n", [Msg]),
+    io:format("~p RECEIVED: ~p~n", [?MODULE, Msg]),
     handle_client_msg(Msg, ClientState).
 
 % DEBUG
@@ -76,39 +69,12 @@ dump() ->
 %% GEN_SERVER CALLBACKS
 %%-------------------------------------------------------------
 % @private
-init({AuthModule, AcctrlMod, IfsModules}) ->
-    Ret = lists:foldl(fun({
-            ModName,
-            Callback, 
-            AsnKey, 
-            StaticChan, 
-            Perm}, ModList) ->
-        [
-            #ifs_module{
-                name            = ModName,
-                callback        = Callback, 
-                asnkey          = AsnKey, 
-                static_chan     = StaticChan,
-                perm            = Perm
-            }  | ModList
-        ]
-    end, [], IfsModules),
-    {ok, #state{
-            modules     = Ret,
-            auth_mod    = AuthModule,
-            acctrl_mod  = AcctrlMod
-        }
-    }.
+init(AuthModule) ->
+    {ok, #state{auth_mod = AuthModule}}.
 
 % @private
 handle_call(dump, _F, S) ->
     {reply, S, S};
-
-handle_call({get, modules_name}, _F, #state{modules = Mods} = S) ->
-    ModNames = lists:foldl(fun(#ifs_module{name = Name}, ModList) ->
-        [Name | ModList]
-    end, [], Mods),
-    {reply, ModNames, S};
 
 handle_call({get, auth_mod}, _F, #state{auth_mod = AuthMod} = S) ->
     {reply, AuthMod, S};
@@ -139,13 +105,11 @@ code_change(_O, S, _E) ->
 
 % CLIENT CALL
 % @private
-handle_client_msg(connect, #client_state{module = Module} = ClientState) ->
-    Module:send(ClientState, pdu(authReq, ldap));
+handle_client_msg(connect, ClientState) ->
+    send(ClientState, pdu(authReq, ldap));
 
 handle_client_msg(disconnect, ClientState) ->
-    lists:foreach(fun(Mod) ->
-        gen_server:call(?MODULE, {unsubscribe, Mod, ClientState}) 
-    end, which_modules());
+    ifs_mpd:client_disconnect(ClientState);
 
 handle_client_msg(
         {message, 
@@ -159,20 +123,37 @@ handle_client_msg(
     AuthMod = which_auth(),
     case AuthMod:authenticate(Name, Password) of
         {ok, Groups} ->
-            AllowedChans = [],
-            CMod:auth_set(success, ClientState, Name, Groups, AllowedChans),
-            CMod:send(ClientState,pdu(authAck, {Groups, AllowedChans}));
+            MainChans = ifs_mpd:main_chans(),
+            CMod:auth_set(success, ClientState, Name, Groups, MainChans),
+            send(ClientState,pdu(authAck, {Groups, MainChans}));
         fail    ->
-            CMod:send(ClientState, pdu(authErr, {Name, Password}))
+            send(ClientState, pdu(authErr, {Name, Password}))
     end;
 
 handle_client_msg(
         {message, 
             {modIfPDU, 
                 {fromClient,
-                    { Other
-        }   }   }   }, _) ->
-    io:format("received ~p~n", [Other]).
+                    {subscribe,
+                        Channel
+        }   }   }   }, CState) ->
+    Chan = erlang:list_to_atom(Channel),
+    case ifs_mpd:subscribe_stage1(Chan, CState) of
+        error ->
+            send(CState, pdu(subscribeErr, Channel));
+        ok ->
+            send(CState, pdu(subscribeOk, Channel)),
+            ifs_mpd:subscribe_stage2(Chan,CState)
+    end;
+            
+
+handle_client_msg(
+        {message, 
+            {modIfPDU, 
+                {fromClient,
+                    Other
+        }   }   }, _) ->
+    io:format("~p RECEIVED UNKNOWN ~p~n", [?MODULE, Other]).
 
 
 % server PDUs
@@ -235,3 +216,8 @@ pdu(chanInfo, {Module, Channel, Type}) ->
                     Module,
                     Channel,
                     Type }}}}.
+
+
+send(#client_state{module = CMod} = ClientState, Msg) ->
+    io:format("~p SENDING ~p~n", [?MODULE, Msg]),
+    CMod:send(ClientState, Msg).

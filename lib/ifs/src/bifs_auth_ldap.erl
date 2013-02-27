@@ -47,6 +47,9 @@ authenticate(UName, UPass) ->
         {"admuser", "passwd"} ->
             Roles = ["admin","wheel"],
             {ok, Roles};
+        {"stduser", "passwd"} ->
+            Roles = ["users","wheel"],
+            {ok, Roles};
         _ ->
             fail
     end.

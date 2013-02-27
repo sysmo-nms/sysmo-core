@@ -49,7 +49,8 @@
     new_event/3,
     update_rrd_file/2,
     subscribe/2,
-    unsubscribe/1
+    unsubscribe/1,
+    close_chan/1
 ]).
 
 -record(chan_state, {
@@ -116,6 +117,9 @@ subscribe(TargetId, Client) ->
 unsubscribe(TargetId) ->
     gen_server:call(TargetId, {one_subscriber_less}).
 
+-spec close_chan(target_id()) -> ok.
+close_chan(TargetId) ->
+    gen_server:call(TargetId, terminate).
 %%-------------------------------------------------------------
 %% GEN_SERVER CALLBACKS
 %%-------------------------------------------------------------
@@ -130,7 +134,7 @@ init([RootRrdDir, #target{
     % general logging
     gen_event:notify(tracker_events, {?MODULE, init, Id}),
     % ifs related
-    ok = tracker_ifs_channel:chan_add({Id, Perm}),
+    ok = tracker_master_channel:chan_add({Id, Perm}),
     % rrd server
     RrdTargetDir = filename:join(RootRrdDir, atom_to_list(Id)),
     ok = rrd_dir_exist(RrdTargetDir),
@@ -172,6 +176,9 @@ handle_call(launch_probes, _F, #chan_state{target = Target} = S) ->
     end, [], Probes),
     {reply, ok, S#chan_state{probes_store = ProbesStore}};
 
+handle_call(terminate, _F, S) ->
+    {stop, ok, normal, S};
+
 handle_call(_R, _F, S) ->
     {noreply, S}.
 
@@ -206,9 +213,9 @@ handle_info(_I, S) ->
     {noreply, S}.
 
 % @private
-terminate(_R, #chan_state{target = Target} = _S) ->
-    ok = tracker_ifs_channel:chan_del(Target#target.id),
-    normal.
+terminate(R, #chan_state{target = Target} = _S) ->
+    ok = tracker_master_channel:chan_del(Target#target.id),
+    R.
 
 % @private
 code_change(_O, S, _E) ->
@@ -268,7 +275,7 @@ probe_event(_A,_B,C) ->
 % Will log everything and also to ifs if #chan_state.subscribers_count > 0
 % @end
 notify(Type, {'OK',Val} = Msg, #chan_state{subscriber_count = 0} = Chan, Probe) ->
-    ifs_mpd:handle_msg(
+    ifs_mpd:multicast_msg(Chan#chan_state.chan_id,
         {modTrackerPDU,
             {fromServer,
                 {probeInfo, 
@@ -281,7 +288,7 @@ notify(Type, {'OK',Val} = Msg, #chan_state{subscriber_count = 0} = Chan, Probe) 
             {Chan#chan_state.chan_id, Probe#probe.id}});
 
 notify(Type, {'RECOVERY',Val} = Msg, #chan_state{subscriber_count = 0} = Chan, Probe) ->
-    ifs_mpd:handle_msg(
+    ifs_mpd:multicast_msg(Chan#chan_state.chan_id,
         {modTrackerPDU,
             {fromServer,
                 {probeInfo, 

@@ -29,6 +29,10 @@
 
 -spec satisfy(read | write, [#client_state{}], #perm_conf{}) -> 
         {ok, [#client_state{}]}.
+% @doc
+% Givent a list of client and a perm conf, return a list of allowed
+% clients or an empty list.
+% @end
 satisfy(read, ClientList, #perm_conf{read = ReadList}) ->
     {ok, satisfy_pass(ReadList, ClientList, [])};
 satisfy(write, ClientList, #perm_conf{write = WriteList}) ->
@@ -63,6 +67,8 @@ satisfy_bool([R | RoleListOne], RoleListTwo) ->
 satisfy_test() ->
     Ca = #client_state{user_roles = ["roleA", "roleC", "roleX"]},
     Cb = #client_state{user_roles = ["roleB", "roleC"]},
+    ?assertMatch({ok, [Ca]},
+        satisfy(read, [Ca],    #perm_conf{read = ["roleA", "roleD"]})),
     ?assertMatch({ok, [Ca]},
         satisfy(read, [Ca,Cb], #perm_conf{read = ["roleA", "roleD"]})),
     ?assertMatch({ok, [Cb]},    

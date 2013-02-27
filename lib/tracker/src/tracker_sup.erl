@@ -43,12 +43,12 @@ init([GenEventListeners, DbDir, RrdDir]) ->
                     dynamic
                 },
                 {
-                    tracker_ifs_channel,
-                    {tracker_ifs_channel, start_link, []},
+                    tracker_master_channel,
+                    {tracker_master_channel, start_link, []},
                     permanent,
                     2000,
                     worker,
-                    [tracker_ifs_channel]
+                    [tracker_master_channel]
                 },
                 {
                     tracker_target_store,

@@ -33,6 +33,10 @@ clean:
 clifs:
 	@$(ERL) -pa ebin -eval \
  'clifs:s(), timer:sleep(500), clifs:adm()'
+
+clifs2:
+	@$(ERL) -pa ebin -eval \
+ 'clifs:s(), timer:sleep(500), clifs:std()'
 # ASN PDUs
 ASN_DEFS    = $(shell find priv/asn1 -name "*.asn")
 ASN_DEST    = $(patsubst priv/asn1/%.asn, ebin/%.beam, $(ASN_DEFS))

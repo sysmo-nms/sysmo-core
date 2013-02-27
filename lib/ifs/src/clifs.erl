@@ -34,7 +34,7 @@
 -record(clifs_state, {
             sock,
             roles =  [],
-            static_chans = [],
+            chans = [],
             user_name
         }).
 
@@ -51,6 +51,9 @@ log_in(UserName, PassWord) ->
 % shortcut
 adm() ->
     gen_server:cast(?MODULE, {log_in, "admuser", "passwd"}).
+
+std() ->
+    gen_server:cast(?MODULE, {log_in, "stduser", "passwd"}).
 
 % subscribe to module
 subscribe(Modules) ->
@@ -127,11 +130,10 @@ handle_cast({modIfPDU, {fromServer, {authReq, ldap}}}, S) ->
 handle_cast({modIfPDU, {fromServer, {authAck, 
         {'AuthAck', Roles, StaticChans}}}}, S) ->
     % subscribe to all static chans
-    io:format("lllllllllllllllllllllaaaaaaaaaaaa~n"),
     lists:foreach(fun({_,X,_}) ->
-        send_pdu({modIfPDU, {fromClient, {staticSubscribe, X}}}, S)
+        send_pdu({modIfPDU, {fromClient, {subscribe, X}}}, S)
     end, StaticChans),
-    {noreply, S#clifs_state{roles = Roles, static_chans = StaticChans}};
+    {noreply, S#clifs_state{roles = Roles, chans = StaticChans}};
 
 
 %% DEFAULT

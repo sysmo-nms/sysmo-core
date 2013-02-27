@@ -54,17 +54,11 @@ IfPDU ::= CHOICE {
         subscribeErr    [6] Module,
         unsubscribeOk   [7] Module,
         unsubscribeErr  [8] Module,
-        staticSubscribeOk     [9]   Chan,
-        staticSubscribeErr    [10]  Chan,
-        staticUnsubscribeOk   [11]  Chan,
-        staticUnsubscribeErr  [12]  Chan,
         ...
     },
     fromClient  [1] CHOICE {
         subscribe       [0] Chan,
         unsubscribe     [1] Chan,
-        staticSubscribe     [2] Chan,
-        staticUnsubscribe   [3] Chan,
         authResp        [4] AuthResp,
         ...
     }

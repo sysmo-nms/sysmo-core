@@ -18,10 +18,9 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
-% @doc
-% @end
--module(tracker_ifs_channel).
+-module(tracker_master_channel).
 -behaviour(gen_server).
+-behaviour(gen_channel).
 -include("../include/tracker.hrl").
 
 -export([
@@ -39,6 +38,10 @@
     chan_del/1
 ]).
 
+-record(state, {
+    chans,
+    perm
+}).
 %%-------------------------------------------------------------
 %% API
 %%-------------------------------------------------------------
@@ -52,14 +55,20 @@ start_link() ->
 %% API for the tracker_target_channel modules
 %%-------------------------------------------------------------
 -spec chan_add({target_id(), #perm_conf{}}) -> ok.
+% @doc
+% Called by a target_channel at initialisation stage.
+% @end
 chan_add({Id, Perm}) ->
     chan_update({Id, Perm}).
-
 -spec chan_update({target_id(), #perm_conf{}}) -> ok.
 chan_update({Id, Perm}) ->
     gen_server:call(?MODULE, {chan_update, Id, Perm}).
     
+
 -spec chan_del(target_id()) -> ok.
+% @doc
+% Called by a target_channel at termination stage.
+% @end
 chan_del(Id) ->
     gen_server:call(?MODULE, {chan_del, Id}).
 
@@ -68,35 +77,66 @@ chan_del(Id) ->
 %%-------------------------------------------------------------
 % @private
 init([]) ->
-    {ok, []}.
+    {ok, #state{
+            chans = [],
+            perm = #perm_conf{
+                read = ["admin", "wheel"],
+                write = ["admin"]
+            }
+        }
+    }.
         
     
-handle_call({chan_update, Id, Perm}, _F, S) ->
-    case lists:keyfind(Id, 1, S) of
+handle_call({chan_update, Id, Perm}, _F, #state{chans = C} = S) ->
+    case lists:keyfind(Id, 1, C) of
         false ->
-            {reply, ok, [{Id, Perm} | S]};
+            {reply, ok, S#state{
+                    chans = [{Id, Perm} | C]
+                }
+            };
         _ ->
-            {reply, ok, lists:keyreplace(Id, 1, S, {Id, Perm})}
+            {reply, ok, 
+                S#state{
+                    chans = lists:keyreplace(Id, 1, C, {Id, Perm})
+                }
+            }
     end;
 
-handle_call({chan_del, Id}, _F, S) ->
-    {reply, ok, lists:keydelete(Id, 1, S)};
+handle_call({chan_del, Id}, _F, #state{chans = C} = S) ->
+    {Id, Perm} = lists:keyfind(Id, 1, C),
+    ifs_mpd:multicast_msg(?MODULE, {Perm, pdu(targetDelete, Id)}),
+    {reply, ok, S#state{chans = lists:keydelete(Id, 1, C)}};
 
-handle_call(_R, _F, S) ->
-    {noreply, S}.
+
+
+
+
+
+
 %%-------------------------------------------------------------
+%% These calls are used by the gen_channel behaviour module
+%%-------------------------------------------------------------
+% Called by ifs_mpd via gen_channel to allow or not a client to subscribe in 
+% regard of the result after applying beha_ifs_ctrl:satisfy/3.
+handle_call(get_perms, _F, #state{perm = P} = S) ->
+    {reply, P, S}.
+
 % HANDLE_CAST
-%%-------------------------------------------------------------
+handle_cast({synchronize, CState}, #state{chans = Chans} = S) ->
+    dump_known_data(CState, Chans),
+    {noreply, S};
+
+
+
+
+
+
+
 handle_cast(_R, S) ->
     {noreply, S}.
 
-
 % OTHER
 % @private
-handle_info({ifs_subscribe, ClientState}, S) ->
-    dump_known_data(ClientState, S),
-    {noreply, S};
-
 handle_info(I, S) ->
     io:format("handle_info ~p ~p ~p~n", [?MODULE, I, S]),
     {noreply, S}.
@@ -109,13 +149,16 @@ terminate(_R, _S) ->
 code_change(_O, S, _E) ->
     {ok, S}.
 
-dump_known_data(#client_state{module = CMod} = ClientState, S) ->
-    io:format("~p ~p~n", [ClientState,S]),
-    lists:foreach(fun({TargetId,_}) ->
+
+
+%% PRIVATE FUNS
+dump_known_data(ClientState, Chans) ->
+    lists:foreach(fun({TargetId, Perm}) ->
         spawn(fun() ->
-            CMod:send(ClientState, pdu(targetInfo, TargetId))
+            ifs_mpd:unicast_msg(ClientState, 
+                {Perm, pdu(targetInfo, TargetId)})
         end)
-    end, S).
+    end, Chans).
 
 pdu(targetInfo, Id) ->
     {modTrackerPDU,
@@ -123,10 +166,13 @@ pdu(targetInfo, Id) ->
             {targetInfo,
                 {'TargetInfo',
                     atom_to_list(Id),
-                    create}}}}.
-    
+                    create}}}};
 
-
-
-
+pdu(targetDelete, Id) ->
+    {modTrackerPDU,
+        {fromServer,
+            {targetInfo,
+                {'TargetInfo',
+                    atom_to_list(Id),
+                    delete}}}}.
 

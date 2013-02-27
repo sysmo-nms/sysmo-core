@@ -18,29 +18,12 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
-%% @doc
-%% A module using this behaviour can be used by <em>ifs</em> to
-%% authenticate clients.
-%% 
-%% == authenticate/2 ==
-%%
-%% The only function to be exported is <em>authenticate/2</em>.
-%%
-%% <code>
-%% authenticate(Uname, UPass) -> Roles | fail
-%% <br></br>
-%% Roles = list of Role,<br></br>
-%% Role  = string,<br></br>
-%% Uname = string,<br></br>
-%% UPass = string,<br></br>
-%% </code>
-%% @end
 -module(beha_ifs_channel).
 -export([behaviour_info/1]).
 
 behaviour_info(callbacks) ->
     [
-        {}
+        {perm, 0}
     ];
 
 behaviour_info(_) ->

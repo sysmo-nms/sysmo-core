@@ -68,8 +68,8 @@
     ip          = undefined     :: ip_add(),
     hostname    = undefined     :: hostname(),
     global_perm = #perm_conf{
-            read = "admin",
-            write = "admin"
+            read = ["admin"],
+            write = ["admin"]
         }                       :: #perm_conf{},
     probes      = [
         #probe{                     % initial btracker_probe_icmp_echo()
