@@ -56,18 +56,11 @@ std() ->
     gen_server:cast(?MODULE, {log_in, "stduser", "passwd"}).
 
 % subscribe to module
-subscribe(Modules) ->
-    gen_server:cast(?MODULE, {subscribe, Modules}).
+subscribe(Module) ->
+    gen_server:cast(?MODULE, {subscribe, Module}).
 
-unsubscribe(Modules) ->
-    gen_server:cast(?MODULE, {unsubscribe, Modules}).
-
-% subscribe to module
-subscribe_chan(Mod, Chan) ->
-    gen_server:cast(?MODULE, {subscribe_chan, Mod, Chan}).
-
-unsubscribe_chan(Mod, Chan) ->
-    gen_server:cast(?MODULE, {unsubscribe_chan, Mod, Chan}).
+unsubscribe(Module) ->
+    gen_server:cast(?MODULE, {unsubscribe, Module}).
 
 add_v2_agent(Ip, Community) ->
     gen_server:cast(?MODULE, {add_v2_agent, Ip, Community}).
@@ -98,22 +91,12 @@ handle_cast({log_in, UserName, PassWord}, S) ->
                 {'AuthResp', UserName, PassWord}}}}, S),
     {noreply, S};
 
-handle_cast({subscribe, Modules}, S) ->
-    send_pdu({modIfPDU, {fromClient, {subscribe, Modules}}}, S),
+handle_cast({subscribe, Module}, S) ->
+    send_pdu({modIfPDU, {fromClient, {subscribe, Module}}}, S),
     {noreply, S};
 
 handle_cast({unsubscribe, Modules}, S) ->
     send_pdu({modIfPDU, {fromClient, {unsubscribe, Modules}}}, S),
-    {noreply, S};
-
-handle_cast({subscribe_chan, Module, Chan}, S) ->
-    send_pdu({modIfPDU, {fromClient, 
-        {subscribeChan, {'ChanId', Module, Chan}}}}, S),
-    {noreply, S};
-
-handle_cast({unsubscribe_chan, Module, Chan}, S) ->
-    send_pdu({modIfPDU, {fromClient, 
-        {unsubscribeChan, {'ChanId', Module, Chan}}}}, S),
     {noreply, S};
 
 % snmpPDU
@@ -135,6 +118,10 @@ handle_cast({modIfPDU, {fromServer, {authAck,
     end, StaticChans),
     {noreply, S#clifs_state{roles = Roles, chans = StaticChans}};
 
+handle_cast({modTrackerPDU, {fromServer, {probeDump, 
+    {'ProbeDump', Info, _BinFile}}}}, S) ->
+    io:format("trackerpdu probeDump ~p~n", [Info]),
+    {noreply, S};
 
 %% DEFAULT
 handle_cast(Any, S) ->
@@ -145,7 +132,7 @@ handle_cast(Any, S) ->
 %% INFO
 handle_info({ssl, _, BinPdu}, S) ->
     {ok, AsnPdu} = 'NmsPDU':decode('PDU', BinPdu),
-    io:format("RECEIVED: ~p~n",[AsnPdu]),
+    %io:format("RECEIVED: ~p~n",[AsnPdu]),
     gen_server:cast(?MODULE, AsnPdu),
     {noreply, S};
 

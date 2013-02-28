@@ -37,6 +37,7 @@
     unicast_msg/2,
     subscribe_stage1/2,
     subscribe_stage2/2,
+    subscribe_stage3/2,
     unsubscribe/2,
     main_chans/0,
     client_disconnect/1,
@@ -49,6 +50,9 @@
     main_chans,
     chans
 }).
+
+-define(CHAN_TIMEOUT, 1000).
+
 %%-------------------------------------------------------------
 %% API
 %%-------------------------------------------------------------
@@ -78,16 +82,41 @@ main_chans() ->
 % subscribeOk to the client.
 % @end
 subscribe_stage1(Channel, CState) ->
-    Perm = gen_channel:call(Channel, get_perms),
-    gen_server:call(?MODULE, {subscribe_stage1, Channel, CState, Perm}).
+    try gen_channel:call(Channel, get_perms, ?CHAN_TIMEOUT) of
+        Perm ->
+            gen_server:call(?MODULE, {subscribe_stage1, Channel, CState, Perm})
+        catch
+            _:_ ->
+                error
+    end.
+
 
 -spec subscribe_stage2(atom(), #client_state{}) -> ok.
 % @doc
-% Called by ifs_server after a ifs_mpd:subscribe/2 success.
-% In fact, the client will really be subscribed here.
+% Called by ifs_server after a ifs_mpd:subscribe_stage1/2 success. The call
+% will trigger a subscribe_stage3/2 called by the channel. sync sync.
 % @end
 subscribe_stage2(Channel, CState) ->
-    gen_server:call(?MODULE, {subscribe_stage2, Channel, CState}).
+    case gen_server:call(?MODULE, {client_is_registered, Channel, CState}) of
+        true    -> 
+            %client allready registered do nothing
+            ok;
+        false   ->
+            try gen_channel:call(Channel, {synchronize, CState}) of
+                ok ->
+                    ok
+                catch
+                    _:_ -> error
+            end
+    end.
+
+-spec subscribe_stage3(atom(), #client_state{}) -> ok.
+% @doc
+% Called by a channel after a ifs_mpd:subscribe_stage2/2 success.
+% In fact, the client will really be subscribed here by the channel.
+% @end
+subscribe_stage3(Channel, CState) ->
+    gen_server:call(?MODULE, {subscribe_stage3, Channel, CState}).
 
 -spec multicast_msg(atom(), {#perm_conf{}, tuple()}) -> ok.
 % @doc
@@ -143,7 +172,15 @@ init({AcctrlMod, PduDispatch, MainChan}) ->
 handle_call(main_chans, _F, #state{main_chans = Chans} = S) ->
     {reply, Chans, S};
 
-
+handle_call({client_is_registered, Chan, CState}, _F, 
+        #state{chans = Chans} = S) ->
+    case lists:keyfind(Chan, 1, Chans) of
+        {Chan, CList} ->
+            io:format("chan is found!!!!!!!!!!!!!!!!!!!!~n"),
+            {reply, lists:member(CState, CList), S};
+        false ->
+            {reply, false, S}
+    end;
 
 handle_call({subscribe_stage1, _Channel, CState, PermConf},  _F, 
         #state{acctrl = Acctrl} = S) ->
@@ -153,13 +190,14 @@ handle_call({subscribe_stage1, _Channel, CState, PermConf},  _F,
         {ok, [CState]} ->
             {reply, ok, S}
     end;
-handle_call({subscribe_stage2, Channel, CState}, _F, S) ->
-    gen_channel:cast(Channel, {synchronize, CState}),
+% subscribe_stage2/2 do not use the server
+handle_call({subscribe_stage3, Channel, CState}, _F, S) ->
     Chans = new_chan_subscriber(CState, Channel, S#state.chans),
     {reply, ok, S#state{chans = Chans}};
 
 
 handle_call({unsubscribe, Channel, CState}, _F, S) ->
+    io:format("~p call unsubscribe~n", [?MODULE]),
     Chans = del_chan_subscriber(CState, Channel, S#state.chans),
     {reply, ok, S#state{chans = Chans}};
 
@@ -194,15 +232,20 @@ handle_cast({multicast, Chan, Perm, Pdu},
     % the chan have allready been initialized?
     case lists:keyfind(Chan, 1, Chans) of
         % no do nothing
-        false -> ok;
-        % yes do:
+        false -> 
+            %io:format("fffffffffalse ~p~n", [Chan]), 
+            ok;
+        % yes but is empty do nothing
+        {Chan, []} ->
+            ok;
+        % yes then filter with satisfy:
         {Chan, CList} ->
             % take the list of clients wich satisfy Perm
-            {ok, Clients} = AcctrlMod:satisfy(read, CList, Perm),
+            {ok, AllowedCL} = AcctrlMod:satisfy(read, CList, Perm),
             % and send them the message
             lists:foreach(fun(#client_state{module = Mod} = CS) ->
                 Mod:send(CS, Pdu)
-            end, Clients)
+            end, AllowedCL)
     end,
     {noreply, S};
 

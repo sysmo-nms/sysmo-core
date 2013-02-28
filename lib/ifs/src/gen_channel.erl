@@ -56,7 +56,9 @@
 -export([
     behaviour_info/1,
     call/2,
-    cast/2
+    call/3,
+    cast/2,
+    cast/3
 ]).
 
 behaviour_info(callbacks) ->
@@ -68,5 +70,11 @@ behaviour_info(_) ->
 call(Channel, Msg) ->
     gen_server:call(Channel, Msg).
 
+call(Channel, Msg, Timeout) ->
+    gen_server:call(Channel, Msg, Timeout).
+
 cast(Channel, Msg) ->
     gen_server:cast(Channel, Msg).
+
+cast(Channel, Msg, Timeout) ->
+    gen_server:cast(Channel, Msg, Timeout).

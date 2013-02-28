@@ -77,8 +77,8 @@
             name = "probe_icmp_echo",
             type = fetch,
             permissions =   #perm_conf{
-                                read = "admin",
-                                write = "admin"
+                                read = ["admin"],
+                                write = ["admin"]
                             },
             %mod = fun(X) -> btracker_probe_icmp_echo:exec(X) end,
             tracker_probe_mod = btracker_probe_icmp_echo,

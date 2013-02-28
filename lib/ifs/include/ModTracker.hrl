@@ -8,6 +8,9 @@
 -record('ProbeInfo',{
 channel, probe, type, value}).
 
+-record('ProbeDump',{
+probe, rrdfile}).
+
 -record('TargetInfo',{
 channel, type}).
 

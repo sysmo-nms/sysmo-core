@@ -28,6 +28,8 @@
 %   to this channel</li>
 %   <li> add, remove probes</li>
 %   <li> keep his tracker_target_store record in sync</li>
+%   <li> notify tracker_master_channel of general status wich allow non
+%   subscribers of the channel to have basic informations (ex: status)</li>
 % </ul>
 % </p>
 % @end
@@ -49,8 +51,8 @@
     new_event/3,
     update_rrd_file/2,
     subscribe/2,
-    unsubscribe/1,
-    close_chan/1
+    close_chan/1,
+    dump/1
 ]).
 
 -record(chan_state, {
@@ -58,7 +60,8 @@
     subscriber_count,
     target,
     probes_store,
-    rrd_server
+    rrd_server,
+    rrd_dir
 }).
 
 %%-------------------------------------------------------------
@@ -68,7 +71,7 @@
 -spec start_link(string(), #target{}) -> 
         {ok, pid()} | ignore | {error, any()}.
 % @doc
-% Start the server.
+% Start the server. Args must be the rrd data root dir and a target record.
 % @end
 start_link(RrdDir, #target{id = Id} = Target) ->
     gen_server:start_link({local, Id}, ?MODULE, [RrdDir, Target], []).
@@ -77,7 +80,8 @@ start_link(RrdDir, #target{id = Id} = Target) ->
 % @private
 -spec launch_probes(target_id()) -> ok | {error, any()}.
 % @doc
-% Once the server running, call him to initialize his probes.
+% Once the server running, call him to initialize his probes. This is done
+% by the "init_probes" phase of the traget_app module.
 % @end
 launch_probes(Id) ->
     gen_server:call(Id, launch_probes).
@@ -88,9 +92,10 @@ launch_probes(Id) ->
 % Called by one of the tracker_probes belonging to the tracker_target_channel
 % identified by Self.
 % @end
-new_event(Self, ProbePid, Message) ->
-    gen_server:cast(Self, {tracker_probe, ProbePid, Message}).
+new_event(Chan, ProbePid, Message) ->
+    gen_server:cast(Chan, {tracker_probe, ProbePid, Message}).
 
+-spec update_rrd_file(pid(), tuple()) -> ok.
 update_rrd_file(Server, RRD_update) ->
     gen_server:cast(Server, {rrd_update, RRD_update}).
 
@@ -103,23 +108,18 @@ update_rrd_file(Server, RRD_update) ->
 % - dump every informations pending,
 % - send all target related data to client,
 % - unlock the server
-% All this must be done in a single gen_server:call()
+% All this can be done by using a single gen_server:call()
 % @end
 subscribe(TargetId, Client) ->
     gen_server:call(TargetId, {new_subscriber, Client}).
 
--spec unsubscribe(target_id()) -> ok.
-% @doc
-% ifs module related.
-% TODO: Decrease the #chan_state.subscriber_count by 1. When the result = 0
-% messages from this channel will no more be forwarded to ifs.
-% @end
-unsubscribe(TargetId) ->
-    gen_server:call(TargetId, {one_subscriber_less}).
-
 -spec close_chan(target_id()) -> ok.
 close_chan(TargetId) ->
     gen_server:call(TargetId, terminate).
+
+-spec dump(target_id()) -> #chan_state{}.
+dump(Id) ->
+    gen_server:call(Id, dump).
 %%-------------------------------------------------------------
 %% GEN_SERVER CALLBACKS
 %%-------------------------------------------------------------
@@ -158,7 +158,8 @@ init([RootRrdDir, #target{
             subscriber_count    = 0,
             target              = Target,
             probes_store        = [],
-            rrd_server          = Pid
+            rrd_server          = Pid,
+            rrd_dir             = RrdTargetDir
         }
     }.
 
@@ -176,8 +177,39 @@ handle_call(launch_probes, _F, #chan_state{target = Target} = S) ->
     end, [], Probes),
     {reply, ok, S#chan_state{probes_store = ProbesStore}};
 
+% this call is used by ifs_mpd only, without API.
+handle_call(get_perms, _F, #chan_state{target = Target} = S) ->
+    {reply, Target#target.global_perm, S};
+
+handle_call({synchronize, CState}, _F, 
+        #chan_state{
+            target = Target,
+            chan_id = ChanId,
+            rrd_dir = RrdDir} = S) ->
+    % - send all datas to client then
+    lists:foreach(fun(Probe) ->
+        case Probe#probe.type of
+            fetch ->
+                %io:format("ici ~p~n", [pdu(probe_dump, Probe, ChanId)]),
+                ifs_mpd:unicast_msg(CState, {
+                    Probe#probe.permissions,
+                    pdu(probe_dump, Probe, ChanId, RrdDir)
+                });
+            status ->
+                ok
+        end
+    end, Target#target.probes),
+    % - ifs_mpd:subscribe_stage3/2 then
+    io:format("ChanId is ~p~n", [ChanId]),
+    ifs_mpd:subscribe_stage3(ChanId, CState),
+    {reply, ok, S};
+
+handle_call(dump, _F, S) ->
+    {reply, S, S};
+
 handle_call(terminate, _F, S) ->
-    {stop, ok, normal, S};
+    {stop, normal, ok, S};
+
 
 handle_call(_R, _F, S) ->
     {noreply, S}.
@@ -251,7 +283,8 @@ probe_event(Chan, #probe{type = status} = Probe, {'RECOVERY', _} = Msg) ->
 
 probe_event(Chan, #probe{type = fetch, rrd_update = RUpdate} = Probe, 
         {'RECOVERY', Val} = Msg) ->
-    tracker_target_channel:update_rrd_file(Chan#chan_state.chan_id, RUpdate(Val)),
+    tracker_target_channel:update_rrd_file(
+            Chan#chan_state.chan_id, RUpdate(Val)),
     notify(fetch, Msg, Chan, Probe);
 
 probe_event(Chan, #probe{type = status} = Probe, {'OK', _} = Msg) ->
@@ -259,7 +292,8 @@ probe_event(Chan, #probe{type = status} = Probe, {'OK', _} = Msg) ->
 
 probe_event(Chan, #probe{type = fetch, rrd_update = RUpdate} = Probe, 
         {'OK', Val} = Msg) ->
-    tracker_target_channel:update_rrd_file(Chan#chan_state.chan_id, RUpdate(Val)),
+    tracker_target_channel:update_rrd_file(
+            Chan#chan_state.chan_id, RUpdate(Val)),
     notify(fetch, Msg, Chan, Probe);
 
 probe_event(Chan, Probe, {'UNKNOWN', _} = Msg) ->
@@ -274,8 +308,10 @@ probe_event(_A,_B,C) ->
 % @doc
 % Will log everything and also to ifs if #chan_state.subscribers_count > 0
 % @end
-notify(Type, {'OK',Val} = Msg, #chan_state{subscriber_count = 0} = Chan, Probe) ->
-    ifs_mpd:multicast_msg(Chan#chan_state.chan_id,
+notify(Type, {'OK',Val} = Msg, 
+        #chan_state{subscriber_count = 0} = Chan, 
+        #probe{permissions = Perm} = Probe) ->
+    ifs_mpd:multicast_msg(Chan#chan_state.chan_id, {Perm,
         {modTrackerPDU,
             {fromServer,
                 {probeInfo, 
@@ -283,20 +319,22 @@ notify(Type, {'OK',Val} = Msg, #chan_state{subscriber_count = 0} = Chan, Probe) 
                         atom_to_list(Chan#chan_state.chan_id),
                         Probe#probe.id,
                         Type,
-                        Val }}}}),
+                        Val }}}}}),
     gen_event:notify(tracker_events, {tracker_probe, Type, Msg,
             {Chan#chan_state.chan_id, Probe#probe.id}});
 
-notify(Type, {'RECOVERY',Val} = Msg, #chan_state{subscriber_count = 0} = Chan, Probe) ->
-    ifs_mpd:multicast_msg(Chan#chan_state.chan_id,
-        {modTrackerPDU,
-            {fromServer,
-                {probeInfo, 
-                    {'ProbeInfo',
-                        atom_to_list(Chan#chan_state.chan_id),
-                        Probe#probe.id,
-                        Type,
-                        Val }}}}),
+notify(Type, {'RECOVERY',Val} = Msg, 
+        #chan_state{subscriber_count = 0}   = Chan, 
+        #probe{permissions = Perm}          = Probe) ->
+    ifs_mpd:multicast_msg(Chan#chan_state.chan_id,{Perm, 
+            {modTrackerPDU,
+                {fromServer,
+                    {probeInfo, 
+                        {'ProbeInfo',
+                            atom_to_list(Chan#chan_state.chan_id),
+                            Probe#probe.id,
+                            Type,
+                            Val }}}}}),
     gen_event:notify(tracker_events, {tracker_probe, Type, Msg,
             {Chan#chan_state.chan_id, Probe#probe.id}});
 
@@ -304,3 +342,29 @@ notify(Type, Msg, Chan, Probe) ->
     % TODO notify ifs
     gen_event:notify(tracker_events, {tracker_probe, Type, Msg,
             {Chan#chan_state.chan_id, Probe#probe.id}}).
+
+pdu(probe_dump, Probe, ChanId, RrdDir) ->
+    {modTrackerPDU,
+        {fromServer,
+            {probeDump,
+                {'ProbeDump',
+                    {'ProbeInfo',
+                        atom_to_list(ChanId),
+                        Probe#probe.id,
+                        Probe#probe.type,
+                        0
+                    },
+                    gen_rrdfile(Probe,RrdDir)
+                }
+            }
+        }
+    }.
+
+gen_rrdfile(Probe, RrdDir) ->
+    ProbeName   = Probe#probe.name,
+    [ProbeId]   = io_lib:format("~p", [Probe#probe.id]),
+    One         = string:concat(ProbeName, "-"),
+    Two         = string:concat(One, ProbeId),
+    Three       = string:concat(Two, ".rrd"),
+    {ok, BinFile} = file:read_file(filename:join(RrdDir, Three)),
+    BinFile.

@@ -146,6 +146,20 @@ handle_client_msg(
             ifs_mpd:subscribe_stage2(Chan,CState)
     end;
             
+handle_client_msg(
+        {message, 
+            {modIfPDU, 
+                {fromClient,
+                    {unsubscribe,
+                        Channel
+        }   }   }   }, CState) ->
+    Chan = erlang:list_to_atom(Channel),
+    case ifs_mpd:unsubscribe(Chan, CState) of
+        ok  ->
+            send(CState, pdu(unsubscribeOk, Channel));
+        _   ->
+            send(CState, pdu(unsubscribeErr, Channel))
+    end;
 
 handle_client_msg(
         {message, 

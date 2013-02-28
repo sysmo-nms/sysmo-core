@@ -50,10 +50,10 @@ IfPDU ::= CHOICE {
         authReq     [2] AuthProto,
         authAck     [3] AuthAck,
         authError   [4] AuthError,
-        subscribeOk     [5] Module,
-        subscribeErr    [6] Module,
-        unsubscribeOk   [7] Module,
-        unsubscribeErr  [8] Module,
+        subscribeOk     [5] Chan,
+        subscribeErr    [6] Chan,
+        unsubscribeOk   [7] Chan,
+        unsubscribeErr  [8] Chan,
         ...
     },
     fromClient  [1] CHOICE {

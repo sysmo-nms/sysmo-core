@@ -119,12 +119,12 @@ handle_call({chan_del, Id}, _F, #state{chans = C} = S) ->
 % Called by ifs_mpd via gen_channel to allow or not a client to subscribe in 
 % regard of the result after applying beha_ifs_ctrl:satisfy/3.
 handle_call(get_perms, _F, #state{perm = P} = S) ->
-    {reply, P, S}.
+    {reply, P, S};
 
-% HANDLE_CAST
-handle_cast({synchronize, CState}, #state{chans = Chans} = S) ->
+handle_call({synchronize, CState}, _F, #state{chans = Chans} = S) ->
     dump_known_data(CState, Chans),
-    {noreply, S};
+    ifs_mpd:subscribe_stage3(?MODULE, CState),
+    {reply, ok, S}.
 
 
 
