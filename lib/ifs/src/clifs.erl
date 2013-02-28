@@ -113,6 +113,7 @@ handle_cast({modIfPDU, {fromServer, {authReq, ldap}}}, S) ->
 handle_cast({modIfPDU, {fromServer, {authAck, 
         {'AuthAck', Roles, StaticChans}}}}, S) ->
     % subscribe to all static chans
+    io:format("ssssssssssssssssssssssssssssssstaticchan ~p~n", [StaticChans]),
     lists:foreach(fun({_,X,_}) ->
         send_pdu({modIfPDU, {fromClient, {subscribe, X}}}, S)
     end, StaticChans),

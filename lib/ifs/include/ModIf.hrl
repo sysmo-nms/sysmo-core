@@ -17,6 +17,3 @@ userId, pass}).
 -record('ChanInfo',{
 channel, type}).
 
--record('ChanId',{
-module, chan}).
-

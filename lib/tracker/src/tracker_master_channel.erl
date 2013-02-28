@@ -42,13 +42,15 @@
     chans,
     perm
 }).
+
+-define(MASTER_CHAN, 'target-MasterChan').
 %%-------------------------------------------------------------
 %% API
 %%-------------------------------------------------------------
 % @private
 -spec start_link() -> {ok, pid()}.
 start_link() ->
-    gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
+    gen_server:start_link({local, ?MASTER_CHAN}, ?MODULE, [], []).
 
 
 %%-------------------------------------------------------------
@@ -62,7 +64,7 @@ chan_add({Id, Perm}) ->
     chan_update({Id, Perm}).
 -spec chan_update({target_id(), #perm_conf{}}) -> ok.
 chan_update({Id, Perm}) ->
-    gen_server:call(?MODULE, {chan_update, Id, Perm}).
+    gen_server:call(?MASTER_CHAN, {chan_update, Id, Perm}).
     
 
 -spec chan_del(target_id()) -> ok.
@@ -70,7 +72,7 @@ chan_update({Id, Perm}) ->
 % Called by a target_channel at termination stage.
 % @end
 chan_del(Id) ->
-    gen_server:call(?MODULE, {chan_del, Id}).
+    gen_server:call(?MASTER_CHAN, {chan_del, Id}).
 
 %%-------------------------------------------------------------
 %% GEN_SERVER CALLBACKS
@@ -104,7 +106,7 @@ handle_call({chan_update, Id, Perm}, _F, #state{chans = C} = S) ->
 
 handle_call({chan_del, Id}, _F, #state{chans = C} = S) ->
     {Id, Perm} = lists:keyfind(Id, 1, C),
-    ifs_mpd:multicast_msg(?MODULE, {Perm, pdu(targetDelete, Id)}),
+    ifs_mpd:multicast_msg(?MASTER_CHAN, {Perm, pdu(targetDelete, Id)}),
     {reply, ok, S#state{chans = lists:keydelete(Id, 1, C)}};
 
 
@@ -123,7 +125,7 @@ handle_call(get_perms, _F, #state{perm = P} = S) ->
 
 handle_call({synchronize, CState}, _F, #state{chans = Chans} = S) ->
     dump_known_data(CState, Chans),
-    ifs_mpd:subscribe_stage3(?MODULE, CState),
+    ifs_mpd:subscribe_stage3(?MASTER_CHAN, CState),
     {reply, ok, S}.
 
 

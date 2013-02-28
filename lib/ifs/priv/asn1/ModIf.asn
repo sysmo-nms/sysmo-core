@@ -39,11 +39,6 @@ ChanInfo    ::= SEQUENCE {
     type    ChanInfoType
 }
 
-ChanId ::= SEQUENCE {
-    module  Module,
-    chan    Chan
-}
-
 IfPDU ::= CHOICE {
     fromServer [0] CHOICE {
         chanInfo    [1] ChanInfo,
