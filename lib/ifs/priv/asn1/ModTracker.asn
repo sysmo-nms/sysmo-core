@@ -26,9 +26,9 @@ TargetInfo  ::= SEQUENCE {
 
 TrackerPDU ::= CHOICE {
     fromServer  [0] CHOICE {
-        targetInfo  [0] TargetInfo,
-        probeInfo   [1] ProbeInfo,
-        probeDump   [2] ProbeDump,
+        targetInfo  [1] TargetInfo,
+        probeInfo   [2] ProbeInfo,
+        probeDump   [3] ProbeDump,
         ...
     },
     fromClient  [1] PrintableString

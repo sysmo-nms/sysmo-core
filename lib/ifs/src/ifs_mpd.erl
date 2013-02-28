@@ -176,7 +176,6 @@ handle_call({client_is_registered, Chan, CState}, _F,
         #state{chans = Chans} = S) ->
     case lists:keyfind(Chan, 1, Chans) of
         {Chan, CList} ->
-            io:format("chan is found!!!!!!!!!!!!!!!!!!!!~n"),
             {reply, lists:member(CState, CList), S};
         false ->
             {reply, false, S}
