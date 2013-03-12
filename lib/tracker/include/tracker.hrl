@@ -46,7 +46,8 @@
     name            = undefined     :: string(),
     type            = undefined     :: probe_type(), % store rrd data?
     permissions     = #perm_conf{}  :: #perm_conf{},
-    tracker_probe_mod = undefined     :: undefined | module(),
+    tracker_probe_mod = undefined   :: undefined | module(),
+    status          = 'INITIAL'     :: 'INITIAL' | probe_status(),
 
     % step, timeouts, timeout before CRITICAL, flip flap detection
     step            = undefined     :: undefined | integer(),

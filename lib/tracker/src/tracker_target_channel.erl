@@ -93,7 +93,7 @@ launch_probes(Id) ->
 % identified by Self.
 % @end
 new_event(Chan, ProbePid, Message) ->
-    gen_server:cast(Chan, {tracker_probe, ProbePid, Message}).
+    gen_server:cast(Chan, {tracker_probe_msg, ProbePid, Message}).
 
 -spec update_rrd_file(pid(), tuple()) -> ok.
 update_rrd_file(Server, RRD_update) ->
@@ -170,6 +170,7 @@ init([RootRrdDir, #target{
 % @end
 handle_call(launch_probes, _F, #chan_state{target = Target} = S) ->
     Probes = Target#target.probes,
+    io:format("prrrrrrrrrrrobes ~p~n", [Probes]),
     ProbesStore = lists:foldl(fun(Probe, Accum) ->
         {ok, Pid}   = tracker_probe_sup:new({Target, Probe, self()}),
         tracker_probe:launch(Pid),
@@ -220,9 +221,33 @@ handle_call(_R, _F, S) ->
 % @private
 % CAST
 % @doc
-% Message sent by the modules.
+% Message sent by the probes via new_event.
 % @end
-handle_cast({tracker_probe, ProbePid, Msg}, 
+handle_cast({tracker_probe_msg, ProbePid, {status_move, {Status, _} = Msg}},
+        #chan_state{probes_store = ProbeStore} = S) ->
+    {ProbePid, Probe, _} = lists:keyfind(ProbePid, 1, ProbeStore),
+    NewStore = lists:keyreplace(
+            ProbePid, 1, ProbeStore, {ProbePid, Probe, Status}),
+    NewState = S#chan_state{probes_store = NewStore},
+
+    probe_event(NewState, Probe, Msg),
+    {noreply, NewState};
+
+handle_cast({tracker_probe_msg, ProbePid, {up, Status}},
+        #chan_state{probes_store = ProbeStore} = S) ->
+    io:format("probe is up~n"),
+    {ProbePid, Probe, _} = lists:keyfind(ProbePid, 1, ProbeStore),
+    NewStore = lists:keyreplace(
+            ProbePid, 1, ProbeStore, {ProbePid, Probe, Status}),
+    {noreply, S#chan_state{probes_store = NewStore}};
+
+handle_cast({tracker_probe_msg, ProbePid, {down, _Reason}},
+        #chan_state{probes_store = ProbeStore} = S) ->
+    io:format("probe is down~n"),
+    NewStore = lists:keydelete(ProbePid, 1, ProbeStore),
+    {noreply, S#chan_state{probes_store = NewStore}};
+
+handle_cast({tracker_probe_msg, ProbePid, Msg}, 
         #chan_state{probes_store = ProbeStore} = S) ->
     {ProbePid, Probe, _Status} = lists:keyfind(ProbePid, 1, ProbeStore),
     probe_event(S, Probe, Msg),

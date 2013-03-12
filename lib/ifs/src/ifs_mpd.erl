@@ -217,7 +217,7 @@ handle_call(_R, _F, S) ->
 % called by himself
 handle_cast({unicast, #client_state{module = CMod} = CState, Perm, Pdu}, 
     #state{acctrl = AcctrlMod} = S) ->
-    io:format("acctrl is ~p~n", [AcctrlMod]),
+    % io:format("acctrl is ~p~n", [AcctrlMod]),
     case AcctrlMod:satisfy(read, [CState], Perm) of
         {ok, []} ->
             {noreply, S};

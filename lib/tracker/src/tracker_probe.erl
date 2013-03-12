@@ -128,7 +128,7 @@ handle_call(start, _F, #probe_server_state{
     InitialLaunch = tracker_misc:random(Step * 1000),
     timer:apply_after(InitialLaunch, ?MODULE, 
             probe_pass, [Target, Probe, self()]),
-    notify(self(), {S#probe_server_state.status, starting}),
+    notify(self(), {up, S#probe_server_state.status}),
     {reply, ok, init_inspect(S)};
 
 handle_call(status, _F, #probe_server_state{status = Status} = S) ->
@@ -151,6 +151,11 @@ handle_cast(launch, #probe_server_state{
             ?MODULE, probe_pass, [Target, Probe, self()]),
     {noreply, S};
 
+handle_cast({notify, {status_move, Message}}, #probe_server_state{
+        target_chan = ChanPid} = S) ->
+    tracker_target_channel:new_event(ChanPid, self(), {status_move, Message}),
+    {noreply, S};
+
 handle_cast({notify, Message}, #probe_server_state{
         target_chan = ChanPid} = S) ->
     tracker_target_channel:new_event(ChanPid, self(), Message),
@@ -169,7 +174,7 @@ handle_cast({probe_response, {error, Val}}, #probe_server_state{
         timeout_max     = T, 
         status          = 'WARNING'} = S) ->
     %% ici une alerte est declanchee
-    notify(self(), {'CRITICAL', Val}),
+    notify(self(), {status_move, {'CRITICAL', Val}}),
     gen_server:cast(self(), launch),
     {noreply, S#probe_server_state{status = 'CRITICAL'}};
 
@@ -185,7 +190,7 @@ handle_cast({probe_response, {error, _}}, #probe_server_state{
 handle_cast({probe_response, {error, Val}}, #probe_server_state{
             timeout_current     = T,
             status              = 'RECOVERY'} = S) ->
-    notify(self(), {'WARNING', Val}),
+    notify(self(), {status_move, {'WARNING', Val}}),
     gen_server:cast(self(), launch),
     {noreply, S#probe_server_state{
         timeout_current = T + 1,
@@ -204,7 +209,7 @@ handle_cast({probe_response, {error, Val}}, #probe_server_state{
 handle_cast({probe_response, {error, Val}}, #probe_server_state{
             timeout_current     = T,
             status              = 'UNKNOWN'} = S) ->
-    notify(self(), {'WARNING', Val}),
+    notify(self(), {status_move, {'WARNING', Val}}),
     gen_server:cast(self(), launch),
     {noreply, S#probe_server_state{
         timeout_current = T + 1,
@@ -214,7 +219,7 @@ handle_cast({probe_response, {error, Val}}, #probe_server_state{
 handle_cast({probe_response, {error, Val}}, #probe_server_state{
             timeout_current     = T,
             status              = 'OK'} = S) ->
-    notify(self(), {'WARNING', Val}),
+    notify(self(), {status_move, {'WARNING', Val}}),
     gen_server:cast(self(), launch),
     {noreply, S#probe_server_state{
         timeout_current = T + 1,
@@ -223,7 +228,7 @@ handle_cast({probe_response, {error, Val}}, #probe_server_state{
 % ok but status was CRITICAL, then it is a RECOVERY. 
 handle_cast({probe_response, {ok, Val}}, #probe_server_state{
         status      = 'CRITICAL'} = S) ->
-    notify(self(), {'RECOVERY', Val}),
+    notify(self(), {status_move, {'RECOVERY', Val}}),
     gen_server:cast(self(), launch),
     {noreply, S#probe_server_state{
         timeout_current = 0, 
@@ -232,7 +237,7 @@ handle_cast({probe_response, {ok, Val}}, #probe_server_state{
 % ok but status was WARNING, then it is a RECOVERY. 
 handle_cast({probe_response, {ok, Val}}, #probe_server_state{
         status      = 'WARNING'} = S) ->
-    notify(self(), {'RECOVERY', Val}),
+    notify(self(), {status_move, {'RECOVERY', Val}}),
     gen_server:cast(self(), launch),
     {noreply, S#probe_server_state{
         timeout_current = 0, 
@@ -241,7 +246,7 @@ handle_cast({probe_response, {ok, Val}}, #probe_server_state{
 % ok but status was UNKNOWN, then it is a RECOVERY. 
 handle_cast({probe_response, {ok, Val}}, #probe_server_state{
         status      = 'UNKNOWN'} = S) ->
-    notify(self(), {'RECOVERY', Val}),
+    notify(self(), {status_move, {'RECOVERY', Val}}),
     gen_server:cast(self(), launch),
     {noreply, S#probe_server_state{
         timeout_current = 0, 
@@ -250,7 +255,7 @@ handle_cast({probe_response, {ok, Val}}, #probe_server_state{
 % ok but the state was RECOVERY pass to OK.
 handle_cast({probe_response, {ok, Val}}, #probe_server_state{
         status      = 'RECOVERY'} = S) ->
-    notify(self(), {'OK', Val}),
+    notify(self(), {status_move, {'OK', Val}}),
     gen_server:cast(self(), launch),
     {noreply, S#probe_server_state{
         timeout_current     = 0,
@@ -276,8 +281,7 @@ handle_info(I, S) ->
 
 % @private
 terminate(R, #probe_server_state{target_chan = ChanPid}) ->
-    tracker_target_channel:new_event(ChanPid, self(), 
-            {'INFO', {terminate, R}}),
+    tracker_target_channel:new_event(ChanPid, self(), {down, R}),
     normal.
 
 % @private

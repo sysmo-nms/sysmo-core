@@ -35,7 +35,8 @@
 -export([
     start_link/0,
     chan_add/1,
-    chan_del/1
+    chan_del/1,
+    chan_event/1
 ]).
 
 -record(state, {
@@ -61,12 +62,15 @@ start_link() ->
 % Called by a target_channel at initialisation stage.
 % @end
 chan_add({Id, Perm}) ->
-    chan_update({Id, Perm}).
--spec chan_update({target_id(), #perm_conf{}}) -> ok.
-chan_update({Id, Perm}) ->
-    gen_server:call(?MASTER_CHAN, {chan_update, Id, Perm}).
-    
+    gen_server:call(?MASTER_CHAN, {chan_add, Id, Perm}).
 
+-spec chan_event(any()) -> ok.
+% @doc
+%
+% @end
+chan_event(Any) ->
+    gen_server:call(?MASTER_CHAN, {chan_event, Any}).
+    
 -spec chan_del(target_id()) -> ok.
 % @doc
 % Called by a target_channel at termination stage.
@@ -87,9 +91,12 @@ init([]) ->
             }
         }
     }.
-        
     
-handle_call({chan_update, Id, Perm}, _F, #state{chans = C} = S) ->
+handle_call({chan_event, Any}, _F, S) ->
+    io:format("new event ~p~n",[Any]),
+    {reply, ok, S};
+
+handle_call({chan_add, Id, Perm}, _F, #state{chans = C} = S) ->
     case lists:keyfind(Id, 1, C) of
         false ->
             {reply, ok, S#state{
