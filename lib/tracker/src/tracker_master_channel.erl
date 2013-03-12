@@ -36,7 +36,7 @@
     start_link/0,
     chan_add/1,
     chan_del/1,
-    chan_event/1
+    chan_event/2
 ]).
 
 -record(state, {
@@ -57,26 +57,25 @@ start_link() ->
 %%-------------------------------------------------------------
 %% API for the tracker_target_channel modules
 %%-------------------------------------------------------------
--spec chan_add({target_id(), #perm_conf{}}) -> ok.
+-spec chan_add(#target{}) -> ok.
 % @doc
 % Called by a target_channel at initialisation stage.
 % @end
-chan_add({Id, Perm}) ->
-    gen_server:call(?MASTER_CHAN, {chan_add, Id, Perm}).
+chan_add(Target) ->
+    gen_server:call(?MASTER_CHAN, {chan_add, Target}).
 
--spec chan_event(any()) -> ok.
+-spec chan_event(probe_status, {#target{}, #probe{}}) -> ok.
 % @doc
-%
 % @end
-chan_event(Any) ->
-    gen_server:call(?MASTER_CHAN, {chan_event, Any}).
+chan_event(probe_status_move, {Target, Probe}) ->
+    gen_server:call(?MASTER_CHAN, {probe_status_move, {Target, Probe}}).
     
--spec chan_del(target_id()) -> ok.
+-spec chan_del(#target{}) -> ok.
 % @doc
 % Called by a target_channel at termination stage.
 % @end
-chan_del(Id) ->
-    gen_server:call(?MASTER_CHAN, {chan_del, Id}).
+chan_del(Target) ->
+    gen_server:call(?MASTER_CHAN, {chan_del, Target}).
 
 %%-------------------------------------------------------------
 %% GEN_SERVER CALLBACKS
@@ -86,35 +85,41 @@ init([]) ->
     {ok, #state{
             chans = [],
             perm = #perm_conf{
-                read = ["admin", "wheel"],
-                write = ["admin"]
+                read    = ["admin", "wheel"],
+                write   = ["admin"]
             }
         }
     }.
     
-handle_call({chan_event, Any}, _F, S) ->
-    io:format("new event ~p~n",[Any]),
+handle_call({probe_status_move, {
+            #target{id = TargetId}, 
+            #probe{permissions = Perm} = Probe
+            }
+        }, _F, S) ->
+    ifs_mpd:multicast_msg(?MASTER_CHAN, {Perm, 
+        pdu(probeInfo, {TargetId, Probe})}),
     {reply, ok, S};
 
-handle_call({chan_add, Id, Perm}, _F, #state{chans = C} = S) ->
-    case lists:keyfind(Id, 1, C) of
+handle_call({chan_add, #target{id = Id} = Target}, _F, 
+        #state{chans = C} = S) ->
+    case lists:keyfind(Id, 2, C) of
         false ->
             {reply, ok, S#state{
-                    chans = [{Id, Perm} | C]
+                    chans = [Target | C]
                 }
             };
         _ ->
             {reply, ok, 
                 S#state{
-                    chans = lists:keyreplace(Id, 1, C, {Id, Perm})
+                    chans = lists:keyreplace(Id, 2, C, Target)
                 }
             }
     end;
 
-handle_call({chan_del, Id}, _F, #state{chans = C} = S) ->
-    {Id, Perm} = lists:keyfind(Id, 1, C),
+handle_call({chan_del, #target{id = Id, global_perm = Perm}}, _F, 
+        #state{chans = C} = S) ->
     ifs_mpd:multicast_msg(?MASTER_CHAN, {Perm, pdu(targetDelete, Id)}),
-    {reply, ok, S#state{chans = lists:keydelete(Id, 1, C)}};
+    {reply, ok, S#state{chans = lists:keydelete(Id, 2, C)}};
 
 
 
@@ -162,19 +167,37 @@ code_change(_O, S, _E) ->
 
 %% PRIVATE FUNS
 dump_known_data(ClientState, Chans) ->
-    lists:foreach(fun({TargetId, Perm}) ->
+    lists:foreach(fun(#target{global_perm = Perm} = Target) ->
         spawn(fun() ->
             ifs_mpd:unicast_msg(ClientState, 
-                {Perm, pdu(targetInfo, TargetId)})
+                    {Perm, pdu(targetInfo, Target)}),
+            lists:foreach(fun(Probe) -> 
+                ifs_mpd:unicast_msg(ClientState,
+                    {
+                        Probe#probe.permissions,
+                        pdu(probeInfo, {Target#target.id, Probe})
+                    }
+                )
+            end, Target#target.probes)
         end)
     end, Chans).
 
-pdu(targetInfo, Id) ->
+pdu(targetInfo, Target) ->
+    Id = Target#target.id,
+    Ip = "0.0.0.0", % TODO #ip_address{} to string
+    %Hostname    = Target#target.hostname,
+    Tags        = Target#target.tags,
+    Properties  = Target#target.properties, % TODO tupe() to string
+
     {modTrackerPDU,
         {fromServer,
             {targetInfo,
                 {'TargetInfo',
                     atom_to_list(Id),
+                    "dudule",
+                    Ip,
+                    Tags,
+                    Properties,
                     create}}}};
 
 pdu(targetDelete, Id) ->
@@ -183,5 +206,20 @@ pdu(targetDelete, Id) ->
             {targetInfo,
                 {'TargetInfo',
                     atom_to_list(Id),
-                    delete}}}}.
+                    delete}}}};
+
+pdu(probeInfo,  {TargetId, Probe}) ->
+    Id          = Probe#probe.id,
+    Status      = Probe#probe.status,
+    Name        = Probe#probe.name,
+    Type        = Probe#probe.type,
+    {modTrackerPDU,
+        {fromServer,
+            {probeInfo,
+                {'ProbeInfo',
+                    atom_to_list(TargetId),
+                    Id,
+                    atom_to_list(Status),
+                    Name,
+                    Type }}}}.
 

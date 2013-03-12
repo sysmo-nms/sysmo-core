@@ -43,6 +43,7 @@
 
 -record(probe, {
     id              = undefined     :: probe_id(), % unique in each targets
+    pid             = undefined     :: undefined | pid(),
     name            = undefined     :: string(),
     type            = undefined     :: probe_type(), % store rrd data?
     permissions     = #perm_conf{}  :: #perm_conf{},
@@ -67,7 +68,7 @@
 -record(target, {
     id          = undefined     :: target_id(),
     ip          = undefined     :: ip_add(),
-    hostname    = undefined     :: hostname(),
+    hostname    = ""            :: hostname(),
     global_perm = #perm_conf{
             read = ["admin"],
             write = ["admin"]

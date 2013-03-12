@@ -1,34 +1,43 @@
 ModTracker DEFINITIONS EXPLICIT TAGS ::=
 BEGIN
 
+IpAdd   ::= PrintableString
+
 TargetId        ::= PrintableString (SIZE (1..50))
+TargetHostname  ::= PrintableString (SIZE (0..50))
+TargetTags      ::= SEQUENCE OF TargetTag
+TargetTag       ::= PrintableString (SIZE (1..50))
+TargetProperties ::= SEQUENCE OF TargetProperty
+TargetProperty  ::= PrintableString
 TargetInfoType  ::= ENUMERATED {create(0), delete(1), update(2)}
+ProbeId         ::= INTEGER
+ProbeName       ::= PrintableString (SIZE (1..30))
+ProbeStatus     ::= PrintableString (SIZE (1..15))
 ProbeType       ::= ENUMERATED {fetch(0), status(1)}
 RRDFile         ::= OCTET STRING
 
 ProbeInfo   ::= SEQUENCE {
     channel TargetId,
-    probe   INTEGER,
-    type    ProbeType,
-    value   INTEGER
-}
-
-ProbeDump   ::= SEQUENCE {
-    probe   ProbeInfo,
-    rrdfile RRDFile
+    probe   ProbeId,
+    status  ProbeStatus,
+    name    ProbeName,
+    type    ProbeType
 }
 
 -- complete avec le tracker.hrl records finaux
 TargetInfo  ::= SEQUENCE {
-    channel  TargetId,
-    type     TargetInfoType
+    channel     TargetId,
+    hostname    TargetHostname,
+    ipAdd       IpAdd,
+    tags        TargetTags,
+    properties  TargetProperties,
+    type        TargetInfoType
 }
 
 TrackerPDU ::= CHOICE {
     fromServer  [0] CHOICE {
         targetInfo  [1] TargetInfo,
         probeInfo   [2] ProbeInfo,
-        probeDump   [3] ProbeDump,
         ...
     },
     fromClient  [1] PrintableString

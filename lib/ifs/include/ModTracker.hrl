@@ -6,11 +6,8 @@
 
 
 -record('ProbeInfo',{
-channel, probe, type, value}).
-
--record('ProbeDump',{
-probe, rrdfile}).
+channel, probe, status, name, type}).
 
 -record('TargetInfo',{
-channel, type}).
+channel, hostname, ipAdd, tags, properties, type}).
 

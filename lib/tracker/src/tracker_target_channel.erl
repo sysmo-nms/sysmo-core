@@ -32,6 +32,10 @@
 %   subscribers of the channel to have basic informations (ex: status)</li>
 % </ul>
 % </p>
+% <p>
+%   A client subscribing to this channel must also be registered to 
+%   'target-MasterChannel' to receive ALL events produced by the channel.
+% </p>
 % @end
 -module(tracker_target_channel).
 -behaviour(gen_server).
@@ -59,7 +63,6 @@
     chan_id,
     subscriber_count,
     target,
-    probes_store,
     rrd_server,
     rrd_dir
 }).
@@ -129,12 +132,11 @@ dump(Id) ->
 % @end
 init([RootRrdDir, #target{
         id          = Id, 
-        global_perm = Perm, 
         probes      = Probes} = Target]) ->
     % general logging
     gen_event:notify(tracker_events, {?MODULE, init, Id}),
     % ifs related
-    ok = tracker_master_channel:chan_add({Id, Perm}),
+    ok = tracker_master_channel:chan_add(Target),
     % rrd server
     RrdTargetDir = filename:join(RootRrdDir, atom_to_list(Id)),
     ok = rrd_dir_exist(RrdTargetDir),
@@ -154,10 +156,9 @@ init([RootRrdDir, #target{
     % return
     {ok, 
         #chan_state{
-            chan_id             = Id,
+            chan_id             = Target#target.id, % for ese
             subscriber_count    = 0,
             target              = Target,
-            probes_store        = [],
             rrd_server          = Pid,
             rrd_dir             = RrdTargetDir
         }
@@ -170,13 +171,14 @@ init([RootRrdDir, #target{
 % @end
 handle_call(launch_probes, _F, #chan_state{target = Target} = S) ->
     Probes = Target#target.probes,
-    io:format("prrrrrrrrrrrobes ~p~n", [Probes]),
-    ProbesStore = lists:foldl(fun(Probe, Accum) ->
+    NewProbes = lists:foldl(fun(Probe, Accum) ->
         {ok, Pid}   = tracker_probe_sup:new({Target, Probe, self()}),
         tracker_probe:launch(Pid),
-        [{Pid, Probe, error} | Accum]
+        [ Probe#probe{pid = Pid} | Accum]
     end, [], Probes),
-    {reply, ok, S#chan_state{probes_store = ProbesStore}};
+    NewTarget = Target#target{probes = NewProbes},
+    NewState  = S#chan_state{target = NewTarget},
+    {reply, ok, NewState};
 
 % this call is used by ifs_mpd only, without API.
 handle_call(get_perms, _F, #chan_state{target = Target} = S) ->
@@ -224,32 +226,48 @@ handle_call(_R, _F, S) ->
 % Message sent by the probes via new_event.
 % @end
 handle_cast({tracker_probe_msg, ProbePid, {status_move, {Status, _} = Msg}},
-        #chan_state{probes_store = ProbeStore} = S) ->
-    {ProbePid, Probe, _} = lists:keyfind(ProbePid, 1, ProbeStore),
-    NewStore = lists:keyreplace(
-            ProbePid, 1, ProbeStore, {ProbePid, Probe, Status}),
-    NewState = S#chan_state{probes_store = NewStore},
+        #chan_state{target = Target} = S) ->
+    Probes      = Target#target.probes,
+    Probe       = lists:keyfind(ProbePid, 3, Probes),
+    NewProbe    = Probe#probe{status = Status},
+    NewProbes   = lists:keyreplace(ProbePid, 3, Probes, NewProbe),
+    NewTarget   = Target#target{probes = NewProbes},
+    NewState    = S#chan_state{target = NewTarget},
 
-    probe_event(NewState, Probe, Msg),
+    tracker_master_channel:chan_event(probe_status_move,{NewTarget,NewProbe}),
+    probe_event(NewState, NewProbe, Msg),
     {noreply, NewState};
 
 handle_cast({tracker_probe_msg, ProbePid, {up, Status}},
-        #chan_state{probes_store = ProbeStore} = S) ->
+        #chan_state{target = Target} = S) ->
     io:format("probe is up~n"),
-    {ProbePid, Probe, _} = lists:keyfind(ProbePid, 1, ProbeStore),
-    NewStore = lists:keyreplace(
-            ProbePid, 1, ProbeStore, {ProbePid, Probe, Status}),
-    {noreply, S#chan_state{probes_store = NewStore}};
+    Probes      = Target#target.probes,
+    Probe       = lists:keyfind(ProbePid, 3, Probes),
+    NewProbe    = Probe#probe{status = Status},
+    NewProbes   = lists:keyreplace(ProbePid, 3, Probes, NewProbe),
+    NewTarget   = Target#target{probes = NewProbes},
+    NewState    = S#chan_state{target = NewTarget},
+
+    tracker_master_channel:chan_event(probe_status_move,{NewTarget,NewProbe}),
+    {noreply, NewState};
 
 handle_cast({tracker_probe_msg, ProbePid, {down, _Reason}},
-        #chan_state{probes_store = ProbeStore} = S) ->
+        #chan_state{target = Target} = S) ->
     io:format("probe is down~n"),
-    NewStore = lists:keydelete(ProbePid, 1, ProbeStore),
-    {noreply, S#chan_state{probes_store = NewStore}};
+    Probes      = Target#target.probes,
+    Probe       = lists:keyfind(ProbePid, 3, Probes),
+    NewProbe    = Probe#probe{status = 'INITIAL'},
+    NewProbes   = lists:keyreplace(ProbePid, 3, Probes, NewProbe),
+    NewTarget   = Target#target{probes = NewProbes},
+    NewState    = S#chan_state{target = NewTarget},
+
+    tracker_master_channel:chan_event(probe_status_move,{NewTarget,NewProbe}),
+    {noreply, NewState};
 
 handle_cast({tracker_probe_msg, ProbePid, Msg}, 
-        #chan_state{probes_store = ProbeStore} = S) ->
-    {ProbePid, Probe, _Status} = lists:keyfind(ProbePid, 1, ProbeStore),
+        #chan_state{target = Target} = S) ->
+    Probes      = Target#target.probes,
+    Probe       = lists:keyfind(ProbePid, 3, Probes),
     probe_event(S, Probe, Msg),
     {noreply, S};
 
@@ -271,7 +289,7 @@ handle_info(_I, S) ->
 
 % @private
 terminate(R, #chan_state{target = Target} = _S) ->
-    ok = tracker_master_channel:chan_del(Target#target.id),
+    ok = tracker_master_channel:chan_del(Target),
     R.
 
 % @private
