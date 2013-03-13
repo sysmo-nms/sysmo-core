@@ -92,13 +92,14 @@ init([]) ->
     }.
     
 handle_call({probe_status_move, {
-            #target{id = TargetId}, 
+            #target{id = TargetId} = NewTarget, 
             #probe{permissions = Perm} = Probe
             }
-        }, _F, S) ->
+        }, _F, #state{chans = Chans} = S) ->
+    NewChans = lists:keyreplace(TargetId, 2, Chans, NewTarget),
     ifs_mpd:multicast_msg(?MASTER_CHAN, {Perm, 
-        pdu(probeInfo, {TargetId, Probe})}),
-    {reply, ok, S};
+        pdu(probeInfo, {update, TargetId, Probe})}),
+    {reply, ok, S#state{chans = NewChans}};
 
 handle_call({chan_add, #target{id = Id} = Target}, _F, 
         #state{chans = C} = S) ->
@@ -175,7 +176,7 @@ dump_known_data(ClientState, Chans) ->
                 ifs_mpd:unicast_msg(ClientState,
                     {
                         Probe#probe.permissions,
-                        pdu(probeInfo, {Target#target.id, Probe})
+                        pdu(probeInfo, {create, Target#target.id, Probe})
                     }
                 )
             end, Target#target.probes)
@@ -187,7 +188,7 @@ pdu(targetInfo, Target) ->
     Ip = "0.0.0.0", % TODO #ip_address{} to string
     %Hostname    = Target#target.hostname,
     Tags        = Target#target.tags,
-    Properties  = Target#target.properties, % TODO tupe() to string
+    Properties  = Target#target.properties, % TODO tuple() to string
 
     {modTrackerPDU,
         {fromServer,
@@ -208,9 +209,10 @@ pdu(targetDelete, Id) ->
                     atom_to_list(Id),
                     delete}}}};
 
-pdu(probeInfo,  {TargetId, Probe}) ->
+pdu(probeInfo,  {InfoType, TargetId, Probe}) ->
     Id          = Probe#probe.id,
     Status      = Probe#probe.status,
+    io:format("sssssssstatus is ~p~n", [Status]),
     Name        = Probe#probe.name,
     Type        = Probe#probe.type,
     {modTrackerPDU,
@@ -221,5 +223,6 @@ pdu(probeInfo,  {TargetId, Probe}) ->
                     Id,
                     atom_to_list(Status),
                     Name,
-                    Type }}}}.
+                    Type,
+                    InfoType}}}}.
 

@@ -6,7 +6,7 @@
 
 
 -record('ProbeInfo',{
-channel, probe, status, name, type}).
+channel, probe, status, name, type, infoType}).
 
 -record('TargetInfo',{
 channel, hostname, ipAdd, tags, properties, type}).
