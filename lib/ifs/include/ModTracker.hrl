@@ -5,8 +5,14 @@
 
 
 
+-record('ProbeDump',{
+channel, probeId, probeType, rrdData}).
+
 -record('ProbeInfo',{
 channel, probe, status, name, type, infoType}).
+
+-record('ProbeFetch',{
+channel, probe, probeType, probeValue}).
 
 -record('TargetInfo',{
 channel, hostname, ipAdd, tags, properties, type}).

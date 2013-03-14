@@ -39,6 +39,7 @@
 % @end
 -module(tracker_target_channel).
 -behaviour(gen_server).
+-behaviour(gen_channel).
 -include("../include/tracker.hrl").
 
 -export([
@@ -202,8 +203,8 @@ handle_call({synchronize, CState}, _F,
                 ok
         end
     end, Target#target.probes),
-    % - ifs_mpd:subscribe_stage3/2 then
-    io:format("ChanId is ~p~n", [ChanId]),
+    % - ifs_mpd:subscribe_stage3/2 and all will be ok
+    io:format("ChanId is ~p dump is sent. Now subscribe_stage3~n", [ChanId]),
     ifs_mpd:subscribe_stage3(ChanId, CState),
     {reply, ok, S};
 
@@ -357,8 +358,8 @@ notify(Type, {'OK',Val} = Msg,
     ifs_mpd:multicast_msg(Chan#chan_state.chan_id, {Perm,
         {modTrackerPDU,
             {fromServer,
-                {probeInfo, 
-                    {'ProbeInfo',
+                {probeFetch, 
+                    {'ProbeFetch',
                         atom_to_list(Chan#chan_state.chan_id),
                         Probe#probe.id,
                         Type,
@@ -372,8 +373,8 @@ notify(Type, {'RECOVERY',Val} = Msg,
     ifs_mpd:multicast_msg(Chan#chan_state.chan_id,{Perm, 
             {modTrackerPDU,
                 {fromServer,
-                    {probeInfo, 
-                        {'ProbeInfo',
+                    {probeFetch, 
+                        {'ProbeFetch',
                             atom_to_list(Chan#chan_state.chan_id),
                             Probe#probe.id,
                             Type,
@@ -386,28 +387,26 @@ notify(Type, Msg, Chan, Probe) ->
     gen_event:notify(tracker_events, {tracker_probe, Type, Msg,
             {Chan#chan_state.chan_id, Probe#probe.id}}).
 
-pdu(probe_dump, Probe, ChanId, RrdDir) ->
+pdu(probe_dump, Probe, ChanId, _RrdDir) ->
     {modTrackerPDU,
         {fromServer,
             {probeDump,
                 {'ProbeDump',
-                    {'ProbeInfo',
-                        atom_to_list(ChanId),
-                        Probe#probe.id,
-                        Probe#probe.type,
-                        0
-                    },
-                    gen_rrdfile(Probe,RrdDir)
+                    atom_to_list(ChanId),
+                    Probe#probe.id,
+                    Probe#probe.type,
+                    <<1,2>>
+                    %gen_rrdfile(Probe,RrdDir)
                 }
             }
         }
     }.
 
-gen_rrdfile(Probe, RrdDir) ->
-    ProbeName   = Probe#probe.name,
-    [ProbeId]   = io_lib:format("~p", [Probe#probe.id]),
-    One         = string:concat(ProbeName, "-"),
-    Two         = string:concat(One, ProbeId),
-    Three       = string:concat(Two, ".rrd"),
-    {ok, BinFile} = file:read_file(filename:join(RrdDir, Three)),
-    BinFile.
+% gen_rrdfile(Probe, RrdDir) ->
+%     ProbeName   = Probe#probe.name,
+%     [ProbeId]   = io_lib:format("~p", [Probe#probe.id]),
+%     One         = string:concat(ProbeName, "-"),
+%     Two         = string:concat(One, ProbeId),
+%     Three       = string:concat(Two, ".rrd"),
+%     {ok, BinFile} = file:read_file(filename:join(RrdDir, Three)),
+%     BinFile.

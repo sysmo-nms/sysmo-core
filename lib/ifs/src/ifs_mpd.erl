@@ -76,7 +76,7 @@ main_chans() ->
 -spec subscribe_stage1(atom(), #client_state{}) -> ok | error.
 % @doc
 % Called by a client via ifs_server.
-% If return is ok, the channel will the begin initialisation.
+% If return is ok, the ifs_server will then call subscribe_stage2.
 % If return is error, do nothing more.
 % In both case, ifs_server interpret the return and send subscribeErr or 
 % subscribeOk to the client.
