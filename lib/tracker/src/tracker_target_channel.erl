@@ -387,7 +387,7 @@ notify(Type, Msg, Chan, Probe) ->
     gen_event:notify(tracker_events, {tracker_probe, Type, Msg,
             {Chan#chan_state.chan_id, Probe#probe.id}}).
 
-pdu(probe_dump, Probe, ChanId, _RrdDir) ->
+pdu(probe_dump, Probe, ChanId, RrdDir) ->
     {modTrackerPDU,
         {fromServer,
             {probeDump,
@@ -395,18 +395,17 @@ pdu(probe_dump, Probe, ChanId, _RrdDir) ->
                     atom_to_list(ChanId),
                     Probe#probe.id,
                     Probe#probe.type,
-                    <<1,2>>
-                    %gen_rrdfile(Probe,RrdDir)
+                    gen_rrdfile(Probe,RrdDir)
                 }
             }
         }
     }.
 
-% gen_rrdfile(Probe, RrdDir) ->
-%     ProbeName   = Probe#probe.name,
-%     [ProbeId]   = io_lib:format("~p", [Probe#probe.id]),
-%     One         = string:concat(ProbeName, "-"),
-%     Two         = string:concat(One, ProbeId),
-%     Three       = string:concat(Two, ".rrd"),
-%     {ok, BinFile} = file:read_file(filename:join(RrdDir, Three)),
-%     BinFile.
+gen_rrdfile(Probe, RrdDir) ->
+    ProbeName   = Probe#probe.name,
+    [ProbeId]   = io_lib:format("~p", [Probe#probe.id]),
+    One         = string:concat(ProbeName, "-"),
+    Two         = string:concat(One, ProbeId),
+    Three       = string:concat(Two, ".rrd"),
+    {ok, BinFile} = file:read_file(filename:join(RrdDir, Three)),
+    BinFile.
