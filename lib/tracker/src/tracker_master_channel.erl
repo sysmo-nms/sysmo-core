@@ -210,19 +210,21 @@ pdu(targetDelete, Id) ->
                     delete}}}};
 
 pdu(probeInfo,  {InfoType, TargetId, Probe}) ->
-    Id          = Probe#probe.id,
-    Status      = Probe#probe.status,
-    io:format("sssssssstatus is ~p~n", [Status]),
-    Name        = Probe#probe.name,
-    Type        = Probe#probe.type,
     {modTrackerPDU,
         {fromServer,
             {probeInfo,
                 {'ProbeInfo',
                     atom_to_list(TargetId),
-                    Id,
-                    atom_to_list(Status),
-                    Name,
-                    Type,
+                    Probe#probe.id,
+                    Probe#probe.name,
+                    Probe#probe.type,
+                    atom_to_list(Probe#probe.tracker_probe_mod),
+                    atom_to_list(Probe#probe.status),
+                    Probe#probe.step,
+                    Probe#probe.timeout_max,
+                    Probe#probe.timeout_wait,
+                    lists:map(fun(X) -> 
+                        atom_to_list(X) 
+                    end, Probe#probe.inspectors),
                     InfoType}}}}.
 

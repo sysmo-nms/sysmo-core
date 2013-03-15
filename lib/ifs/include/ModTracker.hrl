@@ -5,11 +5,11 @@
 
 
 
+-record('ProbeInfo',{
+channel, probeId, name, type, probeMod, status, step, timeoutMax, timeoutWait, inspectors, infoType}).
+
 -record('ProbeDump',{
 channel, probeId, probeType, rrdData}).
-
--record('ProbeInfo',{
-channel, probe, status, name, type, infoType}).
 
 -record('ProbeFetch',{
 channel, probe, probeType, probeValue}).

@@ -61,6 +61,8 @@
     rrd_create          = ""            :: #rrd_create{},
     rrd_update          = ""            :: #rrd_ds_update{},
     rrd_graph           = ""            :: string(),
+
+    % what for? do not remember
     max_threshold       = undefined     :: undefined | #exceed{},
     min_threshold       = undefined     :: undefined | #exceed{}
 }).
@@ -111,6 +113,7 @@
             % - can store 1440 points consolidated with 12 primary = 
             %       12 * 1440 = 17280 seconds = 288 min = 24 h
             %rrd_create = "--step 5 DS:latency:GAUGE:25:0:U RRA:MAX:0:1:3600 RRA:MAX:0:12:1440"
+            % XXX inconsistant type for rrd_update, will not pass dializer
             rrd_update = fun(X) ->
                 #rrd_update{
                     file        = "probe_icmp_echo-1.rrd",
