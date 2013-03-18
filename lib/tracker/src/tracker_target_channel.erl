@@ -407,5 +407,5 @@ gen_rrdfile(Probe, RrdDir) ->
     One         = string:concat(ProbeName, "-"),
     Two         = string:concat(One, ProbeId),
     Three       = string:concat(Two, ".rrd"),
-    {ok, BinFile} = file:read_file(filename:join(RrdDir, Three)),
-    BinFile.
+    {ok, OctetString} = file:read_file(filename:join(RrdDir, Three)),
+    OctetString.
