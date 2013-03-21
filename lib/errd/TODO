@@ -1,0 +1,2 @@
+- Actualy one "rrdtool -" per probe. Create a rrdtool pool of processus
+and dispatch probes on them.

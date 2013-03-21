@@ -20,19 +20,28 @@ The final map should look like the cacti/weathermap module + visual alerts.
 ---------> RELEASE 1.0,
 
 
+- mod_rrdwarn             HIGH        0%
+Alert on rrdfetch an rrdfetch value.
+- mod_warn                HIGH        0%
+Alert on tracker_event 
 - mod_sh                  HIGH        0%
 Provide access to managed devices using telnet/ssh, or provide enougth
 information to the client to connect to the device with his own lib.
+- mod_snmp_disco          MEDIUM      0%
+Autodiscover snmp nodes. Later, auto discover neighborchip and auto
+generate maps.
 - mod_switching           MEDIUM      0%
 V4-ARP V6-CDP traffic monitoring: 
     Where is/was this IP/Mac address
     Address conflict detection
     MAC address traking
+    VLAN tracking
 - mod_rmon                MEDIUM      0%            will rock!!!
 Collect RMON data and produce graphs with rrd for
 mac address/ip address traffic
 - mod_coumpoundwarn       MEDIUM      0%            a must for a VRP...
-Create alerts with events patterns
+Create alerts with events patterns or events values. See Mmonit sintax
+language.
 - mod_alertclimbs         MEDIUM      0%            a must for a VRP...
 Escalade alerts module      
 ---------> RELEASE 2.0
@@ -61,6 +70,18 @@ Manage multiple devices with identic configuration
 
 - mod_syslog              ONE DAY     0%            to much?
 Collect syslog data
+- mod_rrdbehaviour        ONE DAY     0%            scifi
+Alert on value returned by rrdfetch. Compare with an AVERAGE expected
+value. Apply an algorithm. Send an alert if needed.
 - mod_time_machine        ONE DAY     0%            scifi
 Replay events in a specific timeframe
 ---------> RELEASE XXX
+
+
+
+TODO UB2:
+- mod_shell,
+- mod_switching,
+- mod_snmp_disco,
+- command line,
+- wmap

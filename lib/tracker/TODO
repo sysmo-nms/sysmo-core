@@ -1,4 +1,6 @@
-- #probe.rrd_update shold not be a fun() to be sent to the client
+- probe.rrd_update should not be a fun() to be sent to the client
+- some probes must be able to update the system or users property (dns, 
+snmp sysName),
 # in the future
 - get the time a probe might get informations to initialize timer on the
 client at connexion time. If not, the client will only be initialized with
@@ -7,4 +9,3 @@ specific properties step and timeout).
 - only send messages to ifs_mpd when "clients > 0".
 - new state "SHADED" or "UNKNOWN".
 - eunit/dializer
-
