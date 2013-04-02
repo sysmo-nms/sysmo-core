@@ -17,3 +17,21 @@ channel, probe, probeType, probeValue}).
 -record('TargetInfo',{
 channel, hostname, ipAdd, tags, properties, type}).
 
+-record('TargetCreate',{
+ipAdd}).
+
+-record('TargetUpdate',{
+target}).
+
+-record('TargetDelete',{
+target}).
+
+-record('ProbeCreate',{
+target, probeMod}).
+
+-record('ProbeUpdate',{
+target, probe}).
+
+-record('ProbeDelete',{
+target, probe}).
+

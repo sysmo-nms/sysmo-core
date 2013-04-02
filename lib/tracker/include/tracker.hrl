@@ -174,10 +174,3 @@
     inspectors_state = []           :: [any()],
     status          = 'UNKNOWN'     :: probe_status()
 }).
-
-
-
-
-
-
-

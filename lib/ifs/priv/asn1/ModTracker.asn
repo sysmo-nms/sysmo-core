@@ -16,6 +16,7 @@ TargetInfoType  ::= ENUMERATED {create(0), delete(1), update(2)}
 
 ProbeId         ::= INTEGER
 ProbeName       ::= PrintableString (SIZE (1..30))
+ProbeMod        ::= PrintableString (SIZE (1..30))
 ProbeStatus     ::= PrintableString (SIZE (1..15))
 ProbeType       ::= ENUMERATED {fetch(0), status(1)}
 ProbeInfoType   ::= ENUMERATED {create(0), delete(1), update(2)}
@@ -68,6 +69,7 @@ ProbeFetch  ::= SEQUENCE {
     probeType   ProbeType,
     probeValue  ProbeValue
 }
+
 -- complete avec le tracker.hrl records finaux
 TargetInfo  ::= SEQUENCE {
     channel     TargetId,
@@ -78,15 +80,48 @@ TargetInfo  ::= SEQUENCE {
     type        TargetInfoType
 }
 
+TargetCreate    ::= SEQUENCE {
+    ipAdd       IpAdd
+}
+
+TargetUpdate    ::= SEQUENCE {
+    target      TargetId
+}
+
+TargetDelete    ::= SEQUENCE {
+    target      TargetId
+}
+
+ProbeCreate     ::= SEQUENCE {
+    target      TargetId,
+    probeMod    ProbeMod
+}
+
+ProbeUpdate     ::= SEQUENCE {
+    target      TargetId,
+    probe       ProbeId
+}
+
+ProbeDelete     ::= SEQUENCE {
+    target      TargetId,
+    probe       ProbeId
+}
+
 TrackerPDU ::= CHOICE {
     fromServer  [0] CHOICE {
         targetInfo  [1] TargetInfo,
         probeInfo   [2] ProbeInfo,
         probeFetch  [3] ProbeFetch,
-        probeDump   [4] ProbeDump,
-        ...
+        probeDump   [4] ProbeDump
     },
-    fromClient  [1] PrintableString
+    fromClient  [1] CHOICE {
+        createTarget    [1] TargetCreate,
+        updateTarget    [2] TargetUpdate,
+        deleteTarget    [3] TargetDelete,
+        createProbe     [4] ProbeCreate,
+        updateProbe     [5] ProbeUpdate,
+        deleteProbe     [6] ProbeDelete
+    }
 }
 
 END
