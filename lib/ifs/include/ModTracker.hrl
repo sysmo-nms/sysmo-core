@@ -18,7 +18,7 @@ channel, probe, probeType, probeValue}).
 channel, hostname, ipAdd, tags, properties, type}).
 
 -record('TargetCreate',{
-ipAdd}).
+ipAdd, hostname, sysName}).
 
 -record('TargetUpdate',{
 target}).

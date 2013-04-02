@@ -67,89 +67,106 @@
     min_threshold       = undefined     :: undefined | #exceed{}
 }).
 
+% -record(target, {
+%     id          = undefined     :: target_id(),
+%     ip          = undefined     :: ip_add(),
+%     hostname    = ""            :: hostname(),
+%     global_perm = #perm_conf{
+%             read = ["admin"],
+%             write = ["admin"]
+%         }                       :: #perm_conf{},
+%     probes      = [
+%         #probe{                     % initial btracker_probe_icmp_echo()
+%             id = 1,
+%             name = "probe_icmp_echo",
+%             type = fetch,
+%             permissions =   #perm_conf{
+%                                 read = ["admin"],
+%                                 write = ["admin"]
+%                             },
+%             %mod = fun(X) -> btracker_probe_icmp_echo:exec(X) end,
+%             tracker_probe_mod = btracker_probe_icmp_echo,
+% 
+%             % timeouts and frequency
+%             step            = 5, % 5 seconds
+%             timeout_wait    = 5, % wait 5 seconds for responce
+%             timeout_max     = 5, % 5 timeouts trigger an alert
+% 
+%             inspectors      = [],
+%             %    {inspector_debug, []},
+%             %    {inspector_debug, []},
+%             %    {inspector_debug, []}
+%             %],
+% 
+%             % Create a rrd for this probe with:
+%             % - primary data points every 5 seconds (--step 5)
+%             % DS:
+%             % - of type GAUGE
+%             % - with *UNKNOWN* data point if no update for 25 s, do not know 
+%             % if it is used because a primary point occur after each probe.
+%             % - with minimum value 0 and max Unknown
+%             % RRA:
+%             % - consolide with MAX,
+%             % - xff is 0,
+%             % - 1 consolided data point is made from 1 datapoint !!!
+%             % - can store 3600 points = 3600 * 1 second = 60 minutes
+%             % - can store 1440 points consolidated with 12 primary = 
+%             %       12 * 1440 = 17280 seconds = 288 min = 24 h
+%             %rrd_create = "--step 5 DS:latency:GAUGE:25:0:U RRA:MAX:0:1:3600 RRA:MAX:0:12:1440"
+%             % XXX inconsistant type for rrd_update, will not pass dializer
+%             rrd_update = fun(X) ->
+%                 #rrd_update{
+%                     file        = "probe_icmp_echo-1.rrd",
+%                     time        = now,
+%                     updates     = [
+%                         #rrd_ds_update{
+%                             name    = "latency",
+%                             value   = X
+%                         }
+%                     ]
+%                 } 
+%             end,
+% 
+%             rrd_create = #rrd_create{
+%                     file        = "probe_icmp_echo-1.rrd",
+%                     start_time  = undefined,
+%                     step        = 5,
+%                     ds_defs     = [
+%                         #rrd_ds{
+%                             name        = "latency",
+%                             type        = 'gauge',
+%                             heartbeat   = 25,
+%                             min         = 0,
+%                             max         = 10000000,
+%                             args        = "25:0:U"
+%                         }
+%                     ],
+%                     rra_defs    = [
+%                         #rrd_rra{cf = 'max', args = "0:1:3600"},
+%                         #rrd_rra{cf = 'max', args = "0:12:1440"}
+%                     ]
+%             }
+%             % end of rrd_create
+%         }
+%     ]                           :: [#probe{}],
+% 
+%     sys_properties  = []        :: [property()],
+%     sys_tags        = []        :: [tag()],
+% 
+%     properties      = []        :: [property()],
+%     tags            = []        :: [tag()]
+% }).
+
 -record(target, {
     id          = undefined     :: target_id(),
     ip          = undefined     :: ip_add(),
-    hostname    = ""            :: hostname(),
+    hostname    = undefined     :: undefined | hostname(),
+    sysname     = undefined     :: undefined | string(),
     global_perm = #perm_conf{
             read = ["admin"],
             write = ["admin"]
         }                       :: #perm_conf{},
-    probes      = [
-        #probe{                     % initial btracker_probe_icmp_echo()
-            id = 1,
-            name = "probe_icmp_echo",
-            type = fetch,
-            permissions =   #perm_conf{
-                                read = ["admin"],
-                                write = ["admin"]
-                            },
-            %mod = fun(X) -> btracker_probe_icmp_echo:exec(X) end,
-            tracker_probe_mod = btracker_probe_icmp_echo,
-
-            % timeouts and frequency
-            step            = 5, % 5 seconds
-            timeout_wait    = 5, % wait 5 seconds for responce
-            timeout_max     = 5, % 5 timeouts trigger an alert
-
-            inspectors      = [],
-            %    {inspector_debug, []},
-            %    {inspector_debug, []},
-            %    {inspector_debug, []}
-            %],
-
-            % Create a rrd for this probe with:
-            % - primary data points every 5 seconds (--step 5)
-            % DS:
-            % - of type GAUGE
-            % - with *UNKNOWN* data point if no update for 25 s, do not know 
-            % if it is used because a primary point occur after each probe.
-            % - with minimum value 0 and max Unknown
-            % RRA:
-            % - consolide with MAX,
-            % - xff is 0,
-            % - 1 consolided data point is made from 1 datapoint !!!
-            % - can store 3600 points = 3600 * 1 second = 60 minutes
-            % - can store 1440 points consolidated with 12 primary = 
-            %       12 * 1440 = 17280 seconds = 288 min = 24 h
-            %rrd_create = "--step 5 DS:latency:GAUGE:25:0:U RRA:MAX:0:1:3600 RRA:MAX:0:12:1440"
-            % XXX inconsistant type for rrd_update, will not pass dializer
-            rrd_update = fun(X) ->
-                #rrd_update{
-                    file        = "probe_icmp_echo-1.rrd",
-                    time        = now,
-                    updates     = [
-                        #rrd_ds_update{
-                            name    = "latency",
-                            value   = X
-                        }
-                    ]
-                } 
-            end,
-
-            rrd_create = #rrd_create{
-                    file        = "probe_icmp_echo-1.rrd",
-                    start_time  = undefined,
-                    step        = 5,
-                    ds_defs     = [
-                        #rrd_ds{
-                            name        = "latency",
-                            type        = 'gauge',
-                            heartbeat   = 25,
-                            min         = 0,
-                            max         = 10000000,
-                            args        = "25:0:U"
-                        }
-                    ],
-                    rra_defs    = [
-                        #rrd_rra{cf = 'max', args = "0:1:3600"},
-                        #rrd_rra{cf = 'max', args = "0:12:1440"}
-                    ]
-            }
-            % end of rrd_create
-        }
-    ]                           :: [#probe{}],
-
+    probes      = []            :: [#probe{}],
     sys_properties  = []        :: [property()],
     sys_tags        = []        :: [tag()],
 

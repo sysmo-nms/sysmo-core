@@ -57,7 +57,7 @@ which_auth() ->
 
 % API FROM CLIENTS
 client_msg(Msg, ClientState) ->
-    io:format("~p RECEIVED: ~p~n", [?MODULE, Msg]),
+    %io:format("~p RECEIVED: ~p~n", [?MODULE, Msg]),
     handle_client_msg(Msg, ClientState).
 
 % DEBUG
@@ -164,11 +164,16 @@ handle_client_msg(
 handle_client_msg(
         {message, 
             {modIfPDU, 
-                {fromClient,
-                    Other
-        }   }   }, _) ->
-    io:format("~p RECEIVED UNKNOWN ~p~n", [?MODULE, Other]).
+                Other
+        }   }, _) ->
+    io:format("~p RECEIVED UNKNOWN ifs ~p~n", [?MODULE, Other]);
 
+handle_client_msg(
+                {message,
+                    {Mod,
+                        _Msg
+                }   }, _) ->
+    io:format("~p !!!!!!!! RECEIVED message from module~p~n", [?MODULE, Mod]).
 
 % server PDUs
 % @private

@@ -8,6 +8,7 @@ Second          ::= INTEGER
 
 TargetId        ::= PrintableString (SIZE (1..50))
 TargetHostname  ::= PrintableString (SIZE (0..50))
+TargetSysname   ::= PrintableString (SIZE (0..50))
 TargetTags      ::= SEQUENCE OF TargetTag
 TargetTag       ::= PrintableString (SIZE (1..50))
 TargetProperties ::= SEQUENCE OF TargetProperty
@@ -80,8 +81,11 @@ TargetInfo  ::= SEQUENCE {
     type        TargetInfoType
 }
 
+-- FROM CLIENT
 TargetCreate    ::= SEQUENCE {
-    ipAdd       IpAdd
+    ipAdd       IpAdd,
+    hostname    TargetHostname,
+    sysName     TargetSysname
 }
 
 TargetUpdate    ::= SEQUENCE {
@@ -107,6 +111,7 @@ ProbeDelete     ::= SEQUENCE {
     probe       ProbeId
 }
 
+-- FULL PDU
 TrackerPDU ::= CHOICE {
     fromServer  [0] CHOICE {
         targetInfo  [1] TargetInfo,
