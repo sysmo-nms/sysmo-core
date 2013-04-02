@@ -101,15 +101,19 @@ handle_call({probe_status_move, {
         pdu(probeInfo, {update, TargetId, Probe})}),
     {reply, ok, S#state{chans = NewChans}};
 
-handle_call({chan_add, #target{id = Id} = Target}, _F, 
+handle_call({chan_add, #target{id = Id, global_perm = Perm} = Target}, _F, 
         #state{chans = C} = S) ->
     case lists:keyfind(Id, 2, C) of
         false ->
+            ifs_mpd:multicast_msg(?MASTER_CHAN, {Perm,
+                pdu(targetInfo, Target)}),
             {reply, ok, S#state{
                     chans = [Target | C]
                 }
             };
         _ ->
+            ifs_mpd:multicast_msg(?MASTER_CHAN, {Perm,
+                pdu(targetInfo, Target)}),
             {reply, ok, 
                 S#state{
                     chans = lists:keyreplace(Id, 2, C, Target)

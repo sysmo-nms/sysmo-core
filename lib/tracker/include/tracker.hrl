@@ -167,6 +167,7 @@
             write = ["admin"]
         }                       :: #perm_conf{},
     probes      = []            :: [#probe{}],
+
     sys_properties  = []        :: [property()],
     sys_tags        = []        :: [tag()],
 

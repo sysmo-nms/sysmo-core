@@ -17,8 +17,11 @@ channel, probe, probeType, probeValue}).
 -record('TargetInfo',{
 channel, hostname, ipAdd, tags, properties, type}).
 
+-record('CommandResponce',{
+cmdId, cmdMsg}).
+
 -record('TargetCreate',{
-ipAdd, hostname, sysName}).
+ipAdd, hostname, sysName, gread, gwrite, cmdId}).
 
 -record('TargetUpdate',{
 target}).

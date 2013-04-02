@@ -30,12 +30,12 @@ start(_Type, _Args) ->
     {ok, TcpClientConf} = application:get_env(ifs, tcp_client),
     {ok, SslClientConf} = application:get_env(ifs, ssl_client),
     {ok, PduDispatch}   = application:get_env(ifs, pdu_dispatch),
-    {ok, MainChannel}   = application:get_env(ifs, main_channel),
+    {ok, MainChannels}  = application:get_env(ifs, main_channels),
     ifs_sup:start_link(
-        AuthModule, 
-        {AcctrlMod, PduDispatch, MainChannel},
-        TcpClientConf, 
-        SslClientConf).
+        {AuthModule, PduDispatch},              % for ifs_server
+        {AcctrlMod, MainChannels},              % for ifs_mpd
+        TcpClientConf,                          % for tcp_client_sup
+        SslClientConf).                         % for ssl_client_sup
 
 stop(_State) ->
 	ok.

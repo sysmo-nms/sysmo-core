@@ -39,7 +39,8 @@
 ]).
 
 -record(state, {
-    auth_mod
+    auth_mod,
+    dispatch
 }).
  
 
@@ -60,6 +61,10 @@ client_msg(Msg, ClientState) ->
     %io:format("~p RECEIVED: ~p~n", [?MODULE, Msg]),
     handle_client_msg(Msg, ClientState).
 
+% from himself
+handle_client_command(Mod, Msg, CState) ->
+    gen_server:call(?MODULE, {client_command, Mod, Msg, CState}).
+
 % DEBUG
 % @private
 dump() ->
@@ -69,12 +74,26 @@ dump() ->
 %% GEN_SERVER CALLBACKS
 %%-------------------------------------------------------------
 % @private
-init(AuthModule) ->
-    {ok, #state{auth_mod = AuthModule}}.
+init({AuthModule, PduDispatch}) ->
+    {ok, #state{
+        auth_mod = AuthModule,
+        dispatch = PduDispatch
+        }
+    }.
 
 % @private
 handle_call(dump, _F, S) ->
     {reply, S, S};
+
+handle_call({client_command, Key, Msg, CState}, _F, 
+        #state{dispatch = Dispatch} = S) ->
+    case lists:keyfind(Key, 2, Dispatch) of
+        false ->
+            {reply, ok, S};
+        {Module, Key} ->
+            Module:handle_command(Msg, CState),
+            {reply, ok, S}
+    end;
 
 handle_call({get, auth_mod}, _F, #state{auth_mod = AuthMod} = S) ->
     {reply, AuthMod, S};
@@ -171,9 +190,9 @@ handle_client_msg(
 handle_client_msg(
                 {message,
                     {Mod,
-                        _Msg
-                }   }, _) ->
-    io:format("~p !!!!!!!! RECEIVED message from module~p~n", [?MODULE, Mod]).
+                        Msg
+                }   }, CState) ->
+   handle_client_command(Mod, Msg, CState). 
 
 % server PDUs
 % @private

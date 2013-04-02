@@ -46,7 +46,6 @@
 
 -record(state, {
     acctrl,
-    switch,
     main_chans,
     chans
 }).
@@ -160,11 +159,10 @@ dump() ->
 %%-------------------------------------------------------------
 %% GEN_SERVER CALLBACKS
 %%-------------------------------------------------------------
-init({AcctrlMod, PduDispatch, MainChan}) ->
+init({AcctrlMod, MainChans}) ->
     {ok, #state{
             acctrl = AcctrlMod,
-            switch = PduDispatch,
-            main_chans = MainChan,
+            main_chans = MainChans,
             chans = []
         }
     }.
