@@ -53,7 +53,7 @@
     permissions     = #perm_conf{}  :: #perm_conf{},
     tracker_probe_mod = undefined   :: undefined | module(),
     status          = 'UNKNOWN'     :: 'UNKNOWN' | probe_status(),
-    timeout         = 0             :: integer(),
+    timeout         = 5             :: integer(),
     step            = 60            :: integer(),
 
     inspectors      = []            :: [#inspector{}],

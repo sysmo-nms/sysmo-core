@@ -92,21 +92,41 @@ handle_call(_R, _F, S) ->
 %%-------------------------------------------------------------
 % HANDLE_CAST
 %%-------------------------------------------------------------
-% if status are identical do nothing
+% if status ans sysproperties the probe should have moved nothing
 handle_cast({next_pass, 
-        #probe_server_state{probe = #probe{status = Status}  = Probe} = NewS},
-        #probe_server_state{probe = #probe{status = Status}} = _S) ->
+        #probe_server_state{
+            probe  = #probe{status          = Status},
+            target = #target{sys_properties = SysProp} = NewS}},
+        #probe_server_state{
+            probe  = #probe{status          = Status} = Probe,
+            target = #target{sys_properties = SysProp}}) ->
     After = Probe#probe.step * 1000,
     timer:apply_after(After, ?MODULE, probe_pass, [NewS]),
     {noreply, NewS};
 
-% else notfy the parent channel
-handle_cast({next_pass, #probe_server_state{probe = Probe} = NewState}, _S) ->
-    io:format("status has moved to ~p~n", [Probe#probe.status]),
-    % TODO notify channel
-    After = Probe#probe.step * 1000,
-    timer:apply_after(After, ?MODULE, probe_pass, [NewState]),
-    {noreply, NewState};
+% else notify the parent channel of a modification
+handle_cast({next_pass, 
+        #probe_server_state{probe = NProbe, target = NTarget} = NewS},
+        #probe_server_state{probe = Probe,  target = Target}) ->
+    CurrentStatus   = Probe#probe.status,
+    NewStatus       = NProbe#probe.status,
+    case NewStatus of
+        CurrentStatus   -> ok;
+        OtherStatus     -> 
+            io:format("probe status is now ~p~n",[OtherStatus])
+            % TODO
+    end,
+    CurrentSysP     = Target#target.sys_properties,
+    NewSysP         = NTarget#target.sys_properties,
+    case NewSysP of
+        CurrentSysP -> ok;
+        OtherSysP   ->
+            % TODO
+            io:format("probe sysproerty is now ~p~n",[OtherSysP])
+    end,
+    After = NProbe#probe.step * 1000,
+    timer:apply_after(After, ?MODULE, probe_pass, [NewS]),
+    {noreply, NewS};
 
 handle_cast(_R, S) ->
     io:format("Unknown message ~p ~p ~p ~p~n", [?MODULE, ?LINE, _R, S]),
@@ -148,7 +168,7 @@ probe_pass(#probe_server_state{target = Target, probe  = Probe } = S) ->
     Mod     = Probe#probe.tracker_probe_mod,
     Result  = Mod:exec({Target, Probe}),
     io:format("result is ~p~n", [Result]),
-    % TODO notify channel
+    % TODO 
     %tracker_target_channel:new_event(
         %Target#target.id,
         %Probe#probe.pid,
