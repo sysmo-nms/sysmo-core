@@ -38,24 +38,28 @@ handle_command({fromClient, {createTarget, Msg}},
         _ ->
             [Write]
     end,
-    NewTarget = #target{
-        id          = tracker_misc:generate_id(),
-        ip          = Ip,
-        hostname    = Hostname,
-        sysname     = Sysname,
-        global_perm = #perm_conf{
-                        read    = ReadPerm,
-                        write   = WritePerm
-                    }
-    },
-    case tracker_target_channel_sup:new(NewTarget) of
-        {ok, _} ->
-            CMod:send(CState, pdu(comResp, {CmdId, "ok"}));
-        Other ->
-            io:format("error ~p~n", [Other]),
-            CMod:send(CState, pdu(comResp, {CmdId, "error"}))
-    end,
-    ok.
+    case inet_parse:address(Ip) of
+        {ok, EIp}   ->
+            launch_target(#target{
+                id          = tracker_misc:generate_id(),
+                ip          = EIp,
+                hostname    = Hostname,
+                sysname     = Sysname,
+                global_perm = #perm_conf{
+                                read    = ReadPerm,
+                                write   = WritePerm
+                                }  
+            }, CState, CmdId);
+        {error, _}  ->
+            CMod:send(CState, pdu(comResp, {CmdId, "Bad ip format"}))
+    end;
+
+handle_command({fromClient, {createProbe, Msg}}, 
+        #client_state{module = _CMod} = _CState) ->
+    io:format("createProbe ~p~n",[Msg]);
+
+handle_command({fromClient, Other}, _) ->
+    io:format("Unknown command ~p~n", [Other]).
 
 pdu(comResp, {CmdId, CmdMsg}) ->
     {modTrackerPDU,
@@ -66,3 +70,11 @@ pdu(comResp, {CmdId, CmdMsg}) ->
                     CmdMsg
     }   }   }   }.
 
+
+launch_target(Target, #client_state{module = CMod} = CState, CmdId) ->
+    case tracker_target_channel_sup:new(Target) of
+        {ok, _} ->
+            CMod:send(CState, pdu(comResp, {CmdId, "ok"}));
+        _ ->
+            CMod:send(CState, pdu(comResp, {CmdId, "error"}))
+    end.

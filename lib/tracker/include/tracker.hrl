@@ -50,17 +50,19 @@
     tracker_probe_mod = undefined   :: undefined | module(),
     status          = 'INITIAL'     :: 'INITIAL' | probe_status(),
 
-    % step, timeouts, timeout before CRITICAL, flip flap detection
-    step            = undefined     :: undefined | integer(),
-    timeout_wait    = undefined     :: undefined | integer(),
-    timeout_max     = undefined     :: undefined | integer(),
     % for testing
     inspectors      = []            :: [inspector()],
+
+    timeout_max     = undefined     :: undefined | integer(),
 
     % if type = fetch
     rrd_create          = ""            :: #rrd_create{},
     rrd_update          = ""            :: #rrd_ds_update{},
     rrd_graph           = ""            :: string(),
+
+    % step, timeouts, timeout before CRITICAL, flip flap detection
+    step            = undefined     :: undefined | integer(),
+    timeout_wait    = undefined     :: undefined | integer(),
 
     % what for? do not remember
     max_threshold       = undefined     :: undefined | #exceed{},

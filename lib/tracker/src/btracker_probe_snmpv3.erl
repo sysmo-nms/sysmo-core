@@ -19,34 +19,17 @@
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 % @private
--module(tracker_app).
--behaviour(application).
-
+-module(btracker_probe_snmpv3).
+-behaviour(beha_tracker_probe).
+-include("../include/tracker.hrl").
 -export([
-    start/2,
-    start_phase/3,
-    stop/1]).
+    exec/1,
+    info/0
+]).
 
-start(_Type, _Args) ->
-    {ok, GenEventListeners} = application:get_env(tracker, registered_events),
-    {ok, DbDir}             = application:get_env(tracker, db_dir),
-    {ok, RrdDir}            = application:get_env(tracker, rrd_dir),
-    {ok, ProbeModules}      = application:get_env(tracker, probe_modules),
-    tracker_sup:start_link(
-        ProbeModules,
-        GenEventListeners,
-        filename:absname(DbDir), 
-        filename:absname(RrdDir)
-    ).
+% icmp_server:ping(Ip, Timeout) -> must return {ok, Val} | {error, Error}
+exec({#target{ ip = Ip}, #probe{timeout_wait = Timeout}}) ->
+    icmp_server:ping(Ip, Timeout * 1000).
 
-start_phase(init_chans, normal, []) ->
-    AllTargets = tracker_target_store:info(),
-    lists:foreach(fun(X) ->
-        tracker_target_channel_sup:new(X)
-    end, AllTargets);
-
-start_phase(launch_probes, normal, []) ->
-    tracker_target_channel_sup:init_launch_probes().
-
-stop(_State) ->
-	ok.
+info() ->
+    {ok, ""}.

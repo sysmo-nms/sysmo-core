@@ -23,10 +23,16 @@
 -behaviour(beha_tracker_probe).
 -include("../include/tracker.hrl").
 -export([
-    exec/1
+    exec/1,
+    info/0
 ]).
 
 % icmp_server:ping(Ip, Timeout) -> must return {ok, Val} | {error, Error}
 exec({#target{ ip = Ip}, #probe{timeout_wait = Timeout}}) ->
     icmp_server:ping(Ip, Timeout * 1000).
 
+info() ->
+    {ok,
+    "This probe send icmp echo request to the target. No special configuration
+    Can log the responce latency in an RRD file."
+    }.

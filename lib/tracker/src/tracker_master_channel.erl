@@ -33,7 +33,7 @@
 ]).
 
 -export([
-    start_link/0,
+    start_link/1,
     chan_add/1,
     chan_del/1,
     chan_event/2
@@ -49,9 +49,9 @@
 %% API
 %%-------------------------------------------------------------
 % @private
--spec start_link() -> {ok, pid()}.
-start_link() ->
-    gen_server:start_link({local, ?MASTER_CHAN}, ?MODULE, [], []).
+-spec start_link([any()]) -> {ok, pid()}.
+start_link(ProbeModules) ->
+    gen_server:start_link({local, ?MASTER_CHAN}, ?MODULE, [ProbeModules], []).
 
 
 %%-------------------------------------------------------------
@@ -81,7 +81,8 @@ chan_del(Target) ->
 %% GEN_SERVER CALLBACKS
 %%-------------------------------------------------------------
 % @private
-init([]) ->
+init([ProbeModules]) ->
+    io:format("ok start with ~p~n",[ProbeModules]),
     {ok, #state{
             chans = [],
             perm = #perm_conf{

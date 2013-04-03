@@ -23,7 +23,8 @@
 -behaviour(beha_tracker_probe).
 -include("../include/tracker.hrl").
 -export([
-    exec/1
+    exec/1,
+    info/0
 ]).
 
 % icmp_server:ping(Ip, Timeout) -> must return {ok, Val} | {error, Error}
@@ -33,3 +34,5 @@ exec({#target{ip = Ip}, #probe{timeout_wait = Timeout}}) ->
         {error, Any} -> {error, Any}
     end.
 
+info() ->
+    {ok, ""}.

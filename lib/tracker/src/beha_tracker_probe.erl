@@ -31,12 +31,15 @@
 -export([behaviour_info/1]).
 
 % export here for documentation only:
--export([exec/1]).
+-export([
+    exec/1,
+    info/0]).
 
 % @private
 behaviour_info(callbacks) ->
     [
-        {exec, 1}
+        {exec, 1},
+        {info, 0}
     ];
 
 behaviour_info(_) ->
@@ -51,3 +54,11 @@ behaviour_info(_) ->
 % time.
 % @end
 exec(_) -> {ok, 1}.
+
+-spec info() -> {ok, string()}.
+% @doc
+% Called by the tracker_master_channel for presentation of the module to the
+% client. Must include every aspect of the probe and special configuration
+% parameters explanations.
+% @end
+info() -> {ok, ""}.
