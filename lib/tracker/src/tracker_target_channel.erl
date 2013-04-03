@@ -72,11 +72,6 @@
 %% API
 %%-------------------------------------------------------------
 % @private
--spec start_link(string(), #target{}) -> 
-        {ok, pid()} | ignore | {error, any()}.
-% @doc
-% Start the server. Args must be the rrd data root dir and a target record.
-% @end
 start_link(RrdDir, #target{id = Id} = Target) ->
     gen_server:start_link({local, Id}, ?MODULE, [RrdDir, Target], []).
 
@@ -94,7 +89,7 @@ launch_probes(Id) ->
 -spec new_event(Self::pid(), ProbePid::pid(), Msg::tuple()) -> ok.
 % @doc
 % Called by one of the tracker_probes belonging to the tracker_target_channel
-% identified by Self.
+% identified by Chan.
 % @end
 new_event(Chan, ProbePid, Message) ->
     gen_server:cast(Chan, {tracker_probe_msg, ProbePid, Message}).
@@ -173,9 +168,9 @@ init([RootRrdDir, #target{
 handle_call(launch_probes, _F, #chan_state{target = Target} = S) ->
     Probes = Target#target.probes,
     NewProbes = lists:foldl(fun(Probe, Accum) ->
-        {ok, Pid}   = tracker_probe_sup:new({Target, Probe, self()}),
+        {ok, Pid}   = tracker_probe_sup:new({Target, Probe}),
         tracker_probe:launch(Pid),
-        [ Probe#probe{pid = Pid} | Accum]
+        [Probe#probe{pid = Pid} | Accum]
     end, [], Probes),
     NewTarget = Target#target{probes = NewProbes},
     NewState  = S#chan_state{target = NewTarget},

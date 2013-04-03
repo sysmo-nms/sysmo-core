@@ -2,7 +2,7 @@
 % Copyright (C) 2012 <Sébastien Serre sserre.bx@gmail.com>
 % 
 % Enms is a Network Management System aimed to manage and monitor SNMP
-% target, monitor network hosts and services, provide a consistent
+% targets, monitor network hosts and services, provide a consistent
 % documentation system and tools to help network professionals
 % to have a wide perspective of the networks they manage.
 % 
@@ -18,33 +18,37 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
-% @private
--module(btracker_inspector_debug).
+% @doc
+% The most simple inspector. If the return is not {ok,_}, then the status
+% of the probe is set to 'ERROR'. Else it is 'OK'.
+% @end
+-module(btracker_inspector_simple).
 -behaviour(beha_tracker_inspector).
 -include("../include/tracker.hrl").
+
+
 -export([
-    init/2,
-    inspect/3
+    init/2, 
+    inspect/3,
+    info/0
 ]).
 
--spec init([any()], #probe_server_state{}) -> {ok, #probe_server_state{}}.
-% @doc 
-% Called by a probe starting to initalise the #probe_state.inspector_state
-% if needed.
-% @end
-init(_C, #probe_server_state{inspectors_state = IState} = S) ->
-    io:format("init inspect~n"),
-    {ok, S#probe_server_state{inspectors_state = [more | IState]}}.
+info() ->
+    [
+        'ERROR',
+        'OK'
+    ].
 
--spec inspect(
-        Orig::#probe_server_state{},
-        Modifed::#probe_server_state{},
-        Msg::tuple()) -> 
-    {ok, Other::#probe_server_state{}}.
-% @doc
-% Called by the probe each time an event occur.
-% @end
-inspect(_S1, S2, _Msg) ->
-    io:format("inspect~n"),
-    {ok, S2}.
+init(_Conf, PrState) -> 
+    {ok, PrState}.
 
+% @end
+inspect(_InitS, 
+        #probe_server_state{probe = Probe} = PrState, {ok, _}) ->
+    NewProbe = Probe#probe{status = 'OK'},
+    {ok, PrState#probe_server_state{probe = NewProbe}};
+
+inspect(_InitS, 
+        #probe_server_state{probe = Probe} = PrState, {error, _}) ->
+    NewProbe = Probe#probe{status = 'ERROR'},
+    {ok, PrState#probe_server_state{probe = NewProbe}}.

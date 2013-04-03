@@ -28,7 +28,6 @@
 -type tfun()                    :: fun() | undefined.
 -type timeout_alert()           :: fun() | undefined.
 -type timeout_threshold()       :: integer() | undefined.
--type inspector()               :: {module(), [any()]}.
 -type probe_status() :: 'UNKNOWN' | 'CRITICAL' | 'WARNING' | 'RECOVERY' | 'OK'.
 
 -record(exceed, {
@@ -41,6 +40,11 @@
     max_chain_offset = undefined :: undefined | integer()
 }).
 
+-record(inspector, {
+    module,
+    conf
+}).
+
 -record(probe, {
     id              = undefined     :: probe_id(), % unique in each targets
     pid             = undefined     :: undefined | pid(),
@@ -49,27 +53,15 @@
     permissions     = #perm_conf{}  :: #perm_conf{},
     tracker_probe_mod = undefined   :: undefined | module(),
     status          = 'UNKNOWN'     :: 'UNKNOWN' | probe_status(),
+    timeout         = 0             :: integer(),
+    step            = 60            :: integer(),
 
-    % for testing
-    inspectors      = []            :: [inspector()],
-
+    inspectors      = []            :: [#inspector{}],
 
     % if type = fetch
     rrd_create          = ""            :: #rrd_create{},
     rrd_update          = ""            :: #rrd_ds_update{},
-    rrd_graph           = ""            :: string(),
-
-    % step, timeouts, timeout before CRITICAL, flip flap detection
-    % every step seconds
-    step            = 5             :: integer(),
-    % wait timeout_wait seconds for reply
-    timeout_wait    = 5             :: integer(),
-    % after timeout_max timeouts pass from WARNING to CRITICAL
-    timeout_max     = 5             :: integer(),
-
-    % what for? do not remember
-    max_threshold       = undefined     :: undefined | #exceed{},
-    min_threshold       = undefined     :: undefined | #exceed{}
+    rrd_graph           = ""            :: string()
 }).
 
 % -record(target, {
@@ -170,8 +162,61 @@
     global_perm = #perm_conf{
             read = ["admin"],
             write = ["admin"]
-        }                       :: #perm_conf{},
-    probes      = []            :: [#probe{}],
+        },
+    probes      = 
+        [
+            #probe{
+                id  = 1,
+                name = icmp_test,
+                type = fetch,
+                permissions = #perm_conf{
+                    read = ["admin"],
+                    write = ["admin"]
+                },
+                tracker_probe_mod = btracker_probe_icmp_echo,
+                inspectors  = [
+                    #inspector{
+                        module  = btracker_inspector_simple,
+                        conf    = []
+                    }
+                ],
+                timeout = 10,
+                step    = 5,
+
+
+                % RRD Related
+                rrd_update = #rrd_update{
+                    file    = "probe_icmp_echo-1.rrd",
+                    time    = now,
+                    updates = [
+                        #rrd_ds_update{
+                            name    = "latency",
+                            value   = 0
+                        }
+                    ]
+                },
+
+                rrd_create = #rrd_create{
+                    file        = "probe_icmp_echo-1.rrd",
+                    start_time  = undefined,
+                    step        = 5,
+                    ds_defs     = [
+                        #rrd_ds{
+                            name    = "latency",
+                            type    = gauge,
+                            heartbeat = 25,
+                            min     = 0,
+                            max     = 100000000,
+                            args    = "25:0:U"
+                        }
+                    ],
+                    rra_defs    = [
+                        #rrd_rra{cf = 'max', args = "0:1:3600"},
+                        #rrd_rra{cf = 'max', args = "0:12:1440"}
+                    ]
+                }
+            }
+        ],
 
     sys_properties  = []        :: [property()],
     sys_tags        = []        :: [tag()],
@@ -180,20 +225,8 @@
     tags            = []        :: [tag()]
 }).
 
-% this record have redundant data in it 2 records of #probe{}. 
-% It is here because it is used by the gen_flipflap behaviour modules.
 -record(probe_server_state, {
-    target_chan     = undefined     :: undefined | pid(),
-    target          = undefined     :: undefined | #target{},
-    probe           = undefined     :: undefined | #probe{},
-    step            = undefined     :: undefined | integer(),
-    % max series of timeout ocuring before trigger an alert
-    timeout_max     = undefined     :: undefined | integer(),  
-    % wait for a responce in timeout_wait
-    timeout_wait    = undefined     :: undefined | integer(),
-    timeout_current = 0             :: integer(),
-    % module implementing the gen_flipflap behaviour will modify this record
-    inspectors      = []            :: [module()],
-    inspectors_state = []           :: [any()],
-    status          = 'UNKNOWN'     :: probe_status()
+    target,
+    probe,
+    inspectors_state
 }).

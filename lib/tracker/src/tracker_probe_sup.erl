@@ -31,8 +31,8 @@
 start_link() ->
     supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
-new({Target, Probe, Pid}) ->
-    supervisor:start_child(?MODULE, [{Target, Probe, Pid}]).
+new({Target, Probe}) ->
+    supervisor:start_child(?MODULE, [{Target, Probe}]).
 
 init([]) ->
     {ok, 

@@ -28,7 +28,7 @@
 ]).
 
 % icmp_server:ping(Ip, Timeout) -> must return {ok, Val} | {error, Error}
-exec({#target{ip = Ip}, #probe{timeout_wait = Timeout}}) ->
+exec({#target{ip = Ip}, #probe{timeout = Timeout}}) ->
     case inet_res:gethostbyaddr(Ip, Timeout) of
         {ok, #hostent{h_name = ResolvedName}} -> {ok, ResolvedName};
         {error, Any} -> {error, Any}

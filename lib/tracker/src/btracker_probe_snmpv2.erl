@@ -28,7 +28,7 @@
 ]).
 
 % icmp_server:ping(Ip, Timeout) -> must return {ok, Val} | {error, Error}
-exec({#target{ ip = Ip}, #probe{timeout_wait = Timeout}}) ->
+exec({#target{ ip = Ip}, #probe{timeout = Timeout}}) ->
     icmp_server:ping(Ip, Timeout * 1000).
 
 info() ->

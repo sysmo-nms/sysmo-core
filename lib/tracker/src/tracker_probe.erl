@@ -36,23 +36,14 @@
 -export([
     start_link/1,
     launch/1,
-    notify/2,
-    status/1,
-    probe_pass/3 % do not use. Only exported for timer:apply_after()
+    probe_pass/1
 ]).
 
 %%-------------------------------------------------------------
 %% API
 %%-------------------------------------------------------------
-% @private
--spec start_link({#target{}, #probe{}, pid()}) -> {ok, pid()}.
-% @doc 
-% Start the probe server. Called by tracker_probe_sup:new/1.
-% #target{} and #probe{} records will be sent as arguments to the "gen_probe"
-% mobule of this server.
-% @end
-start_link({Target, Probe, Pid}) ->
-    gen_server:start_link(?MODULE, [Target, Probe, Pid], []).
+start_link({Target, Probe}) ->
+    gen_server:start_link(?MODULE, [Target, Probe], []).
 
 % @private
 -spec launch(pid()) -> ok.
@@ -64,56 +55,22 @@ start_link({Target, Probe, Pid}) ->
 launch(Pid) ->
     gen_server:call(Pid, start).
 
--spec notify(ProbePid::pid(), Message::tuple()) -> ok.
-% @doc
-% Used to send a notification to the tracker_target_channel who own the
-% tracker_probe server ProbePid. It is exported because a gen_inspector can
-% use it to send alert message like if it is the probe who send it.
-% <p>
-% Message must be of type {Key::atom(), Val::any()} and have these 
-% significations:
-% <ul>
-%   <li>
-%       Key = 'OK' | 'RECOVERY'. If probe is of type 'fetch', then Val is
-%       interpreted as a value to enter on the rrd file associated.
-%   </li>
-%   <li>
-%       Key = 'CRITICAL'. Will trigger a warning fun associated with the
-%       probe.
-%   </li>
-%   <li>
-%       Key = Other, will log the message on tracker_events::module().
-%   </li>
-% </ul>
-% </p>
-% @end
-notify(ProbePid, Message) ->
-    gen_server:cast(ProbePid, {notify, Message}).
 
--spec status(pid()) -> {ok, probe_status()}.
+%-spec handle_event(#probe{}) -> ok.
 % @doc
-% This function is called by a "tracker_target_channel" to get the status of
-% his probes. I then do not have to keep this state when he need this type
-% of information. It is mainly implemented to initialize an ifs client.
+% Called from an inspector if an event occur.
 % @end
-status(ProbePid) ->
-    gen_server:call(ProbePid, status).
+%handle_event(Probe, Msg) ->
+ %   gen_server:call(Probe#probe.pid, {handle_event, Msg}).
 
 %%-------------------------------------------------------------
 %% GEN_SERVER CALLBACKS
 %%-------------------------------------------------------------
 % @private
-init([Target, Probe, Pid]) ->
+init([Target, Probe]) ->
     State = #probe_server_state{
-        target_chan     = Pid,
-        target          = Target,
-        probe           = Probe, 
-        step            = Probe#probe.step,
-        timeout_max     = Probe#probe.timeout_max,
-        timeout_wait    = Probe#probe.timeout_wait,
-        inspectors      = Probe#probe.inspectors,
-        timeout_current = 0,
-        status          = 'UNKNOWN'
+        target = Target,
+        probe  = Probe#probe{pid = self()}
     },
     {ok, State}.
         
@@ -121,18 +78,12 @@ init([Target, Probe, Pid]) ->
 % launch a probe for the first time. Give a way to inspectors to initialize
 % themself and Randomise start.
 % @private
-handle_call(start, _F, #probe_server_state{
-        probe       = Probe, 
-        target      = Target, 
-        step        = Step} = S) ->
+handle_call(start, _F, #probe_server_state{probe = Probe} = S) ->
+    Step = Probe#probe.step, 
     InitialLaunch = tracker_misc:random(Step * 1000),
     timer:apply_after(InitialLaunch, ?MODULE, 
-            probe_pass, [Target, Probe, self()]),
-    notify(self(), {up, S#probe_server_state.status}),
+            probe_pass, [S]),
     {reply, ok, init_inspect(S)};
-
-handle_call(status, _F, #probe_server_state{status = Status} = S) ->
-    {reply, {ok, Status}, S};
 
 handle_call(_R, _F, S) ->
     {noreply, S}.
@@ -141,137 +92,25 @@ handle_call(_R, _F, S) ->
 %%-------------------------------------------------------------
 % HANDLE_CAST
 %%-------------------------------------------------------------
-% launch a probe normal
-% @private
-handle_cast(launch, #probe_server_state{
-        probe   = Probe, 
-        target  = Target, 
-        step    = Frequency} = S) ->
-    timer:apply_after(Frequency * 1000, 
-            ?MODULE, probe_pass, [Target, Probe, self()]),
-    {noreply, S};
+% if status are identical do nothing
+handle_cast({next_pass, 
+        #probe_server_state{probe = #probe{status = Status}  = Probe} = NewS},
+        #probe_server_state{probe = #probe{status = Status}} = _S) ->
+    After = Probe#probe.step * 1000,
+    timer:apply_after(After, ?MODULE, probe_pass, [NewS]),
+    {noreply, NewS};
 
-handle_cast({notify, {status_move, Message}}, #probe_server_state{
-        target_chan = ChanPid} = S) ->
-    tracker_target_channel:new_event(ChanPid, self(), {status_move, Message}),
-    {noreply, S};
-
-handle_cast({notify, Message}, #probe_server_state{
-        target_chan = ChanPid} = S) ->
-    tracker_target_channel:new_event(ChanPid, self(), Message),
-    {noreply, S};
-
-
-
-% inspect and eventualy modify state before the probe_responce is processed.
-handle_cast({inspect, Msg}, S) ->
-    gen_server:cast(self(), {probe_response, Msg}),
-    {noreply, inspect(S, Msg)};
-
-% error, max timeout reached, and status is 'WARNING', trigger critical
-handle_cast({probe_response, {error, Val}}, #probe_server_state{
-        timeout_current = T, 
-        timeout_max     = T, 
-        status          = 'WARNING'} = S) ->
-    %% ici une alerte est declanchee
-    notify(self(), {status_move, {'CRITICAL', Val}}),
-    gen_server:cast(self(), launch),
-    {noreply, S#probe_server_state{status = 'CRITICAL'}};
-
-% error, max timeout reached and status is allready 'CRITICAL', do nothing.
-handle_cast({probe_response, {error, _}}, #probe_server_state{
-            timeout_current = T, 
-            timeout_max     = T, 
-            status          = 'CRITICAL'} = S) ->
-    gen_server:cast(self(), launch),
-    {noreply, S};
-
-% error status is 'RECOVERY' timeout not reached. go to 'WARNING'
-handle_cast({probe_response, {error, Val}}, #probe_server_state{
-            timeout_current     = T,
-            status              = 'RECOVERY'} = S) ->
-    notify(self(), {status_move, {'WARNING', Val}}),
-    gen_server:cast(self(), launch),
-    {noreply, S#probe_server_state{
-        timeout_current = T + 1,
-        status          = 'WARNING'}};
-
-% error status is 'WARNING' timeout not reached. Renew 'WARNING'
-handle_cast({probe_response, {error, Val}}, #probe_server_state{
-            timeout_current     = T,
-            status              = 'WARNING'} = S) ->
-    notify(self(), {'WARNING', Val}),
-    gen_server:cast(self(), launch),
-    {noreply, S#probe_server_state{timeout_current = T + 1}};
-
-% error status is 'UNKNOWN' max number of timeout not reached.
-% it is a WARNING
-handle_cast({probe_response, {error, Val}}, #probe_server_state{
-            timeout_current     = T,
-            status              = 'UNKNOWN'} = S) ->
-    notify(self(), {status_move, {'WARNING', Val}}),
-    gen_server:cast(self(), launch),
-    {noreply, S#probe_server_state{
-        timeout_current = T + 1,
-        status          = 'WARNING'}};
-
-% error, status is OK, max number of timeout not reached. pass to WARNING
-handle_cast({probe_response, {error, Val}}, #probe_server_state{
-            timeout_current     = T,
-            status              = 'OK'} = S) ->
-    notify(self(), {status_move, {'WARNING', Val}}),
-    gen_server:cast(self(), launch),
-    {noreply, S#probe_server_state{
-        timeout_current = T + 1,
-        status          = 'WARNING'}};
-
-% ok but status was CRITICAL, then it is a RECOVERY. 
-handle_cast({probe_response, {ok, Val}}, #probe_server_state{
-        status      = 'CRITICAL'} = S) ->
-    notify(self(), {status_move, {'RECOVERY', Val}}),
-    gen_server:cast(self(), launch),
-    {noreply, S#probe_server_state{
-        timeout_current = 0, 
-        status          = 'RECOVERY'}};
-
-% ok but status was WARNING, then it is a RECOVERY. 
-handle_cast({probe_response, {ok, Val}}, #probe_server_state{
-        status      = 'WARNING'} = S) ->
-    notify(self(), {status_move, {'RECOVERY', Val}}),
-    gen_server:cast(self(), launch),
-    {noreply, S#probe_server_state{
-        timeout_current = 0, 
-        status          = 'RECOVERY'}};
-
-% ok but status was UNKNOWN, then it is a RECOVERY. 
-handle_cast({probe_response, {ok, Val}}, #probe_server_state{
-        status      = 'UNKNOWN'} = S) ->
-    notify(self(), {status_move, {'RECOVERY', Val}}),
-    gen_server:cast(self(), launch),
-    {noreply, S#probe_server_state{
-        timeout_current = 0, 
-        status          = 'RECOVERY'}};
-
-% ok but the state was RECOVERY pass to OK.
-handle_cast({probe_response, {ok, Val}}, #probe_server_state{
-        status      = 'RECOVERY'} = S) ->
-    notify(self(), {status_move, {'OK', Val}}),
-    gen_server:cast(self(), launch),
-    {noreply, S#probe_server_state{
-        timeout_current     = 0,
-        status              = 'OK'}};
-
-% ok standard, reset the timeout_current count. It is an informational msg.
-handle_cast({probe_response, {ok, Val}}, #probe_server_state{
-        status      = 'OK'} = S) ->
-    notify(self(), {'OK', Val}),
-    gen_server:cast(self(), launch),
-    {noreply, S#probe_server_state{timeout_current = 0}};
+% else notfy the parent channel
+handle_cast({next_pass, #probe_server_state{probe = Probe} = NewState}, _S) ->
+    io:format("status has moved to ~p~n", [Probe#probe.status]),
+    % TODO notify channel
+    After = Probe#probe.step * 1000,
+    timer:apply_after(After, ?MODULE, probe_pass, [NewState]),
+    {noreply, NewState};
 
 handle_cast(_R, S) ->
     io:format("Unknown message ~p ~p ~p ~p~n", [?MODULE, ?LINE, _R, S]),
     {noreply, S}.
-
 
 % OTHER
 % @private
@@ -279,9 +118,14 @@ handle_info(I, S) ->
     io:format("handle_info ~p ~p ~p~n", [?MODULE, I, S]),
     {noreply, S}.
 
+
+
 % @private
-terminate(R, #probe_server_state{target_chan = ChanPid}) ->
-    tracker_target_channel:new_event(ChanPid, self(), {down, R}),
+% terminate(R, #probe_server_state{target_chan = ChanPid}) ->
+    % tracker_target_channel:new_event(ChanPid, self(), {down, R}),
+    % normal.
+
+terminate(_R, _) ->
     normal.
 
 % @private
@@ -291,34 +135,52 @@ code_change(_O, S, _E) ->
 
 
 
-%% PRIVATE FUNCT
-
+%%-------------------------------------------------------------
+%% PRIVATE FUNS
+%%-------------------------------------------------------------
 % @private
--spec probe_pass(#target{}, #probe{}, pid()) -> ok.
+-spec probe_pass(#probe_server_state{}) -> ok.
 % @doc
 % It is the spawned proc who call the "gen_probe" module defined in the 
 % #probe{} record.
 % @end
-probe_pass(Target, Probe, Pid) ->
+probe_pass(#probe_server_state{target = Target, probe  = Probe } = S) ->
     Mod     = Probe#probe.tracker_probe_mod,
     Result  = Mod:exec({Target, Probe}),
-    gen_server:cast(Pid, {inspect, Result}).
+    io:format("result is ~p~n", [Result]),
+    % TODO notify channel
+    %tracker_target_channel:new_event(
+        %Target#target.id,
+        %Probe#probe.pid,
+        %Result
+    %),
+    NewS    = inspect(S, Result),
+    next_pass(NewS).
 
-
+-spec next_pass(#probe_server_state{}) -> ok.
+% @doc
+% called from ?MODULE:probe_pass which trigger another probe_pass.
+% @end
+next_pass(#probe_server_state{probe = Probe} = State) ->
+    gen_server:cast(Probe#probe.pid, {next_pass, State}).
+ 
+ 
 % @private
 -spec init_inspect(#probe_server_state{}) -> #probe_server_state{}.
-init_inspect(#probe_server_state{inspectors = Inspectors} = State) ->
-    NewState = lists:foldl(fun({Mod, Args}, S) ->
-        {ok, NewS} = Mod:init(Args, S),
-        NewS
+init_inspect(#probe_server_state{probe = Probe} = State) ->
+    Inspectors = Probe#probe.inspectors,
+    NewState = lists:foldl(fun(#inspector{module = Mod, conf = Conf}, S) ->
+        {ok, NewState} = Mod:init(Conf, S),
+        NewState 
     end, State, Inspectors),
     NewState.
 
 % @private
 -spec inspect(#probe_server_state{}, Msg::tuple()) -> #probe_server_state{}.
-inspect(#probe_server_state{inspectors = Inspectors} = State, Msg) ->
+inspect(#probe_server_state{probe = Probe} = State, Msg) ->
+    Inspectors = Probe#probe.inspectors,
     {State, NewState, Msg} = lists:foldl(
-        fun({Mod, _}, {Orig, Modified, Message}) ->
+        fun(#inspector{module = Mod}, {Orig, Modified, Message}) ->
             {ok, New} = Mod:inspect(Orig, Modified, Message),
             {Orig, New, Message}
         end, {State, State, Msg}, Inspectors),
