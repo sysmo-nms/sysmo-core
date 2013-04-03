@@ -48,12 +48,11 @@
     type            = undefined     :: probe_type(), % store rrd data?
     permissions     = #perm_conf{}  :: #perm_conf{},
     tracker_probe_mod = undefined   :: undefined | module(),
-    status          = 'INITIAL'     :: 'INITIAL' | probe_status(),
+    status          = 'UNKNOWN'     :: 'UNKNOWN' | probe_status(),
 
     % for testing
     inspectors      = []            :: [inspector()],
 
-    timeout_max     = undefined     :: undefined | integer(),
 
     % if type = fetch
     rrd_create          = ""            :: #rrd_create{},
@@ -61,8 +60,12 @@
     rrd_graph           = ""            :: string(),
 
     % step, timeouts, timeout before CRITICAL, flip flap detection
-    step            = undefined     :: undefined | integer(),
-    timeout_wait    = undefined     :: undefined | integer(),
+    % every step seconds
+    step            = 5             :: integer(),
+    % wait timeout_wait seconds for reply
+    timeout_wait    = 5             :: integer(),
+    % after timeout_max timeouts pass from WARNING to CRITICAL
+    timeout_max     = 5             :: integer(),
 
     % what for? do not remember
     max_threshold       = undefined     :: undefined | #exceed{},

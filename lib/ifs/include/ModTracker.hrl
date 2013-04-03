@@ -5,8 +5,17 @@
 
 
 
+-record('PermConf',{
+read, write}).
+
+-record('ProbeConf',{
+name, type}).
+
 -record('ProbeInfo',{
 channel, probeId, name, type, probeMod, status, step, timeoutMax, timeoutWait, inspectors, infoType}).
+
+-record('ProbeModuleInfo',{
+name, info}).
 
 -record('ProbeDump',{
 channel, probeId, probeType, rrdData}).
@@ -21,16 +30,16 @@ channel, hostname, ipAdd, tags, properties, type}).
 cmdId, cmdMsg}).
 
 -record('TargetCreate',{
-ipAdd, hostname, sysName, gread, gwrite, cmdId}).
+ipAdd, hostname, sysName, permConf, cmdId}).
+
+-record('ProbeCreate',{
+target, probeConf}).
 
 -record('TargetUpdate',{
 target}).
 
 -record('TargetDelete',{
 target}).
-
--record('ProbeCreate',{
-target, probeMod}).
 
 -record('ProbeUpdate',{
 target, probe}).

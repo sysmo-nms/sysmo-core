@@ -10,6 +10,10 @@ CommandId       ::= INTEGER
 CommandMsg      ::= PrintableString
 
 GroupName       ::= PrintableString (SIZE (0..50))
+PermConf        ::= SEQUENCE {
+    read        SEQUENCE OF GroupName,
+    write       SEQUENCE OF GroupName
+}
 
 TargetId        ::= PrintableString (SIZE (0..50))
 TargetHostname  ::= PrintableString (SIZE (0..50))
@@ -35,6 +39,11 @@ ProbeRRDCreate  ::= PrintableString
 ProbeRRDUpdate  ::= PrintableString
 ProbeRRDGraph   ::= PrintableString
 
+ProbeConf       ::= SEQUENCE {
+    name        ProbeName,
+    type        ProbeType
+}
+
 RRDFile         ::= OCTET STRING
 
 ProbeInfo   ::= SEQUENCE {
@@ -53,21 +62,18 @@ ProbeInfo   ::= SEQUENCE {
     --rrdGraph    ProbeRRDCreate,
     infoType    ProbeInfoType
 }
+
+ProbeModuleInfo ::= SEQUENCE {
+    name        ErlangModule,
+    info        PrintableString
+}
+
 ProbeDump   ::= SEQUENCE {
     channel     TargetId,
     probeId     ProbeId,
     probeType   ProbeType,
     rrdData     RRDFile
 }
-
--- ProbeInfo   ::= SEQUENCE {
---     channel     TargetId,
---     probe       ProbeId,
---     status      ProbeStatus,
---     name        ProbeName,
---     type        ProbeType,
---     infoType    ProbeInfoType
--- }
 
 ProbeFetch  ::= SEQUENCE {
     channel     TargetId,
@@ -91,16 +97,23 @@ CommandResponce ::= SEQUENCE {
     cmdMsg      CommandMsg
 }
 
+---------------------------------------
 -- FROM CLIENT
+---------------------------------------
 TargetCreate    ::= SEQUENCE {
     ipAdd       IpAdd,
     hostname    TargetHostname,
     sysName     TargetSysname,
-    gread       GroupName,
-    gwrite      GroupName,
+    permConf    PermConf,
     cmdId       CommandId
 }
 
+ProbeCreate     ::= SEQUENCE {
+    target      TargetId,
+    probeConf   ProbeConf
+}
+
+-- TODO server API
 TargetUpdate    ::= SEQUENCE {
     target      TargetId
 }
@@ -109,10 +122,6 @@ TargetDelete    ::= SEQUENCE {
     target      TargetId
 }
 
-ProbeCreate     ::= SEQUENCE {
-    target      TargetId,
-    probeMod    ProbeMod
-}
 
 ProbeUpdate     ::= SEQUENCE {
     target      TargetId,
@@ -124,14 +133,20 @@ ProbeDelete     ::= SEQUENCE {
     probe       ProbeId
 }
 
+
+
+---------------------------------------
 -- FULL PDU
+---------------------------------------
+
 TrackerPDU ::= CHOICE {
     fromServer  [0] CHOICE {
         targetInfo  [1] TargetInfo,
         probeInfo   [2] ProbeInfo,
         probeFetch  [3] ProbeFetch,
         probeDump   [4] ProbeDump,
-        cmdResp     [5] CommandResponce
+        cmdResp     [5] CommandResponce,
+        probeModInfo    [6] ProbeModuleInfo
     },
     fromClient  [1] CHOICE {
         createTarget    [1] TargetCreate,

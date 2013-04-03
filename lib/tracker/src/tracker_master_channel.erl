@@ -41,7 +41,8 @@
 
 -record(state, {
     chans,
-    perm
+    perm,
+    probe_modules
 }).
 
 -define(MASTER_CHAN, 'target-MasterChan').
@@ -82,13 +83,18 @@ chan_del(Target) ->
 %%-------------------------------------------------------------
 % @private
 init([ProbeModules]) ->
-    io:format("ok start with ~p~n",[ProbeModules]),
+    PMods = lists:foldl(fun(PMod, Acc) ->
+        {ok, Info} = PMod:info(),
+        [{PMod, Info} | Acc] 
+    end, [], ProbeModules),
+        
     {ok, #state{
             chans = [],
             perm = #perm_conf{
                 read    = ["admin", "wheel"],
                 write   = ["admin"]
-            }
+            },
+            probe_modules = PMods
         }
     }.
     
@@ -141,10 +147,10 @@ handle_call({chan_del, #target{id = Id, global_perm = Perm}}, _F,
 handle_call(get_perms, _F, #state{perm = P} = S) ->
     {reply, P, S};
 
-handle_call({synchronize, CState}, _F, #state{chans = Chans} = S) ->
-    dump_known_data(CState, Chans),
+handle_call({synchronize, CState}, _F, State) ->
+    dump_known_data(CState, State),
     ifs_mpd:subscribe_stage3(?MASTER_CHAN, CState),
-    {reply, ok, S}.
+    {reply, ok, State}.
 
 
 
@@ -172,7 +178,11 @@ code_change(_O, S, _E) ->
 
 
 %% PRIVATE FUNS
-dump_known_data(ClientState, Chans) ->
+dump_known_data(#client_state{module = CMod} = ClientState, 
+        #state{chans = Chans, probe_modules = PMods}) ->
+    lists:foreach(fun(PMod) ->
+        CMod:send(ClientState, pdu(probeModInfo, PMod))
+    end, PMods),
     lists:foreach(fun(#target{global_perm = Perm} = Target) ->
         spawn(fun() ->
             ifs_mpd:unicast_msg(ClientState, 
@@ -231,5 +241,12 @@ pdu(probeInfo,  {InfoType, TargetId, Probe}) ->
                     lists:map(fun(X) -> 
                         atom_to_list(X) 
                     end, Probe#probe.inspectors),
-                    InfoType}}}}.
+                    InfoType}}}};
 
+pdu(probeModInfo,  {ProbeName, ProbeInfo}) ->
+    {modTrackerPDU,
+        {fromServer,
+            {probeModInfo,
+                {'ProbeModuleInfo',
+                    atom_to_list(ProbeName),
+                    ProbeInfo }}}}.
