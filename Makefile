@@ -23,7 +23,7 @@ clean:
 	rm -rf www/htdocs/edoc/*
 	rm -rf www/htdocs/documentation.html
 	rm -rf var/tracker/target_db
-	sudo rm -rf var/tracker/rrd/*
+	sudo rm -rf var/tracker/targets_data/*
 	@cd lib; make clean
 
     

@@ -18,10 +18,42 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
--module(esnmp_api).
+% @doc
+% The module implementing this behaviour is used by a tracker_target_channel
+% to store values returned by the probes.
+% @end
+-module(beha_tracker_logger).
+-include("../include/tracker.hrl").
 
--export([do/1]).
-    
+-export([behaviour_info/1]).
 
-do(_Something) ->
+% exported here for documentation only:
+-export([
+    init/3,
+    log/4
+]).
+
+% @private
+behaviour_info(callbacks) ->
+    [
+        {init, 1},
+        {log,  1}
+    ];
+
+behaviour_info(_) ->
+    undefined.
+
+-spec init(Conf::[any()], Target::#target{}, Probe::#probe{}) -> ok.
+% @doc
+% Called at the target_target_channel probe initialisation.
+% @end
+init(_Conf, _Target, _Probe) -> 
+    ok.
+
+-spec log(Conf::[any()], Target::#target{}, Probe::#probe{}, Msg::any()) -> ok.
+% @doc
+% Called each time a message responce from the probe fun is received.
+% @end
+log(_Conf, _Target, _Probe, Msg) ->
+    io:format("msg is ~p~n", [Msg]),
     ok.

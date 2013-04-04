@@ -28,9 +28,11 @@
     generate_id/0,
     fill_target_store/0,
     fill_target_more/0,
+    fill_single/0,
     clear_target_store/0,
     some_ips/0,
     more_ips/0,
+    valid_hostname_string/1,
     random/1
 ]).
 
@@ -108,7 +110,162 @@ generate_id(Term) ->
 % fill target_store with empty target records.
 % @end
 fill_target_store() ->
-    lists:foreach(fun(X) -> tracker_target_store:new(X) end, some_ips()).
+    SnmpConf = a_snmpv2_conf(),
+    lists:foreach(fun(Ip) -> 
+        New     = #target{},
+        Prop    = New#target.properties,
+        Prop1   = lists:keyreplace(ip, 1, Prop, {ip, Ip}),
+        Prop2   = lists:keyreplace(snmp_conf, 1, Prop1, 
+                {snmp_conf, SnmpConf#snmp_agent_conf{ip = Ip}}),
+        NTarget = New#target{
+            properties  = Prop2,
+            probes      = [
+                a_icmp_probe(),
+                a_snmp_fetch_probe(),
+                a_snmp_set_property_probe()
+            ]
+        },
+        tracker_target_store:create_target(NTarget)
+    end, some_ips()).
+
+fill_single() ->
+    SnmpConf = a_snmpv2_conf(),
+    lists:foreach(fun(Ip) -> 
+        New     = #target{},
+        Prop    = New#target.properties,
+        Prop1   = lists:keyreplace(ip, 1, Prop, {ip, Ip}),
+        Prop2   = lists:keyreplace(snmp_conf, 1, Prop1, 
+                {snmp_conf, SnmpConf#snmp_agent_conf{ip = Ip}}),
+        NTarget = New#target{
+            properties  = Prop2,
+            probes      = [
+                a_icmp_probe(),
+                a_snmp_fetch_probe(),
+                a_snmp_set_property_probe()
+            ]
+        },
+        tracker_target_store:create_target(NTarget)
+    end, [{192,168,1,2}]).
+
+a_snmpv2_conf() ->
+    #snmp_agent_conf{
+        community   = "public",
+        port        = 161,
+        engine_id   = "none",
+        version     = v2
+    }.
+    
+a_icmp_probe() ->
+    #probe{
+            id  = 1,
+            name = icmp_test,
+            type = status,
+            permissions = #perm_conf{
+                read = ["admin"],
+                write = ["admin"]
+            },
+            tracker_probe_mod = btracker_probe_icmp_echo,
+            inspectors  = [
+                #inspector{
+                    module  = btracker_inspector_simple,
+                    conf    = []
+                }
+            ],
+            timeout = 10,
+            step    = 5,
+
+
+            logger      = btracker_logger_file,
+            logger_conf = []
+        }.
+
+a_snmp_fetch_probe() ->
+    #probe{
+            id  = 2,
+            name = snmp_fetch_test,
+            type = fetch,
+            permissions = #perm_conf{
+                read = ["admin"],
+                write = ["admin"]
+            },
+            tracker_probe_mod = btracker_probe_snmp,
+            inspectors  = [
+                #inspector{
+                    module  = btracker_inspector_simple,
+                    conf    = []
+                }
+            ],
+            timeout = 10,
+            step    = 5,
+
+
+            snmp_oids   = [
+                [1,3,6,1,2,1,1,7,0]
+            ],
+
+            logger      = btracker_logger_rrd,
+            logger_conf = #rrd_def{
+                rrd_update = #rrd_update{
+                    file    = "snmp_fetch_test-2.rrd",
+                    time    = now,
+                    updates = [
+                        #rrd_ds_update{
+                            name    = "bytes",
+                            value   = 0
+                        }
+                    ]
+                },
+    
+                rrd_create = #rrd_create{
+                    file        = "snmp_fetch_test-2.rrd",
+                    start_time  = undefined,
+                    step        = 5,
+                    ds_defs     = [
+                        #rrd_ds{
+                            name    = "bytes",
+                            type    = gauge,
+                            heartbeat = 25,
+                            min     = 0,
+                            max     = 100000000,
+                            args    = "25:0:U"
+                        }
+                    ],
+                    rra_defs    = [
+                        #rrd_rra{cf = 'max', args = "0:1:3600"},
+                            #rrd_rra{cf = 'max', args = "0:12:1440"}
+                    ]
+                },
+
+                rrd_graph = "graph"
+            }
+        }.
+
+a_snmp_set_property_probe() ->
+    #probe{
+            id  = 4,
+            name = snmp_set_property_test,
+            type = {property, sysname},
+            permissions = #perm_conf{
+                read = ["admin"],
+                write = ["admin"]
+            },
+            tracker_probe_mod = btracker_probe_snmp,
+            inspectors  = [
+                #inspector{
+                    module  = btracker_inspector_simple,
+                    conf    = []
+                }
+            ],
+            
+            snmp_oids = [
+                [1,3,6,1,2,1,1,5,0]
+            ],
+
+            logger          = btracker_logger_file,
+            logger_conf     = [],
+            timeout = 10,
+            step    = 5
+        }.
 
 fill_target_more() ->
     lists:foreach(fun(X) -> tracker_target_store:new(X) end, more_ips()).
@@ -314,3 +471,19 @@ more_ips() ->
         {74,125,230,255}
     ].
         
+valid_hostname_string(Arg) ->
+    Fun = fun(X) ->
+        if 
+            X >= 48, X =< 90    -> true; 
+            X >= 97, X =< 122   -> true;
+            X == 45             -> true;
+            X == 95             -> true;
+            true                -> false
+        end
+    end,
+    case is_list(Arg) of
+        true ->
+            lists:all(Fun, Arg);
+        false ->
+            false
+    end.

@@ -25,11 +25,11 @@
 -export([start_link/4]).
 -export([init/1]).
 
-start_link(ProbeModules, GenEventListeners, DbDir, RrdDir) ->
+start_link(ProbeModules, GenEventListeners, DbDir, DataDir) ->
     supervisor:start_link({local, ?MODULE}, ?MODULE, 
-            [ProbeModules, GenEventListeners, DbDir, RrdDir]).
+            [ProbeModules, GenEventListeners, DbDir, DataDir]).
 
-init([ProbeModules, GenEventListeners, DbDir, RrdDir]) ->
+init([ProbeModules, GenEventListeners, DbDir, DataDir]) ->
     {ok, 
         {
             {one_for_one, 1, 60},
@@ -60,7 +60,7 @@ init([ProbeModules, GenEventListeners, DbDir, RrdDir]) ->
                 },
                 {
                     tracker_target_channel_sup,
-                    {tracker_target_channel_sup, start_link, [RrdDir]},
+                    {tracker_target_channel_sup, start_link, [DataDir]},
                     permanent,
                     2000,
                     supervisor,

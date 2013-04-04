@@ -55,6 +55,7 @@ start_link(ProbeModules) ->
     gen_server:start_link({local, ?MASTER_CHAN}, ?MODULE, [ProbeModules], []).
 
 
+
 %%-------------------------------------------------------------
 %% API for the tracker_target_channel modules
 %%-------------------------------------------------------------
@@ -108,17 +109,18 @@ handle_call({probe_status_move, {
         pdu(probeInfo, {update, TargetId, Probe})}),
     {reply, ok, S#state{chans = NewChans}};
 
-handle_call({chan_add, #target{id = Id, global_perm = Perm} = Target}, _F, 
+handle_call({chan_add, #target{id = Id, properties = Prop} = Target}, _F, 
         #state{chans = C} = S) ->
+    {global_perm, Perm} = get_property(global_perm, Prop),
     case lists:keyfind(Id, 2, C) of
-        false ->
+        false ->    % did not exist insert
             ifs_mpd:multicast_msg(?MASTER_CHAN, {Perm,
                 pdu(targetInfo, Target)}),
             {reply, ok, S#state{
                     chans = [Target | C]
                 }
             };
-        _ ->
+        _ ->        % exist update
             ifs_mpd:multicast_msg(?MASTER_CHAN, {Perm,
                 pdu(targetInfo, Target)}),
             {reply, ok, 
@@ -198,22 +200,16 @@ dump_known_data(#client_state{module = CMod} = ClientState,
         end)
     end, Chans).
 
-pdu(targetInfo, Target) ->
-    Id = Target#target.id,
-    Ip = "0.0.0.0", % TODO #ip_address{} to string
-    %Hostname    = Target#target.hostname,
-    Tags        = Target#target.tags,
-    Properties  = Target#target.properties, % TODO tuple() to string
-
+pdu(targetInfo, #target{id = Id, properties = Prop}) ->
+    AsnProp = lists:foldl(fun({X,Y}, Acc) ->
+        [{'Property', atom_to_list(X), tuple_to_list(Y)} | Acc]
+    end, [], Prop),
     {modTrackerPDU,
         {fromServer,
             {targetInfo,
                 {'TargetInfo',
                     atom_to_list(Id),
-                    "dudule",
-                    Ip,
-                    Tags,
-                    Properties,
+                    AsnProp,
                     create}}}};
 
 pdu(targetDelete, Id) ->
@@ -250,3 +246,6 @@ pdu(probeModInfo,  {ProbeName, ProbeInfo}) ->
                 {'ProbeModuleInfo',
                     atom_to_list(ProbeName),
                     ProbeInfo }}}}.
+
+get_property(Atom, PropertyList) ->
+    lists:keyfind(Atom, 1, PropertyList).

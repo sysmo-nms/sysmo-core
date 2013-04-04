@@ -75,7 +75,7 @@ init([Target, Probe]) ->
     {ok, State}.
         
     
-% launch a probe for the first time. Give a way to inspectors to initialize
+% launch a probe for the first time. Give a way for inspectors to initialize
 % themself and Randomise start.
 % @private
 handle_call(start, _F, #probe_server_state{probe = Probe} = S) ->
@@ -96,13 +96,13 @@ handle_call(_R, _F, S) ->
 handle_cast({next_pass, 
         #probe_server_state{
             probe  = #probe{status          = Status},
-            target = #target{sys_properties = SysProp} = NewS}},
+            target = #target{properties     = SysProp} } },
         #probe_server_state{
-            probe  = #probe{status          = Status} = Probe,
-            target = #target{sys_properties = SysProp}}) ->
+            probe  = #probe{status          = Status}   = Probe,
+            target = #target{properties     = SysProp}} = S) ->
     After = Probe#probe.step * 1000,
-    timer:apply_after(After, ?MODULE, probe_pass, [NewS]),
-    {noreply, NewS};
+    timer:apply_after(After, ?MODULE, probe_pass, [S]),
+    {noreply, S};
 
 % else notify the parent channel of a modification
 handle_cast({next_pass, 
@@ -111,18 +111,19 @@ handle_cast({next_pass,
     CurrentStatus   = Probe#probe.status,
     NewStatus       = NProbe#probe.status,
     case NewStatus of
-        CurrentStatus   -> ok;
+        CurrentStatus   -> ignore;
         OtherStatus     -> 
             io:format("probe status is now ~p~n",[OtherStatus])
             % TODO
     end,
-    CurrentSysP     = Target#target.sys_properties,
-    NewSysP         = NTarget#target.sys_properties,
+    CurrentSysP     = Target#target.properties,
+    NewSysP         = NTarget#target.properties,
     case NewSysP of
-        CurrentSysP -> ok;
-        OtherSysP   ->
-            % TODO
-            io:format("probe sysproerty is now ~p~n",[OtherSysP])
+        CurrentSysP     -> ignore;
+        OtherSysP       ->
+            % TODO set tracker_target_channel property
+            % and update clients
+            io:format("probe sysproperty is now ~p~n",[OtherSysP])
     end,
     After = NProbe#probe.step * 1000,
     timer:apply_after(After, ?MODULE, probe_pass, [NewS]),
@@ -167,14 +168,16 @@ code_change(_O, S, _E) ->
 probe_pass(#probe_server_state{target = Target, probe  = Probe } = S) ->
     Mod     = Probe#probe.tracker_probe_mod,
     Result  = Mod:exec({Target, Probe}),
-    io:format("result is ~p~n", [Result]),
+    %io:format("result is ~p~n", [Result]),
     % TODO 
     %tracker_target_channel:new_event(
         %Target#target.id,
         %Probe#probe.pid,
         %Result
     %),
-    NewS    = inspect(S, Result),
+    io:format("probe of type: ~p~n and log ~p~n return is ~p~n", 
+            [Probe#probe.type, Probe#probe.logger, Result]),
+    NewS = inspect(S, Result),
     next_pass(NewS).
 
 -spec next_pass(#probe_server_state{}) -> ok.

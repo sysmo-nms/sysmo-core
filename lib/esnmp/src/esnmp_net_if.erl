@@ -67,25 +67,26 @@
 	 code_change/3, terminate/2]).
 
 -define(SNMP_USE_V3, true).
--include("../include/snmp_types.hrl").
--include("../include/snmpm_internal.hrl").
--include("../include/snmpm_atl.hrl").
--include("../include/snmp_debug.hrl").
+-include_lib("snmp/include/snmp_types.hrl").
+-include_lib("snmp/src/manager/snmpm_internal.hrl").
+-include_lib("snmp/src/manager/snmpm_atl.hrl").
+-include_lib("snmp/src/misc/snmp_debug.hrl").
+-include_lib("snmp/src/misc/snmp_verbosity.hrl").
+-include_lib("snmp/include/SNMP-MPD-MIB.hrl").
+-include_lib("snmp/include/SNMPv2-TM.hrl").
 
 %% -define(VMODULE,"NET_IF").
--include("../include/snmp_verbosity.hrl").
 
--record(state, 
-	{
-	  server,
-	  note_store,
-	  sock, 
-	  mpd_state,
-	  log,
-	  irb = auto, % auto | {user, integer()}
-	  irgc,
-	  filter
-	 }).
+-record(state, {
+    server,
+    note_store,
+    sock, 
+    mpd_state,
+    log,
+    irb = auto, % auto | {user, integer()}
+    irgc,
+    filter
+}).
 
 
 -define(DEFAULT_FILTER_MODULE, snmpm_net_if_filter).

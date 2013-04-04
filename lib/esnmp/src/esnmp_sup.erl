@@ -21,24 +21,32 @@
 -module(esnmp_sup).
 -behaviour(supervisor).
 
--export([start_link/1]).
+-export([start_link/0]).
 -export([init/1]).
 
-start_link(GenEventListeners) ->
-    supervisor:start_link({local, ?MODULE}, ?MODULE, [GenEventListeners]).
+start_link() ->
+    supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
-init([GenEventListeners]) ->
+init([]) ->
     {ok,
         {
             {one_for_one, 1, 60},
             [
                 {
                     esnmp_events,
-                    {esnmp_events, start_link, [GenEventListeners]},
+                    {esnmp_events, start_link, []},
                     permanent,
                     2000,
                     worker,
                     dynamic
+                },
+                {
+                    esnmp_user_v2,
+                    {esnmp_user_v2, start_link, []},
+                    permanent,
+                    2000,
+                    worker,
+                    [esnmp_user_v2]
                 }
             ]
         }

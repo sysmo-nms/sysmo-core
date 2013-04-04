@@ -28,7 +28,8 @@
 ]).
 
 % icmp_server:ping(Ip, Timeout) -> must return {ok, Val} | {error, Error}
-exec({#target{ ip = Ip}, #probe{timeout = Timeout}}) ->
+exec({#target{properties = Prop}, #probe{timeout = Timeout}}) ->
+    {ip, Ip} = lists:keyfind(ip, 1, Prop),
     icmp_server:ping(Ip, Timeout * 1000).
 
 info() ->

@@ -51,13 +51,18 @@ handle_command({fromClient, {createTarget, Msg}},
         {ok, EIp}   ->
             launch_target(#target{
                 id          = tracker_misc:generate_id(),
-                ip          = EIp,
-                hostname    = Hostname,
-                sysname     = Sysname,
-                global_perm = #perm_conf{
-                                read    = ReadPerm,
-                                write   = WritePerm
-                                }  
+                properties = [
+                    {ip             , EIp},
+                    {hostname       , Hostname},
+                    {sysname        , Sysname},
+                    {global_perm    , 
+                        #perm_conf{
+                            read    = ReadPerm,
+                            write   = WritePerm
+                        }
+                    }  
+
+                ]
             }, CState, CmdId);
         {error, _}  ->
             CMod:send(CState, pdu(comResp, {CmdId, "ERROR: Bad ip format"}))

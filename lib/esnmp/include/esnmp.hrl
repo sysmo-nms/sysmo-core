@@ -19,49 +19,51 @@
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 -record(snmp_trap, {
-				snmp_message,   % erlang term extracted from the pdu
-                snmp_pdu,       % raw pdu
-				version,
-				from_addr,
-				from_port,
-				user_data,
-                tags,
-                permissions}).
+    snmp_message,   % erlang term extracted from the pdu
+    snmp_pdu,       % raw pdu
+	version,
+	from_addr,
+	from_port,
+	user_data,
+    tags,
+    permissions
+}).
 
 -record(community_perm, {
     community,
     r_roles,
-    rw_roles}).
+    rw_roles
+}).
 
 -record(esnmp_perm, {
     role, 
     read,
-    read_write}).
+    read_write
+}).
 
--record(snmp_agent, {
-        engine_id,
-        address,
-        port,
-        tdomain,
-        community,
-        timeout,
-        max_message_size,
-        version,
-        sec_model,
-        sec_name,
-        sec_level
-	}).
+-record(snmp_agent_conf, {
+    target_name,
+    community,
+    ip,
+    port,
+    engine_id,
+    timeout,
+    max_message_size,
+    version,
+    sec_model,
+    sec_name,
+    sec_level
+}).
 
--record(snmp_usm_user, {
-                        id,
-                        engine_id,
-                        user_name,
-                        sec_name,
-                        auth,
-                        auth_key,
-                        derived_auth_key,
-                        priv,
-                        priv_key,
-                        derived_priv_key
-                }).
-
+-record(snmp_usm_user_conf, {
+    id,
+    engine_id,
+    user_name,
+    sec_name,
+    auth,
+    auth_key,
+    derived_auth_key,
+    priv,
+    priv_key,
+    derived_priv_key
+}).

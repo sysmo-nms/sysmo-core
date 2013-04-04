@@ -19,18 +19,11 @@
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 -module(esnmp_events).
--export([start_link/1]).
+-export([start_link/0]).
 
 % @doc
 % Start the event manager and initialise the module.
 % @end
--spec esnmp_events:start_link(EventListeners::list()) -> {ok, Pid::pid()}.
-start_link(GenEventListeners) ->
-    % START the event manager:
-    ReturnSup = gen_event:start_link({local, ?MODULE}),
-
-    lists:foreach(fun(X) -> 
-        gen_event:add_handler(?MODULE, X, esnmp)
-    end, GenEventListeners),
-
-    ReturnSup.
+-spec esnmp_events:start_link() -> {ok, Pid::pid()}.
+start_link() ->
+    gen_event:start_link({local, ?MODULE}).

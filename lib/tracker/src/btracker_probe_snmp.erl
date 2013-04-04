@@ -2,7 +2,7 @@
 % Copyright (C) 2012 <Sébastien Serre sserre.bx@gmail.com>
 % 
 % Enms is a Network Management System aimed to manage and monitor SNMP
-% targets, monitor network hosts and services, provide a consistent
+% target, monitor network hosts and services, provide a consistent
 % documentation system and tools to help network professionals
 % to have a wide perspective of the networks they manage.
 % 
@@ -18,22 +18,38 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
-%%
-%% %CopyrightBegin%
-%% 
-%% Copyright Ericsson AB 2004-2009. All Rights Reserved.
-%% 
-%% The contents of this file are subject to the Erlang Public License,
-%% Version 1.1, (the "License"); you may not use this file except in
-%% compliance with the License. You should have received a copy of the
-%% Erlang Public License along with this software. If not, it can be
-%% retrieved online at http://www.erlang.org/.
-%% 
-%% Software distributed under the License is distributed on an "AS IS"
-%% basis, WITHOUT WARRANTY OF ANY KIND, either express or implied. See
-%% the License for the specific language governing rights and limitations
-%% under the License.
-%% 
-%% %CopyrightEnd%
-%%
--compile({parse_transform,qlc}).
+% @private
+-module(btracker_probe_snmp).
+-behaviour(beha_tracker_probe).
+-include("../include/tracker.hrl").
+-include_lib("snmp/include/snmp_types.hrl").
+
+-export([
+    exec/1,
+    info/0
+]).
+
+exec({#target{id = Id}, #probe{snmp_oids = Oids, timeout = Timeout}}) ->
+    Rep = esnmp_user_v2:sync_get(
+        atom_to_list(Id),
+        Oids,
+        Timeout * 1000
+    ),
+
+    case Rep of
+        {ok, {noError, _, Reply}, _} ->
+
+            Ret = lists:foldl(fun(X, Acc) ->
+                [{X#varbind.oid, X#varbind.value} | Acc]
+            end, [], Reply),
+
+            {ok, {Ret, os:timestamp()}};
+        {error, Reason} ->
+            {error, Reason};
+        Other ->
+            io:format("Other ~p~n", [Other])
+    end.
+    
+
+info() ->
+    {ok, "Snmp probe module"}.

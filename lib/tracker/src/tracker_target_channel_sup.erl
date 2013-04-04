@@ -30,8 +30,8 @@
 
 -export([init/1]).
 
-start_link(RrdDir) ->
-    supervisor:start_link({local, ?MODULE}, ?MODULE, [RrdDir]).
+start_link(DataDir) ->
+    supervisor:start_link({local, ?MODULE}, ?MODULE, [DataDir]).
 
 new(Target) ->
     supervisor:start_child(?MODULE, [Target]).
@@ -42,14 +42,14 @@ init_launch_probes() ->
         tracker_target_channel:launch_probes(ChanPid)
     end, Channels).
     
-init([RrdDir]) ->
+init([DataDir]) ->
     {ok, 
         {
             {simple_one_for_one, 1, 60},
             [
                 {
                     tracker_target_channel,
-                    {tracker_target_channel, start_link, [RrdDir]},
+                    {tracker_target_channel, start_link, [DataDir]},
                     transient,
                     2000,
                     worker,
