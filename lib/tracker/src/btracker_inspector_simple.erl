@@ -20,7 +20,7 @@
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 % @doc
 % The most simple inspector. If the return is not {ok,_}, then the status
-% of the probe is set to 'ERROR'. Else it is 'OK'.
+% of the probe is set to 'NOTICE'. Else it is 'OK'.
 % @end
 -module(btracker_inspector_simple).
 -behaviour(beha_tracker_inspector).
@@ -35,20 +35,20 @@
 
 info() ->
     [
-        'ERROR',
+        'NOTICE',
         'OK'
     ].
 
-init(_Conf, PrState) -> 
-    {ok, PrState}.
+init(_Conf, ProbeServerState) -> 
+    {ok, ProbeServerState}.
 
 % @end
-inspect(_InitS, 
-        #probe_server_state{probe = Probe} = PrState, {ok, _}) ->
+inspect(_InitS, #probe_server_state{
+        probe = Probe} = ProbeServerState, {ok, _}) ->
     NewProbe = Probe#probe{status = 'OK'},
-    {ok, PrState#probe_server_state{probe = NewProbe}};
+    {ok, ProbeServerState#probe_server_state{probe = NewProbe}};
 
-inspect(_InitS, 
-        #probe_server_state{probe = Probe} = PrState, {error, _}) ->
-    NewProbe = Probe#probe{status = 'ERROR'},
-    {ok, PrState#probe_server_state{probe = NewProbe}}.
+inspect(_InitS, #probe_server_state{
+        probe               = Probe} = ProbeServerState, {error, _}) ->
+    NewProbe = Probe#probe{status = 'NOTICE'},
+    {ok, ProbeServerState#probe_server_state{probe = NewProbe}}.

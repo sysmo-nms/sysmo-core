@@ -35,6 +35,11 @@
     conf
 }).
 
+-record(logger, {
+    module,
+    conf
+}).
+
 -record(rrd_def, {
     rrd_create          = ""            :: #rrd_create{},
     rrd_update          = ""            :: #rrd_ds_update{},
@@ -52,11 +57,9 @@
     step            = 60            :: integer(),
     type            = undefined     :: fetch | status | {property, atom()},
     inspectors      = []            :: [#inspector{}],
+    loggers         = []            :: [#logger{}],
 
-    % logger part
-    logger          = undefined     :: module(),
-    logger_conf     = undefined     :: any(),
-
+    active          = 1             :: 1 | 0,
     % if it is a snmp probe this fild must exist
     snmp_oids       = []            :: [oid()]
 }).
@@ -64,8 +67,8 @@
 -record(target, {
     id          = undefined     :: target_id(),
     global_perm = #perm_conf{
-        read = ["admin"],
-        write=["admin"]
+        read        = ["admin"],
+        write       =["admin"]
     },
     properties  = [
         {ip,            undefined},
@@ -73,11 +76,13 @@
         {sysname,       undefined},
         {snmp_conf,     undefined}
     ]        :: [property()],
-    probes = [] :: [#probe{}]
+    probes      = [] :: [#probe{}],
+    directory   = ""
 }).
 
 -record(probe_server_state, {
     target,
     probe,
-    inspectors_state
+    inspectors_state    = [],
+    loggers_state       = []
 }).

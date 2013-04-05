@@ -42,7 +42,7 @@
 -behaviour(gen_channel).
 -include("../include/tracker.hrl").
 
-% gen_server
+% GEN_SERVER CALLBACKS
 -export([
     init/1, 
     handle_call/3, 
@@ -54,47 +54,44 @@
 % API
 -export([
     start_link/2,
-    launch_probes/1,
-    new_event/3,
+    cold_start/1,
+    update/3,
     subscribe/2,
-    close_chan/1,
     dump/1
 ]).
 
--record(chan_state, {
+-record(state, {
     chan_id,
     subscriber_count,
-    target,
-    target_dir
+    target
 }).
 
-%%-------------------------------------------------------------
+
+%%----------------------------------------------------------------------------
+%%----------------------------------------------------------------------------
 %% API
-%%-------------------------------------------------------------
-% @private
+%%----------------------------------------------------------------------------
+%%----------------------------------------------------------------------------
 start_link(DataDir, #target{id = Id} = Target) ->
     gen_server:start_link({local, Id}, ?MODULE, [DataDir, Target], []).
 
-
-
-% @private
--spec launch_probes(target_id()) -> ok | {error, any()}.
+-spec cold_start(pid()) -> ok | {error, any()}.
 % @doc
-% Once the server running, call him to initialize his probes. This is done
-% by the "init_probes" phase of the traget_app module.
+% Once the server running, call him to start his probes. This is done
+% by the "cold_start" phase of the traget_app module.
 % @end
-launch_probes(Id) ->
-    gen_server:call(Id, launch_probes).
+cold_start(Pid) ->
+    gen_server:call(Pid, cold_start).
 
-% @private
--spec new_event(Self::pid(), ProbePid::pid(), Msg::tuple()) -> ok.
+-spec update(Self::pid(), ProbePid::pid(), Msg::tuple()) -> ok.
 % @doc
 % Called by one of the tracker_probes belonging to the tracker_target_channel
-% identified by Chan.
+% identified by Chan. Needed for handling of client synchronisation.
+% A tracker_probe will call this function at probe status change, or when
+% there is a need to update a probe file.
 % @end
-new_event(Chan, ProbePid, Message) ->
-    gen_server:cast(Chan, {tracker_probe_msg, ProbePid, Message}).
-
+update(Chan, ProbeId, Message) ->
+    gen_server:cast(Chan, {update, ProbeId, Message}).
 
 -spec subscribe(target_id(), any()) -> ok.
 % @doc
@@ -108,51 +105,205 @@ new_event(Chan, ProbePid, Message) ->
 subscribe(TargetId, Client) ->
     gen_server:call(TargetId, {new_subscriber, Client}).
 
--spec close_chan(target_id()) -> ok.
-close_chan(TargetId) ->
-    gen_server:call(TargetId, terminate).
-
+% @doc
+% DEBUG function
+% @end
 dump(Id) ->
     gen_server:call(Id, dump).
-%%-------------------------------------------------------------
-%% GEN_SERVER CALLBACKS
-%%-------------------------------------------------------------
-% @private
-% @doc
-% Initiate the gen server.
-% @end
-init([RootDataDir, #target{
-        id          = Id,
-        probes      = Probes,
-        properties  = Properties} = Target]) ->
-    % general logging
-    gen_event:notify(tracker_events, {?MODULE, init, Id}),
-    % ifs related
-    %ok = tracker_master_channel:chan_add(Target),
 
-    % file directory
-    {ok, TargetDir} = check_dir(RootDataDir, Id),
-    
-    lists:foreach(fun(Probe) ->
-        init_probe(TargetDir, Probe, Target)
-    end, Probes),
-    
-    % initialise esnmp
-    esnmp_user_v2:agent(Id, get_opt(snmp_conf, Properties)),
 
-    % return
+
+%%----------------------------------------------------------------------------
+%%----------------------------------------------------------------------------
+%%----------------------------------------------------------------------------
+%% GEN_SERVER CALLBACKS 
+%%----------------------------------------------------------------------------
+%%----------------------------------------------------------------------------
+%%----------------------------------------------------------------------------
+
+%%----------------------------------------------------------------------------
+%%----------------------------------------------------------------------------
+%% INIT       
+%%----------------------------------------------------------------------------
+%%----------------------------------------------------------------------------
+init([RootDataDir, Target]) ->
+    ok              = init_snmp(Target),
+    {ok, Target1}   = init_dir(Target, RootDataDir),
+    {ok, TargetF}   = init_probes(Target1),
+
     {ok, 
-        #chan_state{
-            chan_id             = Target#target.id, % shortcut
-            subscriber_count    = 0,                % TODO
-            target              = Target,
-            target_dir          = TargetDir
+        #state{
+            chan_id             = Target#target.id,     % shortcut
+            subscriber_count    = 0,   
+            target              = TargetF
         }
     }.
 
-init_probe(_TargetDir, _Probe, _Target) ->
-    ok.
+%%----------------------------------------------------------------------------
+%%----------------------------------------------------------------------------
+%% HANDLE_CALL
+%%----------------------------------------------------------------------------
+%%----------------------------------------------------------------------------
 
+
+%%----------------------------------------------------------------------------
+%% SELF API CALLS 
+%%----------------------------------------------------------------------------
+handle_call(cold_start, _F, #state{target = Target} = S) ->
+    lists:foreach(fun(#probe{pid = Pid}) ->
+        tracker_probe:cold_start(Pid)
+    end, Target#target.probes),
+    {reply, ok, S};
+
+
+%%----------------------------------------------------------------------------
+%% CALLS VIA GEN_CHANNEL BEHAVIOUR
+%%----------------------------------------------------------------------------
+handle_call(get_perms, _F, #state{target = Target} = S) ->
+    {reply, Target#target.global_perm, S};
+
+handle_call({synchronize, _IfsCState}, _F, S) ->
+    {reply, ok, S};
+
+handle_call(_R, _F, S) ->
+    {noreply, S}.
+
+
+%%----------------------------------------------------------------------------
+%%----------------------------------------------------------------------------
+%% HANDLE_CAST
+%%----------------------------------------------------------------------------
+%%----------------------------------------------------------------------------
+% channel event, will not be forwarded to 'tartet-MasterChannel'
+handle_cast({update, ProbeId, {channel_event, Msg}}, 
+        #state{target = #target{probes = Probes}} = S) ->
+    #probe{pid = Pid} = lists:keyfind(ProbeId, 2, Probes),
+    tracker_probe:loggers_update(Pid, Msg),
+    % TODO
+    % multicast send
+    {noreply, S};
+
+% master_event, will not be forwarded to the subscribers of this
+% channel, but to 'target-MasterChannel'.
+handle_cast({update, ProbeId, {master_event, {probe_status_move, NewStatus}}},
+        #state{target = #target{probes = Probes} = Target} = S) ->
+    Probe   = lists:keyfind(ProbeId, 2, Probes),
+    NProbes = lists:keyreplace(
+            ProbeId, 2, Probes, Probe#probe{status = NewStatus}),
+    % TODO
+    % mastercast send
+    S2      = S#state{target = Target#target{probes = NProbes}},
+    {noreply, S2};
+
+% master_event, will not be forwarded to the subscribers of this
+% channel, but to 'target-MasterChannel'.
+handle_cast({update, _ProbeId, {master_event, {property_set, _Properties}}},
+        #state{target = _Target} = S) ->
+    % TODO
+    % mastercast send
+    io:format("property set ~p~n", [_Properties]),
+    {noreply, S};
+
+handle_cast(_R, S) ->
+    io:format("unknown cast ~p~n", [_R]),
+    {noreply, S}.
+
+%%----------------------------------------------------------------------------
+%%----------------------------------------------------------------------------
+%% HANDLE_INFO
+%%----------------------------------------------------------------------------
+%%----------------------------------------------------------------------------
+handle_info(_I, S) ->
+    {noreply, S}.
+
+%%----------------------------------------------------------------------------
+%%----------------------------------------------------------------------------
+%% TERMINATE  
+%%----------------------------------------------------------------------------
+%%----------------------------------------------------------------------------
+terminate(R, #state{target = Target} = _S) ->
+    ok = tracker_master_channel:chan_del(Target),
+    R.
+
+%%----------------------------------------------------------------------------
+%%----------------------------------------------------------------------------
+%% CODE_CHANGE
+%%----------------------------------------------------------------------------
+%%----------------------------------------------------------------------------
+code_change(_O, S, _E) ->
+    {ok, S}.
+
+
+
+
+
+%%----------------------------------------------------------------------------
+%%----------------------------------------------------------------------------
+%%----------------------------------------------------------------------------
+%% IFS UTILS
+%%----------------------------------------------------------------------------
+%%----------------------------------------------------------------------------
+%%----------------------------------------------------------------------------
+% -spec notify(atom(), tuple(), #state{}, #probe{}) -> ok.
+% % @doc
+% % Will log everything and also to ifs if #state.subscribers_count > 0
+% % @end
+% notify(Type, {'OK',Val} = Msg, 
+%         #state{subscriber_count = 0} = Chan, 
+%         #probe{permissions = Perm} = Probe) ->
+%     ifs_mpd:multicast_msg(Chan#state.chan_id, {Perm,
+%         {modTrackerPDU,
+%             {fromServer,
+%                 {probeFetch, 
+%                     {'ProbeFetch',
+%                         atom_to_list(Chan#state.chan_id),
+%                         Probe#probe.id,
+%                         Type,
+%                         Val }}}}}),
+%     gen_event:notify(tracker_events, {tracker_probe, Type, Msg,
+%             {Chan#state.chan_id, Probe#probe.id}});
+% 
+% notify(Type, {'RECOVERY',Val} = Msg, 
+%         #state{subscriber_count = 0}   = Chan, 
+%         #probe{permissions = Perm}          = Probe) ->
+%     ifs_mpd:multicast_msg(Chan#state.chan_id,{Perm, 
+%             {modTrackerPDU,
+%                 {fromServer,
+%                     {probeFetch, 
+%                         {'ProbeFetch',
+%                             atom_to_list(Chan#state.chan_id),
+%                             Probe#probe.id,
+%                             Type,
+%                             Val }}}}}),
+%     gen_event:notify(tracker_events, {tracker_probe, Type, Msg,
+%             {Chan#state.chan_id, Probe#probe.id}});
+% 
+% notify(Type, Msg, Chan, Probe) ->
+%     % notify ifs
+%     gen_event:notify(tracker_events, {tracker_probe, Type, Msg,
+%             {Chan#state.chan_id, Probe#probe.id}}).
+% 
+% pdu(probe_dump, Probe, ChanId, DataDir) ->
+%     {modTrackerPDU,
+%         {fromServer,
+%             {probeDump,
+%                 {'ProbeDump',
+%                     atom_to_list(ChanId),
+%                     Probe#probe.id,
+%                     Probe#probe.type
+%                     %gen_rrdfile(Probe,DataDir)
+%                 }
+%             }
+%         }
+%     }.
+
+
+%%----------------------------------------------------------------------------
+%%----------------------------------------------------------------------------
+%% PRIVATE
+%%----------------------------------------------------------------------------
+%%----------------------------------------------------------------------------
+% @private
 get_opt(Key, List) ->
     case lists:keyfind(Key, 1, List) of
         {_, Conf} ->
@@ -161,247 +312,28 @@ get_opt(Key, List) ->
             false
     end.
 
-check_dir(RootDataDir, Id) ->
+% @private
+init_dir(#target{id = Id} = Target, RootDataDir) ->
     TargetDir = filename:join(RootDataDir, atom_to_list(Id)),
     case file:read_file_info(TargetDir) of
         {ok, _} ->
-            {ok, TargetDir};
+            {ok, Target#target{directory = TargetDir}};
         {error, enoent} ->
             ok = file:make_dir(TargetDir),
-            {ok, TargetDir};
+            {ok, Target#target{directory = TargetDir}};
         {error, Other} ->
             {error, Other}
     end.
-    
+
 % @private
-% @doc
-% Initialize the probes.
-% @end
-handle_call(launch_probes, _F, #chan_state{target = Target} = S) ->
-    Probes = Target#target.probes,
-    NewProbes = lists:foldl(fun(Probe, Accum) ->
-        {ok, Pid}   = tracker_probe_sup:new({Target, Probe}),
-        tracker_probe:launch(Pid),
+init_probes(#target{probes = Probes} = Target) ->
+    ProbesF = lists:foldl(fun(Probe, Accum) ->
+        {ok, Pid} = tracker_probe_sup:new({Target, Probe}),
         [Probe#probe{pid = Pid} | Accum]
     end, [], Probes),
-    io:format("launch probes return ~p~n", [NewProbes]),
-    NewTarget = Target#target{probes = NewProbes},
-    NewState  = S#chan_state{target = NewTarget},
-    {reply, ok, NewState};
-
-% this call is used by ifs_mpd only, without API.
-handle_call(get_perms, _F, #chan_state{target = Target} = S) ->
-    {reply, Target#target.global_perm, S};
-
-handle_call({synchronize, CState}, _F, 
-        #chan_state{
-            target = Target,
-            chan_id = ChanId,
-            target_dir = DataDir} = S) ->
-    % - send all datas to client then
-    lists:foreach(fun(Probe) ->
-        case Probe#probe.type of
-            fetch ->
-                %io:format("ici ~p~n", [pdu(probe_dump, Probe, ChanId)]),
-                ifs_mpd:unicast_msg(CState, {
-                    Probe#probe.permissions,
-                    pdu(probe_dump, Probe, ChanId, DataDir)
-                });
-            status ->
-                ok
-        end
-    end, Target#target.probes),
-    % - ifs_mpd:subscribe_stage3/2 and all will be ok
-    io:format("ChanId is ~p dump is sent. Now subscribe_stage3~n", [ChanId]),
-    ifs_mpd:subscribe_stage3(ChanId, CState),
-    {reply, ok, S};
-
-handle_call(dump, _F, S) ->
-    {reply, S, S};
-
-handle_call(terminate, _F, S) ->
-    {stop, normal, ok, S};
-
-
-handle_call(_R, _F, S) ->
-    {noreply, S}.
-
-
-
+    {ok, Target#target{probes = ProbesF}}.
 
 % @private
-% CAST
-% @doc
-% Message sent by the probes via new_event.
-% @end
-handle_cast({tracker_probe_msg, ProbePid, {status_move, {Status, _} = Msg}},
-        #chan_state{target = Target} = S) ->
-    Probes      = Target#target.probes,
-    Probe       = lists:keyfind(ProbePid, 3, Probes),
-    NewProbe    = Probe#probe{status = Status},
-    NewProbes   = lists:keyreplace(ProbePid, 3, Probes, NewProbe),
-    NewTarget   = Target#target{probes = NewProbes},
-    NewState    = S#chan_state{target = NewTarget},
+init_snmp(#target{id = Id, properties = Properties}) ->
+    esnmp_user_v2:agent(Id, get_opt(snmp_conf, Properties)).
 
-    tracker_master_channel:chan_event(probe_status_move,{NewTarget,NewProbe}),
-    probe_event(NewState, NewProbe, Msg),
-    {noreply, NewState};
-
-handle_cast({tracker_probe_msg, ProbePid, {up, Status}},
-        #chan_state{target = Target} = S) ->
-    io:format("probe is up~n"),
-    Probes      = Target#target.probes,
-    Probe       = lists:keyfind(ProbePid, 3, Probes),
-    NewProbe    = Probe#probe{status = Status},
-    NewProbes   = lists:keyreplace(ProbePid, 3, Probes, NewProbe),
-    NewTarget   = Target#target{probes = NewProbes},
-    NewState    = S#chan_state{target = NewTarget},
-
-    tracker_master_channel:chan_event(probe_status_move,{NewTarget,NewProbe}),
-    {noreply, NewState};
-
-handle_cast({tracker_probe_msg, ProbePid, {down, _Reason}},
-        #chan_state{target = Target} = S) ->
-    io:format("probe is down~n"),
-    Probes      = Target#target.probes,
-    Probe       = lists:keyfind(ProbePid, 3, Probes),
-    NewProbe    = Probe#probe{status = 'INITIAL'},
-    NewProbes   = lists:keyreplace(ProbePid, 3, Probes, NewProbe),
-    NewTarget   = Target#target{probes = NewProbes},
-    NewState    = S#chan_state{target = NewTarget},
-
-    tracker_master_channel:chan_event(probe_status_move,{NewTarget,NewProbe}),
-    {noreply, NewState};
-
-handle_cast({tracker_probe_msg, ProbePid, Msg}, 
-        #chan_state{target = Target} = S) ->
-    Probes      = Target#target.probes,
-    Probe       = lists:keyfind(ProbePid, 3, Probes),
-    probe_event(S, Probe, Msg),
-    {noreply, S};
-
-%handle_cast({rrd_update, RRupdate}, #chan_state{rrd_server=RrdServer} = S) ->
-    %errd_server:command(RrdServer, RRupdate),
-    %{noreply, S};
-
-handle_cast(_R, S) ->
-    io:format("unknown cast ~p~n", [_R]),
-    {noreply, S}.
-
-
-
-
-% OTHER
-% @private
-handle_info(_I, S) ->
-    {noreply, S}.
-
-% @private
-terminate(R, #chan_state{target = Target} = _S) ->
-    ok = tracker_master_channel:chan_del(Target),
-    R.
-
-% @private
-code_change(_O, S, _E) ->
-    {ok, S}.
-
-
-
-
-
-%% PRIVATE FUNCTIONS
-% @private
--spec probe_event(#probe{}, #chan_state{}, any()) -> ok.
-probe_event(Chan, Probe, {'CRITICAL', _} = Msg) ->
-    notify(status, Msg, Chan, Probe);
-
-probe_event(Chan, Probe, {'WARNING', _}  = Msg) ->
-    notify(status, Msg, Chan, Probe);
-
-probe_event(Chan, #probe{type = status} = Probe, {'RECOVERY', _} = Msg) ->
-    notify(status, Msg, Chan, Probe);
-
-%probe_event(Chan, #probe{type = fetch, rrd_update = RUpdate} = Probe, 
-        %{'RECOVERY', Val} = Msg) ->
-    %tracker_target_channel:update_rrd_file(
-            %Chan#chan_state.chan_id, RUpdate(Val)),
-    %notify(fetch, Msg, Chan, Probe);
-
-probe_event(Chan, #probe{type = status} = Probe, {'OK', _} = Msg) ->
-    notify(status, Msg, Chan, Probe);
-
-%probe_event(Chan, #probe{type = fetch, rrd_update = RUpdate} = Probe, 
-        %{'OK', Val} = Msg) ->
-    %tracker_target_channel:update_rrd_file(
-            %Chan#chan_state.chan_id, RUpdate(Val)),
-    %notify(fetch, Msg, Chan, Probe);
-
-probe_event(Chan, Probe, {'UNKNOWN', _} = Msg) ->
-    notify(fetch, Msg, Chan, Probe);
-
-probe_event(_A,_B,C) ->
-    io:format("Other ~p~n", [C]).
-
-
-% @private
--spec notify(atom(), tuple(), #chan_state{}, #probe{}) -> ok.
-% @doc
-% Will log everything and also to ifs if #chan_state.subscribers_count > 0
-% @end
-notify(Type, {'OK',Val} = Msg, 
-        #chan_state{subscriber_count = 0} = Chan, 
-        #probe{permissions = Perm} = Probe) ->
-    ifs_mpd:multicast_msg(Chan#chan_state.chan_id, {Perm,
-        {modTrackerPDU,
-            {fromServer,
-                {probeFetch, 
-                    {'ProbeFetch',
-                        atom_to_list(Chan#chan_state.chan_id),
-                        Probe#probe.id,
-                        Type,
-                        Val }}}}}),
-    gen_event:notify(tracker_events, {tracker_probe, Type, Msg,
-            {Chan#chan_state.chan_id, Probe#probe.id}});
-
-notify(Type, {'RECOVERY',Val} = Msg, 
-        #chan_state{subscriber_count = 0}   = Chan, 
-        #probe{permissions = Perm}          = Probe) ->
-    ifs_mpd:multicast_msg(Chan#chan_state.chan_id,{Perm, 
-            {modTrackerPDU,
-                {fromServer,
-                    {probeFetch, 
-                        {'ProbeFetch',
-                            atom_to_list(Chan#chan_state.chan_id),
-                            Probe#probe.id,
-                            Type,
-                            Val }}}}}),
-    gen_event:notify(tracker_events, {tracker_probe, Type, Msg,
-            {Chan#chan_state.chan_id, Probe#probe.id}});
-
-notify(Type, Msg, Chan, Probe) ->
-    % TODO notify ifs
-    gen_event:notify(tracker_events, {tracker_probe, Type, Msg,
-            {Chan#chan_state.chan_id, Probe#probe.id}}).
-
-pdu(probe_dump, Probe, ChanId, DataDir) ->
-    {modTrackerPDU,
-        {fromServer,
-            {probeDump,
-                {'ProbeDump',
-                    atom_to_list(ChanId),
-                    Probe#probe.id,
-                    Probe#probe.type,
-                    gen_rrdfile(Probe,DataDir)
-                }
-            }
-        }
-    }.
-
-gen_rrdfile(Probe, DataDir) ->
-    ProbeName   = Probe#probe.name,
-    [ProbeId]   = io_lib:format("~p", [Probe#probe.id]),
-    One         = string:concat(ProbeName, "-"),
-    Two         = string:concat(One, ProbeId),
-    Three       = string:concat(Two, ".rrd"),
-    {ok, OctetString} = file:read_file(filename:join(DataDir, Three)),
-    OctetString.

@@ -177,8 +177,12 @@ a_icmp_probe() ->
             step    = 5,
 
 
-            logger      = btracker_logger_file,
-            logger_conf = []
+            loggers      = [
+                #logger{
+                    module  = btracker_logger_file, 
+                    conf    = []
+                }
+            ]
         }.
 
 a_snmp_fetch_probe() ->
@@ -205,41 +209,49 @@ a_snmp_fetch_probe() ->
                 [1,3,6,1,2,1,1,7,0]
             ],
 
-            logger      = btracker_logger_rrd,
-            logger_conf = #rrd_def{
-                rrd_update = #rrd_update{
-                    file    = "snmp_fetch_test-2.rrd",
-                    time    = now,
-                    updates = [
-                        #rrd_ds_update{
-                            name    = "bytes",
-                            value   = 0
-                        }
-                    ]
+            loggers = [
+                #logger{
+                    module  = btracker_logger_file, 
+                    conf    = []
                 },
-    
-                rrd_create = #rrd_create{
-                    file        = "snmp_fetch_test-2.rrd",
-                    start_time  = undefined,
-                    step        = 5,
-                    ds_defs     = [
-                        #rrd_ds{
-                            name    = "bytes",
-                            type    = gauge,
-                            heartbeat = 25,
-                            min     = 0,
-                            max     = 100000000,
-                            args    = "25:0:U"
-                        }
-                    ],
-                    rra_defs    = [
-                        #rrd_rra{cf = 'max', args = "0:1:3600"},
-                            #rrd_rra{cf = 'max', args = "0:12:1440"}
-                    ]
-                },
-
-                rrd_graph = "graph"
-            }
+                #logger{
+                    module  = btracker_logger_rrd, 
+                    conf    = #rrd_def{
+                        rrd_update = #rrd_update{
+                            file    = "snmp_fetch_test-2.rrd",
+                            time    = now,
+                            updates = [
+                                #rrd_ds_update{
+                                    name    = "bytes",
+                                    value   = 0
+                                }
+                            ]
+                        },
+            
+                        rrd_create = #rrd_create{
+                            file        = "snmp_fetch_test-2.rrd",
+                            start_time  = undefined,
+                            step        = 5,
+                            ds_defs     = [
+                                #rrd_ds{
+                                    name    = "bytes",
+                                    type    = gauge,
+                                    heartbeat = 25,
+                                    min     = 0,
+                                    max     = 100000000,
+                                    args    = "25:0:U"
+                                }
+                            ],
+                            rra_defs    = [
+                                #rrd_rra{cf = 'max', args = "0:1:3600"},
+                                    #rrd_rra{cf = 'max', args = "0:12:1440"}
+                            ]
+                        },
+        
+                        rrd_graph = "graph"
+                    }
+                }
+            ]
         }.
 
 a_icmp_probe_latency() ->
@@ -261,41 +273,49 @@ a_icmp_probe_latency() ->
             timeout = 10,
             step    = 5,
 
-            logger      = btracker_logger_rrd,
-            logger_conf = #rrd_def{
-                rrd_update = #rrd_update{
-                    file    = "icmp_latency_test-2.rrd",
-                    time    = now,
-                    updates = [
-                        #rrd_ds_update{
-                            name    = "latency",
-                            value   = 0
-                        }
-                    ]
+            loggers = [
+                #logger{
+                    module  = btracker_logger_file, 
+                    conf    = []
                 },
-    
-                rrd_create = #rrd_create{
-                    file        = "icmp_latency_test-2.rrd",
-                    start_time  = undefined,
-                    step        = 5,
-                    ds_defs     = [
-                        #rrd_ds{
-                            name    = "latency",
-                            type    = gauge,
-                            heartbeat = 25,
-                            min     = 0,
-                            max     = 100000000,
-                            args    = "25:0:U"
-                        }
-                    ],
-                    rra_defs    = [
-                        #rrd_rra{cf = 'max', args = "0:1:3600"},
-                            #rrd_rra{cf = 'max', args = "0:12:1440"}
-                    ]
-                },
-
-                rrd_graph = "graph"
-            }
+                #logger{
+                    module  = btracker_logger_rrd, 
+                    conf    = #rrd_def{
+                        rrd_update = #rrd_update{
+                            file    = "icmp_latency_test-2.rrd",
+                            time    = now,
+                            updates = [
+                                #rrd_ds_update{
+                                    name    = "latency",
+                                    value   = 0
+                                }
+                            ]
+                        },
+            
+                        rrd_create = #rrd_create{
+                            file        = "icmp_latency_test-2.rrd",
+                            start_time  = undefined,
+                            step        = 5,
+                            ds_defs     = [
+                                #rrd_ds{
+                                    name    = "latency",
+                                    type    = gauge,
+                                    heartbeat = 25,
+                                    min     = 0,
+                                    max     = 100000000,
+                                    args    = "25:0:U"
+                                }
+                            ],
+                            rra_defs    = [
+                                #rrd_rra{cf = 'max', args = "0:1:3600"},
+                                    #rrd_rra{cf = 'max', args = "0:12:1440"}
+                            ]
+                        },
+        
+                        rrd_graph = "graph"
+                    }
+                }
+            ]
         }.
 
 a_snmp_set_property_probe() ->
@@ -315,12 +335,17 @@ a_snmp_set_property_probe() ->
                 }
             ],
             
+            loggers         = [
+                #logger{
+                    module  = btracker_logger_file,
+                    conf    = []
+                }
+            ],
+
             snmp_oids = [
                 [1,3,6,1,2,1,1,5,0]
             ],
 
-            logger          = btracker_logger_file,
-            logger_conf     = [],
             timeout = 10,
             step    = 5
         }.

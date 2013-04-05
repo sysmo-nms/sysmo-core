@@ -23,29 +23,20 @@
 % to store values returned by the probes.
 % @end
 -module(btracker_logger_rrd).
+-behaviour(beha_tracker_logger).
 -include("../include/tracker.hrl").
 
 -export([
-    init/3,
-    log/4,
-    dump/4
+    init/2,
+    log/2,
+    dump/2
 ]).
 
--spec init(Conf::[any()], Target::#target{}, Probe::#probe{}) -> ok.
-% @doc
-% Called at the target_target_channel probe initialisation.
-% @end
-init(_Conf, _Target, _Probe) -> 
-    io:format("~p init~n", [?MODULE]),
+init(_Conf, ProbeServerState) -> 
+    {ok, ProbeServerState}.
+
+log(_PState, _Msg) ->
     ok.
 
--spec log(Conf::[any()], Target::#target{}, Probe::#probe{}, Msg::any()) -> ok.
-% @doc
-% Called each time a message responce from the probe fun is received.
-% @end
-log(_Conf, _Target, _Probe, Msg) ->
-    io:format("~p msg is ~p~n", [?MODULE, Msg]),
-    ok.
-
-dump(_Conf, _Target, _Probe, _Timeout) -> 
+dump(_PState, _Timeout) -> 
     ignore.

@@ -39,14 +39,8 @@ start(_Type, _Args) ->
         filename:absname(DataDir)
     ).
 
-start_phase(init_chans, normal, []) ->
-    AllTargets = tracker_target_store:info(),
-    lists:foreach(fun(X) ->
-        tracker_target_channel_sup:new(X)
-    end, AllTargets);
-
-start_phase(launch_probes, normal, []) ->
-    tracker_target_channel_sup:init_launch_probes().
+start_phase(cold_start, normal, []) ->
+    ok = tracker_target_channel_sup:cold_start().
 
 stop(_State) ->
 	ok.

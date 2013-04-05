@@ -23,29 +23,44 @@
 % to store values returned by the probes.
 % @end
 -module(btracker_logger_file).
+-behaviour(beha_tracker_logger).
 -include("../include/tracker.hrl").
 
 -export([
-    init/3,
-    log/4,
-    dump/4
+    init/2,
+    log/2,
+    dump/2
 ]).
 
--spec init(Conf::[any()], Target::#target{}, Probe::#probe{}) -> ok.
-% @doc
-% Called at the target_target_channel probe initialisation.
-% @end
-init(_Conf, _Target, _Probe) -> 
-    io:format("~p init~n", [?MODULE]),
+init(_Conf, #probe_server_state{
+        target          = Target,
+        probe           = Probe,
+        loggers_state   = LoggersState} = ProbeServerState) -> 
+    TargetDir   = Target#target.directory,
+    ProbeName   = Probe#probe.name,
+    ProbeId     = integer_to_list(Probe#probe.id),
+    FileName    = io_lib:format("~s-~s.log", [ProbeName, ProbeId]),
+    LogFile     = filename:absname_join(TargetDir, FileName),
+
+        
+    {ok, IoD} = file:open(LogFile, [append]),
+    file:close(IoD),
+
+    NewLoggersState =lists:keystore(?MODULE, 1, 
+            LoggersState, 
+                {?MODULE, [{file_name, LogFile}] }),
+    {ok, 
+        ProbeServerState#probe_server_state{
+            loggers_state = NewLoggersState
+        }
+    }.
+
+log(#probe_server_state{loggers_state = LoggersState}, Msg) ->
+    {?MODULE, Conf} = lists:keyfind(?MODULE, 1, LoggersState),
+    {_, F}          = lists:keyfind(file_name, 1, Conf),
+    EncodedMsg      = list_to_binary(io_lib:format("~p~n", [Msg])),
+    file:write_file(F, EncodedMsg, [append]),
     ok.
 
--spec log(Conf::[any()], Target::#target{}, Probe::#probe{}, Msg::any()) -> ok.
-% @doc
-% Called each time a message responce from the probe fun is received.
-% @end
-log(_Conf, _Target, _Probe, Msg) ->
-    io:format("~p msg is ~p~n", [?MODULE, Msg]),
-    ok.
-
-dump(_Conf, _Target, _Probe, _Timeout) -> 
+dump(_ProbeServerState, _Timeout) -> 
     ignore.

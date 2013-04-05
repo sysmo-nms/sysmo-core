@@ -23,11 +23,6 @@
 -behaviour(gen_server).
 -include("../include/tracker.hrl").
 
--record(tserver_state, {
-    db_dir,
-    db_file,
-    db_name
-}).
 
 % gen_server callbacks
 -export([
@@ -54,6 +49,11 @@
     info/0
 ]).
 
+-record(state, {
+    db_dir,
+    db_file,
+    db_name
+}).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % SERVER UTILITY                                                             %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -85,8 +85,7 @@ clear_locks() ->
 
 -spec create_target(#target{}) -> {ok, target_id()}.
 % @doc
-% Lock a new id in the database and return it's value. Later call to configure
-% the entry will be donne with this id.
+% Create a new target.
 % @end
 create_target(Target) ->
     gen_server:call(?MODULE, {create_target, Target}).
@@ -129,7 +128,7 @@ init([DbDir]) ->
             {access,    read_write},
             {type,      set},
             {keypos,    2}]),    % we will store records
-    {ok, #tserver_state{
+    {ok, #state{
             db_dir  = DbDir2,
             db_file = DbFile,
             db_name = DbName}}.
@@ -137,20 +136,25 @@ init([DbDir]) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % @private
 handle_call({create_target, Target}, _F, 
-        #tserver_state{db_name = DbName} = S) ->
+        #state{db_name = DbName} = S) ->
     Id = dbwrite_create_target(DbName, Target),
     {reply, {ok, Id}, S};
 
+handle_call({update_target, Target}, _F, 
+        #state{db_name = DbName} = S) ->
+    Id = dbwrite_update_target(DbName, Target),
+    {reply, {ok, Id}, S};
+
 handle_call({delete_target, Target}, _F, 
-        #tserver_state{db_name = DbName} = S) ->
+        #state{db_name = DbName} = S) ->
     Rep = dbwrite_delete_target(Target, DbName),
     {reply, Rep, S};
 
-handle_call(info, _F, #tserver_state{db_name = DbName} = S) ->
+handle_call(info, _F, #state{db_name = DbName} = S) ->
     Rep = dbread_info(DbName),
     {reply, Rep, S};
 
-handle_call(dump_state, _F, #tserver_state{db_name = DbName} = S) ->
+handle_call(dump_state, _F, #state{db_name = DbName} = S) ->
     Rep = dets:match(DbName, '$1'),
     {reply, Rep, S};
 
@@ -177,7 +181,8 @@ handle_info(I,S) ->
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % @private
-terminate(_R, #tserver_state{db_name = DbName}) ->
+terminate(_R, #state{db_name = DbName}) ->
+    dets:sync(DbName),
     dets:close(DbName),
     normal.
 
@@ -192,21 +197,31 @@ code_change(_O, S, _E) ->
 % PRIVATE FUNCTS                                                             %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec dbwrite_create_target(atom(), #target{}) -> target_id().
-dbwrite_create_target(DetsName, Target) ->
+dbwrite_create_target(DbName, Target) ->
     Id = tracker_misc:generate_id(),
     NewTarget = Target#target{id = Id},
-    case dets:insert_new(DetsName, NewTarget) of
+    case dets:insert_new(DbName, NewTarget) of
         true    ->
+            dets:sync(DbName),
             generate_event({insert, NewTarget}),
             Id;
         false   ->
-            dbwrite_create_target(DetsName, Target)
+            dbwrite_create_target(DbName, Target)
     end.
+
+-spec dbwrite_update_target(#target{}, atom()) -> ok | {error, any()}.
+dbwrite_update_target(Target, DbName) ->
+    case dets:insert(DbName, Target) of
+        ok      -> dets:sync(DbName);
+        Other   -> Other
+    end.
+
 
 -spec dbwrite_delete_target(#target{}, atom()) -> ok | {error, any()}.
 dbwrite_delete_target(#target{id = Id}, DbName) ->
     case dets:delete(DbName, Id) of
         ok ->
+            dets:sync(DbName),
             generate_event({delete, Id});
         OtherReturn ->
             OtherReturn

@@ -25,7 +25,7 @@
 -export([
     start_link/1,
     new/1,
-    init_launch_probes/0
+    cold_start/0
 ]).
 
 -export([init/1]).
@@ -36,12 +36,23 @@ start_link(DataDir) ->
 new(Target) ->
     supervisor:start_child(?MODULE, [Target]).
 
-init_launch_probes() ->
+% @doc
+% Called from tracker_app from his start_phase/3.
+% @end
+cold_start() ->
+    % create the targets
+    Targets = tracker_target_store:info(),
+    ok = lists:foreach(fun(Target) ->
+        ?MODULE:new(Target)
+    end, Targets),
+
+    % launch the channel probes.
     Channels = supervisor:which_children(?MODULE),
-    lists:foreach(fun({_,ChanPid,_,_}) ->
-        tracker_target_channel:launch_probes(ChanPid)
-    end, Channels).
-    
+    ok = lists:foreach(fun({_,ChanPid,_,_}) ->
+        tracker_target_channel:cold_start(ChanPid)
+    end, Channels),
+    ok.
+
 init([DataDir]) ->
     {ok, 
         {

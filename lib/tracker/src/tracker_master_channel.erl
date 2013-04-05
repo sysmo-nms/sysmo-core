@@ -36,7 +36,7 @@
     start_link/1,
     chan_add/1,
     chan_del/1,
-    chan_event/2
+    chan_update/2
 ]).
 
 -record(state, {
@@ -46,19 +46,23 @@
 }).
 
 -define(MASTER_CHAN, 'target-MasterChan').
-%%-------------------------------------------------------------
+
+
+%%----------------------------------------------------------------------------
+%%----------------------------------------------------------------------------
 %% API
-%%-------------------------------------------------------------
+%%----------------------------------------------------------------------------
+%%----------------------------------------------------------------------------
 % @private
 -spec start_link([any()]) -> {ok, pid()}.
 start_link(ProbeModules) ->
     gen_server:start_link({local, ?MASTER_CHAN}, ?MODULE, [ProbeModules], []).
 
 
+%%----------------------------------------------------------------------------
+%% API for the tracker_target_channel(s) modules
+%%----------------------------------------------------------------------------
 
-%%-------------------------------------------------------------
-%% API for the tracker_target_channel modules
-%%-------------------------------------------------------------
 -spec chan_add(#target{}) -> ok.
 % @doc
 % Called by a target_channel at initialisation stage.
@@ -66,11 +70,6 @@ start_link(ProbeModules) ->
 chan_add(Target) ->
     gen_server:call(?MASTER_CHAN, {chan_add, Target}).
 
--spec chan_event(probe_status, {#target{}, #probe{}}) -> ok.
-% @doc
-% @end
-chan_event(probe_status_move, {Target, Probe}) ->
-    gen_server:call(?MASTER_CHAN, {probe_status_move, {Target, Probe}}).
     
 -spec chan_del(#target{}) -> ok.
 % @doc
@@ -79,26 +78,58 @@ chan_event(probe_status_move, {Target, Probe}) ->
 chan_del(Target) ->
     gen_server:call(?MASTER_CHAN, {chan_del, Target}).
 
-%%-------------------------------------------------------------
+-spec chan_update(
+        probe_create    |       % called from a channel
+        probe_delete    |       % idem
+        probe_update    |       % idem
+        chan_update     |       % idem
+        wide_warning,           % call from tracker_api or channel
+        {#target{}, #probe{}}) -> ok.
+% @doc
+% Called by a tracker_target_channel when information must be forwarded
+% to subscribers of 'target-MasterChan'. Also used from the tracker_api
+% module to send arbitrary message to clients wich are subscribed.
+% @end
+chan_update(Type, {Target, Probe}) ->
+    gen_server:call(?MASTER_CHAN, {chan_update, Type, {Target, Probe}}).
+
+
+
+%%----------------------------------------------------------------------------
+%%----------------------------------------------------------------------------
+%%----------------------------------------------------------------------------
 %% GEN_SERVER CALLBACKS
-%%-------------------------------------------------------------
-% @private
+%%----------------------------------------------------------------------------
+%%----------------------------------------------------------------------------
+%%----------------------------------------------------------------------------
+
+
+%%----------------------------------------------------------------------------
+%%----------------------------------------------------------------------------
+%% INIT
+%%----------------------------------------------------------------------------
+%%----------------------------------------------------------------------------
 init([ProbeModules]) ->
-    PMods = lists:foldl(fun(PMod, Acc) ->
-        {ok, Info} = PMod:info(),
-        [{PMod, Info} | Acc] 
-    end, [], ProbeModules),
-        
+    P = extract_probes_info(ProbeModules),
     {ok, #state{
             chans = [],
             perm = #perm_conf{
                 read    = ["admin", "wheel"],
                 write   = ["admin"]
             },
-            probe_modules = PMods
+            probe_modules = P
         }
     }.
     
+%%----------------------------------------------------------------------------
+%%----------------------------------------------------------------------------
+%% HANDLE_CALL
+%%----------------------------------------------------------------------------
+%%----------------------------------------------------------------------------
+
+%%----------------------------------------------------------------------------
+%% SELF API CALLS
+%%----------------------------------------------------------------------------
 handle_call({probe_status_move, {
             #target{id = TargetId} = NewTarget, 
             #probe{permissions = Perm} = Probe
@@ -135,51 +166,66 @@ handle_call({chan_del, #target{id = Id, global_perm = Perm}}, _F,
     ifs_mpd:multicast_msg(?MASTER_CHAN, {Perm, pdu(targetDelete, Id)}),
     {reply, ok, S#state{chans = lists:keydelete(Id, 2, C)}};
 
-
-
-
-
-
-
-%%-------------------------------------------------------------
-%% These calls are used by the gen_channel behaviour module
-%%-------------------------------------------------------------
+%%----------------------------------------------------------------------------
+%%----------------------------------------------------------------------------
+%% CALLS VIA GEN_CHANNEL BEHAVIOUR
+%%----------------------------------------------------------------------------
+%%----------------------------------------------------------------------------
+% These calls are used by the gen_channel behaviour module
 % Called by ifs_mpd via gen_channel to allow or not a client to subscribe in 
 % regard of the result after applying beha_ifs_ctrl:satisfy/3.
 handle_call(get_perms, _F, #state{perm = P} = S) ->
     {reply, P, S};
 
-handle_call({synchronize, CState}, _F, State) ->
-    dump_known_data(CState, State),
-    ifs_mpd:subscribe_stage3(?MASTER_CHAN, CState),
+handle_call({synchronize, IfsCState}, _F, State) ->
+    dump_known_data(IfsCState, State),
+    ifs_mpd:subscribe_stage3(?MASTER_CHAN, IfsCState),
     {reply, ok, State}.
 
 
-
-
-
-
-
+%%----------------------------------------------------------------------------
+%%----------------------------------------------------------------------------
+%% HANDLE_CAST
+%%----------------------------------------------------------------------------
+%%----------------------------------------------------------------------------
 handle_cast(_R, S) ->
     {noreply, S}.
 
-% OTHER
-% @private
+%%----------------------------------------------------------------------------
+%%----------------------------------------------------------------------------
+%% HANDLE_INFO
+%%----------------------------------------------------------------------------
+%%----------------------------------------------------------------------------
 handle_info(I, S) ->
     io:format("handle_info ~p ~p ~p~n", [?MODULE, I, S]),
     {noreply, S}.
 
-% @private
+%%----------------------------------------------------------------------------
+%%----------------------------------------------------------------------------
+%% TERMINATE  
+%%----------------------------------------------------------------------------
+%%----------------------------------------------------------------------------
 terminate(_R, _S) ->
     normal.
 
-% @private
+%%----------------------------------------------------------------------------
+%%----------------------------------------------------------------------------
+%% CODE_CHANGE
+%%----------------------------------------------------------------------------
+%%----------------------------------------------------------------------------
 code_change(_O, S, _E) ->
     {ok, S}.
 
 
 
+%%----------------------------------------------------------------------------
+%%----------------------------------------------------------------------------
+%%----------------------------------------------------------------------------
 %% PRIVATE FUNS
+%%----------------------------------------------------------------------------
+%%----------------------------------------------------------------------------
+%%----------------------------------------------------------------------------
+
 dump_known_data(#client_state{module = CMod} = ClientState, 
         #state{chans = Chans, probe_modules = PMods}) ->
     lists:foreach(fun(PMod) ->
@@ -200,6 +246,9 @@ dump_known_data(#client_state{module = CMod} = ClientState,
         end)
     end, Chans).
 
+%%----------------------------------------------------------------------------
+%% PDU BUILD
+%%----------------------------------------------------------------------------
 pdu(targetInfo, #target{id = Id, properties = Prop}) ->
     AsnProp = lists:foldl(fun({X,Y}, Acc) ->
         [{'Property', atom_to_list(X), tuple_to_list(Y)} | Acc]
@@ -247,5 +296,16 @@ pdu(probeModInfo,  {ProbeName, ProbeInfo}) ->
                     atom_to_list(ProbeName),
                     ProbeInfo }}}}.
 
+%%----------------------------------------------------------------------------
+%% UTILS    
+%%----------------------------------------------------------------------------
 get_property(Atom, PropertyList) ->
     lists:keyfind(Atom, 1, PropertyList).
+
+extract_probes_info(ProbeModules) ->
+    lists:foldl(
+        fun(PMod, Acc) ->
+            {ok, Info} = PMod:info(),
+            [{PMod, Info} | Acc] 
+        end, 
+    [], ProbeModules).

@@ -25,27 +25,20 @@
 % sent to the tracker event via tracker_target_channel.
 % @end
 -module(btracker_logger_null).
+-behaviour(beha_tracker_logger).
 -include("../include/tracker.hrl").
 
 -export([
-    init/3,
-    log/4,
-    dump/4
+    init/2,
+    log/2,
+    dump/2
 ]).
 
--spec init([any()], #target{}, #probe{}) -> ok.
-% @doc
-% Called at the target_target_channel probe initialisation.
-% @end
-init(_Conf, _Target, _Probe) -> 
+init(_, S) -> 
+    {ok, S}.
+
+log(_, _) ->
     ok.
 
--spec log([any()], #target{}, #probe{}, any()) -> ok.
-% @doc
-% Called each time a message responce from the probe fun is received.
-% @end
-log(_Conf, _Target, _Probe, _Msg) ->
-    ok.
-
-dump(_Conf, _Target, _Probe, _Timeout) -> 
+dump(_, _) -> 
     ignore.

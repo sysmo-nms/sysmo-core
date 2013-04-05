@@ -37,8 +37,7 @@
         },
         {start_phases, 
             [
-                {init_chans, []},
-                {launch_probes, []}
+                {cold_start, []}
             ]
         },
 		{mod, {tracker_app, []}}
