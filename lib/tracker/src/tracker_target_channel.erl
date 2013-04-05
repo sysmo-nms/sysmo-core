@@ -100,11 +100,10 @@ new_event(Chan, ProbePid, Message) ->
 % @doc
 % ifs module related.
 % The logic is here:
-% - lock the server
 % - dump every informations pending,
 % - send all target related data to client,
-% - unlock the server
-% All this can be done by using a single gen_server:call()
+% All this must be done by using a single gen_server:call() fully
+% synchronize the client.
 % @end
 subscribe(TargetId, Client) ->
     gen_server:call(TargetId, {new_subscriber, Client}).
@@ -113,7 +112,6 @@ subscribe(TargetId, Client) ->
 close_chan(TargetId) ->
     gen_server:call(TargetId, terminate).
 
--spec dump(target_id()) -> #chan_state{}.
 dump(Id) ->
     gen_server:call(Id, dump).
 %%-------------------------------------------------------------
@@ -129,13 +127,11 @@ init([RootDataDir, #target{
         properties  = Properties} = Target]) ->
     % general logging
     gen_event:notify(tracker_events, {?MODULE, init, Id}),
-
     % ifs related
     %ok = tracker_master_channel:chan_add(Target),
 
     % file directory
-    TargetDir = filename:join(RootDataDir, atom_to_list(Id)),
-    ok = dir_exist(TargetDir),
+    {ok, TargetDir} = check_dir(RootDataDir, Id),
     
     lists:foreach(fun(Probe) ->
         init_probe(TargetDir, Probe, Target)
@@ -165,6 +161,18 @@ get_opt(Key, List) ->
             false
     end.
 
+check_dir(RootDataDir, Id) ->
+    TargetDir = filename:join(RootDataDir, atom_to_list(Id)),
+    case file:read_file_info(TargetDir) of
+        {ok, _} ->
+            {ok, TargetDir};
+        {error, enoent} ->
+            ok = file:make_dir(TargetDir),
+            {ok, TargetDir};
+        {error, Other} ->
+            {error, Other}
+    end.
+    
 % @private
 % @doc
 % Initialize the probes.
@@ -302,18 +310,6 @@ code_change(_O, S, _E) ->
 
 
 %% PRIVATE FUNCTIONS
-% @private
--spec dir_exist(string()) -> ok | {error, any()}.
-dir_exist(DataDir) ->
-    case file:read_file_info(DataDir) of
-        {ok, _} ->
-            ok;
-        {error, enoent} ->
-            file:make_dir(DataDir);
-        Other ->
-            Other
-    end.
-
 % @private
 -spec probe_event(#probe{}, #chan_state{}, any()) -> ok.
 probe_event(Chan, Probe, {'CRITICAL', _} = Msg) ->

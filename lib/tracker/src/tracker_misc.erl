@@ -141,7 +141,8 @@ fill_single() ->
             probes      = [
                 a_icmp_probe(),
                 a_snmp_fetch_probe(),
-                a_snmp_set_property_probe()
+                a_snmp_set_property_probe(),
+                a_icmp_probe_latency()
             ]
         },
         tracker_target_store:create_target(NTarget)
@@ -154,7 +155,8 @@ a_snmpv2_conf() ->
         engine_id   = "none",
         version     = v2
     }.
-    
+
+
 a_icmp_probe() ->
     #probe{
             id  = 1,
@@ -223,6 +225,62 @@ a_snmp_fetch_probe() ->
                     ds_defs     = [
                         #rrd_ds{
                             name    = "bytes",
+                            type    = gauge,
+                            heartbeat = 25,
+                            min     = 0,
+                            max     = 100000000,
+                            args    = "25:0:U"
+                        }
+                    ],
+                    rra_defs    = [
+                        #rrd_rra{cf = 'max', args = "0:1:3600"},
+                            #rrd_rra{cf = 'max', args = "0:12:1440"}
+                    ]
+                },
+
+                rrd_graph = "graph"
+            }
+        }.
+
+a_icmp_probe_latency() ->
+    #probe{
+            id  = 3,
+            name = icmp_latency_test,
+            type = fetch,
+            permissions = #perm_conf{
+                read = ["admin"],
+                write = ["admin"]
+            },
+            tracker_probe_mod = btracker_probe_snmp,
+            inspectors  = [
+                #inspector{
+                    module  = btracker_inspector_simple,
+                    conf    = []
+                }
+            ],
+            timeout = 10,
+            step    = 5,
+
+            logger      = btracker_logger_rrd,
+            logger_conf = #rrd_def{
+                rrd_update = #rrd_update{
+                    file    = "icmp_latency_test-2.rrd",
+                    time    = now,
+                    updates = [
+                        #rrd_ds_update{
+                            name    = "latency",
+                            value   = 0
+                        }
+                    ]
+                },
+    
+                rrd_create = #rrd_create{
+                    file        = "icmp_latency_test-2.rrd",
+                    start_time  = undefined,
+                    step        = 5,
+                    ds_defs     = [
+                        #rrd_ds{
+                            name    = "latency",
                             type    = gauge,
                             heartbeat = 25,
                             min     = 0,

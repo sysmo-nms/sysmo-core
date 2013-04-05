@@ -19,33 +19,38 @@
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 % @doc
-% The module implementing this behaviour is used by a tracker_target_channel
-% to store values returned by the probes.
+% The standard inspector. Add a configurable latency. Will prevent 
+% false positive.
 % @end
--module(btracker_logger_rrd).
+-module(btracker_inspector_standard).
+-behaviour(beha_tracker_inspector).
 -include("../include/tracker.hrl").
 
+
 -export([
-    init/3,
-    log/4,
-    dump/4
+    init/2, 
+    inspect/3,
+    info/0
 ]).
 
--spec init(Conf::[any()], Target::#target{}, Probe::#probe{}) -> ok.
-% @doc
-% Called at the target_target_channel probe initialisation.
-% @end
-init(_Conf, _Target, _Probe) -> 
-    io:format("~p init~n", [?MODULE]),
-    ok.
+info() ->
+    [
+        'OK',
+        'WARNING',
+        'CRITICAL',
+        'RECOVERY'
+    ].
 
--spec log(Conf::[any()], Target::#target{}, Probe::#probe{}, Msg::any()) -> ok.
-% @doc
-% Called each time a message responce from the probe fun is received.
-% @end
-log(_Conf, _Target, _Probe, Msg) ->
-    io:format("~p msg is ~p~n", [?MODULE, Msg]),
-    ok.
+init(_Conf, PrState) -> 
+    {ok, PrState}.
 
-dump(_Conf, _Target, _Probe, _Timeout) -> 
-    ignore.
+% @end
+inspect(_InitS, 
+        #probe_server_state{probe = Probe} = PrState, {ok, _}) ->
+    NewProbe = Probe#probe{status = 'OK'},
+    {ok, PrState#probe_server_state{probe = NewProbe}};
+
+inspect(_InitS, 
+        #probe_server_state{probe = Probe} = PrState, {error, _}) ->
+    NewProbe = Probe#probe{status = 'CRITICAL'},
+    {ok, PrState#probe_server_state{probe = NewProbe}}.

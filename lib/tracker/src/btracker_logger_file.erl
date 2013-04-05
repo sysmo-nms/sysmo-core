@@ -27,7 +27,8 @@
 
 -export([
     init/3,
-    log/4
+    log/4,
+    dump/4
 ]).
 
 -spec init(Conf::[any()], Target::#target{}, Probe::#probe{}) -> ok.
@@ -45,3 +46,6 @@ init(_Conf, _Target, _Probe) ->
 log(_Conf, _Target, _Probe, Msg) ->
     io:format("~p msg is ~p~n", [?MODULE, Msg]),
     ok.
+
+dump(_Conf, _Target, _Probe, _Timeout) -> 
+    ignore.

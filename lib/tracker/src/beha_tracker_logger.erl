@@ -30,14 +30,16 @@
 % exported here for documentation only:
 -export([
     init/3,
-    log/4
+    log/4,
+    dump/4
 ]).
 
 % @private
 behaviour_info(callbacks) ->
     [
-        {init, 1},
-        {log,  1}
+        {init, 3},
+        {log,  4},
+        {dump, 4}
     ];
 
 behaviour_info(_) ->
@@ -57,3 +59,16 @@ init(_Conf, _Target, _Probe) ->
 log(_Conf, _Target, _Probe, Msg) ->
     io:format("msg is ~p~n", [Msg]),
     ok.
+
+-spec dump(Conf::[any()], Target::#target{}, Probe::#probe{}, Timeout::integer()) -> 
+    {ok, binary()} | ignore.
+% @doc
+% Called by a tracker_target_channel on a subscribe request by a client. Must
+% return a binary form of the data logged or ignore.
+% For synchronisation, the tracker_target_channel server will wait for a
+% a responce. The function MUST return before Timeout or return ignore.
+% Take care, a bugy function here can lock indefinetely wish result in a 
+% crash of the channel.
+% @end
+dump(_Conf, _Target, _Probe, _Timeout) ->
+    ignore.
