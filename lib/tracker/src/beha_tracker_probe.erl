@@ -46,7 +46,7 @@ behaviour_info(_) ->
     undefined.
 
 -spec exec({TargetRecord::#target{}, ProbeRecord::#probe{}}) -> 
-    {ok, Val::integer()} | {error, Error::any()}.
+    {ok, Val::integer()} | {error, Error::any()} | timeout.
 % @doc
 % The return from this function will trigger another probe execution after a
 % delay defined by the #probe.step entry.

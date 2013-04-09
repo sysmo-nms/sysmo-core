@@ -33,7 +33,8 @@
     some_ips/0,
     more_ips/0,
     valid_hostname_string/1,
-    random/1
+    random/1,
+    ip_format/2
 ]).
 
 -export([
@@ -128,6 +129,17 @@ fill_target_store() ->
         tracker_target_store:create_target(NTarget)
     end, some_ips()).
 
+ip_format(v4_to_string, {Oa, Ob, Oc, Od}) ->
+    String = io_lib:format(
+            "~.10B~s~.10B~s~.10B~s~.10B",
+            [Oa, ".", Ob, ".", Oc, ".", Od]),
+    lists:flatten(String);
+
+
+ip_format(v4_to_erlang, String)    ->
+    {ok, Ip} = inet_parse:address(String),
+    Ip.
+
 fill_single() ->
     SnmpConf = a_snmpv2_conf(),
     lists:foreach(fun(Ip) -> 
@@ -142,7 +154,8 @@ fill_single() ->
                 a_icmp_probe(),
                 a_snmp_fetch_probe(),
                 a_snmp_set_property_probe(),
-                a_icmp_probe_latency()
+                a_icmp_probe_latency(),
+                a_nagios_probe()
             ]
         },
         tracker_target_store:create_target(NTarget)
@@ -156,10 +169,46 @@ a_snmpv2_conf() ->
         version     = v2
     }.
 
+a_nagios_probe() ->
+    #probe{
+            id  = 5,
+            name = nagios_test,
+            type = status,
+            permissions = #perm_conf{
+                read = ["admin"],
+                write = ["admin"]
+            },
+            tracker_probe_mod   = btracker_probe_nagios_compat,
+            tracker_probe_conf  = #nagios_plugin{
+                executable  = "./lib/tracker/priv/nagios/libexec/check_ping",
+                args        = [
+                    {"-H", {target, {properties, ip}}},
+                    {"-w", "3000,50%"},
+                    {"-c", "4000,50%"},
+                    {"-t", {probe, timeout}}
+                ]
+            },
+            inspectors  = [
+                #inspector{
+                    module  = btracker_inspector_simple,
+                    conf    = []
+                }
+            ],
+            timeout = 10,
+            step    = 5,
+
+
+            loggers      = [
+                #logger{
+                    module  = btracker_logger_file, 
+                    conf    = []
+                }
+            ]
+        }.
 
 a_icmp_probe() ->
     #probe{
-            id  = 1,
+            id  = 4,
             name = icmp_test,
             type = status,
             permissions = #perm_conf{
@@ -187,7 +236,7 @@ a_icmp_probe() ->
 
 a_snmp_fetch_probe() ->
     #probe{
-            id  = 2,
+            id  = 3,
             name = snmp_fetch_test,
             type = fetch,
             permissions = #perm_conf{
@@ -256,7 +305,7 @@ a_snmp_fetch_probe() ->
 
 a_icmp_probe_latency() ->
     #probe{
-            id  = 3,
+            id  = 2,
             name = icmp_latency_test,
             type = fetch,
             permissions = #perm_conf{
@@ -320,7 +369,7 @@ a_icmp_probe_latency() ->
 
 a_snmp_set_property_probe() ->
     #probe{
-            id  = 4,
+            id  = 1,
             name = snmp_set_property_test,
             type = {property, sysname},
             permissions = #perm_conf{

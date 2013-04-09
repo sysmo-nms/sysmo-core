@@ -105,7 +105,7 @@ handle_call(_R, _F, S) ->
 % HANDLE_CAST
 %%-------------------------------------------------------------
 
-% if status ans sysproperties the probe should have moved nothing
+% if Status and Properties are equal then the probe have moved nothing.
 handle_cast({next_pass, 
         #probe_server_state{
             probe  = #probe{status          = Status},

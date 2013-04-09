@@ -45,13 +45,15 @@ info() ->
 init(_Conf, PrState) -> 
     {ok, PrState}.
 
+% @doc
+% Check if one of the parents is dead and set the status to 'SHADED' if
+% it is true.
 % @end
-inspect(_InitS, 
-        #probe_server_state{probe = Probe} = PrState, {ok, _}) ->
-    NewProbe = Probe#probe{status = 'OK'},
-    {ok, PrState#probe_server_state{probe = NewProbe}};
 
-inspect(_InitS, 
-        #probe_server_state{probe = Probe} = PrState, {error, _}) ->
-    NewProbe = Probe#probe{status = 'CRITICAL'},
-    {ok, PrState#probe_server_state{probe = NewProbe}}.
+% nothing to check
+inspect(_InitS, PSState, {'OK', _}) ->
+    {ok, PSState};
+
+% something append
+inspect(_InitS, PSState, {_OtherStatus, _Msg}) ->
+    {ok, PSState}.

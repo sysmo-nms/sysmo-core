@@ -30,7 +30,10 @@
 % icmp_server:ping(Ip, Timeout) -> must return {ok, Val} | {error, Error}
 exec({#target{properties = Prop}, #probe{timeout = Timeout}}) ->
     {ip, Ip} = lists:keyfind(ip, 1, Prop),
-    icmp_server:ping(Ip, Timeout * 1000).
+    case icmp_server:ping(Ip, Timeout * 1000) of
+        {ok, Delay}     -> {'OK', Delay};
+        {error, Error}  -> {'CRITICAL', Error}
+    end.
 
 info() ->
     {ok,

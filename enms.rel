@@ -9,6 +9,7 @@
         {ssl, "5.1"},
         {public_key, "0.16"},
         {snmp, "4.22.1"},
+        {exec, "v1.0-5-gff9c373"},
         {activity_logger, "1.0.0"},
         {procket, "0.3"},
         {icmp, "0.1.0"},

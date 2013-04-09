@@ -29,6 +29,8 @@
 -type timeout_alert()           :: fun() | undefined.
 -type timeout_threshold()       :: integer() | undefined.
 -type oid()                     :: [byte()].
+-type nagios_flag()             :: string().
+-type nagios_arg()              :: {nagios_flag(), string() | tuple()}.
 
 -record(inspector, {
     module,
@@ -46,29 +48,35 @@
     rrd_graph           = ""            :: string()
 }).
 
--record(probe, {
-    id              = undefined     :: probe_id(), % unique in each targets
-    pid             = undefined     :: undefined | pid(),
-    name            = undefined     :: string(),
-    permissions     = #perm_conf{}  :: #perm_conf{},
-    tracker_probe_mod = undefined   :: undefined | module(),
-    status          = 'UNKNOWN'     :: 'UNKNOWN' | atom(),
-    timeout         = 5             :: integer(),
-    step            = 60            :: integer(),
-    type            = undefined     :: fetch | status | {property, atom()},
-    inspectors      = []            :: [#inspector{}],
-    loggers         = []            :: [#logger{}],
+-record(nagios_plugin, {
+    executable  = undefined             :: string(),
+    args        = []                    :: [nagios_arg()]
+}).
 
-    active          = 1             :: 1 | 0,
+-record(probe, {
+    id                  = undefined     :: probe_id(), % unique in a target
+    pid                 = undefined     :: undefined | pid(),
+    name                = undefined     :: string(),
+    permissions         = #perm_conf{}  :: #perm_conf{},
+    tracker_probe_mod   = undefined     :: undefined | module(),
+    tracker_probe_conf  = undefined     :: any(),
+    status              = 'UNKNOWN'     :: 'UNKNOWN' | atom(),
+    timeout             = 5             :: integer(),
+    step                = 60            :: integer(),
+    type                = undefined     :: fetch|status|{property, atom()},
+    inspectors          = []            :: [#inspector{}],
+    loggers             = []            :: [#logger{}],
+
+    active              = 1             :: 1 | 0,
     % if it is a snmp probe this fild must exist
-    snmp_oids       = []            :: [oid()]
+    snmp_oids           = []            :: [oid()]
 }).
 
 -record(target, {
     id          = undefined     :: target_id(),
     global_perm = #perm_conf{
-        read        = ["admin"],
-        write       =["admin"]
+        read        =   ["admin"],
+        write       =   ["admin"]
     },
     properties  = [
         {ip,            undefined},

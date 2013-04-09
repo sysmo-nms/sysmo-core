@@ -1,7 +1,7 @@
 # Makefile 
 
 REL_NAME        = enms
-MODS            = ifs esnmp icmp ifs procket tracker activity_logger errd
+MODS            = ifs esnmp icmp ifs procket tracker activity_logger errd erlexec
 
 
 compile:
@@ -15,15 +15,17 @@ test:
 doc:
 	@cd lib; make doc
 
-clean:
+tclean:
+	rm -rf var/tracker/target_db
+	sudo rm -rf var/tracker/targets_data/*
+
+clean: tclean
 	rm -f erl_crash.dump
 	rm -f $(REL_NAME).script
 	rm -f $(REL_NAME).boot
 	rm -f stim.pid
 	rm -rf www/htdocs/edoc/*
 	rm -rf www/htdocs/documentation.html
-	rm -rf var/tracker/target_db
-	sudo rm -rf var/tracker/targets_data/*
 	@cd lib; make clean
 
     

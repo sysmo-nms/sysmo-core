@@ -44,11 +44,6 @@ init(_Conf, ProbeServerState) ->
 
 % @end
 inspect(_InitS, #probe_server_state{
-        probe = Probe} = ProbeServerState, {ok, _}) ->
-    NewProbe = Probe#probe{status = 'OK'},
-    {ok, ProbeServerState#probe_server_state{probe = NewProbe}};
-
-inspect(_InitS, #probe_server_state{
-        probe               = Probe} = ProbeServerState, {error, _}) ->
-    NewProbe = Probe#probe{status = 'NOTICE'},
+        probe = Probe} = ProbeServerState, {Any, _}) ->
+    NewProbe = Probe#probe{status = Any},
     {ok, ProbeServerState#probe_server_state{probe = NewProbe}}.
