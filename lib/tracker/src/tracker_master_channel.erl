@@ -136,7 +136,7 @@ handle_call({probe_status_move, {
             }
         }, _F, #state{chans = Chans} = S) ->
     NewChans = lists:keyreplace(TargetId, 2, Chans, NewTarget),
-    ifs_mpd:multicast_msg(?MASTER_CHAN, {Perm, 
+    supercast_mpd:multicast_msg(?MASTER_CHAN, {Perm, 
         pdu(probeInfo, {update, TargetId, Probe})}),
     {reply, ok, S#state{chans = NewChans}};
 
@@ -145,14 +145,14 @@ handle_call({chan_add, #target{id = Id, properties = Prop} = Target}, _F,
     {global_perm, Perm} = get_property(global_perm, Prop),
     case lists:keyfind(Id, 2, C) of
         false ->    % did not exist insert
-            ifs_mpd:multicast_msg(?MASTER_CHAN, {Perm,
+            supercast_mpd:multicast_msg(?MASTER_CHAN, {Perm,
                 pdu(targetInfo, Target)}),
             {reply, ok, S#state{
                     chans = [Target | C]
                 }
             };
         _ ->        % exist update
-            ifs_mpd:multicast_msg(?MASTER_CHAN, {Perm,
+            supercast_mpd:multicast_msg(?MASTER_CHAN, {Perm,
                 pdu(targetInfo, Target)}),
             {reply, ok, 
                 S#state{
@@ -163,7 +163,7 @@ handle_call({chan_add, #target{id = Id, properties = Prop} = Target}, _F,
 
 handle_call({chan_del, #target{id = Id, global_perm = Perm}}, _F, 
         #state{chans = C} = S) ->
-    ifs_mpd:multicast_msg(?MASTER_CHAN, {Perm, pdu(targetDelete, Id)}),
+    supercast_mpd:multicast_msg(?MASTER_CHAN, {Perm, pdu(targetDelete, Id)}),
     {reply, ok, S#state{chans = lists:keydelete(Id, 2, C)}};
 
 %%----------------------------------------------------------------------------
@@ -172,14 +172,14 @@ handle_call({chan_del, #target{id = Id, global_perm = Perm}}, _F,
 %%----------------------------------------------------------------------------
 %%----------------------------------------------------------------------------
 % These calls are used by the gen_channel behaviour module
-% Called by ifs_mpd via gen_channel to allow or not a client to subscribe in 
-% regard of the result after applying beha_ifs_ctrl:satisfy/3.
+% Called by supercast_mpd via gen_channel to allow or not a client to subscribe in 
+% regard of the result after applying beha_supercast_ctrl:satisfy/3.
 handle_call(get_perms, _F, #state{perm = P} = S) ->
     {reply, P, S};
 
 handle_call({synchronize, IfsCState}, _F, State) ->
     dump_known_data(IfsCState, State),
-    ifs_mpd:subscribe_stage3(?MASTER_CHAN, IfsCState),
+    supercast_mpd:subscribe_stage3(?MASTER_CHAN, IfsCState),
     {reply, ok, State}.
 
 
@@ -233,10 +233,10 @@ dump_known_data(#client_state{module = CMod} = ClientState,
     end, PMods),
     lists:foreach(fun(#target{global_perm = Perm} = Target) ->
         spawn(fun() ->
-            ifs_mpd:unicast_msg(ClientState, 
+            supercast_mpd:unicast_msg(ClientState, 
                     {Perm, pdu(targetInfo, Target)}),
             lists:foreach(fun(Probe) -> 
-                ifs_mpd:unicast_msg(ClientState,
+                supercast_mpd:unicast_msg(ClientState,
                     {
                         Probe#probe.permissions,
                         pdu(probeInfo, {create, Target#target.id, Probe})

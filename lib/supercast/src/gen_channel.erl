@@ -26,7 +26,7 @@
 %   <ul>
 %       <li>
 %           call(Pid, get_perms), wich will return the #perm_conf{} 
-%           restriction. This will tell ifs_mpd if the client is allowed to 
+%           restriction. This will tell supercast_mpd if the client is allowed to 
 %           subscribe.
 %       </li>
 %       <li>
@@ -34,8 +34,8 @@
 %           the module can eventualy send data to the client. After returning,
 %           the module can send his periodic events and be sure the client is 
 %           in sync.
-%           Sending message should be done with ifs_mpd:unicast_msg/2 if the 
-%           sender want ifs_mpd to filter message using the user_roles.
+%           Sending message should be done with supercast_mpd:unicast_msg/2 if the 
+%           sender want supercast_mpd to filter message using the user_roles.
 %       </li>
 %   </ul>
 % </li>
@@ -43,10 +43,10 @@
 %       Send every events of interest for clients in with the following funs:
 %       <ul>
 %           <li>
-%               ifs_mpd:unicast_msg/2
+%               supercast_mpd:unicast_msg/2
 %           </li>
 %           <li>
-%               ifs_mpd:multicast_msg/3
+%               supercast_mpd:multicast_msg/3
 %           </li>
 %       </ul>
 % </li>

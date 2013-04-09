@@ -27,7 +27,7 @@
 %%% @end
 -module(tcp_client).
 -behaviour(gen_fsm).
--include("../include/ifs.hrl").
+-include("../include/supercast.hrl").
 
 -export([
     start_link/1,
@@ -54,7 +54,7 @@
 
 -define(TIMEOUT, 30000).
 -define(MAX_AUTH_ATEMPT, 3).
--define(ENCODING_MOD, bifs_encoder_asn).
+-define(ENCODING_MOD, bsupercast_encoder_asn).
 
 
 %%%------------------------------------------------------------------------
@@ -136,7 +136,7 @@ init([Encoder]) ->
         pid             = self(),
         module          = ?MODULE,
         state           = 'WAIT_FOR_CLIENT_AUTH'},
-    ifs_server:notify_connection(NextState),
+    supercast_server:notify_connection(NextState),
 	{next_state, 'WAIT_FOR_CLIENT_AUTH', NextState, ?TIMEOUT};
 
 'WAIT_FOR_SOCKET'(Other, State) ->
@@ -150,7 +150,7 @@ init([Encoder]) ->
 %%-------------------------------------------------------------------------
 'WAIT_FOR_CLIENT_AUTH'({client_data, Pdu}, 
         #client_state{encoding_mod = Encoder} = State) ->
-    ifs_server:handle_msg(State, Encoder:decode(Pdu)),
+    supercast_server:handle_msg(State, Encoder:decode(Pdu)),
 	{next_state, 'WAIT_FOR_CLIENT_AUTH', State, ?TIMEOUT};
 
 'WAIT_FOR_CLIENT_AUTH'({auth_success, Ref, User, Roles}, 
@@ -183,7 +183,7 @@ init([Encoder]) ->
 'WAIT_FOR_CLIENT_AUTH'(timeout, State) ->
     NextState = State#client_state{
         auth_request_count = State#client_state.auth_request_count + 1},
-    ifs_server:notify_connection(NextState),
+    supercast_server:notify_connection(NextState),
 	{next_state, 'WAIT_FOR_CLIENT_AUTH', NextState, ?TIMEOUT};
 
 'WAIT_FOR_CLIENT_AUTH'(Data, State) ->
@@ -195,7 +195,7 @@ init([Encoder]) ->
 %%-------------------------------------------------------------------------
 'RUNNING'({client_data, Pdu}, 
         #client_state{encoding_mod = Encoder} = State) ->
-    ifs_server:handle_msg(State, Encoder:decode(Pdu)),
+    supercast_server:handle_msg(State, Encoder:decode(Pdu)),
 	{next_state, 'RUNNING', State};
 
 'RUNNING'({encode_send_msg, Ref, Msg}, 
@@ -273,7 +273,7 @@ handle_info(Info, StateName, StateData) ->
 terminate(_Reason, _StateName, #client_state{socket=Socket} = State) ->
 	io:format("terminate ~p ~p~n", [?MODULE, _Reason]),
 	(catch gen_tcp:close(Socket)),
-    ifs_server:notify_disconnection(State),
+    supercast_server:notify_disconnection(State),
 	ok.
 
 %%-------------------------------------------------------------------------

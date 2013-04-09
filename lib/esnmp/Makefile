@@ -7,7 +7,7 @@ SRC     = $(shell find src -name "*.erl")
 DEST    = $(patsubst src/%.erl, ebin/%.beam, $(SRC))
 MIBSRC  = $(shell find priv/mibs -name "*.mib")
 MIBDEST = $(patsubst priv/mibs/%.mib, priv/snmp/mibs/%.bin, $(MIBSRC))
-EPATH  += -pa ../ifs/ebin
+EPATH  += -pa ../supercast/ebin
 INCLUDE = $(wildcard include/*.hrl)
 
 compile: $(DEST)

@@ -1,7 +1,7 @@
 # Makefile 
 
 REL_NAME        = enms
-MODS            = ifs esnmp icmp ifs procket tracker activity_logger errd erlexec
+MODS            = supercast esnmp icmp supercast procket tracker activity_logger errd erlexec
 
 
 compile:
@@ -32,7 +32,7 @@ clean: tclean
 
 
 # Shared includes from IFS
-IFS_INCLUDES_DIR    = ./lib/ifs/include
+IFS_INCLUDES_DIR    = ./lib/supercast/include
 IFS_INCLUDES_SRC    = $(wildcard $(IFS_INCLUDES_DIR)/*.hrl)
 IFS_INCLUDES_DST    = $(addprefix ./include/, $(notdir $(IFS_INCLUDES_SRC)))
 

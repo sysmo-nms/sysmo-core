@@ -47,7 +47,7 @@
     pid                         % pid() of the gen_server howner of the socket
 }). 
 
--record(ifs_module, {
+-record(supercast_module, {
     name        = undefined :: atom(),
     callback    = undefined :: module(),
     asnkey      = undefined :: atom(),

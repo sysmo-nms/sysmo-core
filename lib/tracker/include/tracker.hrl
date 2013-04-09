@@ -1,6 +1,6 @@
 -include_lib("kernel/include/inet.hrl").
 -include_lib("kernel/include/file.hrl").
--include("../ifs/include/ifs.hrl").
+-include("../supercast/include/supercast.hrl").
 -include("../errd/include/errd.hrl").
 -include("../esnmp/include/esnmp.hrl").
 

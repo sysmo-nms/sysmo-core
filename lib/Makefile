@@ -1,7 +1,7 @@
 # Makefile 
 
 REL_NAME        = enms
-MODS            = ifs esnmp tracker activity_logger procket icmp errd erlexec
+MODS            = supercast esnmp tracker activity_logger procket icmp errd erlexec
 
 compile: recurse
 

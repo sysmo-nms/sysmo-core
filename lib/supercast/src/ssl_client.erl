@@ -35,7 +35,7 @@
 %%% @end
 -module(ssl_client).
 -behaviour(gen_fsm).
--include("../include/ifs.hrl").
+-include("../include/supercast.hrl").
 
 -export([
     start_link/2,
@@ -63,7 +63,7 @@
 
 -define(TIMEOUT, 30000).
 -define(MAX_AUTH_ATEMPT, 3).
--define(ENCODING_MOD, bifs_encoder_asn).
+-define(ENCODING_MOD, bsupercast_encoder_asn).
 
 
 %%%------------------------------------------------------------------------
@@ -158,7 +158,7 @@ init([Encoder, {Key, Cert, CACert}]) ->
         pid             = self(),
         module          = ?MODULE,
         state           = 'WAIT_FOR_CLIENT_AUTH'},
-    ifs_server:client_msg(connect, NextState),
+    supercast_server:client_msg(connect, NextState),
 	{next_state, 'WAIT_FOR_CLIENT_AUTH', NextState, ?TIMEOUT};
 
 'WAIT_FOR_SOCKET'(Other, State) ->
@@ -172,7 +172,7 @@ init([Encoder, {Key, Cert, CACert}]) ->
 %%-------------------------------------------------------------------------
 'WAIT_FOR_CLIENT_AUTH'({client_data, Pdu}, 
         #client_state{encoding_mod = Encoder} = State) ->
-    ifs_server:client_msg({message, Encoder:decode(Pdu)}, State),
+    supercast_server:client_msg({message, Encoder:decode(Pdu)}, State),
 	{next_state, 'WAIT_FOR_CLIENT_AUTH', State, ?TIMEOUT};
 
 'WAIT_FOR_CLIENT_AUTH'({success, Ref, Name, Roles, Mods}, 
@@ -206,7 +206,7 @@ init([Encoder, {Key, Cert, CACert}]) ->
 'WAIT_FOR_CLIENT_AUTH'(timeout, State) ->
     NextState = State#client_state{auth_request_count = 
                     State#client_state.auth_request_count + 1},
-    ifs_server:client_msg(connect, NextState),
+    supercast_server:client_msg(connect, NextState),
 	{next_state, 'WAIT_FOR_CLIENT_AUTH', NextState, ?TIMEOUT};
 
 'WAIT_FOR_CLIENT_AUTH'(Data, State) ->
@@ -219,7 +219,7 @@ init([Encoder, {Key, Cert, CACert}]) ->
 % message from the client:
 'RUNNING'({client_data, Data}, 
         #client_state{encoding_mod = Encoder} = State) ->
-    ifs_server:client_msg({message, Encoder:decode(Data)}, State),
+    supercast_server:client_msg({message, Encoder:decode(Data)}, State),
 	{next_state, 'RUNNING', State};
 
 % message from the server:
@@ -299,7 +299,7 @@ handle_info(Info, StateName, StateData) ->
 terminate(_Reason, _StateName, #client_state{socket=Socket} = State) ->
 	io:format("terminate ~p ~p~n", [?MODULE, _Reason]),
 	(catch ssl:close(Socket)),
-    ifs_server:client_msg(disconnect, State),
+    supercast_server:client_msg(disconnect, State),
 	ok.
 
 %%-------------------------------------------------------------------------

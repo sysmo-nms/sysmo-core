@@ -14,7 +14,7 @@
         {procket, "0.3"},
         {icmp, "0.1.0"},
         {esnmp, "0.2.0"},
-        {ifs, "2.0.0"},
+        {supercast, "2.0.0"},
         {errd, "0.1"},
         {tracker, "0.1.0"}
     ]

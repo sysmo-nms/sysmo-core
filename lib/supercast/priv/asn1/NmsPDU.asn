@@ -9,12 +9,12 @@ NmsPDU DEFINITIONS EXPLICIT TAGS ::=
 BEGIN
 
 IMPORTS 
-    IfPDU       FROM ModIf
-    EsnmpPDU    FROM ModEsnmp
-    TrackerPDU  FROM ModTracker;
+    SupercastPDU    FROM ModSupercast
+    EsnmpPDU        FROM ModEsnmp
+    TrackerPDU      FROM ModTracker;
 
 PDU ::= CHOICE {
-    modIfPDU        [0] IfPDU,
+    modSupercastPDU [0] SupercastPDU,
     modEsnmpPDU     [1] EsnmpPDU,
     modTrackerPDU   [2] TrackerPDU
 }

@@ -24,7 +24,7 @@
 % <ul>
 %   <li>switch probe messages (probe_evt) to the related modules depending 
 %   on his type (activity, rrdmessages).</li>
-%   <li>keep a clean state of target events for ifs when a client subscribe
+%   <li>keep a clean state of target events for supercast when a client subscribe
 %   to this channel</li>
 %   <li> add, remove probes</li>
 %   <li> keep his tracker_target_store record in sync</li>
@@ -95,7 +95,7 @@ update(Chan, ProbeId, Message) ->
 
 -spec subscribe(target_id(), any()) -> ok.
 % @doc
-% ifs module related.
+% supercast module related.
 % The logic is here:
 % - dump every informations pending,
 % - send all target related data to client,
@@ -246,12 +246,12 @@ code_change(_O, S, _E) ->
 %%----------------------------------------------------------------------------
 % -spec notify(atom(), tuple(), #state{}, #probe{}) -> ok.
 % % @doc
-% % Will log everything and also to ifs if #state.subscribers_count > 0
+% % Will log everything and also to supercast if #state.subscribers_count > 0
 % % @end
 % notify(Type, {'OK',Val} = Msg, 
 %         #state{subscriber_count = 0} = Chan, 
 %         #probe{permissions = Perm} = Probe) ->
-%     ifs_mpd:multicast_msg(Chan#state.chan_id, {Perm,
+%     supercast_mpd:multicast_msg(Chan#state.chan_id, {Perm,
 %         {modTrackerPDU,
 %             {fromServer,
 %                 {probeFetch, 
@@ -266,7 +266,7 @@ code_change(_O, S, _E) ->
 % notify(Type, {'RECOVERY',Val} = Msg, 
 %         #state{subscriber_count = 0}   = Chan, 
 %         #probe{permissions = Perm}          = Probe) ->
-%     ifs_mpd:multicast_msg(Chan#state.chan_id,{Perm, 
+%     supercast_mpd:multicast_msg(Chan#state.chan_id,{Perm, 
 %             {modTrackerPDU,
 %                 {fromServer,
 %                     {probeFetch, 
@@ -279,7 +279,7 @@ code_change(_O, S, _E) ->
 %             {Chan#state.chan_id, Probe#probe.id}});
 % 
 % notify(Type, Msg, Chan, Probe) ->
-%     % notify ifs
+%     % notify supercast
 %     gen_event:notify(tracker_events, {tracker_probe, Type, Msg,
 %             {Chan#state.chan_id, Probe#probe.id}}).
 % 

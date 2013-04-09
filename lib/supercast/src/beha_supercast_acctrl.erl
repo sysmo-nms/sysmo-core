@@ -18,38 +18,22 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
-{application, ifs,
-	[
-		{description, "IFS, InterFace Session/authentication"},
-		{vsn, "2.0.0"},
-		{modules, [
-                ifs_app,
-                ifs_sup,
-                ifs_server,
-                ifs_rbac,
-                ifs_auth_ldap,
-                asncli,
-                ssl_client,
-                ssl_client_sup,
-                ssl_server_sup,
-                ssl_listener,
-                tcp_client,
-                tcp_client_sup,
-                tcp_server_sup,
-                tcp_listener
-            ]},
-		{registered, [
-                ifs_sup,
-                ifs_server,
-                ifs_mpd,
-                ifs_auth_ldap,
-                ssl_client_sup,
-                ssl_server_sup,
-                ssl_listener
-            ]},
-		{applications, 
-            [kernel, stdlib, crypto, public_key, ssl]
-        },
-		{mod, {ifs_app, []}}
-	]
-}.
+% @doc
+% A module implementing this behaviour must export the function statisfy/3.
+% statisfy/2 must take as arguments read | write a list of #client_state 
+% and a term().
+% Return a list of #client_state wich satisfy with the access control
+% constraint defined by term().
+% term() is dependant on the return of beha_supercast_auth module wich is used by 
+% the application.
+% @end
+-module(beha_supercast_acctrl).
+-export([behaviour_info/1]).
+
+behaviour_info(callbacks) ->
+    [
+        {satisfy, 3}
+    ];
+
+behaviour_info(_) ->
+    undefined.

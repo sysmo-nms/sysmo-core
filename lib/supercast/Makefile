@@ -30,13 +30,13 @@ clean:
 	rm -f doc/edoc-info
 	rm -f priv/asn1/build/*
 
-clifs:
+clsupercast:
 	@$(ERL) -pa ebin -eval \
- 'clifs:s(), timer:sleep(500), clifs:adm()'
+ 'clsupercast:s(), timer:sleep(500), clsupercast:adm()'
 
-clifs2:
+clsupercast2:
 	@$(ERL) -pa ebin -eval \
- 'clifs:s(), timer:sleep(500), clifs:std()'
+ 'clsupercast:s(), timer:sleep(500), clsupercast:std()'
 # ASN PDUs
 ASN_DEFS    = $(shell find priv/asn1 -name "*.asn")
 ASN_DEST    = $(patsubst priv/asn1/%.asn, ebin/%.beam, $(ASN_DEFS))
@@ -46,13 +46,13 @@ pdu: $(ASN_DEST)
 $(ASN_DEST): ebin/%.beam: priv/asn1/%.asn
 	$(ASNC) -o priv/asn1/build priv/asn1/$*.asn
 	@cp priv/asn1/build/$*.beam ebin
-	@cp priv/asn1/build/*.hrl include
+	@if `test -e priv/asn1/build/$*.hrl`; then cp priv/asn1/build/$*.hrl include; fi
 
 
 # TEST
 test: compile
 	@$(ERL) -noinput -pa ebin -eval \
-        'eunit:test(bifs_acctrl_rbac, [verbose]), init:stop()'
+        'eunit:test(bsupercast_acctrl_rbac, [verbose]), init:stop()'
 
 # DOCUMENTATION
 doc: doc/index.html

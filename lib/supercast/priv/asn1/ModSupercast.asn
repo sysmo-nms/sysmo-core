@@ -1,4 +1,4 @@
-ModIf DEFINITIONS EXPLICIT TAGS ::=
+ModSupercast DEFINITIONS EXPLICIT TAGS ::=
 
 BEGIN
 
@@ -39,7 +39,7 @@ ChanInfo    ::= SEQUENCE {
     type    ChanInfoType
 }
 
-IfPDU ::= CHOICE {
+SupercastPDU ::= CHOICE {
     fromServer [0] CHOICE {
         chanInfo    [1] ChanInfo,
         authReq     [2] AuthProto,
