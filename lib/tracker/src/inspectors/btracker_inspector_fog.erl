@@ -28,7 +28,7 @@
 % @end
 -module(btracker_inspector_fog).
 -behaviour(beha_tracker_inspector).
--include("../include/tracker.hrl").
+-include("../../include/tracker.hrl").
 
 
 -export([

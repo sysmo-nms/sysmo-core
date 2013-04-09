@@ -2,7 +2,7 @@
 % Copyright (C) 2012 <Sébastien Serre sserre.bx@gmail.com>
 % 
 % Enms is a Network Management System aimed to manage and monitor SNMP
-% targets, monitor network hosts and services, provide a consistent
+% target, monitor network hosts and services, provide a consistent
 % documentation system and tools to help network professionals
 % to have a wide perspective of the networks they manage.
 % 
@@ -18,27 +18,38 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
-% @doc
-% The module implementing this behaviour is used by a tracker_target_channel
-% to store values returned by the probes.
-% This module did nothing with the probe returns. Only state change will be
-% sent to the tracker event via tracker_target_channel.
-% @end
--module(btracker_logger_null).
--behaviour(beha_tracker_logger).
--include("../include/tracker.hrl").
+% @private
+-module(btracker_probe_nagios_compat).
+-behaviour(beha_tracker_probe).
+-include("../../include/tracker.hrl").
+-include_lib("snmp/include/snmp_types.hrl").
 
 -export([
-    init/2,
-    log/2,
-    dump/2
+    exec/1,
+    info/0
 ]).
 
-init(_, S) -> 
-    {ok, S}.
+exec({#target{id = Id}, #probe{snmp_oids = Oids, timeout = Timeout}}) ->
+    Rep = esnmp_user_v2:sync_get(
+        atom_to_list(Id),
+        Oids,
+        Timeout * 1000
+    ),
 
-log(_, _) ->
-    ok.
+    case Rep of
+        {ok, {noError, _, Reply}, _} ->
 
-dump(_, _) -> 
-    ignore.
+            Ret = lists:foldl(fun(X, Acc) ->
+                [{X#varbind.oid, X#varbind.value} | Acc]
+            end, [], Reply),
+
+            {ok, {Ret, os:timestamp()}};
+        {error, Reason} ->
+            {error, Reason};
+        Other ->
+            io:format("Other ~p~n", [Other])
+    end.
+    
+
+info() ->
+    {ok, "Snmp probe module"}.

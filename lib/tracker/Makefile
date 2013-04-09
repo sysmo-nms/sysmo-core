@@ -3,17 +3,36 @@
 APP     = tracker
 ERL     = erl
 ERLC   += erlc -Werror
-SRC     = $(shell find src -name "*.erl")
-ALL_DEST    = $(patsubst src/%.erl, ebin/%.beam, $(SRC))
-BEHAVIOURS  = $(filter ebin/beha_%.beam, $(ALL_DEST))
-OTHER_DEST  = $(filter-out ebin/gen_%.beam, $(ALL_DEST))
-INCLUDE = $(wildcard include/*.hrl)
 EPATH  += -pa ../ifs/ebin -pa ebin
 
-compile: $(BEHAVIOURS) $(OTHER_DEST)
+MAIN            = $(wildcard src/*.erl)
+MAIN_DST        = $(patsubst src/%.erl, ebin/%.beam, $(MAIN))
 
+PROBES          = $(wildcard src/probes/*.erl)
+PROBES_DST      = $(patsubst src/probes/%.erl, ebin/%.beam, $(PROBES))
+
+INSPECTORS      = $(wildcard src/inspectors/*.erl)
+INSPECTORS_DST  = $(patsubst src/inspectors/%.erl, ebin/%.beam, $(INSPECTORS))
+
+LOGGERS         = $(wildcard src/loggers/*.erl)
+LOGGERS_DST     = $(patsubst src/loggers/%.erl, ebin/%.beam, $(LOGGERS))
+
+INCLUDE         = $(wildcard include/*.hrl)
+
+
+compile: $(MAIN_DST) $(PROBES_DST) $(INSPECTORS_DST) $(LOGGERS_DST)
+    
 ebin/%.beam: src/%.erl $(INCLUDE)
 	$(ERLC) $(EPATH) -o ebin/ src/$*.erl
+
+ebin/%.beam: src/probes/%.erl $(INCLUDE)
+	$(ERLC) $(EPATH) -o ebin/ src/probes/$*.erl
+
+ebin/%.beam: src/inspectors/%.erl $(INCLUDE)
+	$(ERLC) $(EPATH) -o ebin/ src/inspectors/$*.erl
+
+ebin/%.beam: src/loggers/%.erl $(INCLUDE)
+	$(ERLC) $(EPATH) -o ebin/ src/loggers/$*.erl
 
 clean:
 	rm -f ebin/*.beam

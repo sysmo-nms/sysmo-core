@@ -19,36 +19,26 @@
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 % @doc
-% The most simple inspector. If the return is not {ok,_}, then the status
-% of the probe is set to 'NOTICE'. Else it is 'OK'.
+% The module implementing this behaviour is used by a tracker_target_channel
+% to store values returned by the probes.
+% This module did nothing with the probe returns. Only state change will be
+% sent to the tracker event via tracker_target_channel.
 % @end
--module(btracker_inspector_simple).
--behaviour(beha_tracker_inspector).
--include("../include/tracker.hrl").
-
+-module(btracker_logger_null).
+-behaviour(beha_tracker_logger).
+-include("../../include/tracker.hrl").
 
 -export([
-    init/2, 
-    inspect/3,
-    info/0
+    init/2,
+    log/2,
+    dump/2
 ]).
 
-info() ->
-    [
-        'NOTICE',
-        'OK'
-    ].
+init(_, S) -> 
+    {ok, S}.
 
-init(_Conf, ProbeServerState) -> 
-    {ok, ProbeServerState}.
+log(_, _) ->
+    ok.
 
-% @end
-inspect(_InitS, #probe_server_state{
-        probe = Probe} = ProbeServerState, {ok, _}) ->
-    NewProbe = Probe#probe{status = 'OK'},
-    {ok, ProbeServerState#probe_server_state{probe = NewProbe}};
-
-inspect(_InitS, #probe_server_state{
-        probe               = Probe} = ProbeServerState, {error, _}) ->
-    NewProbe = Probe#probe{status = 'NOTICE'},
-    {ok, ProbeServerState#probe_server_state{probe = NewProbe}}.
+dump(_, _) -> 
+    ignore.

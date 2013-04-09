@@ -21,7 +21,7 @@
 % @private
 -module(btracker_probe_snmp).
 -behaviour(beha_tracker_probe).
--include("../include/tracker.hrl").
+-include("../../include/tracker.hrl").
 -include_lib("snmp/include/snmp_types.hrl").
 
 -export([
