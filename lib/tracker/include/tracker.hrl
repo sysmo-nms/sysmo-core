@@ -56,11 +56,13 @@
 -record(nagios_plugin_return, {
     text_out        = undefined     :: string(),
     perfs           = undefined     :: [#nagios_perf_data{}],
-    original_output = undefined     :: string()             
+    original_output = undefined     :: string(),
+    timestamp       = undefined     :: integer()
 }).
 
 -record(tracker_probe_return, {
-    value = undefined
+    value           = undefined,
+    timestamp       = undefined     :: integer()
 }).
 
 -record(nagios_plugin, {

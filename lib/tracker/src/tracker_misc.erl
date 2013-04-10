@@ -35,7 +35,8 @@
     valid_hostname_string/1,
     random/1,
     ip_format/2,
-    extract_nag_uom/1
+    extract_nag_uom/1,
+    timestamp/1
 ]).
 
 -export([
@@ -112,7 +113,13 @@ code_change(_O, S, _E) ->
 %% end of gen_server
 %%-------------------------------------------------------------
 
+timestamp(second) ->
+    {Meg, Sec, _} = erlang:now(),
+    Meg * 1000000 + Sec;
 
+timestamp(microsecond) ->
+    {Meg, Sec, Mic} = erlang:now(),
+    Meg * 1000000 * 1000000 + Sec * 1000000 + Mic.
 
 nag_uom_test(String, []) ->
     {String, no_unit};

@@ -175,15 +175,14 @@ eval_nagout(File) ->
     #nagios_plugin_return{
         text_out        = TextOut,
         perfs           = PerfDatas,
-        original_output = FullData
+        original_output = FullData,
+        timestamp       = tracker_misc:timestamp(second)
     }.
 
 to_number(String) ->
     to_number(String, [list_to_float, list_to_integer]).
-
 to_number(String, []) ->
     String;
-
 to_number(String, [ToSomething | T]) ->
     case (catch erlang:ToSomething(String)) of
         {'EXIT', _} ->
