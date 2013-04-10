@@ -42,16 +42,38 @@
     conf
 }).
 
--record(rrd_def, {
-    rrd_create          = ""            :: #rrd_create{},
-    rrd_update          = ""            :: #rrd_ds_update{},
-    rrd_graph           = ""            :: string()
+% NAGIOS btracker_probe_nagios_compat
+-record(nagios_perf_data, {
+    label       = undefined     :: string(),
+    value       = undefined     :: integer(),
+    uom         = undefined     :: string(),
+    warn        = undefined     :: integer(),
+    crit        = undefined     :: integer(),
+    min         = undefined     :: integer(),
+    max         = undefined     :: integer()
+}).
+
+-record(nagios_plugin_return, {
+    text_out        = undefined     :: string(),
+    perfs           = undefined     :: [#nagios_perf_data{}],
+    original_output = undefined     :: string()             
+}).
+
+-record(tracker_probe_return, {
+    value = undefined
 }).
 
 -record(nagios_plugin, {
     executable  = undefined             :: string(),
     args        = []                    :: [nagios_arg()]
 }).
+
+-record(rrd_def, {
+    rrd_create          = ""            :: #rrd_create{},
+    rrd_update          = ""            :: #rrd_ds_update{},
+    rrd_graph           = ""            :: string()
+}).
+
 
 -record(probe, {
     id                  = undefined     :: probe_id(), % unique in a target

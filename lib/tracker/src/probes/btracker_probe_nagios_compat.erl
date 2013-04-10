@@ -22,7 +22,6 @@
 -module(btracker_probe_nagios_compat).
 -behaviour(beha_tracker_probe).
 -include("../../include/tracker.hrl").
--include_lib("snmp/include/snmp_types.hrl").
 
 -export([
     exec/1,
@@ -64,32 +63,24 @@ exec({
         end
     end),
 
-    io:format("jjjjjjjjjj ~p~n", [StdoutFile]),
     receive
         {_, _, {exit_status, Val}} -> 
             case exec:status(Val) of
                 {status, 0} ->
-                    io:format("nagios_compat received exit 0~p~n", [return_string(StdoutFile)]),
-                    {'OK',          return_string(StdoutFile)};
+                    {'OK',          eval_nagout(StdoutFile)};
                 {status, 1} ->
-                    io:format("nagios_compat received exit 1~p~n", [return_string(StdoutFile)]),
-                    {'WARNING',     return_string(StdoutFile)};
+                    {'WARNING',     eval_nagout(StdoutFile)};
                 {status, 2} ->
-                    io:format("nagios_compat received exit 2~p~n", [return_string(StdoutFile)]),
-                    {'CRITICAL',    return_string(StdoutFile)};
+                    {'CRITICAL',    eval_nagout(StdoutFile)};
                 {status, 3} ->
-                    io:format("nagios_compat received exit 3~p~n", [return_string(StdoutFile)]),
-                    {'UNKNOWN',     return_string(StdoutFile)};
+                    {'UNKNOWN',     eval_nagout(StdoutFile)};
                 Any -> 
-                    io:format("uuuuuuuuuuuuuuuuuuuuuuuuu~p~n", [Any])
+                    io:format("Unknown return status~p~n", [Any])
             end;
         Any ->
-            io:format("ddddddddddddddddddddddddd~p~n" , [Any])
+            io:format("Not an exit_status msg~p~n" , [Any])
     end.
 
-return_string(File) ->
-    {ok, Data} = file:read_file(File),
-    Data.
 
 info() ->
     {ok, "Nagios compat probe module"}.
@@ -99,6 +90,104 @@ get_val({target, {properties, ip}}, #target{properties = Props}, _) ->
     {ip, Val} = lists:keyfind(ip, 1, Props),
     tracker_misc:ip_format(v4_to_string, Val);
 
+% @private
 get_val({probe, timeout}, _, #probe{timeout = Timeout}) ->
     lists:flatten(io_lib:format("~.10B", [Timeout])).
 
+% @private
+eval_nagout(File) ->
+    {ok, BinaryData}    = file:read_file(File),
+    FullData            = erlang:binary_to_list(BinaryData),
+
+    % separate text from perf data. foldr/3 to keep the TextOut order.
+    {TextOut, PerfLines} = lists:foldr(fun(X, {TextOut, Perfs}) ->
+        case string:tokens(X, "|") of
+            [Text] ->
+                {[Text | TextOut], Perfs};
+            [Text, Perf] ->
+                {[Text | TextOut], [Perf | Perfs]}
+        end
+    end, {[], []}, string:tokens(FullData, "\n")),
+
+    % generate a list of perfs from lines
+    PerfStringList = lists:foldl(fun(PerfLine, Acc) ->
+        PerfsOnLine = string:tokens(PerfLine, " "),
+        lists:append(PerfsOnLine, Acc)
+    end, [], PerfLines),
+
+    % generate [#nagios_perf_data{}]
+    PerfDatas   = lists:foldl(fun(PerfElement, Acc) ->
+        PerfDataList = string:tokens(PerfElement, ";"),
+        case PerfDataList of
+            [LabelValue, Warn, Crit, Min, Max] ->
+                [Label, ValueUom]   = string:tokens(LabelValue, "="),
+                {ok, {Value, Uom}}  = tracker_misc:extract_nag_uom(ValueUom),
+                [#nagios_perf_data{
+                    label   = Label,
+                    uom     = Uom,
+                    value   = to_number(Value),
+                    warn    = to_number(Warn),
+                    crit    = to_number(Crit),
+                    min     = to_number(Min),
+                    max     = to_number(Max)
+                }   | Acc];
+            [LabelValue, Warn, Crit, Min] ->
+                [Label, ValueUom] = string:tokens(LabelValue, "="),
+                {ok, {Value, Uom}}  = tracker_misc:extract_nag_uom(ValueUom),
+                [#nagios_perf_data{
+                    label   = Label,
+                    uom     = Uom,
+                    value   = to_number(Value),
+                    warn    = to_number(Warn),
+                    crit    = to_number(Crit),
+                    min     = to_number(Min)
+                }   | Acc];
+            [LabelValue, Warn, Crit] ->
+                [Label, ValueUom] = string:tokens(LabelValue, "="),
+                {ok, {Value, Uom}}  = tracker_misc:extract_nag_uom(ValueUom),
+                [#nagios_perf_data{
+                    label   = Label,
+                    uom     = Uom,
+                    value   = to_number(Value),
+                    warn    = to_number(Warn),
+                    crit    = to_number(Crit)
+                }   | Acc];
+            [LabelValue, Warn] ->
+                [Label, ValueUom] = string:tokens(LabelValue, "="),
+                {ok, {Value, Uom}}  = tracker_misc:extract_nag_uom(ValueUom),
+                [#nagios_perf_data{
+                    label   = Label,
+                    uom     = Uom,
+                    value   = to_number(Value),
+                    warn    = to_number(Warn) 
+                }   | Acc];
+            [LabelValue] ->
+                [Label, ValueUom] = string:tokens(LabelValue, "="),
+                {ok, {Value, Uom}}  = tracker_misc:extract_nag_uom(ValueUom),
+                [#nagios_perf_data{
+                    label   = Label,
+                    uom     = Uom,
+                    value   = to_number(Value)
+                }   | Acc]
+        end
+    end, [], PerfStringList),
+
+    #nagios_plugin_return{
+        text_out        = TextOut,
+        perfs           = PerfDatas,
+        original_output = FullData
+    }.
+
+to_number(String) ->
+    to_number(String, [list_to_float, list_to_integer]).
+
+to_number(String, []) ->
+    String;
+
+to_number(String, [ToSomething | T]) ->
+    case (catch erlang:ToSomething(String)) of
+        {'EXIT', _} ->
+            to_number(String, T);
+        Other ->
+            Other
+    end.

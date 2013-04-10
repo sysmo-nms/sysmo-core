@@ -1,8 +1,7 @@
 The development flow should follow this order:
 
 #MODULE/OTHER           #PRIORITY   #COMPLETED
-- ifs                     HIGH         100%
-Module events and client communication/auth
+- supercast               HIGH         100% Module events and client communication/auth
 - tracker                 HIGH         60%
 Live list of targets, associate tags to traps/inform they produce and own the
 mermisions associated. Need a clear definition of required fonctions and the

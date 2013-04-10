@@ -34,7 +34,8 @@
     more_ips/0,
     valid_hostname_string/1,
     random/1,
-    ip_format/2
+    ip_format/2,
+    extract_nag_uom/1
 ]).
 
 -export([
@@ -46,9 +47,14 @@
     code_change/3
 ]).
 
+-record(state, {
+    nagios_uom_re
+}).
 %%-------------------------------------------------------------
 %% without this small server utility, random:uniform is called
 %% at the same time at startup and return identical values.
+%% It also keep state the compiled re:compile version for the 
+%% nagios compat module
 %%-------------------------------------------------------------
 start_link() ->
     gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
@@ -56,14 +62,40 @@ start_link() ->
 random(V) ->
     gen_server:call(?MODULE, {random, V}).
 
+extract_nag_uom(String) ->
+    gen_server:call(?MODULE, {extract_nag_uom, String}).
+
 init([]) ->
     random:seed(),
-    {ok, state}.
+    NagUomRe = [
+        {usecond,       "us$"   },
+        {msecond,       "ms$"   },
+        {second,        "s$"    },
+        {percent,       "%$"    },
+        {kbytes,        "KB$"   },
+        {mbytes,        "MB$"   },
+        {tbytes,        "TB$"   },
+        {bytes,         "B$"    },
+        {counter,       "c$"    }
+    ],
+
+    NagCompiledRe = lists:map(fun({Unit, Re}) ->
+        {ok, RE} = re:compile(Re),
+        {Unit, RE}
+    end, NagUomRe),
+    {ok, #state{nagios_uom_re = NagCompiledRe}}.
     
+
+handle_call({extract_nag_uom, String}, _F, S) ->
+    Rep = nag_uom_test(String, S#state.nagios_uom_re),
+    {reply, {ok, Rep}, S};
+
 handle_call({random, V}, _F, S) ->
     {reply, random:uniform(V), S};
+
 handle_call(_R, _F, S) ->
     {noreply, S}.
+
 
 handle_cast(_R, S) ->
     {noreply, S}.
@@ -82,7 +114,17 @@ code_change(_O, S, _E) ->
 
 
 
+nag_uom_test(String, []) ->
+    {String, no_unit};
 
+nag_uom_test(String, [{ReName, RE} | ReList]) ->
+    case re:run(String, RE) of
+        nomatch     -> 
+            nag_uom_test(String, ReList);
+        {match, _}  ->
+            [Val, _] = re:replace(String, RE, ""),
+            {erlang:binary_to_list(Val), ReName}
+    end.
 
 
 
