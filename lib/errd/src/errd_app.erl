@@ -9,7 +9,10 @@
 -behaviour(application).
 
 %% Application callbacks
--export([start/2, stop/1]).
+-export([
+    start/2, 
+    start_phase/3,
+    stop/1]).
 
 %%====================================================================
 %% Application callbacks
@@ -27,6 +30,11 @@
 start(_Type, _StartArgs) ->
     errd_sup:start_link().
 
+start_phase(initialize_tracker_loggers, normal, []) ->
+    ok                  = errd_server_sup:create_named_instance(rrd_tracker),
+    {ok, TargetDataDir} = application:get_env(tracker, targets_data_dir), 
+    {ok, _}             = errd_server:cd(rrd_tracker, TargetDataDir),
+    ok.
 %%--------------------------------------------------------------------
 %% Function: stop(State) -> void()
 %% Description: This function is called whenever an application

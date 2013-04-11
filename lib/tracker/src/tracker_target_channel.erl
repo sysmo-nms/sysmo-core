@@ -83,7 +83,7 @@ start_link(DataDir, #target{id = Id} = Target) ->
 cold_start(Pid) ->
     gen_server:call(Pid, cold_start).
 
--spec update(Self::pid(), ProbePid::pid(), Msg::tuple()) -> ok.
+-spec update(Self::pid(), integer(), Msg::tuple()) -> ok.
 % @doc
 % Called by one of the tracker_probes belonging to the tracker_target_channel
 % identified by Chan. Needed for handling of client synchronisation.
@@ -165,6 +165,9 @@ handle_call(get_perms, _F, #state{target = Target} = S) ->
 handle_call({synchronize, _IfsCState}, _F, S) ->
     {reply, ok, S};
 
+handle_call(dump, _F, S) ->
+    {reply, S, S};
+
 handle_call(_R, _F, S) ->
     {noreply, S}.
 
@@ -179,8 +182,8 @@ handle_cast({update, ProbeId, {channel_event, Msg}},
         #state{target = #target{probes = Probes}} = S) ->
     #probe{pid = Pid} = lists:keyfind(ProbeId, 2, Probes),
     tracker_probe:loggers_update(Pid, Msg),
-    % TODO
-    % multicast send
+    % TODO 
+    % SUPERCAST send
     {noreply, S};
 
 % master_event, will not be forwarded to the subscribers of this
@@ -191,7 +194,8 @@ handle_cast({update, ProbeId, {master_event, {probe_status_move, NewStatus}}},
     NProbes = lists:keyreplace(
             ProbeId, 2, Probes, Probe#probe{status = NewStatus}),
     % TODO
-    % mastercast send
+    % MASTERCHAN send
+    io:format("~p PROBE STATUS MOVE~n", [?MODULE]),
     S2      = S#state{target = Target#target{probes = NProbes}},
     {noreply, S2};
 
@@ -200,7 +204,7 @@ handle_cast({update, ProbeId, {master_event, {probe_status_move, NewStatus}}},
 handle_cast({update, _ProbeId, {master_event, {property_set, _Properties}}},
         #state{target = _Target} = S) ->
     % TODO
-    % mastercast send
+    % MASTERCHAN send
     io:format("property set ~p~n", [_Properties]),
     {noreply, S};
 
@@ -336,4 +340,3 @@ init_probes(#target{probes = Probes} = Target) ->
 % @private
 init_snmp(#target{id = Id, properties = Properties}) ->
     esnmp_user_v2:agent(Id, get_opt(snmp_conf, Properties)).
-

@@ -19,7 +19,7 @@
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 % @private
--module(btracker_probe_nagios_compat).
+-module(btracker_probe_nagios).
 -behaviour(beha_tracker_probe).
 -include("../../include/tracker.hrl").
 
@@ -67,13 +67,17 @@ exec({
         {_, _, {exit_status, Val}} -> 
             case exec:status(Val) of
                 {status, 0} ->
-                    {'OK',          eval_nagout(StdoutFile)};
+                    PR =  eval_nagout(StdoutFile),
+                    PR#probe_return{status = 'OK'};
                 {status, 1} ->
-                    {'WARNING',     eval_nagout(StdoutFile)};
+                    PR =  eval_nagout(StdoutFile),
+                    PR#probe_return{status = 'WARNING'};
                 {status, 2} ->
-                    {'CRITICAL',    eval_nagout(StdoutFile)};
+                    PR =  eval_nagout(StdoutFile),
+                    PR#probe_return{status = 'CRITICAL'};
                 {status, 3} ->
-                    {'UNKNOWN',     eval_nagout(StdoutFile)};
+                    PR =  eval_nagout(StdoutFile),
+                    PR#probe_return{status = 'UNKNOWN'};
                 Any -> 
                     io:format("Unknown return status~p~n", [Any])
             end;
@@ -100,7 +104,7 @@ eval_nagout(File) ->
     FullData            = erlang:binary_to_list(BinaryData),
 
     % separate text from perf data. foldr/3 to keep the TextOut order.
-    {TextOut, PerfLines} = lists:foldr(fun(X, {TextOut, Perfs}) ->
+    {_, PerfLines} = lists:foldr(fun(X, {TextOut, Perfs}) ->
         case string:tokens(X, "|") of
             [Text] ->
                 {[Text | TextOut], Perfs};
@@ -116,68 +120,77 @@ eval_nagout(File) ->
     end, [], PerfLines),
 
     % generate [#nagios_perf_data{}]
-    PerfDatas   = lists:foldl(fun(PerfElement, Acc) ->
+    KeyValList   = lists:foldl(fun(PerfElement, Acc) ->
         PerfDataList = string:tokens(PerfElement, ";"),
         case PerfDataList of
             [LabelValue, Warn, Crit, Min, Max] ->
                 [Label, ValueUom]   = string:tokens(LabelValue, "="),
                 {ok, {Value, Uom}}  = tracker_misc:extract_nag_uom(ValueUom),
-                [#nagios_perf_data{
-                    label   = Label,
-                    uom     = Uom,
-                    value   = to_number(Value),
-                    warn    = to_number(Warn),
-                    crit    = to_number(Crit),
-                    min     = to_number(Min),
-                    max     = to_number(Max)
-                }   | Acc];
+                Vars = [
+                    {string:concat(Label, "_value"), to_number(Value)},
+                    {string:concat(Label, "_uom"),   to_number(Uom)},
+                    {string:concat(Label, "_warn"),  to_number(Warn)},
+                    {string:concat(Label, "_crit"),  to_number(Crit)},
+                    {string:concat(Label, "_min"),   to_number(Min)},
+                    {string:concat(Label, "_max"),   to_number(Max)}
+                ],
+                lists:concat([Acc, Vars]);
             [LabelValue, Warn, Crit, Min] ->
                 [Label, ValueUom] = string:tokens(LabelValue, "="),
                 {ok, {Value, Uom}}  = tracker_misc:extract_nag_uom(ValueUom),
-                [#nagios_perf_data{
-                    label   = Label,
-                    uom     = Uom,
-                    value   = to_number(Value),
-                    warn    = to_number(Warn),
-                    crit    = to_number(Crit),
-                    min     = to_number(Min)
-                }   | Acc];
+                Vars = [
+                    {string:concat(Label, "_value"), to_number(Value)},
+                    {string:concat(Label, "_uom"),   to_number(Uom)},
+                    {string:concat(Label, "_warn"),  to_number(Warn)},
+                    {string:concat(Label, "_crit"),  to_number(Crit)},
+                    {string:concat(Label, "_min"),   to_number(Min)}
+                ],
+                lists:concat([Acc, Vars]);
             [LabelValue, Warn, Crit] ->
                 [Label, ValueUom] = string:tokens(LabelValue, "="),
                 {ok, {Value, Uom}}  = tracker_misc:extract_nag_uom(ValueUom),
-                [#nagios_perf_data{
-                    label   = Label,
-                    uom     = Uom,
-                    value   = to_number(Value),
-                    warn    = to_number(Warn),
-                    crit    = to_number(Crit)
-                }   | Acc];
+                Vars = [
+                    {string:concat(Label, "_value"), to_number(Value)},
+                    {string:concat(Label, "_uom"),   to_number(Uom)},
+                    {string:concat(Label, "_warn"),  to_number(Warn)},
+                    {string:concat(Label, "_crit"),  to_number(Crit)}
+                ],
+                lists:concat([Acc, Vars]);
             [LabelValue, Warn] ->
                 [Label, ValueUom] = string:tokens(LabelValue, "="),
                 {ok, {Value, Uom}}  = tracker_misc:extract_nag_uom(ValueUom),
-                [#nagios_perf_data{
-                    label   = Label,
-                    uom     = Uom,
-                    value   = to_number(Value),
-                    warn    = to_number(Warn) 
-                }   | Acc];
+                Vars = [
+                    {string:concat(Label, "_value"), to_number(Value)},
+                    {string:concat(Label, "_uom"),   to_number(Uom)},
+                    {string:concat(Label, "_warn"),  to_number(Warn)}
+                ],
+                lists:concat([Acc, Vars]);
             [LabelValue] ->
                 [Label, ValueUom] = string:tokens(LabelValue, "="),
                 {ok, {Value, Uom}}  = tracker_misc:extract_nag_uom(ValueUom),
-                [#nagios_perf_data{
-                    label   = Label,
-                    uom     = Uom,
-                    value   = to_number(Value)
-                }   | Acc]
+                Vars = [
+                    {string:concat(Label, "_value"), to_number(Value)},
+                    {string:concat(Label, "_uom"),   to_number(Uom)}
+                ],
+                lists:concat([Acc, Vars])
         end
     end, [], PerfStringList),
 
-    #nagios_plugin_return{
-        text_out        = TextOut,
-        perfs           = PerfDatas,
-        original_output = FullData,
-        timestamp       = tracker_misc:timestamp(second)
-    }.
+    % is there some datas?
+    case KeyValList of
+        []  ->
+            #probe_return{
+                original_reply  = FullData,
+                key_val         = [],
+                timestamp       = tracker_misc:timestamp(second)
+            };
+        _   ->
+            #probe_return{
+                original_reply  = FullData,
+                key_val         = KeyValList,
+                timestamp       = tracker_misc:timestamp(second)
+            }
+    end.
 
 to_number(String) ->
     to_number(String, [list_to_float, list_to_integer]).

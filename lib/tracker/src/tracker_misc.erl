@@ -170,7 +170,6 @@ fill_target_store() ->
         NTarget = New#target{
             properties  = Prop2,
             probes      = [
-                a_icmp_probe(),
                 a_snmp_fetch_probe(),
                 a_snmp_set_property_probe()
             ]
@@ -189,6 +188,14 @@ ip_format(v4_to_erlang, String)    ->
     {ok, Ip} = inet_parse:address(String),
     Ip.
 
+a_snmpv2_conf() ->
+    #snmp_agent_conf{
+        community   = "public",
+        port        = 161,
+        engine_id   = "none",
+        version     = v2
+    }.
+
 fill_single() ->
     SnmpConf = a_snmpv2_conf(),
     lists:foreach(fun(Ip) -> 
@@ -200,34 +207,58 @@ fill_single() ->
         NTarget = New#target{
             properties  = Prop2,
             probes      = [
-                a_icmp_probe(),
                 a_snmp_fetch_probe(),
+                a_nagios_icmp_probe(),
                 a_snmp_set_property_probe(),
-                a_icmp_probe_latency(),
-                a_nagios_probe()
+                a_dns_set_hostname_probe()
             ]
         },
         tracker_target_store:create_target(NTarget)
     end, [{192,168,1,2}]).
 
-a_snmpv2_conf() ->
-    #snmp_agent_conf{
-        community   = "public",
-        port        = 161,
-        engine_id   = "none",
-        version     = v2
-    }.
-
-a_nagios_probe() ->
+a_dns_set_hostname_probe() ->
     #probe{
-            id  = 5,
+            id  = 4,
+            name = dns_set_hostname_test,
+            type = {property, hostname},
+            permissions = #perm_conf{
+                read = ["admin"],
+                write = ["admin"]
+            },
+            tracker_probe_mod   = btracker_probe_dns,
+            tracker_probe_conf  = {dns_conf,
+                set_hostname,   % action
+                'CRITICAL'      % on_change status is
+            },
+
+            inspectors  = [
+                #inspector{
+                    module  = btracker_inspector_simple,
+                    conf    = []
+                }
+            ],
+            
+            loggers         = [
+                #logger{
+                    module  = btracker_logger_file,
+                    conf    = []
+                }
+            ],
+
+            timeout = 10,
+            step    = 5
+        }.
+
+a_nagios_icmp_probe() ->
+    #probe{
+            id  = 3,
             name = nagios_test,
             type = status,
             permissions = #perm_conf{
                 read = ["admin"],
                 write = ["admin"]
             },
-            tracker_probe_mod   = btracker_probe_nagios_compat,
+            tracker_probe_mod   = btracker_probe_nagios,
             tracker_probe_conf  = #nagios_plugin{
                 executable  = "./lib/tracker/priv/nagios/libexec/check_ping",
                 args        = [
@@ -255,37 +286,9 @@ a_nagios_probe() ->
             ]
         }.
 
-a_icmp_probe() ->
-    #probe{
-            id  = 4,
-            name = icmp_test,
-            type = status,
-            permissions = #perm_conf{
-                read = ["admin"],
-                write = ["admin"]
-            },
-            tracker_probe_mod = btracker_probe_icmp_echo,
-            inspectors  = [
-                #inspector{
-                    module  = btracker_inspector_simple,
-                    conf    = []
-                }
-            ],
-            timeout = 10,
-            step    = 5,
-
-
-            loggers      = [
-                #logger{
-                    module  = btracker_logger_file, 
-                    conf    = []
-                }
-            ]
-        }.
-
 a_snmp_fetch_probe() ->
     #probe{
-            id  = 3,
+            id  = 2,
             name = snmp_fetch_test,
             type = fetch,
             permissions = #perm_conf{
@@ -315,18 +318,14 @@ a_snmp_fetch_probe() ->
                 #logger{
                     module  = btracker_logger_rrd, 
                     conf    = #rrd_def{
-                        rrd_update = #rrd_update{
-                            file    = "snmp_fetch_test-2.rrd",
-                            time    = now,
-                            updates = [
-                                #rrd_ds_update{
-                                    name    = "bytes",
-                                    value   = 0
-                                }
-                            ]
-                        },
-            
-                        rrd_create = #rrd_create{
+                        update_binds    = [
+                            #rrd_ds_bind{
+                                key  =      "bytes",
+                                term =      [1,3,6,1,2,1,1,7,0]
+                            }
+                        ],
+
+                        create = #rrd_create{
                             file        = "snmp_fetch_test-2.rrd",
                             start_time  = undefined,
                             step        = 5,
@@ -346,71 +345,7 @@ a_snmp_fetch_probe() ->
                             ]
                         },
         
-                        rrd_graph = "graph"
-                    }
-                }
-            ]
-        }.
-
-a_icmp_probe_latency() ->
-    #probe{
-            id  = 2,
-            name = icmp_latency_test,
-            type = fetch,
-            permissions = #perm_conf{
-                read = ["admin"],
-                write = ["admin"]
-            },
-            tracker_probe_mod = btracker_probe_snmp,
-            inspectors  = [
-                #inspector{
-                    module  = btracker_inspector_simple,
-                    conf    = []
-                }
-            ],
-            timeout = 10,
-            step    = 5,
-
-            loggers = [
-                #logger{
-                    module  = btracker_logger_file, 
-                    conf    = []
-                },
-                #logger{
-                    module  = btracker_logger_rrd, 
-                    conf    = #rrd_def{
-                        rrd_update = #rrd_update{
-                            file    = "icmp_latency_test-2.rrd",
-                            time    = now,
-                            updates = [
-                                #rrd_ds_update{
-                                    name    = "latency",
-                                    value   = 0
-                                }
-                            ]
-                        },
-            
-                        rrd_create = #rrd_create{
-                            file        = "icmp_latency_test-2.rrd",
-                            start_time  = undefined,
-                            step        = 5,
-                            ds_defs     = [
-                                #rrd_ds{
-                                    name    = "latency",
-                                    type    = gauge,
-                                    heartbeat = 25,
-                                    min     = 0,
-                                    max     = 100000000,
-                                    args    = "25:0:U"
-                                }
-                            ],
-                            rra_defs    = [
-                                #rrd_rra{cf = 'max', args = "0:1:3600"},
-                                    #rrd_rra{cf = 'max', args = "0:12:1440"}
-                            ]
-                        },
-        
-                        rrd_graph = "graph"
+                        graph = "graph"
                     }
                 }
             ]

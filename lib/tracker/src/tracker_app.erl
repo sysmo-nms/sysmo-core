@@ -39,6 +39,9 @@ start(_Type, _Args) ->
         filename:absname(DataDir)
     ).
 
+start_phase(initialize_tracker_loggers, normal, []) ->
+    ok;
+
 start_phase(cold_start, normal, []) ->
     ok = tracker_target_channel_sup:cold_start().
 

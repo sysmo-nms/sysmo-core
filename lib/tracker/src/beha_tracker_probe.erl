@@ -24,6 +24,19 @@
 % It used from a tracker_probe module and executed every 
 % (#probe.step seconds + process_time).
 % </p>
+% <h1>Probe type</h1>
+% <p>
+% Probes are of 3 general types. One probe can be any or all of them:
+%   - "set", set properties of the target depending of a return,
+%   - "get", retreive some value or generate it (reply latency),
+%   - "status", move the status of a probe,
+% </p>
+% <h1>Special probes</h1>
+% <p>
+% Two spectial probes:
+%   - "nagios", nagios compatible plugins wich is of type "status" and "get",
+%   - "snmp", wich can be of any type "set", "get" and "status".
+% </p>
 % @end
 -module(beha_tracker_probe).
 -include("../include/tracker.hrl").

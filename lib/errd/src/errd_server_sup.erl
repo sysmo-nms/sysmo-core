@@ -11,7 +11,8 @@
 %% API
 -export([
     start_link/0,
-    create_instance/0
+    create_instance/0,
+    create_named_instance/1
 ]).
 
 %% Supervisor callbacks
@@ -31,6 +32,12 @@ start_link() ->
 -spec create_instance() -> {ok, pid()} | ignore | {error, any()}.
 create_instance() ->
     supervisor:start_child(?MODULE, []).
+
+-spec create_named_instance(atom()) -> ok.
+create_named_instance(InstanceName) ->
+    {ok, Pid}   = supervisor:start_child(?MODULE, []),
+    true        = erlang:register(InstanceName, Pid),
+    ok.
 
 %%====================================================================
 %% Supervisor callbacks

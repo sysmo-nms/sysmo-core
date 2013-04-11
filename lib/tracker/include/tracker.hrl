@@ -42,40 +42,28 @@
     conf
 }).
 
-% NAGIOS btracker_probe_nagios_compat
--record(nagios_perf_data, {
-    label       = undefined     :: string(),
-    value       = undefined     :: integer(),
-    uom         = undefined     :: string(),
-    warn        = undefined     :: integer(),
-    crit        = undefined     :: integer(),
-    min         = undefined     :: integer(),
-    max         = undefined     :: integer()
-}).
-
--record(nagios_plugin_return, {
-    text_out        = undefined     :: string(),
-    perfs           = undefined     :: [#nagios_perf_data{}],
-    original_output = undefined     :: string(),
-    timestamp       = undefined     :: integer()
-}).
-
--record(tracker_probe_return, {
-    value           = undefined,
-    timestamp       = undefined     :: integer()
-}).
-
 -record(nagios_plugin, {
     executable  = undefined             :: string(),
     args        = []                    :: [nagios_arg()]
 }).
 
--record(rrd_def, {
-    rrd_create          = ""            :: #rrd_create{},
-    rrd_update          = ""            :: #rrd_ds_update{},
-    rrd_graph           = ""            :: string()
+-record(probe_return, {
+    status          = undefined     :: any(),
+    original_reply  = undefined     :: any(),
+    timestamp       = undefined     :: integer(),
+    key_val         = undefined     :: {any(), integer()}
 }).
 
+-record(rrd_ds_bind, {
+    term    = undefined             :: any(),
+    key     = ""                    :: string()
+}).
+
+-record(rrd_def, {
+    create          = undefined     :: undefined | #rrd_create{},
+    update_binds    = undefined     :: undefined | [#rrd_ds_bind{}],
+    graph           = ""            :: string()
+}).
 
 -record(probe, {
     id                  = undefined     :: probe_id(), % unique in a target

@@ -19,8 +19,9 @@
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 % @doc
-% The module implementing this behaviour is used by a tracker_target_channel
-% to store values returned by the probes.
+% This module log data to an rrd database. Data must exist in the
+% #probe_return.key_val record.
+% To work a valid #rrd_def record must be givent at init conf input.
 % @end
 -module(btracker_logger_rrd).
 -behaviour(beha_tracker_logger).
@@ -32,11 +33,87 @@
     dump/2
 ]).
 
-init(_Conf, ProbeServerState) -> 
-    {ok, ProbeServerState}.
+-record(rrd_logger_state, {
+    file,
+    binds
+}).
 
-log(_PState, _Msg) ->
+init(Conf, #probe_server_state{
+            target          = #target{directory = TargetDir},
+            loggers_state   = LoggersState
+        } = ProbeServerState) -> 
+
+    #rrd_def{
+        create          = #rrd_create{file = FileName} = RrdCreate,
+        update_binds    = Binds
+    } = Conf,
+
+    File = filename:absname_join(TargetDir, FileName),
+
+    case errd_server:info(rrd_tracker, File) of
+        {error, _}  ->
+            {ok, _} = errd_server:command(rrd_tracker, 
+                    RrdCreate#rrd_create{file = File});
+        {rrd, _, _, _, _, _, _}    ->
+            ok;
+        A ->
+            io:format("rrd:info is ~p~n", [A])
+    end,
+
+    
+    
+    RrdLoggerState = #rrd_logger_state{
+        file            = File,
+        binds           = Binds
+    },
+    {ok, ProbeServerState#probe_server_state{
+            loggers_state = [RrdLoggerState | LoggersState]
+        }
+    }.
+
+log(_, #probe_return{key_val = []}) ->
+    io:format("no data do nothing~n"),
+    ok;
+
+log(    #probe_server_state{
+            loggers_state = LoggersState
+        }, 
+        #probe_return{
+            timestamp   = Timestamp,
+            key_val     = Datas
+        }) ->
+
+    #rrd_logger_state{
+        file            = File,
+        binds           = Binds
+    } = lists:keyfind(rrd_logger_state, 1, LoggersState),
+
+    RrdUpdateList = lists:foldl(fun({Bind, Value}, Acc) ->
+        [
+            #rrd_ds_update{
+                name    =   get_bind_for(Bind,Binds),
+                value   =   Value
+            }
+        | Acc]
+    end, [], Datas),
+
+    RrdUpdate = #rrd_update {
+        file    =   File,
+        time    =   integer_to_list(Timestamp),
+        updates =   RrdUpdateList
+    },
+    {ok, _} = errd_server:command(rrd_tracker, RrdUpdate),
+    ok;
+
+log(_,_) ->
+    io:format("."),
     ok.
 
 dump(_PState, _Timeout) -> 
     ignore.
+
+% PRIVATE
+% @private
+get_bind_for(Any, Binds) ->
+    {rrd_ds_bind, Any, Val} = lists:keyfind(Any, 2, Binds),
+    Val.

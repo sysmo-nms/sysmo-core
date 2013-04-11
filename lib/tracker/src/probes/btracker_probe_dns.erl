@@ -19,7 +19,7 @@
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 % @private
--module(btracker_probe_dns_resolver).
+-module(btracker_probe_dns).
 -behaviour(beha_tracker_probe).
 -include("../../include/tracker.hrl").
 -export([
@@ -31,8 +31,19 @@
 exec({#target{properties = Prop}, #probe{timeout = Timeout}}) ->
     {ip, Ip} = lists:keyfind(ip, 1, Prop),
     case inet_res:gethostbyaddr(Ip, Timeout) of
-        {ok, #hostent{h_name = ResolvedName}} -> {ok, ResolvedName};
-        {error, Any} -> {error, Any}
+        {ok, #hostent{h_name = ResolvedName}} = R -> 
+            #probe_return{
+                status          = 'OK',
+                timestamp       = tracker_misc:timestamp(second),
+                original_reply  = R,
+                key_val         = {hostname, ResolvedName}
+            };
+        {error, _} = R -> 
+            #probe_return{
+                status = 'ERROR',
+                timestamp       = tracker_misc:timestamp(second),
+                original_reply  = R
+            }
     end.
 
 info() ->

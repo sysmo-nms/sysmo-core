@@ -198,6 +198,8 @@ probe_pass(#probe_server_state{target = Target, probe  = Probe } = S) ->
     % with the client. Thus, it is in his gen_server loop that
     % a write of Result will occur. He will do this by calling
     % tracker_probe:loggers_update/x.
+    % Subscribers of the target_channel will also recive this
+    % Result message.
     tracker_target_channel:update(
         Target#target.id,
         Probe#probe.id,
@@ -215,6 +217,7 @@ next_pass(#probe_server_state{probe = Probe} = State) ->
     gen_server:cast(Probe#probe.pid, {next_pass, State}).
  
  
+% LOGGERS
 -spec init_loggers(#probe_server_state{}) -> #probe_server_state{}.
 init_loggers(#probe_server_state{probe = Probe} = State) ->
     NewState = lists:foldl(
@@ -226,12 +229,12 @@ init_loggers(#probe_server_state{probe = Probe} = State) ->
 
 -spec loggers_log(#probe_server_state{}, {atom(), any()}) -> ok.
 loggers_log(#probe_server_state{probe = Probe} = PSState, Msg) ->
-    % will not wait return
     lists:foreach(fun(#logger{module = Mod}) ->
         spawn(fun() -> Mod:log(PSState, Msg) end)
     end, Probe#probe.loggers),
     ok.
 
+% INSPECTORS
 -spec init_inspectors(#probe_server_state{}) -> #probe_server_state{}.
 init_inspectors(#probe_server_state{probe = Probe} = State) ->
     Inspectors = Probe#probe.inspectors,

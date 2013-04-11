@@ -212,8 +212,8 @@ parse_rrd_response(_Cmd, {ok, _PerfData}, Lines) ->
     %?INFO("Command [~s] completed: ~s~n~s~n", [Cmd, PerfData, Lines]),
     {ok, Lines};
 
-parse_rrd_response(Cmd, {error, Error}, Lines) ->
-    ?WARN("Command [~s] failed: ~s~n~s~n", [Cmd, Error, Lines]),
+parse_rrd_response(_Cmd, {error, Error}, _Lines) ->
+    %?WARN("Command [~s] failed: ~s~n~s~n", [Cmd, Error, Lines]),
     {error, Error}.
 
 rrd_cmd_test() ->

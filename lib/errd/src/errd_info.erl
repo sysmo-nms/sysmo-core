@@ -39,12 +39,17 @@ parse_other(Rrd, []) ->
 parse_other(Rrd, ["ds"++_|_] = Lines) ->
     parse_ds(Rrd, Lines);
 parse_other(Rrd, ["rra"++_|_] = Lines) ->
-    parse_rra(Rrd, Lines).
+    parse_rra(Rrd, Lines);
+parse_other(Rrd, ["header_size"++_|_] = Lines) ->
+    parse_header_size(Rrd, Lines).
 
 parse_ds(Rrd, Lines) ->
     parse_ds_name(Rrd, #rrd_ds{}, Lines).
 
 parse_rra(Rrd, _) ->
+    Rrd. %% Not implemented.
+
+parse_header_size(Rrd, _) ->
     Rrd. %% Not implemented.
 
 parse_ds_name(Rrd, Ds, [Line|Lines]) ->

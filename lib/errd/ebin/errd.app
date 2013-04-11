@@ -20,6 +20,11 @@
 	        ]
 	    },
 	    {applications, [kernel, stdlib]},
+        {start_phases, 
+            [
+                {initialize_tracker_loggers, []}
+            ]
+        },
 	    {mod, {errd_app, []}}
     ]
 }.

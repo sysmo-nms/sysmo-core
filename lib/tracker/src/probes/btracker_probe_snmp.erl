@@ -42,10 +42,18 @@ exec({#target{id = Id}, #probe{snmp_oids = Oids, timeout = Timeout}}) ->
             Ret = lists:foldl(fun(X, Acc) ->
                 [{X#varbind.oid, X#varbind.value} | Acc]
             end, [], Reply),
-
-            {ok, {Ret, os:timestamp()}};
-        {error, Reason} ->
-            {error, Reason};
+            #probe_return{
+                status          = 'OK',
+                timestamp       = tracker_misc:timestamp(second),
+                key_val         = Ret,
+                original_reply  = Rep
+            };
+        {error, _} ->
+            #probe_return{
+                status          = 'ERROR',
+                timestamp       = tracker_misc:timestamp(second),
+                original_reply  = Rep
+            };
         Other ->
             io:format("Other ~p~n", [Other])
     end.
