@@ -88,21 +88,28 @@ log(    #probe_server_state{
         binds           = Binds
     } = lists:keyfind(rrd_logger_state, 1, LoggersState),
 
-    RrdUpdateList = lists:foldl(fun({Bind, Value}, Acc) ->
-        [
-            #rrd_ds_update{
-                name    =   get_bind_for(Bind,Binds),
-                value   =   Value
-            }
-        | Acc]
-    end, [], Datas),
+    RrdUpdateList = lists:foldl(fun({rrd_ds_bind, Term, DsName}, Acc) ->
+        case get_ds_data_for(Term, Datas) of
+            false ->
+                Acc;
+            {ok, Value} ->
+                [
+                    #rrd_ds_update{
+                        name    =   DsName,
+                        value   =   Value
+                    }
+                | Acc]
+        end
+    end, [], Binds),
 
     RrdUpdate = #rrd_update {
         file    =   File,
         time    =   integer_to_list(Timestamp),
         updates =   RrdUpdateList
     },
+
     {ok, _} = errd_server:command(rrd_tracker, RrdUpdate),
+
     ok;
 
 log(_,_) ->
@@ -114,6 +121,10 @@ dump(_PState, _Timeout) ->
 
 % PRIVATE
 % @private
-get_bind_for(Any, Binds) ->
-    {rrd_ds_bind, Any, Val} = lists:keyfind(Any, 2, Binds),
-    Val.
+get_ds_data_for(Term, DataList) ->
+    case lists:keyfind(Term, 1, DataList) of
+        false ->
+            false;
+        {Term, Value}       ->
+            {ok, Value}
+    end.
