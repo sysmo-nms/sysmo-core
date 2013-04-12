@@ -23,7 +23,7 @@
 -behaviour(gen_server).
 -behaviour(beha_supercast_auth).
 -include_lib("eldap/include/eldap.hrl").
--include("../include/supercast.hrl").
+-include("../../include/supercast.hrl").
 
 %% erternal api
 -compile(export_all).

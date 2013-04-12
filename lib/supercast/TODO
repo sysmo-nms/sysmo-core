@@ -1,6 +1,8 @@
-- lock sur ssl_client et pas sur ifs_mpd -> channel. ssl_client se synchronise
-dans une passe de gen_server pendant que s'accumule les messages à suivre. Le
-système n'est pas locké.
+# as soon as possible
+- lock sur ssl_client et pas sur ifs_mpd et channel. ssl_client se synchronise
+dans une passe de gen_server pendant que s'accumule les messages à suivre. A
+pars ssl_client le système n'est pas bloqué.
+
 # in the future
 - double check permissions when sending a probePdu: if a user is not allowed
 to receave a channel, he should not be allowed to receive a pdu from one of
@@ -9,4 +11,3 @@ these probes.
 - XML support,
 - Websocket/secure Websocket support,
 - Behaviour in a distributed environment with multiple ifs servers running?
-

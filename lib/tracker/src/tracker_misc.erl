@@ -209,6 +209,7 @@ fill_single() ->
             probes      = [
                 a_snmp_fetch_probe(),
                 a_nagios_icmp_probe(),
+                a_nagios_icmp_fetch_probe(),
                 a_snmp_set_property_probe(),
                 a_dns_set_hostname_probe()
             ]
@@ -218,7 +219,7 @@ fill_single() ->
 
 a_dns_set_hostname_probe() ->
     #probe{
-            id  = 4,
+            id  = 5,
             name = dns_set_hostname_test,
             type = {property, hostname},
             permissions = #perm_conf{
@@ -247,6 +248,97 @@ a_dns_set_hostname_probe() ->
 
             timeout = 10,
             step    = 5
+        }.
+
+a_nagios_icmp_fetch_probe() ->
+    #probe{
+            id  = 4,
+            name = nagios_test,
+            type = status,
+            permissions = #perm_conf{
+                read = ["admin"],
+                write = ["admin"]
+            },
+            tracker_probe_mod   = btracker_probe_nagios,
+            tracker_probe_conf  = #nagios_plugin{
+                executable  = "./lib/tracker/priv/nagios/libexec/check_ping",
+                args        = [
+                    {"-H", {target, {properties, ip}}},
+                    {"-w", "3000,50%"},
+                    {"-c", "4000,50%"},
+                    {"-t", {probe, timeout}}
+                ]
+            },
+            inspectors  = [
+                #inspector{
+                    module  = btracker_inspector_simple,
+                    conf    = []
+                }
+            ],
+            timeout = 10,
+            step    = 5,
+
+
+            loggers      = [
+                #logger{
+                    module  = btracker_logger_file, 
+                    conf    = []
+                },
+                #logger{
+                    module  = btracker_logger_rrd, 
+                    conf    = #rrd_def{
+                        update_binds    = [
+                            #rrd_ds_bind{
+                                key     = "rta_value",
+                                term    = "rta_value"
+                            },
+                            #rrd_ds_bind{
+                                key     = "rta_warn",
+                                term    = "rta_warn"
+                            },
+                            #rrd_ds_bind{
+                                key     = "rta_crit",
+                                term    = "rta_crit"
+                            }
+                        ],
+
+                        create = #rrd_create{
+                            file        = "nagios_icmp_fetch_test-4.rrd",
+                            start_time  = undefined,
+                            step        = 5,
+                            ds_defs     = [
+                                #rrd_ds{
+                                    name    = "rta_value",
+                                    type    = gauge,
+                                    heartbeat = 25,
+                                    min     = 0,
+                                    args    = "25:0:U"
+                                },
+                                #rrd_ds{
+                                    name    = "rta_warn",
+                                    type    = gauge,
+                                    heartbeat = 25,
+                                    min     = 0,
+                                    args    = "25:0:U"
+                                },
+                                #rrd_ds{
+                                    name    = "rta_crit",
+                                    type    = gauge,
+                                    heartbeat = 25,
+                                    min     = 0,
+                                    args    = "25:0:U"
+                                }
+                            ],
+                            rra_defs    = [
+                                #rrd_rra{cf = 'max', args = "0:1:3600"},
+                                #rrd_rra{cf = 'max', args = "0:12:1440"}
+                            ]
+                        },
+        
+                        graph = "graph"
+                    }
+                }
+            ]
         }.
 
 a_nagios_icmp_probe() ->

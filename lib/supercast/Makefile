@@ -8,18 +8,32 @@ ERL         = erl
 APP         = $(subst ebin/,,$(basename $(wildcard ebin/*.app)))
 INCLUDE     = $(wildcard ../include/*.hrl)
 
-SRC         = $(shell find src -name "*.erl")
-ALL_DEST    = $(patsubst src/%.erl, ebin/%.beam, $(SRC))
-BEHAVIOURS  = $(filter      ebin/beha%.beam, $(ALL_DEST))
-OTHER_DEST  = $(filter-out  ebin/beha%.beam, $(ALL_DEST))
+MAIN        = $(wildcard src/*.erl)
+MAIN_DST    = $(patsubst src/%.erl, ebin/%.beam, $(MAIN))
 
-compile: $(BEHAVIOURS) $(OTHER_DEST) pdu
+AUTHS       = $(wildcard src/auths/*.erl)
+AUTHS_DST   = $(patsubst src/auths/%.erl, ebin/%.beam, $(AUTHS))
 
-$(BEHAVIOURS): ebin/%.beam: src/%.erl
+ENCODERS    = $(wildcard src/encoders/*.erl)
+ENCODERS_DST = $(patsubst src/encoders/%.erl, ebin/%.beam, $(ENCODERS))
+
+ACCTRL      = $(wildcard src/acctrls/*.erl)
+ACCTRL_DST  = $(patsubst src/acctrls/%.erl, ebin/%.beam, $(ACCTRL))
+
+compile: $(MAIN_DST) $(AUTHS_DST) $(ENCODERS_DST) $(ACCTRL_DST) pdu
+
+
+ebin/%.beam: src/%.erl $(INCLUDE)
 	$(ERLC) $(EPATH) -o ebin/ src/$*.erl
 
-$(OTHER_DEST): ebin/%.beam: src/%.erl
-	$(ERLC) $(EPATH) -o ebin/ src/$*.erl
+ebin/%.beam: src/auths/%.erl
+	$(ERLC) $(EPATH) -o ebin/ src/auths/$*.erl
+
+ebin/%.beam: src/encoders/%.erl
+	$(ERLC) $(EPATH) -o ebin/ src/encoders/$*.erl
+
+ebin/%.beam: src/acctrls/%.erl
+	$(ERLC) $(EPATH) -o ebin/ src/acctrls/$*.erl
 
 clean:
 	rm -f ebin/*.beam

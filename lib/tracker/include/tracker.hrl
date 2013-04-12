@@ -51,7 +51,7 @@
     status          = undefined     :: any(),
     original_reply  = undefined     :: any(),
     timestamp       = undefined     :: integer(),
-    key_val         = undefined     :: {any(), integer()}
+    key_vals        = []            :: [{any(), integer()}]
 }).
 
 -record(rrd_ds_bind, {

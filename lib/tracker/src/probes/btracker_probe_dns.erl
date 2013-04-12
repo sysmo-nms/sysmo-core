@@ -30,13 +30,14 @@
 % icmp_server:ping(Ip, Timeout) -> must return {ok, Val} | {error, Error}
 exec({#target{properties = Prop}, #probe{timeout = Timeout}}) ->
     {ip, Ip} = lists:keyfind(ip, 1, Prop),
-    case inet_res:gethostbyaddr(Ip, Timeout) of
+    Ret = inet_res:gethostbyaddr(Ip, Timeout),
+    case Ret of
         {ok, #hostent{h_name = ResolvedName}} = R -> 
             #probe_return{
                 status          = 'OK',
                 timestamp       = tracker_misc:timestamp(second),
                 original_reply  = R,
-                key_val         = {hostname, ResolvedName}
+                key_vals        = [{hostname, ResolvedName}]
             };
         {error, _} = R -> 
             #probe_return{

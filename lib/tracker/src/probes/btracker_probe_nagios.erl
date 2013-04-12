@@ -78,6 +78,11 @@ exec({
                 {status, 3} ->
                     PR =  eval_nagout(StdoutFile),
                     PR#probe_return{status = 'UNKNOWN'};
+                {status, Any} ->
+                    io:format("Unknown return status~p~n", [Any]),
+                    PR =  eval_nagout(StdoutFile),
+                    io:format("~p~n", [PR]),
+                    PR#probe_return{status = 'UNKNOWN'};
                 Any -> 
                     io:format("Unknown return status~p~n", [Any])
             end;
@@ -181,13 +186,12 @@ eval_nagout(File) ->
         []  ->
             #probe_return{
                 original_reply  = FullData,
-                key_val         = [],
                 timestamp       = tracker_misc:timestamp(second)
             };
         _   ->
             #probe_return{
                 original_reply  = FullData,
-                key_val         = KeyValList,
+                key_vals        = KeyValList,
                 timestamp       = tracker_misc:timestamp(second)
             }
     end.

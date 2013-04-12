@@ -195,7 +195,7 @@ handle_cast({update, ProbeId, {master_event, {probe_status_move, NewStatus}}},
             ProbeId, 2, Probes, Probe#probe{status = NewStatus}),
     % TODO
     % MASTERCHAN send
-    io:format("~p PROBE STATUS MOVE~n", [?MODULE]),
+    io:format("~p PROBE STATUS MOVE ~p~n", [?MODULE, Probe#probe.id]),
     S2      = S#state{target = Target#target{probes = NProbes}},
     {noreply, S2};
 

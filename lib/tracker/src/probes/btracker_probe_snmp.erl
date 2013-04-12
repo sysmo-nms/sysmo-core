@@ -45,7 +45,7 @@ exec({#target{id = Id}, #probe{snmp_oids = Oids, timeout = Timeout}}) ->
             #probe_return{
                 status          = 'OK',
                 timestamp       = tracker_misc:timestamp(second),
-                key_val         = Ret,
+                key_vals        = Ret,
                 original_reply  = Rep
             };
         {error, _} ->

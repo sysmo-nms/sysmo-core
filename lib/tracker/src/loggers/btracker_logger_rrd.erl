@@ -71,7 +71,7 @@ init(Conf, #probe_server_state{
         }
     }.
 
-log(_, #probe_return{key_val = []}) ->
+log(_, #probe_return{key_vals = []}) ->
     io:format("no data do nothing~n"),
     ok;
 
@@ -80,7 +80,7 @@ log(    #probe_server_state{
         }, 
         #probe_return{
             timestamp   = Timestamp,
-            key_val     = Datas
+            key_vals    = Datas
         }) ->
 
     #rrd_logger_state{
@@ -108,12 +108,13 @@ log(    #probe_server_state{
         updates =   RrdUpdateList
     },
 
-    {ok, _} = errd_server:command(rrd_tracker, RrdUpdate),
+    case RrdUpdate of
+        #rrd_update{updates = []} ->
+            ok;
+        _  ->
+            {ok, _} = errd_server:command(rrd_tracker, RrdUpdate)
+    end,
 
-    ok;
-
-log(_,_) ->
-    io:format("."),
     ok.
 
 dump(_PState, _Timeout) -> 
