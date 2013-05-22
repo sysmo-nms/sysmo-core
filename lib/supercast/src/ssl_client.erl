@@ -275,6 +275,7 @@ handle_sync_event(Event, _From, StateName, StateData) ->
 %%-------------------------------------------------------------------------
 handle_info({ssl,Socket, Bin}, StateName, 
         #client_state{socket=Socket} = StateData) ->
+    io:format("!!!!!!!!!!!!!!!!!!!!! received ~p~n", [Bin]),
 	ssl:setopts(Socket, [{active, once}]),
 	?MODULE:StateName({client_data, Bin}, StateData);
 

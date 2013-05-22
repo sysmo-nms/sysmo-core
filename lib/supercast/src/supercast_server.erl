@@ -132,7 +132,7 @@ handle_client_msg(disconnect, ClientState) ->
 
 handle_client_msg(
         {message, 
-            {modIfPDU, 
+            {modSupercastPDU, 
                 {fromClient,
                     {authResp,
                         {'AuthResp', 
@@ -151,7 +151,7 @@ handle_client_msg(
 
 handle_client_msg(
         {message, 
-            {modIfPDU, 
+            {modSupercastPDU, 
                 {fromClient,
                     {subscribe,
                         Channel
@@ -167,7 +167,7 @@ handle_client_msg(
             
 handle_client_msg(
         {message, 
-            {modIfPDU, 
+            {modSupercastPDU, 
                 {fromClient,
                     {unsubscribe,
                         Channel
@@ -182,7 +182,7 @@ handle_client_msg(
 
 handle_client_msg(
         {message, 
-            {modIfPDU, 
+            {modSupercastPDU, 
                 Other
         }   }, _) ->
     io:format("~p RECEIVED UNKNOWN supercast ~p~n", [?MODULE, Other]);
@@ -197,7 +197,7 @@ handle_client_msg(
 % server PDUs
 % @private
 pdu(authReq, Type) ->
-    {modIfPDU, 
+    {modSupercastPDU, 
         {fromServer, 
             {authReq, 
                 Type }}};
@@ -206,7 +206,7 @@ pdu(authAck, {Groups, StaticChans}) ->
     StaticChansAsString = lists:foldl(fun(Atom, Accum) ->
         [{'ChanInfo', atom_to_list(Atom), create} | Accum]
     end, [], StaticChans),
-    {modIfPDU, 
+    {modSupercastPDU, 
         {fromServer,
             {authAck,
                 {'AuthAck',
@@ -214,7 +214,7 @@ pdu(authAck, {Groups, StaticChans}) ->
                     StaticChansAsString }}}};
 
 pdu(authErr, {Name, Password}) ->
-    {modIfPDU,
+    {modSupercastPDU,
         {fromServer,
             {authError,
                 {'AuthError',
@@ -223,31 +223,31 @@ pdu(authErr, {Name, Password}) ->
                     Password }}}};
 
 pdu(subscribeOk, Module) ->
-    {modIfPDU, 
+    {modSupercastPDU, 
         {fromServer, 
             {subscribeOk, 
                 Module }}};
 
 pdu(subscribeErr, Module) ->
-    {modIfPDU, 
+    {modSupercastPDU, 
         {fromServer,
             {subscribeErr, 
                 Module }}};
 
 pdu(unsubscribeOk, Module) ->
-    {modIfPDU, 
+    {modSupercastPDU, 
         {fromServer, 
             {unsubscribeOk, 
                 Module }}};
 
 pdu(unsubscribeErr, Module) ->
-    {modIfPDU, 
+    {modSupercastPDU, 
         {fromServer, 
             {unsubscribeErr, 
                 Module }}};
 
 pdu(chanInfo, {Module, Channel, Type}) ->
-    {modIfPDU,
+    {modSupercastPDU,
         {fromServer,
             {chanInfo,
                 {'ChanInfo',

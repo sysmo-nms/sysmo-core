@@ -87,16 +87,16 @@ handle_call(_R, _F, S) ->
 %% TO SERVER
 % supercastPDU
 handle_cast({log_in, UserName, PassWord}, S) ->
-    send_pdu({modIfPDU, {fromClient, {authResp, 
+    send_pdu({modSupercastPDU, {fromClient, {authResp, 
                 {'AuthResp', UserName, PassWord}}}}, S),
     {noreply, S};
 
 handle_cast({subscribe, Module}, S) ->
-    send_pdu({modIfPDU, {fromClient, {subscribe, Module}}}, S),
+    send_pdu({modSupercastPDU, {fromClient, {subscribe, Module}}}, S),
     {noreply, S};
 
 handle_cast({unsubscribe, Modules}, S) ->
-    send_pdu({modIfPDU, {fromClient, {unsubscribe, Modules}}}, S),
+    send_pdu({modSupercastPDU, {fromClient, {unsubscribe, Modules}}}, S),
     {noreply, S};
 
 % snmpPDU
@@ -107,15 +107,15 @@ handle_cast({add_v2_agent, Ip, Community}, S) ->
 
 
 %% FROM SERVER
-handle_cast({modIfPDU, {fromServer, {authReq, ldap}}}, S) ->
+handle_cast({modSupercastPDU, {fromServer, {authReq, ldap}}}, S) ->
     {noreply, S};
 
-handle_cast({modIfPDU, {fromServer, {authAck, 
+handle_cast({modSupercastPDU, {fromServer, {authAck, 
         {'AuthAck', Roles, StaticChans}}}}, S) ->
     % subscribe to all static chans
     io:format("ssssssssssssssssssssssssssssssstaticchan ~p~n", [StaticChans]),
     lists:foreach(fun({_,X,_}) ->
-        send_pdu({modIfPDU, {fromClient, {subscribe, X}}}, S)
+        send_pdu({modSupercastPDU, {fromClient, {subscribe, X}}}, S)
     end, StaticChans),
     {noreply, S#clsupercast_state{roles = Roles, chans = StaticChans}};
 
