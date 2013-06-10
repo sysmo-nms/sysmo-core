@@ -147,6 +147,7 @@ init([Encoder, {Key, Cert, CACert}]) ->
         {keyfile,           State#client_state.key},
         {protocol,          tlsv1},
         {active,            false}], 3000),
+    io:format("hhhhhhhhhhhhhhhhhhhh~n"),
 	ssl:setopts(SSLSocket, [{active, once}, {packet, 4}, binary]),
 
 	{ok, {IP, Port}} = ssl:peername(SSLSocket),
@@ -273,11 +274,12 @@ handle_sync_event(Event, _From, StateName, StateData) ->
 %%		  {stop, Reason, NextStateData}
 %% @private
 %%-------------------------------------------------------------------------
-handle_info({ssl,Socket, Bin}, StateName, 
-        #client_state{socket=Socket} = StateData) ->
+handle_info({ssl,Socket, Bin}, _StateName, 
+        #client_state{socket=Socket} = _StateData) ->
     io:format("!!!!!!!!!!!!!!!!!!!!! received ~p~n", [Bin]),
-	ssl:setopts(Socket, [{active, once}]),
-	?MODULE:StateName({client_data, Bin}, StateData);
+	%ssl:setopts(Socket, [{active, once}]),
+	ssl:setopts(Socket, [{active, once}]);
+	%?MODULE:StateName({client_data, Bin}, StateData);
 
 handle_info({ssl_closed, Socket}, _StateName,
 			#client_state{socket=Socket, addr=Addr} = StateData) ->

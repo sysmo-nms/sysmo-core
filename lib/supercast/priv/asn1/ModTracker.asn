@@ -1,4 +1,4 @@
-ModTracker DEFINITIONS EXPLICIT TAGS ::=
+ModTracker DEFINITIONS IMPLICIT TAGS ::=
 BEGIN
 
 IpAdd   ::= PrintableString

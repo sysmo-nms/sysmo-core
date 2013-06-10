@@ -1,4 +1,4 @@
-NmsPDU DEFINITIONS EXPLICIT TAGS ::=
+NmsPDU DEFINITIONS IMPLICIT TAGS ::=
 -- Use the DEFINITIONS EXPLICIT TAGS in your definition file.
 -- Due to limitation in Tcl/ASN library BER encoding functions, follow these 
 -- rules if you plan to use it. For example, the default Tkorder client:
