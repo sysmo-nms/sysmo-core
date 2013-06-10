@@ -126,7 +126,7 @@ init([Encoder]) ->
 %%-------------------------------------------------------------------------
 'WAIT_FOR_SOCKET'({socket_ready, Socket}, State) when is_port(Socket) ->
 	%% Now we own the socket!
-	inet:setopts(Socket, [{active, once}, {packet, 2}, binary]),
+	inet:setopts(Socket, [{active, once}, {packet, 4}, binary]),
 	{ok, {IP, Port}} = inet:peername(Socket),
     NextState = State#client_state{
         socket          = Socket,
@@ -136,7 +136,7 @@ init([Encoder]) ->
         pid             = self(),
         module          = ?MODULE,
         state           = 'WAIT_FOR_CLIENT_AUTH'},
-    supercast_server:notify_connection(NextState),
+    supercast_server:client_msg(connect, NextState),
 	{next_state, 'WAIT_FOR_CLIENT_AUTH', NextState, ?TIMEOUT};
 
 'WAIT_FOR_SOCKET'(Other, State) ->
@@ -273,7 +273,7 @@ handle_info(Info, StateName, StateData) ->
 terminate(_Reason, _StateName, #client_state{socket=Socket} = State) ->
 	io:format("terminate ~p ~p~n", [?MODULE, _Reason]),
 	(catch gen_tcp:close(Socket)),
-    supercast_server:notify_disconnection(State),
+    supercast_server:client_msg(disconnect, State),
 	ok.
 
 %%-------------------------------------------------------------------------

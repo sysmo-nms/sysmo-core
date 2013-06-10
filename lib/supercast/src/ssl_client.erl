@@ -147,7 +147,6 @@ init([Encoder, {Key, Cert, CACert}]) ->
         {keyfile,           State#client_state.key},
         {protocol,          tlsv1},
         {active,            false}], 3000),
-    io:format("hhhhhhhhhhhhhhhhhhhh~n"),
 	ssl:setopts(SSLSocket, [{active, once}, {packet, 4}, binary]),
 
 	{ok, {IP, Port}} = ssl:peername(SSLSocket),
