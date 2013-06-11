@@ -33,6 +33,7 @@
     start_link/1,
     set_socket/2,
     auth_set/2,
+    auth_set/5,
     send/2,
     raw_send/2
 ]).
@@ -76,15 +77,10 @@ start_link([Encoder]) ->
 set_socket(Pid, Socket) when is_pid(Pid), is_port(Socket) ->
 	gen_fsm:send_event(Pid, {socket_ready, Socket}).
 
-%auth_set(auth_success,  [Pid, Ref, {UserName, Roles}]) ->
-auth_set(auth_success,  NewState) ->
-    Pid         = NewState#client_state.pid,
-    Ref         = NewState#client_state.ref,
-    UserName    = NewState#client_state.user_name,
-    Roles       = NewState#client_state.user_roles,
-    gen_fsm:send_event(Pid, {auth_success, Ref, UserName, Roles});
+auth_set(success,  
+    #client_state{pid = Pid, ref = Ref}, Name, Roles, AllowedMods) ->
+    gen_fsm:send_event(Pid, {success, Ref, Name, Roles, AllowedMods}).
 
-%auth_set(auth_fail,     [Pid, Ref, UserName]) ->
 auth_set(auth_fail,     NewState) ->
     Pid         = NewState#client_state.pid,
     Ref         = NewState#client_state.ref,
@@ -150,14 +146,15 @@ init([Encoder]) ->
 %%-------------------------------------------------------------------------
 'WAIT_FOR_CLIENT_AUTH'({client_data, Pdu}, 
         #client_state{encoding_mod = Encoder} = State) ->
-    supercast_server:handle_msg(State, Encoder:decode(Pdu)),
+    supercast_server:client_msg({message, Encoder:decode(Pdu)}, State),
 	{next_state, 'WAIT_FOR_CLIENT_AUTH', State, ?TIMEOUT};
 
-'WAIT_FOR_CLIENT_AUTH'({auth_success, Ref, User, Roles}, 
+'WAIT_FOR_CLIENT_AUTH'({success, Ref, Name, Roles, Mods}, 
         #client_state{ref = Ref} = State) ->
     NextState = State#client_state{
-        user_name       = User,
+        user_name       = Name,
         user_roles      = Roles,
+        user_modules    = Mods,
         state           = 'RUNNING'},
     {next_state, 'RUNNING', NextState};
 
@@ -183,7 +180,7 @@ init([Encoder]) ->
 'WAIT_FOR_CLIENT_AUTH'(timeout, State) ->
     NextState = State#client_state{
         auth_request_count = State#client_state.auth_request_count + 1},
-    supercast_server:notify_connection(NextState),
+    supercast_server:client_msg(connect, NextState),
 	{next_state, 'WAIT_FOR_CLIENT_AUTH', NextState, ?TIMEOUT};
 
 'WAIT_FOR_CLIENT_AUTH'(Data, State) ->
@@ -195,7 +192,7 @@ init([Encoder]) ->
 %%-------------------------------------------------------------------------
 'RUNNING'({client_data, Pdu}, 
         #client_state{encoding_mod = Encoder} = State) ->
-    supercast_server:handle_msg(State, Encoder:decode(Pdu)),
+    supercast_server:client_msg({message, Encoder:decode(Pdu)}, State),
 	{next_state, 'RUNNING', State};
 
 'RUNNING'({encode_send_msg, Ref, Msg}, 
