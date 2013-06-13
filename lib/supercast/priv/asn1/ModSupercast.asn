@@ -41,10 +41,10 @@ ChanInfo    ::= SEQUENCE {
 
 SupercastPDU ::= CHOICE {
     fromServer [0] CHOICE {
-        chanInfo    [1] ChanInfo,
-        authReq     [2] AuthProto,
-        authAck     [3] AuthAck,
-        authError   [4] AuthError,
+        chanInfo        [1] ChanInfo,
+        authReq         [2] AuthProto,
+        authAck         [3] AuthAck,
+        authError       [4] AuthError,
         subscribeOk     [5] Chan,
         subscribeErr    [6] Chan,
         unsubscribeOk   [7] Chan,

@@ -64,7 +64,7 @@ ProbeInfo   ::= SEQUENCE {
 }
 
 ProbeModuleInfo ::= SEQUENCE {
-    name        ErlangModule,
+    name        PrintableString,
     info        PrintableString
 }
 
@@ -141,11 +141,11 @@ ProbeDelete     ::= SEQUENCE {
 
 TrackerPDU ::= CHOICE {
     fromServer  [0] CHOICE {
-        targetInfo  [1] TargetInfo,
-        probeInfo   [2] ProbeInfo,
-        probeFetch  [3] ProbeFetch,
-        probeDump   [4] ProbeDump,
-        cmdResp     [5] CommandResponce,
+        targetInfo      [1] TargetInfo,
+        probeInfo       [2] ProbeInfo,
+        probeFetch      [3] ProbeFetch,
+        probeDump       [4] ProbeDump,
+        cmdResp         [5] CommandResponce,
         probeModInfo    [6] ProbeModuleInfo
     },
     fromClient  [1] CHOICE {

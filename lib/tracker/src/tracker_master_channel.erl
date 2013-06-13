@@ -250,6 +250,7 @@ dump_known_data(#client_state{module = CMod} = ClientState,
 %% PDU BUILD
 %%----------------------------------------------------------------------------
 pdu(targetInfo, #target{id = Id, properties = Prop}) ->
+    io:format("create pdu 1~n"),
     AsnProp = lists:foldl(fun({X,Y}, Acc) ->
         [{'Property', atom_to_list(X), tuple_to_list(Y)} | Acc]
     end, [], Prop),
@@ -262,6 +263,7 @@ pdu(targetInfo, #target{id = Id, properties = Prop}) ->
                     create}}}};
 
 pdu(targetDelete, Id) ->
+    io:format("create pdu 2~n"),
     {modTrackerPDU,
         {fromServer,
             {targetInfo,
@@ -289,12 +291,14 @@ pdu(targetDelete, Id) ->
 %                     InfoType}}}};
 
 pdu(probeModInfo,  {ProbeName, ProbeInfo}) ->
-    {modTrackerPDU,
+    I = {modTrackerPDU,
         {fromServer,
             {probeModInfo,
                 {'ProbeModuleInfo',
                     atom_to_list(ProbeName),
-                    ProbeInfo }}}}.
+                    ProbeInfo }}}},
+    io:format("create pdu 3: ~p~n", [I]),
+    I.
 
 %%----------------------------------------------------------------------------
 %% UTILS    
