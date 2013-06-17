@@ -15,7 +15,7 @@ name, value}).
 name, type}).
 
 -record('ProbeInfo',{
-channel, probeId, name, type, probeMod, status, step, timeoutMax, timeoutWait, inspectors, infoType}).
+channel, probeId, name, type, probeMod, status, step, timeout, infoType}).
 
 -record('ProbeModuleInfo',{
 name, info}).

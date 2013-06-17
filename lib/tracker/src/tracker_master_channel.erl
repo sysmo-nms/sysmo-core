@@ -258,7 +258,6 @@ pdu(targetInfo, #target{id = Id, properties = Prop}) ->
     AsnProp = lists:foldl(fun({X,Y}, Acc) ->
         [{'TargetProperty', atom_to_list(X), io_lib:format("~p", [Y])} | Acc]
     end, [], Prop),
-    io:format("create pdu 1 ~p~n", [AsnProp]),
     {modTrackerPDU,
         {fromServer,
             {targetInfo,
@@ -268,7 +267,6 @@ pdu(targetInfo, #target{id = Id, properties = Prop}) ->
                     create}}}};
 
 pdu(targetDelete, Id) ->
-    io:format("create pdu 2~n"),
     {modTrackerPDU,
         {fromServer,
             {targetInfo,
@@ -276,15 +274,28 @@ pdu(targetDelete, Id) ->
                     atom_to_list(Id),
                     delete}}}};
 
+pdu(probeInfo, {InfoType, Id, Probe}) ->
+    {modTrackerPDU,
+        {fromServer,
+            {probeInfo,
+                {'ProbeInfo',
+                    atom_to_list(Id),
+                    Probe#probe.id,
+                    atom_to_list(Probe#probe.name),
+                    Probe#probe.type,
+                    atom_to_list(Probe#probe.tracker_probe_mod),
+                    atom_to_list(Probe#probe.status),
+                    Probe#probe.step,
+                    Probe#probe.timeout,
+                    InfoType}}}};
+
 pdu(probeModInfo,  {ProbeName, ProbeInfo}) ->
-    I = {modTrackerPDU,
+    {modTrackerPDU,
         {fromServer,
             {probeModInfo,
                 {'ProbeModuleInfo',
                     atom_to_list(ProbeName),
-                    ProbeInfo }}}},
-    io:format("create pdu 3: ~p~n", [I]),
-    I.
+                    ProbeInfo }}}}.
 
 %%----------------------------------------------------------------------------
 %% UTILS    

@@ -447,7 +447,7 @@ a_snmp_set_property_probe() ->
     #probe{
             id  = 1,
             name = snmp_set_property_test,
-            type = {property, sysname},
+            type = fetch,
             permissions = #perm_conf{
                 read = ["admin"],
                 write = ["admin"]
