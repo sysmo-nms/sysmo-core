@@ -255,8 +255,9 @@ dump_known_data(#client_state{module = CMod} = ClientState,
 %% PDU BUILD
 %%----------------------------------------------------------------------------
 pdu(targetInfo, #target{id = Id, properties = Prop}) ->
-    AsnProp = lists:foldl(fun({X,Y}, Acc) ->
-        [{'TargetProperty', atom_to_list(X), io_lib:format("~p", [Y])} | Acc]
+    AsnProp = lists:foldl(fun({X,_Y}, Acc) ->
+        %[{'TargetProperty', atom_to_list(X), io_lib:format("~p", [Y])} | Acc]
+        [{'TargetProperty', atom_to_list(X), "hello"} | Acc]
     end, [], Prop),
     {modTrackerPDU,
         {fromServer,
