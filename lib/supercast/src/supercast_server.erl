@@ -58,7 +58,6 @@ which_auth() ->
 
 % API FROM CLIENTS
 client_msg(Msg, ClientState) ->
-    %io:format("~p RECEIVED: ~p~n", [?MODULE, Msg]),
     handle_client_msg(Msg, ClientState).
 
 % from himself
@@ -257,5 +256,4 @@ pdu(chanInfo, {Module, Channel, Type}) ->
 
 
 send(#client_state{module = CMod} = ClientState, Msg) ->
-    io:format("~p SENDING ~p~n", [?MODULE, Msg]),
     CMod:send(ClientState, Msg).

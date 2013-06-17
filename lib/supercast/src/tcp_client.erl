@@ -88,7 +88,6 @@ auth_set(auth_fail,     NewState) ->
     gen_fsm:send_event(Pid, {auth_fail, Ref, UserName}).
 
 send(SockState, {D, {_, {T, _}}} = Msg) ->
-    io:format("~p send ~p ~p~n~p~n~n", [?MODULE, D, T, Msg]),
     gen_fsm:send_event(SockState#client_state.pid,
         {encode_send_msg, SockState#client_state.ref, Msg}).
 
