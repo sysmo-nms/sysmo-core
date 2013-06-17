@@ -8,6 +8,9 @@
 -record('PermConf',{
 read, write}).
 
+-record('TargetProperty',{
+name, value}).
+
 -record('ProbeConf',{
 name, type}).
 
@@ -24,7 +27,7 @@ channel, probeId, probeType, rrdData}).
 channel, probe, probeType, probeValue}).
 
 -record('TargetInfo',{
-channel, hostname, ipAdd, tags, properties, type}).
+channel, properties, type}).
 
 -record('CommandResponce',{
 cmdId, cmdMsg}).

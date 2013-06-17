@@ -36,7 +36,8 @@
     start_link/1,
     chan_add/1,
     chan_del/1,
-    chan_update/2
+    chan_update/2,
+    dump/0
 ]).
 
 -record(state, {
@@ -94,6 +95,8 @@ chan_update(Type, {Target, Probe}) ->
     gen_server:call(?MASTER_CHAN, {chan_update, Type, {Target, Probe}}).
 
 
+dump() ->
+    gen_server:call(?MASTER_CHAN, dump).
 
 %%----------------------------------------------------------------------------
 %%----------------------------------------------------------------------------
@@ -140,9 +143,9 @@ handle_call({probe_status_move, {
         pdu(probeInfo, {update, TargetId, Probe})}),
     {reply, ok, S#state{chans = NewChans}};
 
-handle_call({chan_add, #target{id = Id, properties = Prop} = Target}, _F, 
+handle_call({chan_add, #target{id = Id, global_perm = Perm} = Target}, _F, 
         #state{chans = C} = S) ->
-    {global_perm, Perm} = get_property(global_perm, Prop),
+    %{global_perm, Perm} = get_property(global_perm, Prop),
     case lists:keyfind(Id, 2, C) of
         false ->    % did not exist insert
             supercast_mpd:multicast_msg(?MASTER_CHAN, {Perm,
@@ -180,8 +183,10 @@ handle_call(get_perms, _F, #state{perm = P} = S) ->
 handle_call({synchronize, IfsCState}, _F, State) ->
     dump_known_data(IfsCState, State),
     supercast_mpd:subscribe_stage3(?MASTER_CHAN, IfsCState),
-    {reply, ok, State}.
+    {reply, ok, State};
 
+handle_call(dump, _F, State) ->
+    {reply, State, State}.
 
 %%----------------------------------------------------------------------------
 %%----------------------------------------------------------------------------
@@ -250,10 +255,10 @@ dump_known_data(#client_state{module = CMod} = ClientState,
 %% PDU BUILD
 %%----------------------------------------------------------------------------
 pdu(targetInfo, #target{id = Id, properties = Prop}) ->
-    io:format("create pdu 1~n"),
     AsnProp = lists:foldl(fun({X,Y}, Acc) ->
-        [{'Property', atom_to_list(X), tuple_to_list(Y)} | Acc]
+        [{'TargetProperty', atom_to_list(X), io_lib:format("~p", [Y])} | Acc]
     end, [], Prop),
+    io:format("create pdu 1 ~p~n", [AsnProp]),
     {modTrackerPDU,
         {fromServer,
             {targetInfo,
@@ -271,25 +276,6 @@ pdu(targetDelete, Id) ->
                     atom_to_list(Id),
                     delete}}}};
 
-% pdu(probeInfo,  {InfoType, TargetId, Probe}) ->
-%     {modTrackerPDU,
-%         {fromServer,
-%             {probeInfo,
-%                 {'ProbeInfo',
-%                     atom_to_list(TargetId),
-%                     Probe#probe.id,
-%                     Probe#probe.name,
-%                     Probe#probe.type,
-%                     atom_to_list(Probe#probe.tracker_probe_mod),
-%                     atom_to_list(Probe#probe.status),
-%                     Probe#probe.step,
-%                     Probe#probe.timeout_max,
-%                     Probe#probe.timeout_wait,
-%                     lists:map(fun(X) -> 
-%                         atom_to_list(X) 
-%                     end, Probe#probe.inspectors),
-%                     InfoType}}}};
-
 pdu(probeModInfo,  {ProbeName, ProbeInfo}) ->
     I = {modTrackerPDU,
         {fromServer,
@@ -303,9 +289,6 @@ pdu(probeModInfo,  {ProbeName, ProbeInfo}) ->
 %%----------------------------------------------------------------------------
 %% UTILS    
 %%----------------------------------------------------------------------------
-get_property(Atom, PropertyList) ->
-    lists:keyfind(Atom, 1, PropertyList).
-
 extract_probes_info(ProbeModules) ->
     lists:foldl(
         fun(PMod, Acc) ->

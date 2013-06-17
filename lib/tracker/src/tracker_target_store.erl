@@ -46,6 +46,7 @@
     create_target/1,
     update_target/1,
     delete_target/1,
+    new/1,
     info/0
 ]).
 
@@ -82,6 +83,8 @@ clear_locks() ->
 % MODULE API. NOT ALL FUN NEED TO BE EXPORTED TO THE CLIENT                  %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+new(Target) ->
+    gen_server:call(?MODULE, {create_target, Target}).
 
 -spec create_target(#target{}) -> {ok, target_id()}.
 % @doc

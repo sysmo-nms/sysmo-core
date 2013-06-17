@@ -131,6 +131,8 @@ init([RootDataDir, Target]) ->
     {ok, Target1}   = init_dir(Target, RootDataDir),
     {ok, TargetF}   = init_probes(Target1),
 
+    ok = tracker_master_channel:chan_add(TargetF),
+
     {ok, 
         #state{
             chan_id             = Target#target.id,     % shortcut
