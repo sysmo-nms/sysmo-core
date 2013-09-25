@@ -102,7 +102,9 @@ command(Server, Cmd) ->
 %%          {stop, Reason}
 %%--------------------------------------------------------------------
 init([]) ->
-    case open_port({spawn, "/opt/rrdtool-1.4.7/bin/rrdtool -"},
+    {ok, RrdCommand} = application:get_env(errd, command),
+    FullCommand = lists:flatten(io_lib:format("~s ~s", [RrdCommand, "-"])),
+    case open_port({spawn, FullCommand},
                    [use_stdio, exit_status, {line, 16000}]) of
         Port when is_port(Port) ->
             {ok, #state{rrd_port=Port}};

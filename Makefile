@@ -43,7 +43,7 @@ $(IFS_INCLUDES_DST): ./include/%.hrl: $(IFS_INCLUDES_DIR)/%.hrl
 
 
 # UTILS
-ERL             = erl
+ERL             = /opt/erlang_R16B02/bin/erl
 MODS_EBIN_DIR	= $(addprefix ./lib/, $(addsuffix /ebin, $(MODS)))
 MODS_DEF_FILE	= $(foreach app, $(MODS_EBIN_DIR), $(wildcard $(app)/*.app))
 ERL_NMS_PATH	= $(addprefix -pa ,$(MODS_EBIN_DIR))
@@ -59,7 +59,7 @@ start: local-release
 local-release: compile $(REL_NAME).script 
 
 $(REL_NAME).script: $(MODS_DEF_FILE) $(REL_NAME).rel
-	@echo "Generating $(REL_NAME).script and $(REL_NAME).boot files..."
+	echo "Generating $(REL_NAME).script and $(REL_NAME).boot files..."
 	@$(ERL) -noinput $(ERL_NMS_PATH) -eval $(ERL_REL_COMM)
 
 
