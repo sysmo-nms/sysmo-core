@@ -1,6 +1,6 @@
 {application,exec,
              [{description,"OS Process Manager"},
-              {vsn,"dfcc157"},
+              {vsn,"cf9727b"},
               {id,"exec"},
               {modules,[exec,exec_app]},
               {registered,[exec]},

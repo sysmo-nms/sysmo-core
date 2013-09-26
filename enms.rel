@@ -10,7 +10,7 @@
         {asn1, "2.0.3"},
         {public_key, "0.20"},
         {ssl, "5.3.1"},
-        {exec, "dfcc157"},
+        {exec, "cf9727b"},
         {activity_logger, "1.0.0"},
         {procket, "0.3"},
         {icmp, "0.1.0"},
