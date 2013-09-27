@@ -7,7 +7,7 @@ MODS            = supercast tracker errd erlexec
 compile:
 	@cd lib; make
 
-all: compile pdu_lib test local-release doc www
+all: compile pdu_lib test local-release doc
 
 test:
 	@cd lib; make test
@@ -61,14 +61,3 @@ local-release: compile $(REL_NAME).script
 $(REL_NAME).script: $(MODS_DEF_FILE) $(REL_NAME).rel
 	echo "Generating $(REL_NAME).script and $(REL_NAME).boot files..."
 	@$(ERL) -noinput $(ERL_NMS_PATH) -eval $(ERL_REL_COMM)
-
-
-
-# PRIVATE UTILS
-commit:
-	@echo -n "coment: "; read COMENT; \
-	git add -A; git commit -m "$$COMENT"
-
-www: doc
-	@for i in $(MODS); do cp -r lib/$$i/doc www/htdocs/edoc/$$i; done
-	@ ./www/gen-htdoc $(MODS)
