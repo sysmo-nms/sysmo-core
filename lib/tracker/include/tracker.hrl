@@ -2,7 +2,6 @@
 -include_lib("kernel/include/file.hrl").
 -include("../supercast/include/supercast.hrl").
 -include("../errd/include/errd.hrl").
--include("../esnmp/include/esnmp.hrl").
 
 % for info: syslog like security levels
 -define(EMERGENCY,  0).

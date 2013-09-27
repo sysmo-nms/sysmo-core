@@ -1,6 +1,6 @@
 {application,exec,
              [{description,"OS Process Manager"},
-              {vsn,"f73cae9"},
+              {vsn,"v1.0-85-ga6e012e"},
               {id,"exec"},
               {modules,[exec,exec_app]},
               {registered,[exec]},
