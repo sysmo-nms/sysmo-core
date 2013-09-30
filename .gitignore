@@ -16,3 +16,4 @@ activity.log
 *.bk
 enms.script
 enms.boot
+lib/errd/ebin/*
