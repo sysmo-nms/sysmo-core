@@ -1,0 +1,23 @@
+Basic Installation
+==================
+
+    Used packages are installed following with these options:
+
+Erlang/OTP, Version: RB16B02
+    ./configure --prefix=/opt/erlang_RB16B02
+
+Rrdtool, Version 1.4.8
+    ./configure --prefix=/opt/rrdtool-1.4.8_SERVER
+
+Nagios-plugins, Version: 1.4.16
+    ./configure --prefix=/opt/nagios-plugins-1.4.16
+
+
+    If you use diferent destination name, you will need to modify by hand the
+"ERL" variable in the main Makefile for the erlang bin path, the nagios plugin 
+directory and rrdtool executable path in the sys.config file.
+
+    In the sys.config file modify the user who will execute nagios plugins
+under the "exec" configuration directives. Default user is "enms".
+
+    "make start" should start the system.
