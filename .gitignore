@@ -12,6 +12,6 @@ var/sasl/sasl.log
 activity.log
 *.bin
 *.asn1db
-*.script
-*.boot
 *.bk
+enms.script
+enms.boot

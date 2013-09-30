@@ -1,0 +1,37 @@
+Arch = erlang:system_info(system_architecture),
+Vsn  = string:strip(os:cmd("git describe --always --tags --abbrev=0 | sed 's/^v//'"), right, $\n),
+%% Check for Linux capability API.
+Cap  =  case file:read_file_info("/usr/include/sys/capability.h") of
+        {ok, _} ->
+            io:put_chars("INFO:  Detected support of linux capabilities.\n"),
+            [{"linux", "CXXFLAGS", "$CXXFLAGS -DHAVE_CAP -DHAVE_SETRESUID -DHAVE_PTRACE"},
+             {"linux", "LDFLAGS", "$LDFLAGS -lcap"}];
+        _ ->
+            [{"linux", "CXXFLAGS", "$CXXFLAGS -DHAVE_SETRESUID -DHAVE_PTRACE"}]
+        end,
+
+% Replace configuration options read from rebar.config with those dynamically set below
+lists:keymerge(1,
+    lists:keysort(1, [
+        {port_env, Cap ++ [
+                    %% XXXjh Force 64bit build, assume default g++ and native ld.
+                    {"solaris", "CXXFLAGS", "$CXXFLAGS -m64 -DHAVE_PTRACE"},
+                    {"solaris", "LDFLAGS",  "$LDFLAGS -m64 -lrt"},
+
+                    {"darwin",  "CXXFLAGS", "$CXXFLAGS -DHAVE_SETREUID -DHAVE_PTRACE"},
+
+                    {"CC",  "g++"},
+                    {"CXX", "g++"},
+                    {"CXXFLAGS", "$CXXFLAGS -O0"}
+                   ]},
+
+        {port_specs,[{filename:join(["priv", Arch, "exec-port"]), ["c_src/*.cpp"]}]},
+        {edoc_opts, [{overview,     "src/overview.edoc"},
+                     {title,        "The exec application"},
+                     {includes,     ["include"]},
+                     {def,          {vsn, Vsn}},
+                     {stylesheet_file, "src/edoc.css"},
+                     {app_default,  "http://www.erlang.org/doc/man"}]}
+    ]),
+    lists:keysort(1, CONFIG)).
+
