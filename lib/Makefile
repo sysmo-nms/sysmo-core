@@ -1,7 +1,7 @@
 # Makefile 
 
 REL_NAME        = enms
-MODS            = supercast tracker errd erlexec
+MODS            = supercast tracker
 
 compile: recurse
 
