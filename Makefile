@@ -17,15 +17,12 @@ doc:
 
 tclean:
 	rm -rf var/tracker/target_db
-	rm -rf var/tracker/targets_data/*
+	rm -rf var/tracker/targets_data/target-*
 
 clean: tclean
 	rm -f erl_crash.dump
 	rm -f $(REL_NAME).script
 	rm -f $(REL_NAME).boot
-	rm -f stim.pid
-	rm -rf www/htdocs/edoc/*
-	rm -rf www/htdocs/documentation.html
 	@cd lib; make clean
 
     

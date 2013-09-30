@@ -1,0 +1,6 @@
+*.beam
+*.o
+*.swp
+*.tgz
+/priv
+/ebin

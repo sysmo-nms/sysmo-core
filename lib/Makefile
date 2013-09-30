@@ -2,12 +2,13 @@
 
 REL_NAME        = enms
 MODS            = supercast tracker
+EXTERNALS       = errd erlexec
 
 compile: recurse
 
 all: compile doc test local-release www
 
-recurse:
+recurse: externals_compile
 	@for i in $(MODS); do cd $$i; make compile; cd ../; done
 
 test:
@@ -16,6 +17,13 @@ test:
 doc:
 	@for i in $(MODS); do cd $$i; make doc; cd ../; done
 
-clean:
+clean: externals_clean
 	@for i in $(MODS); do cd $$i; make clean; cd ../; done
+
+externals_compile:
+	@for i in $(EXTERNALS); do cd $$i; rebar compile; cd ../; done
+
+externals_clean:
+	@for i in $(EXTERNALS); do cd $$i; rebar clean; cd ../; done
+
 
