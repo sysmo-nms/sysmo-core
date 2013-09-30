@@ -1,7 +1,7 @@
 Basic Installation
 ==================
 
-    Used packages are installed following with these options:
+    Used packages are installed with these options:
 
 Erlang/OTP, Version: RB16B02
     ./configure --prefix=/opt/erlang_RB16B02
@@ -13,7 +13,7 @@ Nagios-plugins, Version: 1.4.16
     ./configure --prefix=/opt/nagios-plugins-1.4.16
 
 
-    If you use diferent destination name, you will need to modify by hand the
+    If you use diferent destinations, you will need to modify by hand the
 "ERL" variable in the main Makefile for the erlang bin path, the nagios plugin 
 directory and rrdtool executable path in the sys.config file.
 
