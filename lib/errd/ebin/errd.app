@@ -1,8 +1,0 @@
-{application,errd,
-             [{description,"Erlang Round Robin Databases"},
-              {vsn,"0.1"},
-              {applications,[kernel,stdlib]},
-              {mod,{errd_app,[]}},
-              {registered,[errd_sup,errd_server_sup]},
-              {modules,[errd_app,errd_command,errd_info,errd_server,
-                        errd_server_sup,errd_sup,errdb]}]}.

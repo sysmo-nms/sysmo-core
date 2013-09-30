@@ -4,6 +4,7 @@
 *.dump
 *.html
 *.css
+doc
 www/*.png
 edoc-info
 var/tracker/targets_data/target-*
