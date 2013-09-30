@@ -1,7 +1,7 @@
 # Makefile 
 
 REL_NAME        = enms
-MODS            = supercast tracker
+MODS            = supercast tracker errd erlexec
 
 
 compile:
@@ -17,7 +17,7 @@ doc:
 
 tclean:
 	rm -rf var/tracker/target_db
-	sudo rm -rf var/tracker/targets_data/*
+	rm -rf var/tracker/targets_data/*
 
 clean: tclean
 	rm -f erl_crash.dump
@@ -50,7 +50,7 @@ ERL_NMS_PATH	= $(addprefix -pa ,$(MODS_EBIN_DIR))
 ERL_REL_COMM    = 'systools:make_script("$(REL_NAME)", [local]), init:stop()'
 
 start: local-release
-	@sudo $(ERL) -sname server -boot ./$(REL_NAME) -config ./sys
+	@$(ERL) -sname server -boot ./$(REL_NAME) -config ./sys
 
 
 

@@ -7,7 +7,9 @@
 www/*.png
 edoc-info
 MEMO
-var/
+var/tracker/targets_data/target-*
+var/tracker/targets_db
+var/sasl/sasl.log
 lib/esnmp/priv/good_mibs
 lib/esnmp/priv/all_mibs
 lib/esnmp/priv/work
