@@ -1,9 +1,6 @@
 # Makefile
 
 EPATH      += -pa ebin
-ERLC        = erlc -Werror
-ASNC        = erlc -Werror -bber
-ERL         = erl
 
 APP         = $(subst ebin/,,$(basename $(wildcard ebin/*.app)))
 INCLUDE     = $(wildcard ../include/*.hrl)

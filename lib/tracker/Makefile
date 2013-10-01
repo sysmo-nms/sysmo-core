@@ -1,8 +1,6 @@
 # Makefile
 
 APP     = tracker
-ERL     = erl
-ERLC   += erlc -Werror
 EPATH  += -pa ../supercast/ebin -pa ebin
 
 MAIN            = $(wildcard src/*.erl)
