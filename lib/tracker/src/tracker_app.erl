@@ -28,13 +28,11 @@
     stop/1]).
 
 start(_Type, _Args) ->
-    {ok, GenEventListeners} = application:get_env(tracker, registered_events),
     {ok, DbDir}             = application:get_env(tracker, db_dir),
     {ok, DataDir}           = application:get_env(tracker, targets_data_dir),
     {ok, ProbeModules}      = application:get_env(tracker, probe_modules),
     tracker_sup:start_link(
         ProbeModules,
-        GenEventListeners,
         filename:absname(DbDir), 
         filename:absname(DataDir)
     ).

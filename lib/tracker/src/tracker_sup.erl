@@ -22,26 +22,18 @@
 -module(tracker_sup).
 -behaviour(supervisor).
 
--export([start_link/4]).
+-export([start_link/3]).
 -export([init/1]).
 
-start_link(ProbeModules, GenEventListeners, DbDir, DataDir) ->
+start_link(ProbeModules, DbDir, DataDir) ->
     supervisor:start_link({local, ?MODULE}, ?MODULE, 
-            [ProbeModules, GenEventListeners, DbDir, DataDir]).
+            [ProbeModules, DbDir, DataDir]).
 
-init([ProbeModules, GenEventListeners, DbDir, DataDir]) ->
+init([ProbeModules, DbDir, DataDir]) ->
     {ok, 
         {
             {one_for_one, 1, 60},
             [
-                {
-                    tracker_events,
-                    {tracker_events, start_link, [GenEventListeners]},
-                    permanent,
-                    2000,
-                    worker,
-                    dynamic
-                },
                 {
                     tracker_master_channel,
                     {tracker_master_channel, start_link, [ProbeModules]},
