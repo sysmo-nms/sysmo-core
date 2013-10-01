@@ -4,9 +4,9 @@ Basic Installation
     Used packages are installed with these options:
 
 Erlang/OTP, Version: RB16B02
-    ./configure --prefix=/opt/otp_src_RB16B02
+    ./configure --prefix=/opt/erlang_otp_RB16B02
 
-Rrdtool, Version 1.4.8
+Rrdtool, Version: 1.4.8
     ./configure --prefix=/opt/rrdtool-1.4.8_SERVER
 
 Nagios-plugins, Version: 1.4.16
