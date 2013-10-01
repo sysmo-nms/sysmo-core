@@ -53,7 +53,7 @@
 
 % API
 -export([
-    start_link/2,
+    start_link/1,
     cold_start/1,
     update/3,
     subscribe/2,
@@ -72,8 +72,8 @@
 %% API
 %%----------------------------------------------------------------------------
 %%----------------------------------------------------------------------------
-start_link(DataDir, #target{id = Id} = Target) ->
-    gen_server:start_link({local, Id}, ?MODULE, [DataDir, Target], []).
+start_link(#target{id = Id} = Target) ->
+    gen_server:start_link({local, Id}, ?MODULE, [Target], []).
 
 -spec cold_start(pid()) -> ok | {error, any()}.
 % @doc
@@ -126,10 +126,8 @@ dump(Id) ->
 %% INIT       
 %%----------------------------------------------------------------------------
 %%----------------------------------------------------------------------------
-init([RootDataDir, Target]) ->
-    ok              = init_snmp(Target),
-    {ok, Target1}   = init_dir(Target, RootDataDir),
-    {ok, TargetF}   = init_probes(Target1),
+init([Target]) ->
+    {ok, TargetF}   = init_probes(Target),
 
     ok = tracker_master_channel:chan_add(TargetF),
 
@@ -245,92 +243,9 @@ code_change(_O, S, _E) ->
 
 %%----------------------------------------------------------------------------
 %%----------------------------------------------------------------------------
-%%----------------------------------------------------------------------------
-%% IFS UTILS
-%%----------------------------------------------------------------------------
-%%----------------------------------------------------------------------------
-%%----------------------------------------------------------------------------
-% -spec notify(atom(), tuple(), #state{}, #probe{}) -> ok.
-% % @doc
-% % Will log everything and also to supercast if #state.subscribers_count > 0
-% % @end
-% notify(Type, {'OK',Val} = Msg, 
-%         #state{subscriber_count = 0} = Chan, 
-%         #probe{permissions = Perm} = Probe) ->
-%     supercast_mpd:multicast_msg(Chan#state.chan_id, {Perm,
-%         {modTrackerPDU,
-%             {fromServer,
-%                 {probeFetch, 
-%                     {'ProbeFetch',
-%                         atom_to_list(Chan#state.chan_id),
-%                         Probe#probe.id,
-%                         Type,
-%                         Val }}}}}),
-%     gen_event:notify(tracker_events, {tracker_probe, Type, Msg,
-%             {Chan#state.chan_id, Probe#probe.id}});
-% 
-% notify(Type, {'RECOVERY',Val} = Msg, 
-%         #state{subscriber_count = 0}   = Chan, 
-%         #probe{permissions = Perm}          = Probe) ->
-%     supercast_mpd:multicast_msg(Chan#state.chan_id,{Perm, 
-%             {modTrackerPDU,
-%                 {fromServer,
-%                     {probeFetch, 
-%                         {'ProbeFetch',
-%                             atom_to_list(Chan#state.chan_id),
-%                             Probe#probe.id,
-%                             Type,
-%                             Val }}}}}),
-%     gen_event:notify(tracker_events, {tracker_probe, Type, Msg,
-%             {Chan#state.chan_id, Probe#probe.id}});
-% 
-% notify(Type, Msg, Chan, Probe) ->
-%     % notify supercast
-%     gen_event:notify(tracker_events, {tracker_probe, Type, Msg,
-%             {Chan#state.chan_id, Probe#probe.id}}).
-% 
-% pdu(probe_dump, Probe, ChanId, DataDir) ->
-%     {modTrackerPDU,
-%         {fromServer,
-%             {probeDump,
-%                 {'ProbeDump',
-%                     atom_to_list(ChanId),
-%                     Probe#probe.id,
-%                     Probe#probe.type
-%                     %gen_rrdfile(Probe,DataDir)
-%                 }
-%             }
-%         }
-%     }.
-
-
-%%----------------------------------------------------------------------------
-%%----------------------------------------------------------------------------
 %% PRIVATE
 %%----------------------------------------------------------------------------
 %%----------------------------------------------------------------------------
-% @private
-get_opt(Key, List) ->
-    case lists:keyfind(Key, 1, List) of
-        {_, Conf} ->
-            Conf;
-        _ ->
-            false
-    end.
-
-% @private
-init_dir(#target{id = Id} = Target, RootDataDir) ->
-    TargetDir = filename:join(RootDataDir, atom_to_list(Id)),
-    case file:read_file_info(TargetDir) of
-        {ok, _} ->
-            {ok, Target#target{directory = TargetDir}};
-        {error, enoent} ->
-            ok = file:make_dir(TargetDir),
-            {ok, Target#target{directory = TargetDir}};
-        {error, Other} ->
-            {error, Other}
-    end.
-
 % @private
 init_probes(#target{probes = Probes} = Target) ->
     ProbesF = lists:foldl(fun(Probe, Accum) ->
@@ -338,7 +253,3 @@ init_probes(#target{probes = Probes} = Target) ->
         [Probe#probe{pid = Pid} | Accum]
     end, [], Probes),
     {ok, Target#target{probes = ProbesF}}.
-
-% @private
-init_snmp(#target{id = Id, properties = Properties}) ->
-    esnmp_user_v2:agent(Id, get_opt(snmp_conf, Properties)).

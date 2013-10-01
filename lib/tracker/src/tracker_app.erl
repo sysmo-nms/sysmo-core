@@ -28,20 +28,15 @@
     stop/1]).
 
 start(_Type, _Args) ->
-    {ok, DbDir}             = application:get_env(tracker, db_dir),
-    {ok, DataDir}           = application:get_env(tracker, targets_data_dir),
     {ok, ProbeModules}      = application:get_env(tracker, probe_modules),
-    tracker_sup:start_link(
-        ProbeModules,
-        filename:absname(DbDir), 
-        filename:absname(DataDir)
-    ).
+    tracker_sup:start_link(ProbeModules).
 
-start_phase(initialize_tracker_loggers, normal, []) ->
-    ok;
+%start_phase(initialize_tracker_loggers, normal, []) ->
+    %ok;
 
 start_phase(cold_start, normal, []) ->
-    ok = tracker_target_channel_sup:cold_start().
+    {ok, ConfFile}          = application:get_env(tracker, config_file),
+    ok = tracker_target_channel_sup:cold_start(ConfFile).
 
 stop(_State) ->
 	ok.

@@ -22,14 +22,14 @@
 -module(tracker_sup).
 -behaviour(supervisor).
 
--export([start_link/3]).
+-export([start_link/1]).
 -export([init/1]).
 
-start_link(ProbeModules, DbDir, DataDir) ->
+start_link(ProbeModules) ->
     supervisor:start_link({local, ?MODULE}, ?MODULE, 
-            [ProbeModules, DbDir, DataDir]).
+            [ProbeModules]).
 
-init([ProbeModules, DbDir, DataDir]) ->
+init([ProbeModules]) ->
     {ok, 
         {
             {one_for_one, 1, 60},
@@ -43,16 +43,8 @@ init([ProbeModules, DbDir, DataDir]) ->
                     [tracker_master_channel]
                 },
                 {
-                    tracker_target_store,
-                    {tracker_target_store, start_link, [DbDir]},
-                    permanent,
-                    2000,
-                    worker,
-                    [tracker_target_store]
-                },
-                {
                     tracker_target_channel_sup,
-                    {tracker_target_channel_sup, start_link, [DataDir]},
+                    {tracker_target_channel_sup, start_link, []},
                     permanent,
                     2000,
                     supervisor,

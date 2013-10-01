@@ -23,25 +23,25 @@
 -behaviour(supervisor).
 
 -export([
-    start_link/1,
+    start_link/0,
     new/1,
-    cold_start/0
+    cold_start/1
 ]).
 
 -export([init/1]).
 
-start_link(DataDir) ->
-    supervisor:start_link({local, ?MODULE}, ?MODULE, [DataDir]).
+start_link() ->
+    supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
 new(Target) ->
-    supervisor:start_child(?MODULE, [Target]).
+    {ok, _} = supervisor:start_child(?MODULE, [Target]).
 
 % @doc
 % Called from tracker_app from his start_phase/3.
 % @end
-cold_start() ->
+cold_start(ConfFile) ->
     % create the targets
-    Targets = tracker_target_store:info(),
+    {ok, Targets} = file:consult(ConfFile),
     ok = lists:foreach(fun(Target) ->
         ?MODULE:new(Target)
     end, Targets),
@@ -53,14 +53,14 @@ cold_start() ->
     end, Channels),
     ok.
 
-init([DataDir]) ->
+init([]) ->
     {ok, 
         {
             {simple_one_for_one, 1, 60},
             [
                 {
                     tracker_target_channel,
-                    {tracker_target_channel, start_link, [DataDir]},
+                    {tracker_target_channel, start_link, []},
                     transient,
                     2000,
                     worker,
