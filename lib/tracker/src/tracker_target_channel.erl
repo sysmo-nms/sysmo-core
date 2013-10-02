@@ -249,7 +249,6 @@ code_change(_O, S, _E) ->
 %%----------------------------------------------------------------------------
 % @private
 init_dir(#target{directory = Dir}) ->
-    io:format("dir is ~p ~p ~n", [Dir, ?MODULE]),
     case file:read_file_info(Dir) of
         {ok, _} ->
             ok;
