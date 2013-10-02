@@ -69,6 +69,7 @@ start_link(ProbeModules) ->
 % Called by a target_channel at initialisation stage.
 % @end
 chan_add(Target) ->
+    io:format("Chan add ~p~n", [?MODULE]),
     gen_server:call(?MASTER_CHAN, {chan_add, Target}).
 
     
@@ -77,6 +78,7 @@ chan_add(Target) ->
 % Called by a target_channel at termination stage.
 % @end
 chan_del(Target) ->
+    io:format("Chan del ~p~n", [?MODULE]),
     gen_server:call(?MASTER_CHAN, {chan_del, Target}).
 
 -spec chan_update(
@@ -92,6 +94,7 @@ chan_del(Target) ->
 % module to send arbitrary message to clients wich are subscribed.
 % @end
 chan_update(Type, {Target, Probe}) ->
+    io:format("Chan update ~p~n", [?MODULE]),
     gen_server:call(?MASTER_CHAN, {chan_update, Type, {Target, Probe}}).
 
 
