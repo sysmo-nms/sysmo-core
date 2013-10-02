@@ -16,8 +16,7 @@ doc:
 	@cd lib; make doc
 
 tclean:
-	rm -rf var/tracker/target_db
-	rm -rf var/tracker/targets_data/target-*
+	rm -rf var/tracker/*/
 
 clean: tclean
 	rm -f erl_crash.dump
