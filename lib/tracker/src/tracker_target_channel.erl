@@ -127,15 +127,16 @@ dump(Id) ->
 %%----------------------------------------------------------------------------
 %%----------------------------------------------------------------------------
 init([Target]) ->
-    {ok, TargetF}   = init_probes(Target),
+    ok = init_dir(Target),
+    {ok, TargetA}   = init_probes(Target),
 
-    ok = tracker_master_channel:chan_add(TargetF),
+    ok = tracker_master_channel:chan_add(TargetA),
 
     {ok, 
         #state{
-            chan_id             = Target#target.id,     % shortcut
+            chan_id             = TargetA#target.id,     % shortcut
             subscriber_count    = 0,   
-            target              = TargetF
+            target              = TargetA
         }
     }.
 
@@ -246,6 +247,18 @@ code_change(_O, S, _E) ->
 %% PRIVATE
 %%----------------------------------------------------------------------------
 %%----------------------------------------------------------------------------
+% @private
+init_dir(#target{directory = Dir}) ->
+    io:format("dir is ~p ~p ~n", [Dir, ?MODULE]),
+    case file:read_file_info(Dir) of
+        {ok, _} ->
+            ok;
+        {error, enoent} ->
+            file:make_dir(Dir);
+        Other ->
+            {error, Other}
+    end.
+
 % @private
 init_probes(#target{probes = Probes} = Target) ->
     ProbesF = lists:foldl(fun(Probe, Accum) ->
