@@ -7,9 +7,7 @@
 doc
 www/*.png
 edoc-info
-var/tracker/targets_data/target-*
-var/tracker/target_db
-var/sasl/sasl.log
+var/
 activity.log
 *.bin
 *.asn1db
