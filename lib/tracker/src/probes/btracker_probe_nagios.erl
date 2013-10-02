@@ -34,14 +34,13 @@ exec({
         } = Target, 
         #probe{
             name                = Name, 
-            id                  = ProbeId,
             tracker_probe_conf  = #nagios_plugin{
                 executable  = Exec,
                 args        = Args
             }
         } = Probe
     }) ->
-    FileName    = io_lib:format("~s-~.10B~s", [Name, ProbeId, ".stdout"]),
+    FileName    = io_lib:format("~s~s", [Name, ".stdout"]),
     StdoutFile  = filename:absname_join(Dir, FileName),
 
     Command = lists:foldl(fun({Flag, Value}, Acc) ->
@@ -64,30 +63,32 @@ exec({
     end),
 
     receive
-        {_, _, {exit_status, Val}} -> 
+        {'EXIT', _, normal} -> 
+            io:format("return status 0~n"),
+            PR =  eval_nagout(StdoutFile),
+            PR#probe_return{status = 'OK'};
+        {'EXIT', _, {exit_status, Val}} -> 
             case exec:status(Val) of
-                {status, 0} ->
-                    PR =  eval_nagout(StdoutFile),
-                    PR#probe_return{status = 'OK'};
                 {status, 1} ->
+                    io:format("return status 1~n"),
                     PR =  eval_nagout(StdoutFile),
                     PR#probe_return{status = 'WARNING'};
                 {status, 2} ->
+                    io:format("return status 2~n"),
                     PR =  eval_nagout(StdoutFile),
                     PR#probe_return{status = 'CRITICAL'};
                 {status, 3} ->
+                    io:format("return status 3~n"),
                     PR =  eval_nagout(StdoutFile),
                     PR#probe_return{status = 'UNKNOWN'};
                 {status, Any} ->
-                    io:format("Unknown return status~p~n", [Any]),
+                    io:format("Other return status~p~n", [Any]),
                     PR =  eval_nagout(StdoutFile),
                     io:format("~p~n", [PR]),
-                    PR#probe_return{status = 'UNKNOWN'};
-                Any -> 
-                    io:format("Unknown return status~p~n", [Any])
+                    PR#probe_return{status = 'UNKNOWN'}
             end;
         Any ->
-            io:format("Not an exit_status msg~p~n" , [Any])
+            io:format("Not an exit_status msg ~p~n" , [Any])
     end.
 
 
