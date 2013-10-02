@@ -9,7 +9,7 @@
         {asn1, "2.0.3"},
         {public_key, "0.20"},
         {ssl, "5.3.1"},
-        {exec, "v1.0-85-ga6e012e"},
+        {exec, "v1.0-87-gd23695b"},
         {supercast, "2.0.0"},
         {errd, "0.1"},
         {tracker, "0.1.0"}
