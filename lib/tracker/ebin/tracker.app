@@ -32,7 +32,7 @@
 		{registered, [
             ]},
 		{applications, 
-            [kernel, stdlib]
+            [kernel, stdlib, supercast, errd]
         },
         {start_phases, 
             [
