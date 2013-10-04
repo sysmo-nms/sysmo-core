@@ -47,10 +47,10 @@
 }).
 
 -record(probe_return, {
-    status          = undefined     :: any(),
-    original_reply  = undefined     :: any(),
-    timestamp       = undefined     :: integer(),
-    key_vals        = []            :: [{any(), integer()}]
+    status          = 'UNKNOWN' :: 'OK' | 'UNKNOWN' | 'WARNING' | 'CRITICAL',
+    original_reply  = undefined :: string(),
+    timestamp       = undefined :: integer(),
+    key_vals        = []        :: [{any(), integer()}]
 }).
 
 -record(rrd_ds_bind, {
