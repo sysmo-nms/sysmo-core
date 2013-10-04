@@ -31,9 +31,6 @@ start(_Type, _Args) ->
     {ok, ProbeModules}      = application:get_env(tracker, probe_modules),
     tracker_sup:start_link(ProbeModules).
 
-%start_phase(initialize_tracker_loggers, normal, []) ->
-    %ok;
-
 start_phase(cold_start, normal, []) ->
     {ok, ConfFile}          = application:get_env(tracker, config_file),
     ok = tracker_target_channel_sup:cold_start(ConfFile).
