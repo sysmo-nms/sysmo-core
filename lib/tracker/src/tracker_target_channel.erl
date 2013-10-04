@@ -184,7 +184,9 @@ handle_cast({update, ProbeId, {channel_event, Msg}},
     #probe{pid = Pid} = lists:keyfind(ProbeId, 2, Probes),
     tracker_probe:loggers_update(Pid, Msg),
     % TODO 
-    % SUPERCAST send
+    % - SUPERCAST send
+    % - update loggers
+    io:format("~p PROBE SIMPLE UPDATE ~p~n", [?MODULE, ProbeId]),
     {noreply, S};
 
 % master_event, will not be forwarded to the subscribers of this
@@ -192,11 +194,16 @@ handle_cast({update, ProbeId, {channel_event, Msg}},
 handle_cast({update, ProbeId, {master_event, {probe_status_move, NewStatus}}},
         #state{target = #target{probes = Probes} = Target} = S) ->
     Probe   = lists:keyfind(ProbeId, 2, Probes),
+    UpdatedProbe = Probe#probe{status = NewStatus},
     NProbes = lists:keyreplace(
-            ProbeId, 2, Probes, Probe#probe{status = NewStatus}),
+            ProbeId, 2, Probes, UpdatedProbe),
+
+    io:format("~p PROBE STATUS MOVE ~p ~p~n", [?MODULE, Probe#probe.id, NewStatus]),
+    tracker_master_channel:chan_update(probe_status, {Target, UpdatedProbe}),
+
     % TODO
-    % MASTERCHAN send
-    io:format("~p PROBE STATUS MOVE ~p~n", [?MODULE, Probe#probe.id]),
+    % - update loggers
+
     S2      = S#state{target = Target#target{probes = NProbes}},
     {noreply, S2};
 
@@ -205,8 +212,9 @@ handle_cast({update, ProbeId, {master_event, {probe_status_move, NewStatus}}},
 handle_cast({update, _ProbeId, {master_event, {property_set, _Properties}}},
         #state{target = _Target} = S) ->
     % TODO
-    % MASTERCHAN send
-    io:format("property set ~p~n", [_Properties]),
+    % - MASTERCHAN send
+    % - update loggers
+    io:format("~p PROBE PROPERTY MOVE ~p~n", [?MODULE, _ProbeId]),
     {noreply, S};
 
 handle_cast(_R, S) ->

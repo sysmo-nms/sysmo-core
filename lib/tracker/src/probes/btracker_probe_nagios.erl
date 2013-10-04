@@ -64,21 +64,17 @@ exec({
 
     receive
         {'EXIT', _, normal} -> 
-            io:format("return status 0~n"),
             PR =  evaluate_nagios_output(StdoutFile),
             PR#probe_return{status = 'OK'};
         {'EXIT', _, {exit_status, Val}} -> 
             case exec:status(Val) of
                 {status, 1} ->
-                    io:format("return status 1~n"),
                     PR =  evaluate_nagios_output(StdoutFile),
                     PR#probe_return{status = 'WARNING'};
                 {status, 2} ->
-                    io:format("return status 2~n"),
                     PR =  evaluate_nagios_output(StdoutFile),
                     PR#probe_return{status = 'CRITICAL'};
                 {status, 3} ->
-                    io:format("return status 3~n"),
                     PR =  evaluate_nagios_output(StdoutFile),
                     PR#probe_return{status = 'UNKNOWN'};
                 {status, Any} ->

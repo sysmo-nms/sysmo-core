@@ -93,9 +93,11 @@ chan_del(Target) ->
 % to subscribers of 'target-MasterChan'. Also used from the tracker_api
 % module to send arbitrary message to clients wich are subscribed.
 % @end
-chan_update(Type, {Target, Probe}) ->
-    io:format("Chan update ~p~n", [?MODULE]),
-    gen_server:call(?MASTER_CHAN, {chan_update, Type, {Target, Probe}}).
+chan_update(probe_status, {Target,Probe}) ->
+    gen_server:call(?MASTER_CHAN, {probe_status_move, {Target, Probe}});
+
+chan_update(_, {_,_}) ->
+    io:format("unknown update~n").
 
 
 dump() ->
@@ -136,14 +138,18 @@ init([ProbeModules]) ->
 %%----------------------------------------------------------------------------
 %% SELF API CALLS
 %%----------------------------------------------------------------------------
-handle_call({probe_status_move, {
-            #target{id = TargetId} = NewTarget, 
-            #probe{permissions = Perm} = Probe
+handle_call(
+    {probe_status_move, 
+            {
+                #target{id = TargetId, probes = ProbeList} = Target, 
+                #probe{permissions = Perm, id = ProbeId} = NewProbe
             }
         }, _F, #state{chans = Chans} = S) ->
-    NewChans = lists:keyreplace(TargetId, 2, Chans, NewTarget),
+    NewProbeList    = lists:keyreplace(ProbeId, 2, ProbeList, NewProbe),
+    NewTarget       = Target#target{probes = NewProbeList},
+    NewChans        = lists:keyreplace(TargetId, 2, Chans, NewTarget),
     supercast_mpd:multicast_msg(?MASTER_CHAN, {Perm, 
-        pdu(probeInfo, {update, TargetId, Probe})}),
+        pdu(probeInfo, {update, TargetId, NewProbe})}),
     {reply, ok, S#state{chans = NewChans}};
 
 handle_call({chan_add, #target{id = Id, global_perm = Perm} = Target}, _F, 
@@ -183,9 +189,9 @@ handle_call({chan_del, #target{id = Id, global_perm = Perm}}, _F,
 handle_call(get_perms, _F, #state{perm = P} = S) ->
     {reply, P, S};
 
-handle_call({synchronize, IfsCState}, _F, State) ->
-    dump_known_data(IfsCState, State),
-    supercast_mpd:subscribe_stage3(?MASTER_CHAN, IfsCState),
+handle_call({synchronize, SupercastCState}, _F, State) ->
+    dump_known_data(SupercastCState, State),
+    supercast_mpd:subscribe_stage3(?MASTER_CHAN, SupercastCState),
     {reply, ok, State};
 
 handle_call(dump, _F, State) ->
@@ -236,6 +242,7 @@ code_change(_O, S, _E) ->
 
 dump_known_data(#client_state{module = CMod} = ClientState, 
         #state{chans = Chans, probe_modules = PMods}) ->
+    io:format("dump known data ----------------~n"),
     lists:foreach(fun(PMod) ->
         CMod:send(ClientState, pdu(probeModInfo, PMod))
     end, PMods),

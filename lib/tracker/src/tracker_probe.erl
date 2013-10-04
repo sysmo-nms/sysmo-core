@@ -61,6 +61,10 @@ cold_start(Pid) ->
 
 
 -spec loggers_update(pid(), any()) -> ok.
+% @doc
+% The server who synchronise subscription is the tracker_target_channel. It
+% is him who decide to notify loggers of a message.
+% @end
 loggers_update(Pid, Msg) ->
     gen_server:cast(Pid, {loggers_update, Msg}).
 
@@ -106,6 +110,7 @@ handle_call(_R, _F, S) ->
 %%-------------------------------------------------------------
 
 % if Status and Properties are equal then the probe have moved nothing.
+% XXX: will need to notify target_channel to update loggers.
 handle_cast({next_pass, 
         #probe_server_state{
             probe  = #probe{status          = Status},
@@ -200,13 +205,17 @@ probe_pass(#probe_server_state{target = Target, probe  = Probe } = S) ->
     % tracker_probe:loggers_update/x.
     % Subscribers of the target_channel will also recive this
     % Result message.
-    tracker_target_channel:update(
-        Target#target.id,
-        Probe#probe.id,
-        {channel_event, Result}
-    ),
+    % NOTE: tracker_target_channel will forward the lock to the loggers,
+    % and continue. The client will only lock himself wile he synchronise,
+    % because loggers themself will spawn the process of sync and then continue
+    % to fill the client process of update.
+    % Client will treat them after sync.
 
     NewS        = inspect(S, Result),
+
+    % probe return is lost here (Result) but will be needed by target_channel
+    % to update loggers.
+
     next_pass(NewS).
 
 -spec next_pass(#probe_server_state{}) -> ok.
