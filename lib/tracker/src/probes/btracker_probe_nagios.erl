@@ -93,7 +93,7 @@ exec({
 
 
 info() ->
-    {ok, "Nagios compat probe module"}.
+    {ok, "Nagios plugin compatible probe"}.
 
 % @private
 get_val({target, {properties, ip}}, #target{properties = Props}, _) ->
