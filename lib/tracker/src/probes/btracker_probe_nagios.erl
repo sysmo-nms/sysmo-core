@@ -65,25 +65,25 @@ exec({
     receive
         {'EXIT', _, normal} -> 
             io:format("return status 0~n"),
-            PR =  eval_nagout(StdoutFile),
+            PR =  evaluate_nagios_output(StdoutFile),
             PR#probe_return{status = 'OK'};
         {'EXIT', _, {exit_status, Val}} -> 
             case exec:status(Val) of
                 {status, 1} ->
                     io:format("return status 1~n"),
-                    PR =  eval_nagout(StdoutFile),
+                    PR =  evaluate_nagios_output(StdoutFile),
                     PR#probe_return{status = 'WARNING'};
                 {status, 2} ->
                     io:format("return status 2~n"),
-                    PR =  eval_nagout(StdoutFile),
+                    PR =  evaluate_nagios_output(StdoutFile),
                     PR#probe_return{status = 'CRITICAL'};
                 {status, 3} ->
                     io:format("return status 3~n"),
-                    PR =  eval_nagout(StdoutFile),
+                    PR =  evaluate_nagios_output(StdoutFile),
                     PR#probe_return{status = 'UNKNOWN'};
                 {status, Any} ->
                     io:format("Other return status~p~n", [Any]),
-                    PR =  eval_nagout(StdoutFile),
+                    PR =  evaluate_nagios_output(StdoutFile),
                     io:format("~p~n", [PR]),
                     PR#probe_return{status = 'UNKNOWN'}
             end;
@@ -105,7 +105,7 @@ get_val({probe, timeout}, _, #probe{timeout = Timeout}) ->
     lists:flatten(io_lib:format("~.10B", [Timeout])).
 
 % @private
-eval_nagout(File) ->
+evaluate_nagios_output(File) ->
     {ok, BinaryData}    = file:read_file(File),
     FullData            = erlang:binary_to_list(BinaryData),
 
