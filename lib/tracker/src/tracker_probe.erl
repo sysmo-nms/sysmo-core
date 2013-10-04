@@ -57,7 +57,7 @@ start_link({Target, Probe}) ->
 % tracker_target_channel() module.
 % @end
 cold_start(Pid) ->
-    gen_server:call(Pid, initial_start).
+    gen_server:call(Pid, initial_pass).
 
 
 -spec loggers_update(pid(), any()) -> ok.
@@ -91,7 +91,7 @@ init([Target, Probe]) ->
 
 % launch a probe for the first time. Give a way for inspectors and loggers
 % to initialize themself and Randomise start.
-handle_call(initial_start, _, #probe_server_state{probe = Probe} = S) ->
+handle_call(initial_pass, _, #probe_server_state{probe = Probe} = S) ->
     Step            = Probe#probe.step, 
     InitialLaunch   = tracker_misc:random(Step * 1000),
     timer:apply_after(InitialLaunch, ?MODULE, probe_pass, [S]),
@@ -188,7 +188,7 @@ code_change(_O, S, _E) ->
 -spec probe_pass(#probe_server_state{}) -> ok.
 % @doc
 % It is the spawned proc who call the "gen_probe" module defined in the 
-% #probe{} record.
+% #probe{} record. Called from "initial_pass" and "next_pass" modules.
 % @end
 probe_pass(#probe_server_state{target = Target, probe  = Probe } = S) ->
     Mod         = Probe#probe.tracker_probe_mod,
