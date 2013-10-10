@@ -1,7 +1,7 @@
 {target,
-    'testHost-0',
+    'HOSTNAME',
     {perm_conf,     ["admin"], ["admin"]},
-    [{ip, ["173.194.40.191"]}],
+    [{ip, ["HOST_IP"]}],
     [
         {probe,
             1,
@@ -11,7 +11,7 @@
             btracker_probe_nagios,
             {nagios_plugin,
                 "/opt/nagios-plugins-1.4.16/libexec/check_icmp",
-                [{"-H", "173.194.40.191"}, {"-t", "5"}]},
+                [{"-H", "HOST_IP"}, {"-t", "5"}]},
             'UNKNOWN',
             5,
             4,
@@ -31,7 +31,7 @@
             btracker_probe_nagios,
             {nagios_plugin,
                 "/opt/nagios-plugins-1.4.16/libexec/check_http",
-                [{"-H", "173.194.40.191"}, {"-t", "5"}]},
+                [{"-H", "HOST_IP"}, {"-t", "5"}]},
             'UNKNOWN',
             5,
             4,
@@ -44,5 +44,5 @@
             []
         }
     ],
-    "var/tracker/testHost-0"
+    "var/tracker/HOSTNAME"
 }.

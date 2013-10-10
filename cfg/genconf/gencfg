@@ -1,0 +1,21 @@
+#!/bin/sh
+
+IP_DB=$1
+TEMPLATE="./simple_template.tps"
+
+DEST="../tracker.conf"
+if [ -e ${DEST} ]
+then 
+    rm -f ${DEST}
+fi
+
+HOST_NUM=0
+for ip in `cat ${IP_DB}`
+do 
+    HOST=testHost-${HOST_NUM}
+    cat ${TEMPLATE} | sed "
+        s/HOSTNAME/${HOST}/
+        s/HOST_IP/${ip}/
+    " >> ${DEST}
+    HOST_NUM=`expr ${HOST_NUM} + 1`
+done
