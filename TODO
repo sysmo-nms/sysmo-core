@@ -3,34 +3,45 @@ The development flow should follow this order:
 #MODULE/OTHER           #PRIORITY   #COMPLETED
 - supercast               HIGH         100% Module events and client
                                             communication/auth
-                                                ddd
-- tracker                 HIGH         60%
+- probe_service           HIGH         100%
+(included in nagios_plugins_compat)
+- probe_icmp              HIGH         100%
+Monitor network hosts (included in nagios_plugins_compat)
+- tracker                 HIGH          60%
 Live list of targets, associate tags to traps/inform they produce and own the
-mermisions associated. Need a clear definition of required fonctions and the
-client API.
-- icmp                    HIGH        100%
-Monitor network hosts
-- esnmp                   HIGH        50%
-SNMP utility and monitoring + Live list of snmp targets
-- rrd                     HIGH        100%
-Generate RRD data whith the system probes.
+mermisions associated. 
+- probe_logging           HIGH          50%
+Generate data for RRD or flat file for example. These files must be
+understood by the client.
+http://opentsdb.net/
+http://graphite.wikidot.com/whisper
+- create read only client               50%
+Using Qt
+- nagios_conf                            0%
+Extract nagios config for his config files. (Makefile)
 ---------> RELEASE 0.9,
 
 
-- mod_coumpoundwarn       MEDIUM      30%
+- mod_coumpoundwarn       HIGH        30%
 Create alerts with events patterns or events values. See Mmonit sintax
 language. Alerts on rrdfetch and probe status events.
+Parent/child probe association.
+False positive detection.
+(inspectors)
 ---------> RELEASE 1.0,
 
 
+- probe_snmp              HIGH        0%
+SNMP utility and monitoring + Live list of snmp targets
 - wmaps                   HIGH        0%
 Create, save and generate (what format?) maps (manual links between nodes).
 The final map should look like the cacti/weathermap module + visual alerts.
-- mod_netmon              HIGH        10%
-Monitor network services. Infra is ok, only need to create additional modules.
 ---------> RELEASE 2.0,
 
 
+- read/write client with permissions. 0%
+need definition of API.
+---------> RELEASE 3.0,
 
 
 
