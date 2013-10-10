@@ -2,7 +2,7 @@
 
 REL_NAME        = enms
 MODS            = supercast tracker
-EXTERNALS       = errd erlexec
+EXTERNALS       = errd
 
 compile: recurse
 
