@@ -28,84 +28,56 @@
     info/0
 ]).
 
-exec({  
-        #target{
-            directory           = Dir
-        } = Target, 
-        #probe{
-            name                = Name, 
+exec({_, #probe{
             tracker_probe_conf  = #nagios_plugin{
                 executable  = Exec,
                 args        = Args
             }
-        } = Probe
+        }
     }) ->
-    FileName    = io_lib:format("~s~s", [Name, ".stdout"]),
-    StdoutFile  = filename:absname_join(Dir, FileName),
+ 
+    ArgList = [erlang:tuple_to_list(X) || X <- Args],
 
-    Command = lists:foldl(fun({Flag, Value}, Acc) ->
-        case is_list(Value) of
-            true    ->
-                lists:concat([Acc, " ", Flag, " ", Value]);
-            false   ->
-                lists:concat([Acc, " ", Flag, " ", get_val(Value, Target, Probe)])
-        end
-    end, Exec, Args),
-    
-    Id = self(),
-    spawn(fun() ->
-        process_flag(trap_exit, true),
-        exec:run_link(Command, 
-                [{stdout, StdoutFile}]),
-        receive
-            A -> Id ! A
-        end
-    end),
+    erlang:open_port({spawn_executable, Exec}, 
+        [exit_status, {args, ArgList}]),
 
-    receive
-        {'EXIT', _, normal} -> 
-            PR =  evaluate_nagios_output(StdoutFile),
+    case receive_port_info() of
+        {0, Stdout} ->
+            PR =  evaluate_nagios_output(Stdout),
             PR#probe_return{status = 'OK'};
-        {'EXIT', _, {exit_status, Val}} -> 
-            case exec:status(Val) of
-                {status, 1} ->
-                    PR =  evaluate_nagios_output(StdoutFile),
-                    PR#probe_return{status = 'WARNING'};
-                {status, 2} ->
-                    PR =  evaluate_nagios_output(StdoutFile),
-                    PR#probe_return{status = 'CRITICAL'};
-                {status, 3} ->
-                    PR =  evaluate_nagios_output(StdoutFile),
-                    PR#probe_return{status = 'UNKNOWN'};
-                {status, Any} ->
-                    io:format("Other return status~p~n", [Any]),
-                    PR =  evaluate_nagios_output(StdoutFile),
-                    io:format("~p~n", [PR]),
-                    PR#probe_return{status = 'UNKNOWN'}
-            end;
-        Any ->
-            io:format("Not an exit_status msg ~p~n" , [Any])
+        {1, Stdout} ->
+            PR =  evaluate_nagios_output(Stdout),
+            PR#probe_return{status = 'WARNING'};
+        {2, Stdout} ->
+            PR =  evaluate_nagios_output(Stdout),
+            PR#probe_return{status = 'CRITICAL'};
+        {3, Stdout} ->
+            PR =  evaluate_nagios_output(Stdout),
+            PR#probe_return{status = 'UNKNOWN'};
+        {Any, Stdout} ->
+            io:format("Other return status~p~n", [Any]),
+            PR =  evaluate_nagios_output(Stdout),
+            PR#probe_return{status = 'UNKNOWN'}
     end.
 
+receive_port_info() ->
+    receive_port_info("").
+receive_port_info(StdOut) ->
+    receive
+        {_, {exit_status, Status}} ->
+            {Status, StdOut};
+        {_, {data, StdOutData}} ->
+            receive_port_info(StdOutData);
+        _ ->
+            receive_port_info(StdOut)
+    end.
 
 info() ->
     {ok, "Nagios plugin compatible probe"}.
 
 % @private
-get_val({target, {properties, ip}}, #target{properties = Props}, _) ->
-    {ip, Val} = lists:keyfind(ip, 1, Props),
-    tracker_misc:ip_format(v4_to_string, Val);
+evaluate_nagios_output(StdOutput) ->
 
-% @private
-get_val({probe, timeout}, _, #probe{timeout = Timeout}) ->
-    lists:flatten(io_lib:format("~.10B", [Timeout])).
-
-% @private
-evaluate_nagios_output(File) ->
-    {ok, BinaryData}    = file:read_file(File),
-    FullData            = erlang:binary_to_list(BinaryData),
-
-    % separate text from perf data. foldr/3 to keep the TextOut order.
     {_, PerfLines} = lists:foldr(fun(X, {TextOut, Perfs}) ->
         case string:tokens(X, "|") of
             [Text] ->
@@ -113,7 +85,7 @@ evaluate_nagios_output(File) ->
             [Text, Perf] ->
                 {[Text | TextOut], [Perf | Perfs]}
         end
-    end, {[], []}, string:tokens(FullData, "\n")),
+    end, {[], []}, string:tokens(StdOutput, "\n")),
 
     % generate a list of perfs from lines
     PerfStringList = lists:foldl(fun(PerfLine, Acc) ->
@@ -182,12 +154,12 @@ evaluate_nagios_output(File) ->
     case KeyValList of
         []  ->
             #probe_return{
-                original_reply  = FullData,
+                original_reply  = StdOutput,
                 timestamp       = tracker_misc:timestamp(second)
             };
         _   ->
             #probe_return{
-                original_reply  = FullData,
+                original_reply  = StdOutput,
                 key_vals        = KeyValList,
                 timestamp       = tracker_misc:timestamp(second)
             }
