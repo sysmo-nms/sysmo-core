@@ -1,0 +1,6 @@
+Generate local test keys with:
+$ openssl genrsa -out key.pem 1024
+$ openssl req -new -key key.pem -out request.pem
+ (set 'common name' to "localhost" for testing),
+$ openssl x509 -req -days 30 -in request.pem -signkey key.pem -out certificate.pem
+

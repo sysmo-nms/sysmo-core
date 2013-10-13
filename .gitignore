@@ -4,6 +4,7 @@
 *.dump
 *.html
 *.css
+cfg/keys/*.pem
 doc
 www/*.png
 edoc-info
