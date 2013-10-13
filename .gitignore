@@ -5,12 +5,12 @@
 *.html
 *.css
 cfg/ssl/*.pem
+cfg/tracker.conf
 doc
 www/*.png
 edoc-info
 var/
 activity.log
-tracker.conf
 *.bin
 *.asn1db
 *.bk
