@@ -153,7 +153,7 @@ handle_cast({next_pass,
     {noreply, NewS};
 
 handle_cast({loggers_update, Msg}, S) ->
-    loggers_log(S,Msg),
+    log(S,Msg),
     {noreply, S};
 
 handle_cast(_R, S) ->
@@ -236,8 +236,8 @@ init_loggers(#probe_server_state{probe = Probe} = State) ->
         end, State, Probe#probe.loggers),
     {ok, NewState}.
 
--spec loggers_log(#probe_server_state{}, {atom(), any()}) -> ok.
-loggers_log(#probe_server_state{probe = Probe} = PSState, Msg) ->
+-spec log(#probe_server_state{}, {atom(), any()}) -> ok.
+log(#probe_server_state{probe = Probe} = PSState, Msg) ->
     lists:foreach(fun(#logger{module = Mod}) ->
         spawn(fun() -> Mod:log(PSState, Msg) end)
     end, Probe#probe.loggers),
