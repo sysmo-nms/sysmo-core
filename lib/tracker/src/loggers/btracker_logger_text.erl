@@ -33,40 +33,32 @@
 ]).
 
 init(_Conf, #probe_server_state{
-        target          = _Target,
-        probe           = _Probe,
-        loggers_state   = _LoggersState} = ProbeServerState) -> 
-    % TargetDir   = Target#target.directory,
-    % ProbeName   = Probe#probe.name,
-    % ProbeId     = integer_to_list(Probe#probe.id),
-    % FileName    = io_lib:format("~s-~s.log", [ProbeName, ProbeId]),
-    % LogFile     = filename:absname_join(TargetDir, FileName),
+        target          = Target,
+        probe           = Probe,
+        loggers_state   = LoggersState} = ProbeServerState) -> 
 
-        
-    % {ok, IoD} = file:open(LogFile, [append]),
-    % file:close(IoD),
-
-    % NewLoggersState =lists:keystore(?MODULE, 1, 
-            % LoggersState, 
-                % {?MODULE, [{file_name, LogFile}] }),
-    io:format("iiiiiiiiiiiiinit~n"),
+    TargetDir   = Target#target.directory,
+    ProbeName   = Probe#probe.name,
+    FileName    = io_lib:format("~s.txt", [ProbeName]),
+    LogFile     = filename:absname_join(TargetDir, FileName),
+    {ok, IoD} = file:open(LogFile, [append]),
+    file:close(IoD),
+    NewLoggersState =lists:keystore(?MODULE, 1, 
+            LoggersState, {?MODULE, [{file_name, LogFile}] }),
     {ok, 
-        ProbeServerState
-        %ProbeServerState#probe_server_state{
-            %loggers_state = NewLoggersState
-        %}
+        ProbeServerState#probe_server_state{
+            loggers_state = NewLoggersState
+        }
     }.
 
-log(_P, _Msg) ->
-    io:format("llllllllog~n"),
+log(#probe_server_state{loggers_state = LoggersState}, 
+    #probe_return{original_reply = Msg, timestamp = T}) ->
+    {?MODULE, Conf} = lists:keyfind(?MODULE, 1, LoggersState),
+    {_, F}          = lists:keyfind(file_name, 1, Conf),
+    %Ts              = erlang:integer_to_list(T),
+    EncodedMsg      = list_to_binary(io_lib:format("~p>>> ~s", [T, Msg])),
+    file:write_file(F, EncodedMsg, [append]),
     ok.
-
-% log(#probe_server_state{loggers_state = LoggersState}, Msg) ->
-    % {?MODULE, Conf} = lists:keyfind(?MODULE, 1, LoggersState),
-    % {_, F}          = lists:keyfind(file_name, 1, Conf),
-    % EncodedMsg      = list_to_binary(io_lib:format("~p~n", [Msg])),
-    % file:write_file(F, EncodedMsg, [append]),
-    % ok.
 
 dump(_ProbeServerState, _Timeout) -> 
     io:format("dddddddddddddddump~n"),

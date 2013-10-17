@@ -114,17 +114,26 @@ handle_call(_R, _F, S) ->
 handle_cast({next_pass, 
         #probe_server_state{
             probe  = #probe{status          = Status},
-            target = #target{properties     = SysProp} } },
+            target = #target{properties     = SysProp}},
+        ProbeReturn
+        },
         #probe_server_state{
             probe  = #probe{status          = Status}   = Probe,
-            target = #target{properties     = SysProp}} = S) ->
+            target = #target{properties     = SysProp}  = Target} = S) ->
+    tracker_target_channel:update(
+        Target#target.id,
+        Probe#probe.id,
+        {local_event, ProbeReturn}
+    ),
     After = Probe#probe.step * 1000,
     timer:apply_after(After, ?MODULE, probe_pass, [S]),
     {noreply, S};
 
-% else notify the parent channel of a modification
+% else notify the parent channel of property or status modification
 handle_cast({next_pass, 
-        #probe_server_state{probe = NProbe, target = NTarget} = NewS},
+        #probe_server_state{probe = NProbe, target = NTarget} = NewS,
+        ProbeReturn
+        },
         #probe_server_state{probe = Probe,  target = Target}  = _OldS) ->
     CurrentStatus   = Probe#probe.status,
     NewStatus       = NProbe#probe.status,
@@ -134,7 +143,8 @@ handle_cast({next_pass,
             tracker_target_channel:update(
                 Target#target.id,
                 Probe#probe.id,
-                {master_event, {probe_status_move, OtherStatus}}
+                {broad_event, 
+                    {probe_status_move, OtherStatus, ProbeReturn}}
             )
     end,
     CurrentSysP     = Target#target.properties,
@@ -145,7 +155,7 @@ handle_cast({next_pass,
             tracker_target_channel:update(
                 Target#target.id,
                 Probe#probe.id,
-                {master_event, {property_set, OtherSysP}}
+                {broad_event, {property_set, OtherSysP, ProbeReturn}}
             )
     end,
     After = NProbe#probe.step * 1000,
@@ -197,7 +207,7 @@ code_change(_O, S, _E) ->
 % @end
 probe_pass(#probe_server_state{target = Target, probe  = Probe } = S) ->
     Mod         = Probe#probe.tracker_probe_mod,
-    Result      = Mod:exec({Target, Probe}),
+    ProbeReturn = Mod:exec({Target, Probe}),
 
     % tracker_target_channel is the processus wich synchronize
     % with the client. Thus, it is in his gen_server loop that
@@ -207,23 +217,24 @@ probe_pass(#probe_server_state{target = Target, probe  = Probe } = S) ->
     % Result message.
     % NOTE: tracker_target_channel will forward the lock to the loggers,
     % and continue. The client will only lock himself wile he synchronise,
-    % because loggers themself will spawn the process of sync and then continue
-    % to fill the client process of update.
-    % Client will treat them after sync.
+    % because loggers themself will spawn the process of sync and 
+    % then continue to fill the client process of update. Client will 
+    % treat them after sync.
 
-    NewS        = inspect(S, Result),
+    NewS        = inspect(S, ProbeReturn),
 
-    % probe return is lost here (Result) but will be needed by target_channel
-    % to update loggers.
+    %io:format("result is ~p~n", [ProbeReturn]),
+    % probe return is lost here (ProbeReturn) but will be needed by 
+    % target_channel to update loggers.
 
-    next_pass(NewS).
+    next_pass(NewS, ProbeReturn).
 
--spec next_pass(#probe_server_state{}) -> ok.
+-spec next_pass(#probe_server_state{}, #probe_return{}) -> ok.
 % @doc
 % called from ?MODULE:probe_pass which trigger another probe_pass.
 % @end
-next_pass(#probe_server_state{probe = Probe} = State) ->
-    gen_server:cast(Probe#probe.pid, {next_pass, State}).
+next_pass(#probe_server_state{probe = Probe} = State, ProbeReturn) ->
+    gen_server:cast(Probe#probe.pid, {next_pass, State, ProbeReturn}).
  
  
 % LOGGERS

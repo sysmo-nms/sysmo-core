@@ -179,42 +179,37 @@ handle_call(_R, _F, S) ->
 %%----------------------------------------------------------------------------
 %%----------------------------------------------------------------------------
 % channel event, will not be forwarded to 'tartet-MasterChannel'
-handle_cast({update, ProbeId, {channel_event, Msg}}, 
+handle_cast({update, ProbeId, {local_event, ProbeReturn}}, 
         #state{target = #target{probes = Probes}} = S) ->
-    #probe{pid = Pid} = lists:keyfind(ProbeId, 2, Probes),
-    tracker_probe:loggers_update(Pid, Msg),
+    Probe = lists:keyfind(ProbeId, 2, Probes),
     % TODO 
     % - SUPERCAST send
-    % - update loggers
-    io:format("~p PROBE SIMPLE UPDATE ~p~n", [?MODULE, ProbeId]),
+    tracker_probe:loggers_update(Probe#probe.pid, ProbeReturn),
     {noreply, S};
 
-% master_event, will not be forwarded to the subscribers of this
+% broad_event, will not be forwarded to the subscribers of this
 % channel, but to 'target-MasterChannel'.
-handle_cast({update, ProbeId, {master_event, {probe_status_move, NewStatus}}},
+handle_cast({update, ProbeId, {broad_event, 
+        {probe_status_move, NewStatus, ProbeReturn}}},
         #state{target = #target{probes = Probes} = Target} = S) ->
     Probe   = lists:keyfind(ProbeId, 2, Probes),
     UpdatedProbe = Probe#probe{status = NewStatus},
     NProbes = lists:keyreplace(
             ProbeId, 2, Probes, UpdatedProbe),
-
-    io:format("~p PROBE STATUS MOVE ~p ~p~n", [?MODULE, Probe#probe.id, NewStatus]),
-    tracker_master_channel:chan_update(probe_status, {Target, UpdatedProbe}),
-
-    % TODO
-    % - update loggers
-
+    tracker_master_channel:chan_update(probe_status,{Target,UpdatedProbe}),
+    tracker_probe:loggers_update(Probe#probe.pid, ProbeReturn),
     S2      = S#state{target = Target#target{probes = NProbes}},
     {noreply, S2};
 
-% master_event, will not be forwarded to the subscribers of this
+% broad_event, will not be forwarded to the subscribers of this
 % channel, but to 'target-MasterChannel'.
-handle_cast({update, _ProbeId, {master_event, {property_set, _Properties}}},
+handle_cast({update, _ProbeId, 
+    {broad_event, {property_set, _Properties,ProbeReturn}}},
         #state{target = _Target} = S) ->
     % TODO
     % - MASTERCHAN send
     % - update loggers
-    io:format("~p PROBE PROPERTY MOVE ~p~n", [?MODULE, _ProbeId]),
+    io:format("~p PROBE PROPERTY MOVE ~p ~p~n", [?MODULE, _ProbeId, ProbeReturn]),
     {noreply, S};
 
 handle_cast(_R, S) ->
