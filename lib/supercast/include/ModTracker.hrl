@@ -17,6 +17,15 @@ name, type}).
 -record('ProbeInfo',{
 channel, probeId, name, type, probeMod, status, step, timeout, infoType}).
 
+-record('ProbeActivity',{
+channel, probeId, info}).
+
+-record('KeyVal',{
+key, val}).
+
+-record('ProbeReturn',{
+channel, probeId, status, originalReply, timestamp, keysVals}).
+
 -record('ProbeModuleInfo',{
 name, info}).
 

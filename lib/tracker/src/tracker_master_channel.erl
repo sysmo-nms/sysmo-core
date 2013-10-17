@@ -96,6 +96,9 @@ chan_del(Target) ->
 chan_update(probe_status, {Target,Probe}) ->
     gen_server:call(?MASTER_CHAN, {probe_status_move, {Target, Probe}});
 
+chan_update(probe_activity, {Target,Probe, Msg}) ->
+    gen_server:call(?MASTER_CHAN, {probe_activity, {Target, Probe, Msg}});
+
 chan_update(_, {_,_}) ->
     io:format("unknown update~n").
 
@@ -152,6 +155,20 @@ handle_call(
         pdu(probeInfo, {update, TargetId, NewProbe})}),
     {reply, ok, S#state{chans = NewChans}};
 
+handle_call(
+    {probe_activity,
+        {
+            #target{id = TargetId}, 
+            #probe{id = ProbeId, permissions = Perm},
+            Msg
+        }
+    }, _F, S) ->
+    supercast_mpd:multicast_msg(?MASTER_CHAN, {
+        Perm, pdu(probeActivity, {TargetId, ProbeId, Msg})
+        }
+    ),
+    {reply, ok, S};
+
 handle_call({chan_add, #target{id = Id, global_perm = Perm} = Target}, _F, 
         #state{chans = C} = S) ->
     %{global_perm, Perm} = get_property(global_perm, Prop),
@@ -190,6 +207,8 @@ handle_call(get_perms, _F, #state{perm = P} = S) ->
     {reply, P, S};
 
 handle_call({synchronize, SupercastCState}, _F, State) ->
+    % dump_known_data should be a fun executed by the client
+    % interface server after a subscribe_stage3.
     dump_known_data(SupercastCState, State),
     supercast_mpd:subscribe_stage3(?MASTER_CHAN, SupercastCState),
     {reply, ok, State};
@@ -306,7 +325,17 @@ pdu(probeModInfo,  {ProbeName, ProbeInfo}) ->
             {probeModInfo,
                 {'ProbeModuleInfo',
                     atom_to_list(ProbeName),
-                    ProbeInfo }}}}.
+                    ProbeInfo }}}};
+
+pdu(probeActivity, {TargetId, ProbeId, Msg}) ->
+    {modTrackerPDU,
+        {fromServer,
+            {probeActivity,
+                {'ProbeActivity',
+                    atom_to_list(TargetId),
+                    ProbeId,
+                    Msg}}}}.
+
 
 %%----------------------------------------------------------------------------
 %% UTILS    

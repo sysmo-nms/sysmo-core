@@ -156,6 +156,7 @@ handle_client_msg(
                         Channel
         }   }   }   }, CState) ->
     Chan = erlang:list_to_atom(Channel),
+    % ok mean satisfy return ok for read the chan
     case supercast_mpd:subscribe_stage1(Chan, CState) of
         error ->
             send(CState, pdu(subscribeErr, Channel));

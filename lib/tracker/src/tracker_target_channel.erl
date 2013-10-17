@@ -163,7 +163,11 @@ handle_call(cold_start, _F, #state{target = Target} = S) ->
 handle_call(get_perms, _F, #state{target = Target} = S) ->
     {reply, Target#target.global_perm, S};
 
-handle_call({synchronize, _IfsCState}, _F, S) ->
+handle_call({synchronize, SupercastCState}, _F, S) ->
+    % dump_known_data(SupercastCState, loggers,????),
+    % XXX dump known data should be a fun() executed by the client
+    % interface server after a subscribe_stage3.
+    supercast_mpd:subscribe_stage3(S#state.chan_id, SupercastCState),
     {reply, ok, S};
 
 handle_call(dump, _F, S) ->
@@ -180,10 +184,12 @@ handle_call(_R, _F, S) ->
 %%----------------------------------------------------------------------------
 % channel event, will not be forwarded to 'tartet-MasterChannel'
 handle_cast({update, ProbeId, {local_event, ProbeReturn}}, 
-        #state{target = #target{probes = Probes}} = S) ->
+        #state{target = #target{probes = Probes, id = Id} = Target} = S) ->
     Probe = lists:keyfind(ProbeId, 2, Probes),
-    % TODO 
-    % - SUPERCAST send
+    tracker_master_channel:chan_update(probe_activity, 
+        {Target, Probe, ProbeReturn#probe_return.original_reply}),
+    supercast_mpd:multicast_msg(Id, {Probe#probe.permissions,
+        pdu(probeReturn, {ProbeReturn, Id, ProbeId})}),
     tracker_probe:loggers_update(Probe#probe.pid, ProbeReturn),
     {noreply, S};
 
@@ -196,6 +202,8 @@ handle_cast({update, ProbeId, {broad_event,
     UpdatedProbe = Probe#probe{status = NewStatus},
     NProbes = lists:keyreplace(
             ProbeId, 2, Probes, UpdatedProbe),
+    tracker_master_channel:chan_update(probe_activity,
+        {Target,UpdatedProbe, ProbeReturn#probe_return.original_reply}),
     tracker_master_channel:chan_update(probe_status,{Target,UpdatedProbe}),
     tracker_probe:loggers_update(Probe#probe.pid, ProbeReturn),
     S2      = S#state{target = Target#target{probes = NProbes}},
@@ -268,3 +276,28 @@ init_probes(#target{probes = Probes} = Target) ->
         [Probe#probe{pid = Pid} | Accum]
     end, [], Probes),
     {ok, Target#target{probes = ProbesF}}.
+
+% @private
+pdu(probeReturn, {
+        #probe_return{ 
+            status      = Status,
+            original_reply = OriginalReply,
+            timestamp   = Timestamp,
+            key_vals    = _KeyVals
+        },
+        ChannelId, ProbeId}) ->
+    %TODO rrd keyvals
+    {modTrackerPDU,
+        {fromServer,
+            {probeReturn,
+                {'ProbeReturn',
+                    atom_to_list(ChannelId),
+                    ProbeId,
+                    atom_to_list(Status),
+                    OriginalReply,
+                    Timestamp,
+                    []
+                }}}}.
+
+
+

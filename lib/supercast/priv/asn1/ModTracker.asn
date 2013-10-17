@@ -65,6 +65,26 @@ ProbeInfo   ::= SEQUENCE {
     --rrdGraph    ProbeRRDCreate,
 }
 
+ProbeActivity ::= SEQUENCE {
+    channel     TargetId,
+    probeId     ProbeId,
+    info        PrintableString
+}
+
+KeyVal      ::= SEQUENCE {
+    key PrintableString,
+    val INTEGER
+}
+
+ProbeReturn ::= SEQUENCE {
+    channel         TargetId,
+    probeId         ProbeId,
+    status          ProbeStatus,
+    originalReply   PrintableString,
+    timestamp       INTEGER,
+    keysVals        SEQUENCE OF KeyVal
+}
+
 ProbeModuleInfo ::= SEQUENCE {
     name        PrintableString,
     info        PrintableString
@@ -145,7 +165,9 @@ TrackerPDU ::= CHOICE {
         probeFetch      [3] ProbeFetch,
         probeDump       [4] ProbeDump,
         cmdResp         [5] CommandResponce,
-        probeModInfo    [6] ProbeModuleInfo
+        probeModInfo    [6] ProbeModuleInfo,
+        probeActivity   [7] ProbeActivity,
+        probeReturn     [8] ProbeReturn
     },
     fromClient  [1] CHOICE {
         createTarget    [1] TargetCreate,
