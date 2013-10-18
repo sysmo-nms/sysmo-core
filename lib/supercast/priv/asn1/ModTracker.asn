@@ -68,7 +68,10 @@ ProbeInfo   ::= SEQUENCE {
 ProbeActivity ::= SEQUENCE {
     channel     TargetId,
     probeId     ProbeId,
-    info        PrintableString
+    timestamp   INTEGER,
+    state       PrintableString,
+    returnStatus PrintableString,
+    textual     PrintableString
 }
 
 KeyVal      ::= SEQUENCE {

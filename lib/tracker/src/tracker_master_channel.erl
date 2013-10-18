@@ -159,14 +159,17 @@ handle_call(
     {probe_activity,
         {
             #target{id = TargetId}, 
-            #probe{id = ProbeId, permissions = Perm},
-            Msg
+            #probe{id = ProbeId, permissions = Perm, status = PState},
+            #probe_return{
+                original_reply  = Msg,
+                status          = ReturnStatus,
+                timestamp       = Time
+            }
         }
     }, _F, S) ->
-    supercast_mpd:multicast_msg(?MASTER_CHAN, {
-        Perm, pdu(probeActivity, {TargetId, ProbeId, Msg})
-        }
-    ),
+    supercast_mpd:multicast_msg(?MASTER_CHAN, 
+        {Perm, pdu(probeActivity, 
+            {TargetId, ProbeId, PState, Msg, ReturnStatus, Time})}),
     {reply, ok, S};
 
 handle_call({chan_add, #target{id = Id, global_perm = Perm} = Target}, _F, 
@@ -327,13 +330,16 @@ pdu(probeModInfo,  {ProbeName, ProbeInfo}) ->
                     atom_to_list(ProbeName),
                     ProbeInfo }}}};
 
-pdu(probeActivity, {TargetId, ProbeId, Msg}) ->
+pdu(probeActivity, {TargetId, ProbeId, PState, Msg, ReturnStatus, Time}) ->
     {modTrackerPDU,
         {fromServer,
             {probeActivity,
                 {'ProbeActivity',
                     atom_to_list(TargetId),
                     ProbeId,
+                    Time,
+                    atom_to_list(PState),
+                    atom_to_list(ReturnStatus),
                     Msg}}}}.
 
 
