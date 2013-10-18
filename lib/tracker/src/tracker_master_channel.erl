@@ -43,7 +43,8 @@
 -record(state, {
     chans,
     perm,
-    probe_modules
+    probe_modules,
+    log_file
 }).
 
 -define(MASTER_CHAN, 'target-MasterChan').
@@ -122,13 +123,19 @@ dump() ->
 %%----------------------------------------------------------------------------
 init([ProbeModules]) ->
     P = extract_probes_info(ProbeModules),
+    {ok, DataDir} = application:get_env(tracker, targets_data_dir),
+    MasterChanString = atom_to_list(?MASTER_CHAN),
+    MasterChanDir = filename:join(DataDir,MasterChanString),
+    init_dir(MasterChanDir),
+    LogFile = filename:join(MasterChanDir, "activity.log"),
     {ok, #state{
             chans = [],
             perm = #perm_conf{
                 read    = ["admin", "wheel"],
                 write   = ["admin"]
             },
-            probe_modules = P
+            probe_modules = P,
+            log_file = LogFile
         }
     }.
     
@@ -353,3 +360,13 @@ extract_probes_info(ProbeModules) ->
             [{PMod, Info} | Acc] 
         end, 
     [], ProbeModules).
+
+init_dir(Dir) ->
+    case file:read_file_info(Dir) of
+        {ok, _} ->
+            ok;
+        {error, enoent} ->
+            file:make_dir(Dir);
+        Other ->
+            {error, Other}
+    end.
