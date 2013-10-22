@@ -43,7 +43,8 @@
     auth_set/2,
     auth_set/5,
     send/2,
-    raw_send/2
+    raw_send/2,
+    synchronize/2
 ]).
 
 -export([
@@ -111,6 +112,9 @@ raw_send(SockState, Pdu) ->
     gen_fsm:send_event(SockState#client_state.pid, 
         {send_pdu, SockState#client_state.ref, Pdu}).
 
+synchronize(SockState, Fun) ->
+    gen_fsm:send_event(SockState#client_state.pid, 
+        {synchronize_chan, SockState#client_state.ref, Fun}).
 %%%------------------------------------------------------------------------
 %%% Callback functions from gen_server
 %%%------------------------------------------------------------------------
@@ -230,6 +234,17 @@ init([Encoder, {Key, Cert, CACert}]) ->
 
 'RUNNING'({send_pdu, Ref, Pdu}, #client_state{ref = Ref} = State) ->
     ssl:send(State#client_state.socket, Pdu),
+    {next_state, 'RUNNING', State};
+
+'RUNNING'({synchronize_chan, Ref, Fun}, #client_state{
+        ref             = Ref,
+        socket          = Sock,
+        encoding_mod    = Encoder} = State
+    ) ->
+    {ok, PduList} = Fun(),
+    lists:foreach(fun(Pdu) -> 
+        ssl:send(Sock, Encoder:encode(Pdu))
+    end, PduList),
     {next_state, 'RUNNING', State};
 
 'RUNNING'(timeout, State) ->

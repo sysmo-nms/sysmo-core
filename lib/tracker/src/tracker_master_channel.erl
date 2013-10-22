@@ -37,6 +37,7 @@
     chan_add/1,
     chan_del/1,
     chan_update/2,
+    synchronize_dump/1,
     dump/0
 ]).
 
@@ -103,6 +104,17 @@ chan_update(probe_activity, {Target,Probe, Msg}) ->
 chan_update(_, {_,_}) ->
     io:format("unknown update~n").
 
+synchronize_dump(#state{chans = Chans, probe_modules = PMods}) ->
+    PMList = [pdu(probeModInfo, Probe) || Probe <- PMods],
+    TList  = [pdu(targetInfo, Target) || Target <- Chans],
+    ProbeListTmp = lists:foldl(fun(Chan, Acc) -> 
+        lists:append(Acc, 
+            [{Chan#target.id, Probe}  || Probe <- Chan#target.probes])
+    end, [], Chans),
+    ProbeList = [pdu(probeInfo, {create, TId, Probe}) 
+        || {TId, Probe} <- ProbeListTmp],
+    PduList  = lists:append([PMList, TList, ProbeList]),
+    {ok, PduList}.
 
 dump() ->
     gen_server:call(?MASTER_CHAN, dump).
@@ -216,11 +228,13 @@ handle_call({chan_del, #target{id = Id, global_perm = Perm}}, _F,
 handle_call(get_perms, _F, #state{perm = P} = S) ->
     {reply, P, S};
 
-handle_call({synchronize, SupercastCState}, _F, State) ->
-    % dump_known_data should be a fun executed by the client
-    % interface server after a subscribe_stage3.
-    dump_known_data(SupercastCState, State),
+handle_call({synchronize, #client_state{module = CMod} = SupercastCState}, 
+        _F, State) ->
+    % subscribe the client to mpd,
     supercast_mpd:subscribe_stage3(?MASTER_CHAN, SupercastCState),
+    % then send him the fun which will return him a list of pdu to receive
+    CMod:synchronize(SupercastCState, 
+        fun() -> ?MODULE:synchronize_dump(State) end),
     {reply, ok, State};
 
 handle_call(dump, _F, State) ->
@@ -258,37 +272,6 @@ terminate(_R, _S) ->
 %%----------------------------------------------------------------------------
 code_change(_O, S, _E) ->
     {ok, S}.
-
-
-
-%%----------------------------------------------------------------------------
-%%----------------------------------------------------------------------------
-%%----------------------------------------------------------------------------
-%% PRIVATE FUNS
-%%----------------------------------------------------------------------------
-%%----------------------------------------------------------------------------
-%%----------------------------------------------------------------------------
-
-dump_known_data(#client_state{module = CMod} = ClientState, 
-        #state{chans = Chans, probe_modules = PMods}) ->
-    io:format("dump known data ----------------~n"),
-    lists:foreach(fun(PMod) ->
-        CMod:send(ClientState, pdu(probeModInfo, PMod))
-    end, PMods),
-    lists:foreach(fun(#target{global_perm = Perm} = Target) ->
-        spawn(fun() ->
-            supercast_mpd:unicast_msg(ClientState, 
-                    {Perm, pdu(targetInfo, Target)}),
-            lists:foreach(fun(Probe) -> 
-                supercast_mpd:unicast_msg(ClientState,
-                    {
-                        Probe#probe.permissions,
-                        pdu(probeInfo, {create, Target#target.id, Probe})
-                    }
-                )
-            end, Target#target.probes)
-        end)
-    end, Chans).
 
 %%----------------------------------------------------------------------------
 %% PDU BUILD
