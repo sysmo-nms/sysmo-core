@@ -19,7 +19,9 @@
             [
                 {inspector, btracker_inspector_standard,[]}
             ],
-            [],
+            [
+                {logger, btracker_logger_text, []}
+            ],
             1,
             []
         },
@@ -39,7 +41,9 @@
             [
                 {inspector, btracker_inspector_standard,[]}
             ],
-            [],
+            [
+                {logger, btracker_logger_text, []}
+            ],
             1,
             []
         }
