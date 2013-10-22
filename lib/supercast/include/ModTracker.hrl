@@ -30,7 +30,7 @@ channel, probeId, status, originalReply, timestamp, keysVals}).
 name, info}).
 
 -record('ProbeDump',{
-channel, probeId, probeType, binaryData}).
+channel, probeId, probeType, probeModule, binaryData}).
 
 -record('ProbeFetch',{
 channel, probe, probeType, probeValue}).

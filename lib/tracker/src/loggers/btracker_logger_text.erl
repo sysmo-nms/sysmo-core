@@ -77,5 +77,6 @@ pdu('probeDump', {TargetId, ProbeId, ProbeType, Binary}) ->
                     atom_to_list(TargetId),
                     ProbeId,
                     ProbeType,
+                    atom_to_list(?MODULE),
                     Binary}}}}.
 
