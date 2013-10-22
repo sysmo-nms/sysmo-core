@@ -48,7 +48,7 @@ ProbeConf       ::= SEQUENCE {
     type        ProbeType
 }
 
-RRDFile         ::= OCTET STRING
+FileData        ::= OCTET STRING
 
 ProbeInfo   ::= SEQUENCE {
     channel     TargetId,
@@ -97,7 +97,7 @@ ProbeDump   ::= SEQUENCE {
     channel     TargetId,
     probeId     ProbeId,
     probeType   ProbeType,
-    rrdData     RRDFile
+    binaryData  FileData  
 }
 
 ProbeFetch  ::= SEQUENCE {
