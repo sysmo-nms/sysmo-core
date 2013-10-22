@@ -57,6 +57,7 @@
     cold_start/1,
     update/3,
     subscribe/2,
+    synchronize_dump/1,
     dump/1
 ]).
 
@@ -104,6 +105,19 @@ update(Chan, ProbeId, Message) ->
 % @end
 subscribe(TargetId, Client) ->
     gen_server:call(TargetId, {new_subscriber, Client}).
+
+synchronize_dump(#target{probes = Probes} = Target) ->
+    AllPdus = lists:foldl(fun(P,Acc) ->
+        LoggersMod = P#probe.loggers,
+        Pdus = lists:foldl(fun(D,Aci) ->
+            Mod = D#logger.module,
+            {ok, Pdu} = Mod:dump(Target,P),
+            [ Pdu| Aci]
+        end, [], LoggersMod),
+        [Pdus|Acc]
+    end, [], Probes),
+    Final = lists:flatten(AllPdus),
+    {ok, Final}.
 
 % @doc
 % DEBUG function
@@ -163,11 +177,11 @@ handle_call(cold_start, _F, #state{target = Target} = S) ->
 handle_call(get_perms, _F, #state{target = Target} = S) ->
     {reply, Target#target.global_perm, S};
 
-handle_call({synchronize, SupercastCState}, _F, S) ->
-    % dump_known_data(SupercastCState, loggers,????),
-    % XXX dump known data should be a fun() executed by the client
-    % interface server after a subscribe_stage3.
+handle_call({synchronize, #client_state{module = CMod} = SupercastCState},
+        _F, #state{target = T} = S) ->
     supercast_mpd:subscribe_stage3(S#state.chan_id, SupercastCState),
+    CMod:synchronize(SupercastCState,
+        fun() -> ?MODULE:synchronize_dump(T) end),
     {reply, ok, S};
 
 handle_call(dump, _F, S) ->

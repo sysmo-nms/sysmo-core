@@ -55,11 +55,27 @@ log(#probe_server_state{loggers_state = LoggersState},
     #probe_return{original_reply = Msg, timestamp = T}) ->
     {?MODULE, Conf} = lists:keyfind(?MODULE, 1, LoggersState),
     {_, F}          = lists:keyfind(file_name, 1, Conf),
-    %Ts              = erlang:integer_to_list(T),
     EncodedMsg      = list_to_binary(io_lib:format("~p>>> ~s", [T, Msg])),
     file:write_file(F, EncodedMsg, [append]),
     ok.
 
-dump(_ProbeServerState, _Timeout) -> 
-    io:format("dddddddddddddddump~n"),
-    ignore.
+dump(
+        #target{id = TargetId, directory = Dir}, 
+        #probe{id = ProbeId, name = Name, type = Type}) -> 
+    % recreate file name
+    FileName = io_lib:format("~s.txt", [Name]),
+    LogFile  = filename:absname_join(Dir, FileName),
+    {ok, B}  = file:read_file(LogFile),
+    P = pdu('probeDump', {TargetId,ProbeId,Type,B}),
+    {ok, [P]}.
+
+pdu('probeDump', {TargetId, ProbeId, ProbeType, Binary}) ->
+    {modTrackerPDU,
+        {fromServer,
+            {probeDump,
+                {'ProbeDump',
+                    atom_to_list(TargetId),
+                    ProbeId,
+                    ProbeType,
+                    Binary}}}}.
+
