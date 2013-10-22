@@ -81,8 +81,10 @@ main_chans() ->
 % subscribeOk to the client.
 % @end
 subscribe_stage1(Channel, CState) ->
+    % Does the channel exist?
     try gen_channel:call(Channel, get_perms, ?CHAN_TIMEOUT) of
         Perm ->
+            % The client permissions are ok?
             gen_server:call(?MODULE, {subscribe_stage1, Channel, CState, Perm})
         catch
             _:_ ->
