@@ -77,7 +77,7 @@
     type                = undefined     :: fetch|status|{property, atom()},
     inspectors          = []            :: [#inspector{}],
     loggers             = []            :: [#logger{}],
-    %properties          = []            :: [{string(), string()}]
+    properties          = []            :: [{string(), string()}],
 
     active              = 1             :: 1 | 0,
     % if it is a snmp probe this fild must exist

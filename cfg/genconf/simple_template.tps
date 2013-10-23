@@ -22,6 +22,10 @@
             [
                 {logger, btracker_logger_text, []}
             ],
+            [
+                {"propertyX", "propertyXValue"},
+                {"propertyY", "propertyYValue"}
+            ],
             1,
             []
         },
@@ -43,6 +47,10 @@
             ],
             [
                 {logger, btracker_logger_text, []}
+            ],
+            [
+                {"propertyX", "propertyXValue"},
+                {"propertyY", "propertyYValue"}
             ],
             1,
             []
