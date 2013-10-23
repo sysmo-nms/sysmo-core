@@ -21,7 +21,7 @@
 -type property_val()            :: any().
 -type role()                    :: string().
 -type seconds()                 :: integer().
--type property()                :: {atom(),any()}.
+-type property()                :: {any(),any()}.
 -type tag()                     :: any().
 -type target_id()               :: atom().
 -type tfun()                    :: fun() | undefined.
@@ -77,7 +77,7 @@
     type                = undefined     :: fetch|status|{property, atom()},
     inspectors          = []            :: [#inspector{}],
     loggers             = []            :: [#logger{}],
-    properties          = []            :: [{string(), string()}],
+    properties          = []            :: [property()],
 
     active              = 1             :: 1 | 0,
     % if it is a snmp probe this fild must exist

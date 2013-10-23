@@ -8,8 +8,8 @@
 -record('PermConf',{
 read, write}).
 
--record('TargetProperty',{
-name, value}).
+-record('Property',{
+key, value}).
 
 -record('ProbeConf',{
 name, type}).

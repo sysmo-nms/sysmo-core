@@ -279,7 +279,7 @@ code_change(_O, S, _E) ->
 pdu(targetInfo, #target{id = Id, properties = Prop}) ->
     AsnProp = lists:foldl(fun({X,_Y}, Acc) ->
         %[{'TargetProperty', atom_to_list(X), io_lib:format("~p", [Y])} | Acc]
-        [{'TargetProperty', atom_to_list(X), "hello"} | Acc]
+        [{'Property', atom_to_list(X), "hello"} | Acc]
     end, [], Prop),
     {modTrackerPDU,
         {fromServer,
