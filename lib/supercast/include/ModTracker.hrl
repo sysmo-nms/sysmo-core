@@ -15,7 +15,7 @@ key, value}).
 name, type}).
 
 -record('ProbeInfo',{
-channel, probeId, name, type, probeMod, status, step, timeout, infoType}).
+channel, probeId, name, permissions, probeMod, probeConf, status, timeout, step, type, active, infoType}).
 
 -record('ProbeActivity',{
 channel, probeId, timestamp, state, returnStatus, textual}).

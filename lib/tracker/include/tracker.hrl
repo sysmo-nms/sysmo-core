@@ -28,8 +28,6 @@
 -type timeout_alert()           :: fun() | undefined.
 -type timeout_threshold()       :: integer() | undefined.
 -type oid()                     :: [byte()].
--type nagios_flag()             :: string().
--type nagios_arg()              :: {nagios_flag(), string() | tuple()}.
 
 -record(inspector, {
     module,
@@ -43,7 +41,7 @@
 
 -record(nagios_plugin_conf, {
     executable  = undefined             :: string(),
-    args        = []                    :: [nagios_arg()]
+    args        = []                    :: [property()]
 }).
 
 -record(probe_return, {
@@ -70,7 +68,7 @@
     name                = undefined     :: string(),
     permissions         = #perm_conf{}  :: #perm_conf{},
     tracker_probe_mod   = undefined     :: undefined | module(),
-    tracker_probe_conf  = undefined     :: any(),
+    tracker_probe_conf  = undefined     :: [property()],
     status              = 'UNKNOWN'     :: 'UNKNOWN' | atom(),
     timeout             = 5             :: integer(),
     step                = 60            :: integer(),

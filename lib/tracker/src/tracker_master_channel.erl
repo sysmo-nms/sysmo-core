@@ -297,7 +297,12 @@ pdu(targetDelete, Id) ->
                     atom_to_list(Id),
                     delete}}}};
 
-pdu(probeInfo, {InfoType, Id, Probe}) ->
+pdu(probeInfo, {InfoType, Id, 
+        #probe{
+            permissions = #perm_conf{read = R, write = W},
+            tracker_probe_conf = ProbeConf
+        } = Probe
+    }) ->
     {modTrackerPDU,
         {fromServer,
             {probeInfo,
@@ -305,11 +310,14 @@ pdu(probeInfo, {InfoType, Id, Probe}) ->
                     atom_to_list(Id),
                     Probe#probe.id,
                     atom_to_list(Probe#probe.name),
-                    Probe#probe.type,
+                    {'PermConf', R, W},
                     atom_to_list(Probe#probe.tracker_probe_mod),
+                    concat_probe_conf(ProbeConf),
                     atom_to_list(Probe#probe.status),
-                    Probe#probe.step,
                     Probe#probe.timeout,
+                    Probe#probe.step,
+                    Probe#probe.type,
+                    Probe#probe.active,
                     InfoType}}}};
 
 pdu(probeModInfo,  {ProbeName, ProbeInfo}) ->
@@ -353,3 +361,9 @@ init_dir(Dir) ->
         Other ->
             {error, Other}
     end.
+
+concat_probe_conf(#nagios_plugin_conf{executable = Exe, args = Args}) ->
+    lists:flatten([Exe, " ", [[A, " ", B, " "] || {A, B} <- Args]]).
+
+
+

@@ -55,19 +55,19 @@ ProbeInfo   ::= SEQUENCE {
     channel     TargetId,
     probeId     ProbeId,
     name        ProbeName,
-    type        ProbeType,
+    permissions PermConf,
     probeMod    ErlangModule,
+    probeConf   PrintableString,
     status      ProbeStatus,
-    step        ProbeStep,
     timeout     ProbeTimeout,
-    infoType    ProbeInfoType
-    -- perm        PermConf,
-    -- inspectors  SEQUENCE OF Inspectors,
+    step        ProbeStep,
+    type        ProbeType,
+    -- inspectors  SEQUENCE OF Property,
     -- loggers     SEQUENCE OF Loggers,
     -- properties  Properties,
-    -- active      INTEGER,
+    active      INTEGER,
     -- snmpOids    SEQUENCE OF OID
-    -- probeConf   ProbeConf,
+    infoType    ProbeInfoType
 }
 
 ProbeActivity ::= SEQUENCE {
