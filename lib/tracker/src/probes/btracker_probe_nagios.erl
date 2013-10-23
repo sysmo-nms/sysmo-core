@@ -29,7 +29,7 @@
 ]).
 
 exec({_, #probe{
-            tracker_probe_conf  = #nagios_plugin{
+            tracker_probe_conf  = #nagios_plugin_conf{
                 executable  = Exec,
                 args        = Args
             }

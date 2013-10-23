@@ -41,7 +41,7 @@
     conf
 }).
 
--record(nagios_plugin, {
+-record(nagios_plugin_conf, {
     executable  = undefined             :: string(),
     args        = []                    :: [nagios_arg()]
 }).
@@ -77,6 +77,7 @@
     type                = undefined     :: fetch|status|{property, atom()},
     inspectors          = []            :: [#inspector{}],
     loggers             = []            :: [#logger{}],
+    %properties          = []            :: [{string(), string()}]
 
     active              = 1             :: 1 | 0,
     % if it is a snmp probe this fild must exist
