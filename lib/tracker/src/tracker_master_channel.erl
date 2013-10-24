@@ -312,11 +312,14 @@ pdu(probeInfo, {InfoType, Id,
                     atom_to_list(Probe#probe.name),
                     {'PermConf', R, W},
                     atom_to_list(Probe#probe.tracker_probe_mod),
-                    concat_probe_conf(ProbeConf),
+                    gen_asn_probe_conf(ProbeConf),
                     atom_to_list(Probe#probe.status),
                     Probe#probe.timeout,
                     Probe#probe.step,
                     Probe#probe.type,
+                    gen_asn_probe_inspectors(Probe#probe.inspectors),
+                    gen_asn_probe_loggers(Probe#probe.loggers),
+                    gen_asn_probe_properties(Probe#probe.properties),
                     Probe#probe.active,
                     InfoType}}}};
 
@@ -362,8 +365,17 @@ init_dir(Dir) ->
             {error, Other}
     end.
 
-concat_probe_conf(#nagios_plugin_conf{executable = Exe, args = Args}) ->
+gen_asn_probe_conf(#nagios_plugin_conf{executable = Exe, args = Args}) ->
     lists:flatten([Exe, " ", [[A, " ", B, " "] || {A, B} <- Args]]).
 
+gen_asn_probe_inspectors(Inspectors) ->
+    [{'Inspector', atom_to_list(Module), "ici configuration temp"} 
+        || {_, Module, _} <- Inspectors].
 
+gen_asn_probe_loggers(Loggers) ->
+    [{'Logger', atom_to_list(Module), "ici configuration temp"} 
+        || {_, Module, _} <- Loggers].
 
+gen_asn_probe_properties(Properties) ->
+    [{'Property', Key, Value} 
+        || {Key,Value} <- Properties].

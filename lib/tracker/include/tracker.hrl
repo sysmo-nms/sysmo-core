@@ -3,7 +3,7 @@
 -include("../supercast/include/supercast.hrl").
 -include("../errd/include/errd.hrl").
 
-% for info: syslog like security levels
+% syslog like security levels
 -define(EMERGENCY,  0).
 -define(ALERT,      1).
 -define(CRITICAL,   2).
@@ -78,7 +78,7 @@
     properties          = []            :: [property()],
 
     active              = 1             :: 1 | 0,
-    % if it is a snmp probe this fild must exist
+    % if it is a snmp probe this field must exist
     snmp_oids           = []            :: [oid()]
 }).
 

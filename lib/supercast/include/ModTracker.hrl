@@ -11,11 +11,17 @@ read, write}).
 -record('Property',{
 key, value}).
 
+-record('Inspector',{
+module, conf}).
+
+-record('Logger',{
+module, conf}).
+
 -record('ProbeConf',{
 name, type}).
 
 -record('ProbeInfo',{
-channel, probeId, name, permissions, probeMod, probeConf, status, timeout, step, type, active, infoType}).
+channel, probeId, name, permissions, probeMod, probeConf, status, timeout, step, type, inspectors, loggers, properties, active, infoType}).
 
 -record('ProbeActivity',{
 channel, probeId, timestamp, state, returnStatus, textual}).
