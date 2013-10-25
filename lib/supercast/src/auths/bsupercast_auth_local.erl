@@ -29,6 +29,9 @@
 authenticate(UName, UPass) ->
     case {UName, UPass} of
         {"admuser", "passwd"} ->
+            Roles = ["admin"],
+            {ok, Roles};
+        {"simpleuser", "passwd"} ->
             Roles = ["wheel"],
             {ok, Roles};
         _ ->
