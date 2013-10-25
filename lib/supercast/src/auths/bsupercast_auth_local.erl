@@ -29,7 +29,7 @@
 authenticate(UName, UPass) ->
     case {UName, UPass} of
         {"admuser", "passwd"} ->
-            Roles = ["admin","wheel"],
+            Roles = ["wheel"],
             {ok, Roles};
         _ ->
             fail

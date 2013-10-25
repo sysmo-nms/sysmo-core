@@ -37,7 +37,8 @@
     start_link/1,
     cold_start/1,
     loggers_update/2,
-    probe_pass/1
+    probe_pass/1,
+    dump/1
 ]).
 
 
@@ -68,6 +69,12 @@ cold_start(Pid) ->
 loggers_update(Pid, Msg) ->
     gen_server:cast(Pid, {loggers_update, Msg}).
 
+-spec dump(pid()) -> [any()].
+% @doc
+% from the _client -> traget_target_channel -> tracker_probe
+% @end
+dump(Pid) ->
+    gen_server:call(Pid, probe_dump).
 %%-------------------------------------------------------------
 %%-------------------------------------------------------------
 %% GEN_SERVER CALLBACKS
@@ -100,6 +107,10 @@ handle_call(initial_pass, _, #probe_server_state{probe = Probe} = S) ->
     InitialLaunch   = tracker_misc:random(Step * 1000),
     timer:apply_after(InitialLaunch, ?MODULE, probe_pass, [S]),
     {reply, ok, S};
+
+handle_call(probe_dump, _, S) ->
+    Rep = log_dump(S),
+    {reply, Rep, S};
 
 handle_call(_R, _F, S) ->
     {noreply, S}.
@@ -253,6 +264,12 @@ log(#probe_server_state{probe = Probe} = PSState, Msg) ->
         spawn(fun() -> Mod:log(PSState, Msg) end)
     end, Probe#probe.loggers),
     ok.
+
+-spec log_dump(#probe_server_state{}) -> any().
+log_dump(#probe_server_state{probe = Probe} = PSState) ->
+    L = [{Probe#probe.permissions, Mod:dump2(PSState)} || 
+            #logger{module = Mod} <- Probe#probe.loggers],
+    L.
 
 % INSPECTORS
 -spec init_inspectors(#probe_server_state{}) -> #probe_server_state{}.

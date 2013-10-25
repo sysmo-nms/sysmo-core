@@ -2,7 +2,7 @@
 % Copyright (C) 2012 <Sébastien Serre sserre.bx@gmail.com>
 % 
 % Enms is a Network Management System aimed to manage and monitor SNMP
-% trackers, monitor network hosts and services, provide a consistent
+% target, monitor network hosts and services, provide a consistent
 % documentation system and tools to help network professionals
 % to have a wide perspective of the networks they manage.
 % 
@@ -18,27 +18,17 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
-{application, tracker,
-	[
-		{description, "Data store of trackers configuration"},
-		{vsn, "0.1.0"},
-		{modules, [
-                tracker,
-                tracker_app,
-                tracker_sup,
-                tracker_ifs,
-                tracker_events
-            ]},
-		{registered, [
-            ]},
-		{applications, 
-            [kernel, stdlib, supercast, errd, tlogger_text]
-        },
-        {start_phases, 
-            [
-                {cold_start, []}
-            ]
-        },
-		{mod, {tracker_app, []}}
-	]
-}.
+% @private
+-module(tlogger_text_app).
+-behaviour(application).
+
+-export([
+    start/2,
+    stop/1
+]).
+
+start(_Type, _Args) ->
+    tlogger_text_sup:start_link().
+
+stop(_State) ->
+	ok.

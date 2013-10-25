@@ -41,6 +41,7 @@
     unsubscribe/2,
     main_chans/0,
     client_disconnect/1,
+    filter_pdus/2,
     dump/0
 ]).
 
@@ -155,6 +156,13 @@ client_disconnect(CState) ->
 unsubscribe(Chan, CState) ->
     gen_server:call(?MODULE, {unsubscribe, Chan, CState}).
 
+-spec filter_pdus(#client_state{}, [{#perm_conf{}, any()}]) -> [any()].
+% @doc
+% Called by external modules to filter pdus destinated to a client.
+% @end
+filter_pdus(CState, PduList) ->
+    gen_server:call(?MODULE, {filter_pdus, CState, PduList}).
+
 % @private
 dump() ->
     gen_server:call(?MODULE, dump).
@@ -205,6 +213,10 @@ handle_call({unsubscribe, Channel, CState}, _F, S) ->
 handle_call({client_disconnect, CState}, _F, S) ->
     Chans = del_subscriber(CState, S#state.chans),
     {reply, ok, S#state{chans = Chans}};
+
+handle_call({filter_pdus, CState, Pdus}, _F, #state{acctrl = Acctrl} = S) ->
+    Rep = filter_pdus_tool(CState, Pdus, Acctrl),
+    {reply, Rep, S};
 
 handle_call(dump, _F, S) ->
     {reply, S, S};
@@ -296,3 +308,15 @@ del_subscriber(CState, Chans) ->
         N = lists:delete(CState, CList),
         [{Id, N} | Acc]
     end, [], Chans).
+
+filter_pdus_tool(CState, Pdus, Acctrl) ->
+    filter_pdus_tool(CState, Pdus, Acctrl, []).
+filter_pdus_tool(_, [], _, R) ->
+    R;
+filter_pdus_tool(CState, [{Perm, Pdu}|T], Acctrl, R) ->
+    case Acctrl:satisfy(read, [CState], Perm) of
+        {ok, []} ->
+            filter_pdus_tool(CState, T, Acctrl, R);
+        {ok, [CState]} ->
+            filter_pdus_tool(CState, T, Acctrl, [Pdu|R])
+    end.

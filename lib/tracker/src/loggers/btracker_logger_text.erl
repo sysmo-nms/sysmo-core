@@ -29,7 +29,8 @@
 -export([
     init/2,
     log/2,
-    dump/2
+    dump/2,
+    dump2/1
 ]).
 
 init(_Conf, #probe_server_state{
@@ -37,31 +38,40 @@ init(_Conf, #probe_server_state{
         probe           = Probe,
         loggers_state   = LoggersState} = ProbeServerState) -> 
 
-    TargetDir   = Target#target.directory,
-    ProbeName   = Probe#probe.name,
-    FileName    = io_lib:format("~s.txt", [ProbeName]),
-    LogFile     = filename:absname_join(TargetDir, FileName),
-    {ok, IoD} = file:open(LogFile, [append]),
-    file:close(IoD),
-    NewLoggersState =lists:keystore(?MODULE, 1, 
-            LoggersState, {?MODULE, [{file_name, LogFile}] }),
+    LogFile     = generate_filename(Target, Probe),
+    {ok, Pid}   = tlogger_text_sup:start_logger(LogFile),
+    NewLoggersState =  lists:keystore(?MODULE, 1, 
+            LoggersState, {?MODULE, [{file_name, LogFile}, {log_srv, Pid}] }),
     {ok, 
         ProbeServerState#probe_server_state{
             loggers_state = NewLoggersState
         }
     }.
 
-log(#probe_server_state{loggers_state = LoggersState}, 
-    #probe_return{original_reply = Msg, timestamp = T}) ->
-    {?MODULE, Conf} = lists:keyfind(?MODULE, 1, LoggersState),
-    {_, F}          = lists:keyfind(file_name, 1, Conf),
-    EncodedMsg      = list_to_binary(io_lib:format("~p>>> ~s", [T, Msg])),
-    file:write_file(F, EncodedMsg, [append]),
+log(
+        #probe_server_state{loggers_state = LState}, 
+        #probe_return{original_reply = Msg, timestamp = T}
+    ) ->
+    LogSrv      = get_key(log_srv, LState),
+    EncodedMsg  = list_to_binary(io_lib:format("~p>>> ~s", [T, Msg])),
+    tlogger_text:log(LogSrv, EncodedMsg),
     ok.
+
+dump2(#probe_server_state{
+        loggers_state   = LState,
+        target          = #target{id = TId},
+        probe           = #probe{id = PId, type = Type}
+    }) ->
+    LogSrv  = get_key(log_srv, LState),
+    Bin     = tlogger_text:dump(LogSrv),
+    Pdu     = pdu('probeDump', {TId, PId, Type, Bin}),
+    Pdu.
+
 
 dump(
         #target{id = TargetId, directory = Dir}, 
-        #probe{id = ProbeId, name = Name, type = Type}) -> 
+        #probe{id = ProbeId, name = Name, type = Type}
+    ) -> 
     % recreate file name
     FileName = io_lib:format("~s.txt", [Name]),
     LogFile  = filename:absname_join(Dir, FileName),
@@ -80,3 +90,13 @@ pdu('probeDump', {TargetId, ProbeId, ProbeType, Binary}) ->
                     atom_to_list(?MODULE),
                     Binary}}}}.
 
+generate_filename(Target, Probe) ->
+    TargetDir   = Target#target.directory,
+    ProbeName   = Probe#probe.name,
+    FileName    = io_lib:format("~s.txt", [ProbeName]),
+    filename:absname_join(TargetDir, FileName).
+
+get_key(Key, TupleList) ->
+    {?MODULE, Conf} = lists:keyfind(?MODULE, 1, TupleList),
+    {Key, Value}    = lists:keyfind(Key, 1, Conf),
+    Value.

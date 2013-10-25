@@ -10,6 +10,7 @@
         {public_key, "0.20"},
         {ssl, "5.3.1"},
         {supercast, "2.0.0"},
+        {tlogger_text, "0.1.0"},
         {errd, "0.1"},
         {tracker, "0.1.0"}
     ]
