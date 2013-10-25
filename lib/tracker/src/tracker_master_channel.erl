@@ -37,7 +37,7 @@
     chan_add/1,
     chan_del/1,
     chan_update/2,
-    synchronize_dump/1,
+    synchronize_dump/2,
     dump/0
 ]).
 
@@ -104,7 +104,11 @@ chan_update(probe_activity, {Target,Probe, Msg}) ->
 chan_update(_, {_,_}) ->
     io:format("unknown update~n").
 
-synchronize_dump(#state{chans = Chans, probe_modules = PMods}) ->
+% XXX maybe need to supercast_mpd:filter_pdus/2 ?
+% permissions config of targets and probes must be consistant. A
+% group can not be allowed to read a probe but not his target.
+% A target automaticaly have the groups allowed by his probes.
+synchronize_dump(#state{chans = Chans, probe_modules = PMods}, _CState) ->
     PMList = [pdu(probeModInfo, Probe) || Probe <- PMods],
     TList  = [pdu(targetInfo, Target) || Target <- Chans],
     ProbeListTmp = lists:foldl(fun(Chan, Acc) -> 
@@ -228,13 +232,13 @@ handle_call({chan_del, #target{id = Id, global_perm = Perm}}, _F,
 handle_call(get_perms, _F, #state{perm = P} = S) ->
     {reply, P, S};
 
-handle_call({synchronize, #client_state{module = CMod} = SupercastCState}, 
+handle_call({synchronize, #client_state{module = CMod} = CState}, 
         _F, State) ->
     % subscribe the client to mpd,
-    supercast_mpd:subscribe_stage3(?MASTER_CHAN, SupercastCState),
+    supercast_mpd:subscribe_stage3(?MASTER_CHAN, CState),
     % then send him the fun which will return him a list of pdu to receive
-    CMod:synchronize(SupercastCState, 
-        fun() -> ?MODULE:synchronize_dump(State) end),
+    CMod:synchronize(CState, 
+        fun() -> ?MODULE:synchronize_dump(State, CState) end),
     {reply, ok, State};
 
 handle_call(dump, _F, State) ->
