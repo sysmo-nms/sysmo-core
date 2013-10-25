@@ -1,8 +1,10 @@
 # Makefile
 
-APP     = tracker
-EPATH  += -pa ../supercast/ebin -pa ebin
+ERL         ?= erl
+ERLC        ?= erlc -Werror
+EPATH       += -pa ../supercast/ebin -pa ebin
 
+APP     = tracker
 MAIN            = $(wildcard src/*.erl)
 MAIN_DST        = $(patsubst src/%.erl, ebin/%.beam, $(MAIN))
 

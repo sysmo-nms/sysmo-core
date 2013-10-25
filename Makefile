@@ -1,7 +1,7 @@
 # Makefile 
 
 REL_NAME        = enms
-MODS            = supercast tracker errd
+MODS            = supercast tracker errd tlogger_text
 
 
 compile:

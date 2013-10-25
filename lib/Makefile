@@ -1,7 +1,7 @@
 # Makefile 
 
 REL_NAME        = enms
-MODS            = supercast tracker
+MODS            = supercast tracker tlogger_text
 EXTERNALS       = errd
 
 compile: recurse
