@@ -41,7 +41,7 @@
     unsubscribe/2,
     main_chans/0,
     client_disconnect/1,
-    filter_pdus/2,
+    filter_things/2,
     dump/0
 ]).
 
@@ -156,12 +156,13 @@ client_disconnect(CState) ->
 unsubscribe(Chan, CState) ->
     gen_server:call(?MODULE, {unsubscribe, Chan, CState}).
 
--spec filter_pdus(#client_state{}, [{#perm_conf{}, any()}]) -> [any()].
+-spec filter_things(#client_state{}, [{#perm_conf{}, any()}]) -> [any()].
 % @doc
-% Called by external modules to filter pdus destinated to a client.
+% Called by external modules to filter things. It will return any "things",
+% that the client defined in #client_state{} is allowed to 'read'.
 % @end
-filter_pdus(CState, PduList) ->
-    gen_server:call(?MODULE, {filter_pdus, CState, PduList}).
+filter_things(CState, PduList) ->
+    gen_server:call(?MODULE, {filter_things, CState, PduList}).
 
 % @private
 dump() ->
@@ -214,8 +215,10 @@ handle_call({client_disconnect, CState}, _F, S) ->
     Chans = del_subscriber(CState, S#state.chans),
     {reply, ok, S#state{chans = Chans}};
 
-handle_call({filter_pdus, CState, Pdus}, _F, #state{acctrl = Acctrl} = S) ->
-    Rep = filter_pdus_tool(CState, Pdus, Acctrl),
+handle_call({filter_things, CState, Pdus}, _F, #state{acctrl = Acctrl} = S) ->
+    % XXX maybe not in the gen_server loop using application:get_env to get the
+    % acctrl.
+    Rep = filter_things_tool(CState, Pdus, Acctrl),
     {reply, Rep, S};
 
 handle_call(dump, _F, S) ->
@@ -309,14 +312,14 @@ del_subscriber(CState, Chans) ->
         [{Id, N} | Acc]
     end, [], Chans).
 
-filter_pdus_tool(CState, Pdus, Acctrl) ->
-    filter_pdus_tool(CState, Pdus, Acctrl, []).
-filter_pdus_tool(_, [], _, R) ->
+filter_things_tool(CState, Pdus, Acctrl) ->
+    filter_things_tool(CState, Pdus, Acctrl, []).
+filter_things_tool(_, [], _, R) ->
     R;
-filter_pdus_tool(CState, [{Perm, Pdu}|T], Acctrl, R) ->
+filter_things_tool(CState, [{Perm, Pdu}|T], Acctrl, R) ->
     case Acctrl:satisfy(read, [CState], Perm) of
         {ok, []} ->
-            filter_pdus_tool(CState, T, Acctrl, R);
+            filter_things_tool(CState, T, Acctrl, R);
         {ok, [CState]} ->
-            filter_pdus_tool(CState, T, Acctrl, [Pdu|R])
+            filter_things_tool(CState, T, Acctrl, [Pdu|R])
     end.

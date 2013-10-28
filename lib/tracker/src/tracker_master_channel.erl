@@ -111,6 +111,7 @@ chan_update(_, {_,_}) ->
 synchronize_dump(#state{chans = Chans, probe_modules = PMods}, _CState) ->
     PMList = [pdu(probeModInfo, Probe) || Probe <- PMods],
     TList  = [pdu(targetInfo, Target) || Target <- Chans],
+
     ProbeListTmp = lists:foldl(fun(Chan, Acc) -> 
         lists:append(Acc, 
             [{Chan#target.id, Probe}  || Probe <- Chan#target.probes])

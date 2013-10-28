@@ -115,7 +115,7 @@ synchronize_dump(#target{probes = Probes} = _Target, CState) ->
     % get pdus of probe loggers
     L = [ tracker_probe:dump(PID) || #probe{pid = PID} <- Probes],
     % filter them
-    L2 = supercast_mpd:filter_pdus(CState, lists:flatten(L)),
+    L2 = supercast_mpd:filter_things(CState, lists:flatten(L)),
     {ok, L2}.
 
 % @doc
