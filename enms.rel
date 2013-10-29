@@ -9,6 +9,7 @@
         {asn1, "2.0.3"},
         {public_key, "0.20"},
         {ssl, "5.3.1"},
+        {snmp, "4.24.2"},
         {supercast, "2.0.0"},
         {tlogger_text, "0.1.0"},
         {errd, "0.1"},

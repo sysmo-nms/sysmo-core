@@ -19,26 +19,26 @@
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 {application, tracker,
-	[
-		{description, "Data store of trackers configuration"},
-		{vsn, "0.1.0"},
-		{modules, [
+    [
+        {description, "Data store of trackers configuration"},
+        {vsn, "0.1.0"},
+        {modules, [
                 tracker,
                 tracker_app,
                 tracker_sup,
                 tracker_ifs,
                 tracker_events
             ]},
-		{registered, [
+        {registered, [
             ]},
-		{applications, 
-            [kernel, stdlib, supercast, errd, tlogger_text]
+        {applications, 
+            [kernel, stdlib, supercast, errd, tlogger_text, snmp]
         },
         {start_phases, 
             [
                 {cold_start, []}
             ]
         },
-		{mod, {tracker_app, []}}
-	]
+        {mod, {tracker_app, []}}
+    ]
 }.
