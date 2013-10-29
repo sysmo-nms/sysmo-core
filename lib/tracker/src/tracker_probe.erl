@@ -267,7 +267,7 @@ log(#probe_server_state{probe = Probe} = PSState, Msg) ->
 
 -spec log_dump(#probe_server_state{}) -> any().
 log_dump(#probe_server_state{probe = Probe} = PSState) ->
-    L = [{Probe#probe.permissions, Mod:dump2(PSState)} || 
+    L = [{Probe#probe.permissions, Mod:dump(PSState)} || 
             #logger{module = Mod} <- Probe#probe.loggers],
     L.
 

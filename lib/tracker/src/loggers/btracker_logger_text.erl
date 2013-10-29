@@ -29,8 +29,7 @@
 -export([
     init/2,
     log/2,
-    dump/2,
-    dump2/1
+    dump/1
 ]).
 
 init(_Conf, #probe_server_state{
@@ -57,7 +56,7 @@ log(
     tlogger_text:log(LogSrv, EncodedMsg),
     ok.
 
-dump2(#probe_server_state{
+dump(#probe_server_state{
         loggers_state   = LState,
         target          = #target{id = TId},
         probe           = #probe{id = PId, type = Type}
@@ -66,18 +65,6 @@ dump2(#probe_server_state{
     Bin     = tlogger_text:dump(LogSrv),
     Pdu     = pdu('probeDump', {TId, PId, Type, Bin}),
     Pdu.
-
-
-dump(
-        #target{id = TargetId, directory = Dir}, 
-        #probe{id = ProbeId, name = Name, type = Type}
-    ) -> 
-    % recreate file name
-    FileName = io_lib:format("~s.txt", [Name]),
-    LogFile  = filename:absname_join(Dir, FileName),
-    {ok, B}  = file:read_file(LogFile),
-    P = pdu('probeDump', {TargetId,ProbeId,Type,B}),
-    {ok, [P]}.
 
 pdu('probeDump', {TargetId, ProbeId, ProbeType, Binary}) ->
     {modTrackerPDU,

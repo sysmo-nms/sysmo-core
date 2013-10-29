@@ -39,7 +39,7 @@ behaviour_info(callbacks) ->
     [
         {init, 2},
         {log,  2},
-        {dump, 2}
+        {dump, 1}
     ];
 
 behaviour_info(_) ->
