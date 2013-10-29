@@ -160,9 +160,11 @@ unsubscribe(Chan, CState) ->
 % @doc
 % Called by external modules to filter things. It will return any "things",
 % that the client defined in #client_state{} is allowed to 'read'.
+% XXX This function should be exported to a gen_server filter.
 % @end
-filter_things(CState, PduList) ->
-    gen_server:call(?MODULE, {filter_things, CState, PduList}).
+filter_things(CState, Pdus) ->
+    {ok, Acctrl} = gen_server:call(?MODULE, get_acctrl),
+    filter_things_tool(CState, Pdus, Acctrl).
 
 % @private
 dump() ->
@@ -215,11 +217,10 @@ handle_call({client_disconnect, CState}, _F, S) ->
     Chans = del_subscriber(CState, S#state.chans),
     {reply, ok, S#state{chans = Chans}};
 
-handle_call({filter_things, CState, Pdus}, _F, #state{acctrl = Acctrl} = S) ->
+handle_call(get_acctrl, _F, #state{acctrl = Acctrl} = S) ->
     % XXX maybe not in the gen_server loop using application:get_env to get the
     % acctrl.
-    Rep = filter_things_tool(CState, Pdus, Acctrl),
-    {reply, Rep, S};
+    {reply, {ok, Acctrl}, S};
 
 handle_call(dump, _F, S) ->
     {reply, S, S};
