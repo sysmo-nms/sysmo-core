@@ -64,7 +64,7 @@
             {snmp_conf,
                 "HOST_IP",
                 161,
-                '2c',
+                v2,
                 none,
                 "public",
                 none,

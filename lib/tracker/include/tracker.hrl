@@ -68,7 +68,7 @@
     name                = undefined     :: string(),
     permissions         = #perm_conf{}  :: #perm_conf{},
     tracker_probe_mod   = undefined     :: undefined | module(),
-    tracker_probe_conf  = undefined     :: [property()],
+    tracker_probe_conf  = undefined     :: [any()],
     status              = 'UNKNOWN'     :: 'UNKNOWN' | atom(),
     timeout             = 5             :: integer(),
     step                = 60            :: integer(),
@@ -106,9 +106,9 @@
 }).
 
 -record(snmp_conf, {
-    ip,
+    ip          = none          :: string(),
     port        = 161           :: integer(),
-    version     = '2c'          :: '2c' | '3',
+    version     = v2            :: v2 | v3,
     seclevel    = none          :: none | auth | enc,
     community   = "none"        :: string(),
     authkey     = none          :: none | string(),
