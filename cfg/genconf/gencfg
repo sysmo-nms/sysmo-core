@@ -1,7 +1,8 @@
 #!/bin/sh
 
 IP_DB=$1
-TEMPLATE="./simple_template.tps"
+TEMPLATE1="./simple_template.tps"
+TEMPLATE2="./simple_template2.tps"
 
 DEST="../tracker.conf"
 if [ -e ${DEST} ]
@@ -13,7 +14,17 @@ HOST_NUM=0
 for ip in `cat ${IP_DB}`
 do 
     HOST=testHost-${HOST_NUM}
-    cat ${TEMPLATE} | sed "
+    cat ${TEMPLATE1} | sed "
+        s/HOSTNAME/${HOST}/
+        s/HOST_IP/${ip}/
+    " >> ${DEST}
+    HOST_NUM=`expr ${HOST_NUM} + 1`
+done
+
+for ip in `cat ${IP_DB}`
+do 
+    HOST=secondTestHost-${HOST_NUM}
+    cat ${TEMPLATE2} | sed "
         s/HOSTNAME/${HOST}/
         s/HOST_IP/${ip}/
     " >> ${DEST}
