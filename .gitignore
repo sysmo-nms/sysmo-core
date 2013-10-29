@@ -9,12 +9,13 @@ cfg/tracker.conf
 doc
 www/*.png
 edoc-info
-var/
 activity.log
 *.bin
 *.asn1db
 *.bk
 *.db
+*_db
+*.log
 enms.script
 enms.boot
 lib/errd/ebin/*
