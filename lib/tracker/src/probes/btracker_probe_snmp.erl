@@ -20,6 +20,7 @@
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 -module(btracker_probe_snmp).
 -include("../../include/tracker.hrl").
+-behaviour(beha_tracker_probe).
 -export([
     init/1,
     exec/1,
