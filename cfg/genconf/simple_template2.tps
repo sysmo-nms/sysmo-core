@@ -54,6 +54,43 @@
             ],
             1,
             []
+        },
+        {probe,
+            3,
+            undefined,
+            'snmp-walk-2c',
+            {perm_conf, ["admin", "other"], ["admin"]},
+            btracker_probe_snmp,
+            {snmp_conf,
+                "HOST_IP",
+                161,
+                '2c',
+                none,
+                "public",
+                none,
+                none,
+                none,
+                none,
+                [
+                    [1,3,6,1,2,1,1,5,0]
+                ]
+            },
+            'UNKNOWN',
+            5,
+            4,
+            status,
+            [
+                {inspector, btracker_inspector_standard,[]}
+            ],
+            [
+                {logger, btracker_logger_text, []}
+            ],
+            [
+                {"propertyX", "propertyXValue"},
+                {"propertyY", "propertyYValue"}
+            ],
+            1,
+            []
         }
     ],
     "var/tracker/HOSTNAME"

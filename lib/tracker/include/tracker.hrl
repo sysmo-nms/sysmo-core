@@ -104,3 +104,16 @@
     inspectors_state    = [],
     loggers_state       = []
 }).
+
+-record(snmp_conf, {
+    ip,
+    port        = 161           :: integer(),
+    version     = '2c'          :: '2c' | '3',
+    seclevel    = none          :: none | auth | enc,
+    community   = "none"        :: string(),
+    authkey     = none          :: none | string(),
+    authalgo    = none          :: none | 'hmac-md5' | 'hmac-sha1',
+    enckey      = none          :: none | string(),
+    encalgo     = none          :: none | des | aes,
+    oid_query   = []            :: [oid()]
+}).

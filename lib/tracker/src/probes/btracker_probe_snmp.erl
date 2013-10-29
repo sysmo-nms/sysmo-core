@@ -28,6 +28,10 @@
 init(S) ->
     S.
 
-exec(_) -> {ok, 1}.
+exec(_) -> 
+    #probe_return{
+        original_reply  = "hello world from snmp",
+        timestamp       = tracker_misc:timestamp(second)
+    }.
 
 info() -> {ok, "snmp get and walk module"}.

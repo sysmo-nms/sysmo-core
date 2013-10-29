@@ -364,8 +364,12 @@ init_dir(Dir) ->
             {error, Other}
     end.
 
-gen_asn_probe_conf(#nagios_plugin_conf{executable = Exe, args = Args}) ->
-    lists:flatten([Exe, " ", [[A, " ", B, " "] || {A, B} <- Args]]).
+gen_asn_probe_conf(Conf) when is_record(Conf, nagios_plugin_conf) ->
+    #nagios_plugin_conf{executable = Exe, args = Args} = Conf,
+    lists:flatten([Exe, " ", [[A, " ", B, " "] || {A, B} <- Args]]);
+
+gen_asn_probe_conf(Conf) when is_record(Conf, snmp_conf) ->
+    lists:flatten(io_lib:format("~p", [Conf])).
 
 gen_asn_probe_inspectors(Inspectors) ->
     [{'Inspector', atom_to_list(Module), "ici configuration temp"} 
