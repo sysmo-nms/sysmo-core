@@ -19,9 +19,10 @@
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 -module(btracker_probe_snmp).
--include("../../include/tracker.hrl").
 -behaviour(beha_tracker_probe).
 -behaviour(snmpm_user).
+-include("../../include/tracker.hrl").
+-define(SNMP_USER, "tracker_probe_user").
 
 %% beha_tracker_probe exports
 -export([
@@ -39,7 +40,25 @@
     handle_report/3
 ]).
 
-init(S) ->
+init(#probe_server_state{
+        probe  = #probe{tracker_probe_conf = Conf},
+        target = #target{id = Name}
+    } = S) ->
+    #snmp_conf{
+        ip          = IpString,
+        port        = Port,
+        version     = Version,
+        community   = Community
+    } = Conf,
+    {ok, Ip} = inet:parse_address(IpString),
+    SnmpConf = [
+        {engine_id, "none"},
+        {address,   Ip},
+        {port  ,    Port},
+        {version,   Version},
+        {community, Community}
+    ],
+    snmpm:register_agent(?SNMP_USER, atom_to_list(Name), SnmpConf),
     S.
 
 exec(_) -> 
