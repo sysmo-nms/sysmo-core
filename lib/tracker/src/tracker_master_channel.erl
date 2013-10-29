@@ -104,10 +104,12 @@ chan_update(probe_activity, {Target,Probe, Msg}) ->
 chan_update(_, {_,_}) ->
     io:format("unknown update~n").
 
-% XXX maybe need to supercast_mpd:filter_pdus/2 ?
-% permissions config of targets and probes must be consistant. A
-% group can not be allowed to read a probe but not his target.
-% A target automaticaly have the groups allowed by his probes.
+-spec synchronize_dump(#state{}, #client_state{}) -> {ok, [any()]}.
+% @doc
+% !Permissions config of targets and probes must be consistant. A
+% group can not be allowed to read a probe but not his target. This
+% will not work.
+% @end
 synchronize_dump(#state{chans = Chans, probe_modules = PMods}, CState) ->
     PMList = [pdu(probeModInfo, Probe) || Probe <- PMods],
     PDUs = gen_dump_pdus(CState, Chans),
