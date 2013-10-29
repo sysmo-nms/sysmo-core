@@ -108,18 +108,10 @@ chan_update(_, {_,_}) ->
 % permissions config of targets and probes must be consistant. A
 % group can not be allowed to read a probe but not his target.
 % A target automaticaly have the groups allowed by his probes.
-synchronize_dump(#state{chans = Chans, probe_modules = PMods}, _CState) ->
+synchronize_dump(#state{chans = Chans, probe_modules = PMods}, CState) ->
     PMList = [pdu(probeModInfo, Probe) || Probe <- PMods],
-    TList  = [pdu(targetInfo, Target) || Target <- Chans],
-
-    ProbeListTmp = lists:foldl(fun(Chan, Acc) -> 
-        lists:append(Acc, 
-            [{Chan#target.id, Probe}  || Probe <- Chan#target.probes])
-    end, [], Chans),
-    ProbeList = [pdu(probeInfo, {create, TId, Probe}) 
-        || {TId, Probe} <- ProbeListTmp],
-    PduList  = lists:append([PMList, TList, ProbeList]),
-    {ok, PduList}.
+    PDUs = gen_dump_pdus(CState, Chans),
+    {ok, lists:append(PMList, PDUs)}.
 
 dump() ->
     gen_server:call(?MASTER_CHAN, dump).
@@ -384,3 +376,21 @@ gen_asn_probe_loggers(Loggers) ->
 gen_asn_probe_properties(Properties) ->
     [{'Property', Key, Value} 
         || {Key,Value} <- Properties].
+
+gen_dump_pdus(CState, Targets) ->
+    FTargets    = supercast_mpd:filter_things(CState, [{Perm, Target} ||
+        #target{global_perm = Perm} = Target <- Targets]),
+    TargetsPDUs = [pdu(targetInfo, Target) || Target <- FTargets],
+    ProbesDefs  = [{TId, Probes} ||
+        #target{id = TId, probes = Probes} <- FTargets],
+    gen_dump_pdus(CState, TargetsPDUs, [], ProbesDefs).
+gen_dump_pdus(_, TargetsPDUs, ProbesPDUs, []) ->
+    lists:append(TargetsPDUs, ProbesPDUs);
+gen_dump_pdus(CState, TargetsPDUs, ProbesPDUs, [{TId, Probes}|T]) ->
+    ProbesThings  = [{Perm, Probe} || 
+        #probe{permissions = Perm} = Probe <- Probes],
+    AllowedThings = supercast_mpd:filter_things(CState, ProbesThings),
+    Result = [pdu(probeInfo, {create, TId, Probe}) ||
+        Probe <- AllowedThings],
+    gen_dump_pdus(CState, TargetsPDUs, lists:append(ProbesPDUs, Result), T).
+
