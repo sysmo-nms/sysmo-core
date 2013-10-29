@@ -45,18 +45,24 @@
 
 % export here for documentation only:
 -export([
+    init/1,
     exec/1,
     info/0]).
 
 % @private
 behaviour_info(callbacks) ->
     [
+        {init, 1},
         {exec, 1},
         {info, 0}
     ];
 
 behaviour_info(_) ->
     undefined.
+
+-spec init(#probe_server_state{}) -> #probe_server_state{}.
+init(S) ->
+    S.
 
 -spec exec({TargetRecord::#target{}, ProbeRecord::#probe{}}) -> 
     {ok, Val::integer()} | {error, Error::any()} | timeout.

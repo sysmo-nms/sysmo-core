@@ -93,6 +93,7 @@ init([Target, Probe]) ->
     },
     {ok, S2}    = init_loggers(S1),
     {ok, S3}    = init_inspectors(S2),
+    {ok, _SF}    = init_probe(S3),
     {ok, S3}.
         
     
@@ -247,7 +248,14 @@ probe_pass(#probe_server_state{target = Target, probe  = Probe } = S) ->
 next_pass(#probe_server_state{probe = Probe} = State, ProbeReturn) ->
     gen_server:cast(Probe#probe.pid, {next_pass, State, ProbeReturn}).
  
- 
+% INIT PROBE
+-spec init_probe(#probe_server_state{}) -> #probe_server_state{}.
+init_probe(#probe_server_state{
+        probe = #probe{tracker_probe_mod = Mod}
+    } = S) ->
+    SF = Mod:init(S),
+    {ok, SF}.
+
 % LOGGERS
 -spec init_loggers(#probe_server_state{}) -> #probe_server_state{}.
 init_loggers(#probe_server_state{probe = Probe} = State) ->

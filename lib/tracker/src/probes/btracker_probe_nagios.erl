@@ -24,9 +24,13 @@
 -include("../../include/tracker.hrl").
 
 -export([
+    init/1,
     exec/1,
     info/0
 ]).
+
+init(S) ->
+    S.
 
 exec({_, #probe{
             tracker_probe_conf  = #nagios_plugin_conf{
