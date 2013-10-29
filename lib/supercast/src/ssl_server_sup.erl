@@ -25,39 +25,38 @@
 -export([start_link/4]).
 -export([init/1]).
 
-start_link(Encoder, Port, MaxC, SslConfFile) ->
-    {ok, Conf} = file:consult(SslConfFile),
+start_link(Encoder, Port, MaxC, SslConf) ->
     {value, {certificate, Cert}} =
-        lists:keysearch(certificate, 1, Conf),
+        lists:keysearch(certificate, 1, SslConf),
     {value, {caCertificate, CaCert}} =
-        lists:keysearch(caCertificate, 1, Conf),
+        lists:keysearch(caCertificate, 1, SslConf),
     {value, {key, Key}} =
-        lists:keysearch(key, 1, Conf),
-	supervisor:start_link({local, ?MODULE}, ?MODULE, 
+        lists:keysearch(key, 1, SslConf),
+    supervisor:start_link({local, ?MODULE}, ?MODULE, 
         [Encoder, Port, MaxC, Cert, CaCert, Key]).
 
 init([Encoder, Port, MaxC, Cert, CaCert, Key]) ->
-	{ok,
-		{
-			{one_for_one, 1, 60},
-			[
-				{
-					ssl_listener,
-					{ssl_listener, start_link, [Port, ssl_client, MaxC]},
-					permanent,
-					2000,
-					worker,
-					[ssl_listener]
-				},
-				{
-					ssl_client_sup,
-					{ssl_client_sup, start_link, 
+    {ok,
+        {
+            {one_for_one, 1, 60},
+            [
+                {
+                    ssl_listener,
+                    {ssl_listener, start_link, [Port, ssl_client, MaxC]},
+                    permanent,
+                    2000,
+                    worker,
+                    [ssl_listener]
+                },
+                {
+                    ssl_client_sup,
+                    {ssl_client_sup, start_link, 
                         [Encoder, Key, Cert, CaCert]},
-					permanent,
-					infinity,
-					supervisor,
-					[ssl_client_sup]
-				}
-			]
-		}
-	}.
+                    permanent,
+                    infinity,
+                    supervisor,
+                    [ssl_client_sup]
+                }
+            ]
+        }
+    }.

@@ -28,7 +28,7 @@
 -export([init/1]).
 
 start_link(Encoder, Key, Cert, CaCert) ->
-	supervisor:start_link({local, ?MODULE}, ?MODULE, 
+    supervisor:start_link({local, ?MODULE}, ?MODULE, 
         [Encoder, Key, Cert, CaCert]).
 
 %%-------------------------------------------------------------------------
@@ -37,20 +37,20 @@ start_link(Encoder, Key, Cert, CaCert) ->
 %% @end
 %%-------------------------------------------------------------------------
 start_client() ->
-	supervisor:start_child(?MODULE, []).
+    supervisor:start_child(?MODULE, []).
 
 init([Encoder, Key, Cert, CaCert]) ->
     SslFiles = {Key, Cert, CaCert},
-	{ok, {
-		{simple_one_for_one, 10, 60},
-			[
-				{ssl_client,
-					{ssl_client, start_link, [Encoder, SslFiles]},
-					temporary,
-					brutal_kill,
-					worker,
-					[ssl_client]
-				}
-			]
-		}
-	}.
+    {ok, {
+        {simple_one_for_one, 10, 60},
+            [
+                {ssl_client,
+                    {ssl_client, start_link, [Encoder, SslFiles]},
+                    temporary,
+                    brutal_kill,
+                    worker,
+                    [ssl_client]
+                }
+            ]
+        }
+    }.
