@@ -162,9 +162,9 @@ unsubscribe(Chan, CState) ->
 % that the client defined in #client_state{} is allowed to 'read'.
 % XXX This function should be exported to a gen_server filter.
 % @end
-filter_things(CState, Pdus) ->
+filter_things(CState, Things) ->
     {ok, Acctrl} = gen_server:call(?MODULE, get_acctrl),
-    filter_things_tool(CState, Pdus, Acctrl).
+    filter_things_tool(CState, Things, Acctrl).
 
 % @private
 dump() ->
