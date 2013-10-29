@@ -28,6 +28,7 @@ dump(Pid) ->
 
 
 init(FileName) ->
+    file:write_file(FileName, <<>>),
     {ok, FileName}.
 
 handle_call(dump, _, S) ->
