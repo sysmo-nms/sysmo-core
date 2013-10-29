@@ -30,7 +30,7 @@
 -export([
     init/2,
     log/2,
-    dump/2
+    dump/1
 ]).
 
 -record(rrd_logger_state, {
@@ -117,7 +117,7 @@ log(    #probe_server_state{
 
     ok.
 
-dump(_PState, _Timeout) -> 
+dump(_S) ->
     ignore.
 
 % PRIVATE
