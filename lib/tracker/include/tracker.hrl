@@ -106,6 +106,7 @@
 }).
 
 -record(snmp_conf, {
+    agent_name  = none          :: string(),
     ip          = none          :: string(),
     port        = 161           :: integer(),
     version     = v2            :: v2 | v3,
@@ -115,5 +116,5 @@
     authalgo    = none          :: none | 'hmac-md5' | 'hmac-sha1',
     enckey      = none          :: none | string(),
     encalgo     = none          :: none | des | aes,
-    oid_query   = []            :: [oid()]
+    oids        = []            :: [oid()]
 }).

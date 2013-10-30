@@ -62,6 +62,7 @@
             {perm_conf, ["admin", "other"], ["admin"]},
             btracker_probe_snmp,
             {snmp_conf,
+                "HOSTNAME",
                 "HOST_IP",
                 161,
                 v2,

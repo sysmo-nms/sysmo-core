@@ -21,6 +21,7 @@
 -module(btracker_probe_snmp).
 -behaviour(beha_tracker_probe).
 -behaviour(snmpm_user).
+-include_lib("snmp/include/snmp_types.hrl").
 -include("../../include/tracker.hrl").
 -define(SNMP_USER, "tracker_probe_user").
 
@@ -61,7 +62,26 @@ init(#probe_server_state{
     snmpm:register_agent(?SNMP_USER, atom_to_list(Name), SnmpConf),
     S.
 
-exec(_) -> 
+exec({_,#probe{
+            tracker_probe_conf = #snmp_conf{
+                agent_name  =  Agent,
+                oids        =  Oids
+            },
+            timeout = Timeout
+        }
+    }) -> 
+    Rep = snmpm:sync_get(?SNMP_USER, Agent, Oids, Timeout),
+    case Rep of
+        {error, Error} ->
+            io:format("rep is error ~p~n",[Error]);
+        {ok, SnmpReply, _Remaining} ->
+            % from snmpm documentation: snmpm, Common Data Types 
+            % snmp_reply() = {error_status(), error_index(), varbinds()}
+            {_ErrStatus, _ErrId, VarBinds} = SnmpReply,
+            lists:foreach(fun(X) ->
+                io:format("rep is noError ~p~n",[X#varbind.value])
+            end, VarBinds)
+    end, 
     #probe_return{
         original_reply  = "hello world from snmp",
         timestamp       = tracker_misc:timestamp(second)
@@ -70,7 +90,7 @@ exec(_) ->
 info() -> {ok, "snmp get and walk module"}.
 
 
-%% snmpm_user
+%% snmpm_user behaviour
 handle_error(_ReqId, _Reason, _UserData) ->
     io:format("handle_error ~p~n", [?MODULE]),
     ignore.
@@ -79,8 +99,8 @@ handle_agent(_Addr, _Port, _Type, _SnmpInfo, _UserData) ->
     io:format("handle_agent ~p~n", [?MODULE]),
     ignore.
 
-handle_pdu(_TargetName, _ReqId, _SnmpResponse, _UserData) ->
-    io:format("handle_pdu ~p~n", [?MODULE]),
+handle_pdu(_TargetName, _ReqId, SnmpResponse, _UserData) ->
+    io:format("handle_pdu ~p ~p~n", [?MODULE,SnmpResponse]),
     ignore.
 
 handle_trap(_TargetName, _SnmpTrapInfo, _UserData) ->
