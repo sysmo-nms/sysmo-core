@@ -1,5 +1,6 @@
 -module(tlogger_text).
 -behaviour(gen_server).
+-include_lib("kernel/include/file.hrl").
 
 -export([
     init/1,
@@ -16,6 +17,10 @@
     dump/1
 ]).
 
+-record(state, {
+    file,
+    dump_size
+}).
 
 start_link(Args) ->
     gen_server:start_link(?MODULE, Args, []).
@@ -28,17 +33,28 @@ dump(Pid) ->
 
 
 init(FileName) ->
-    file:write_file(FileName, <<>>),
-    {ok, FileName}.
+    {ok, DumpSize} = application:get_env(tlogger_text, dump_size),
+    file:write_file(FileName, <<>>, [append]),
+    {ok, #state{file = FileName, dump_size = DumpSize}}.
 
-handle_call(dump, _, S) ->
-    {ok, Bin} = file:read_file(S),
+handle_call(dump, _, #state{file = F, dump_size = DS} = S) ->
+    {ok, FInfo} = file:read_file_info(F),
+    case FInfo#file_info.size < DS of
+        true    ->
+            {ok, Data} = file:read_file(F),
+            Bin = to_binary(Data);
+        false   ->
+            {ok, Fd}  = file:open(F, [read]),
+            {ok, Data} = file:pread(Fd, {eof, -DS}, DS),
+            file:close(Fd),
+            Bin = to_binary(Data)
+    end,
     {reply, Bin, S};
 handle_call(_,_,S) ->
     {reply, ok, S}.
 
-handle_cast({log, Message}, S) ->
-    file:write_file(S, Message, [append]),
+handle_cast({log, Message}, #state{file = F} = S) ->
+    file:write_file(F, Message, [append]),
     {noreply, S};
 handle_cast(_,S) ->
     {noreply, S}.
@@ -52,3 +68,10 @@ terminate(_,_) ->
 code_change(_,S,_) ->
     {ok, S}.
 
+
+to_binary(R) when is_atom(R) ->
+    <<>>;
+to_binary(R) when is_list(R) ->
+    list_to_binary(R);
+to_binary(R) when is_binary(R) ->
+    R.
