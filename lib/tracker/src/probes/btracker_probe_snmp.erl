@@ -72,20 +72,23 @@ exec({_,#probe{
     }) -> 
     Rep = snmpm:sync_get(?SNMP_USER, Agent, Oids, Timeout * 1000),
     case Rep of
-        {error, Error} ->
-            io:format("rep is error ~p~n",[Error]);
-        {ok, SnmpReply, _Remaining} ->
+        {error, _Error} = R ->
+            #probe_return{
+                original_reply  = to_string(R),
+                timestamp       = tracker_misc:timestamp(second)
+            };
+        {ok, _SnmpReply, _Remaining} = R ->
             % from snmpm documentation: snmpm, Common Data Types 
             % snmp_reply() = {error_status(), error_index(), varbinds()}
-            {_ErrStatus, _ErrId, VarBinds} = SnmpReply,
-            lists:foreach(fun(X) ->
-                io:format("rep is noError ~p~n",[X#varbind.value])
-            end, VarBinds)
-    end, 
-    #probe_return{
-        original_reply  = "hello world from snmp",
-        timestamp       = tracker_misc:timestamp(second)
-    }.
+            % {_ErrStatus, _ErrId, VarBinds} = SnmpReply,
+            % lists:foreach(fun(X) ->
+                % io:format("rep is noError ~p~n",[X#varbind.value])
+            % end, VarBinds)
+            #probe_return{
+                original_reply  = to_string(R),
+                timestamp       = tracker_misc:timestamp(second)
+            }
+    end.
 
 info() -> {ok, "snmp get and walk module"}.
 
@@ -114,3 +117,7 @@ handle_inform(_TargetName, _SnmpInform, _UserData) ->
 handle_report(_TargetName, _SnmpReport, _UserData) ->
     io:format("handle_report ~p~n", [?MODULE]),
     ignore.
+
+
+to_string(Term) ->
+    lists:flatten(io_lib:format("~p", [Term])).
