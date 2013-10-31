@@ -1,4 +1,3 @@
-
 -record(rrd_ds_update, {name :: string(),
                         value = unknown :: any()}).
 
@@ -13,7 +12,7 @@
                   args :: string()}).
 
 -record(rrd_create, {file :: string(),
-                     start_time :: any(), %% TODO
+                     %start_time :: any(), %% TODO
                      step = 300 :: pos_integer(),
                      ds_defs = [] :: [#rrd_ds{}],
                      rra_defs = [] :: [#rrd_rra{}]}).
@@ -28,5 +27,3 @@
               version :: string(),
               step :: integer(),
               last_update :: integer()}).
-
-% vim: set ts=4 sw=4 expandtab:
