@@ -120,4 +120,4 @@ handle_report(_TargetName, _SnmpReport, _UserData) ->
 
 
 to_string(Term) ->
-    lists:flatten(io_lib:format("~p", [Term])).
+    lists:flatten(io_lib:format("~p~n", [Term])).
