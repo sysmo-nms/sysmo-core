@@ -59,7 +59,7 @@ init([]) ->
     case open_port({spawn, RrdTool},
                    [use_stdio, exit_status, {line, 16000}]) of
         Port when is_port(Port) ->
-            {ok _} = rrd_command(Port, "cd ~s~n", [Directory]),
+            {ok, _} = rrd_command(Port, "cd ~s~n", [Directory]),
             {ok, #state{rrd_port=Port}};
         Else ->
             {stop, {no_rrdtool, Else}}
