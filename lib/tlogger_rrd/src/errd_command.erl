@@ -135,5 +135,3 @@ value_to_list(Value) when is_binary(Value) ->
 join_test() ->
     ?assert(string:join(["This", "is", "a", "test."], " ") == "This is a test."),
     ?assert(string:join(["test."], " ") == "test.").
-
-% vim: set ts=4 sw=4 expandtab:

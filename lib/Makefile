@@ -1,8 +1,8 @@
 # Makefile 
 
 REL_NAME        = enms
-MODS            = supercast tracker tlogger_text
-REBAR           = tlogger_rrd 
+MODS            = supercast tracker tlogger_text tlogger_rrd
+
 compile: recurse
 
 all: compile doc test local-release www
