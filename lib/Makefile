@@ -2,8 +2,7 @@
 
 REL_NAME        = enms
 MODS            = supercast tracker tlogger_text
-EXTERNALS       = errd
-
+REBAR           = tlogger_rrd 
 compile: recurse
 
 all: compile doc test local-release www
@@ -21,9 +20,7 @@ clean: externals_clean
 	@for i in $(MODS); do cd $$i; make clean; cd ../; done
 
 externals_compile:
-	@for i in $(EXTERNALS); do cd $$i; rebar compile; cd ../; done
+	@for i in $(REBAR); do cd $$i; rebar compile; cd ../; done
 
 externals_clean:
-	@for i in $(EXTERNALS); do cd $$i; rebar clean; cd ../; done
-
-
+	@for i in $(REBAR); do cd $$i; rebar clean; cd ../; done

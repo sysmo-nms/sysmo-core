@@ -7,7 +7,7 @@
 %%%-------------------------------------------------------------------
 -module(errd_info).
 
--include_lib("errd_internal.hrl").
+-include("../include/errd_internal.hrl").
 
 %% API
 -export([parse/1]).
