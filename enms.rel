@@ -12,7 +12,7 @@
         {snmp, "4.24.2"},
         {supercast, "2.0.0"},
         {tlogger_text, "0.1.0"},
-        {errd, "0.1"},
+        {errd, "0.2"},
         {tracker, "0.1.0"}
     ]
 }.
