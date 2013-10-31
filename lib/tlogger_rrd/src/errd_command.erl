@@ -24,8 +24,7 @@
 %% @doc Converts the data structure describing the rrd command to
 %%  a string that can be executed by rrdtool.
 %% @end 
-format(#rrd_create{file=File,start_time=undefined,
-                   step=Step,ds_defs=DSs,rra_defs=RRAs}) when is_integer(Step) ->
+format(#rrd_create{file=File,step=Step,ds_defs=DSs,rra_defs=RRAs}) ->
     Dstr = lists:flatten(string:join(lists:map(fun (D) -> format(D) end, DSs), " ")),
     RRAstr = lists:flatten(string:join(lists:map(fun (D) -> format(D) end, RRAs), " ")),
     lists:flatten(io_lib:format("create ~s --step ~p ~s ~s~n", [File, Step, Dstr, RRAstr]));
