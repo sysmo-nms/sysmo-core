@@ -1,0 +1,20 @@
+% Rrdtool configuration template for a smoke ping like latency check.
+
+% INTERVAL: must be less than the update received to have a new graph
+% every update. Else, rrdtool will consolidate until INTERVAL is reached.
+% EARTBEAT must be less than the interval if we want rrd to put "null"
+% value if ONE interval fail.
+% MIN is the expected minimum value. Other values lesser than it are ignored
+% MAX is the expected maximum value. Other values greater than it are ignored
+% CF is the consolidation function if more than one update occure withing 
+%   INTERVAL time.
+% XF ?
+% # create FILENAME \
+% #     --step INTERVAL \
+% #     DS:latency:GAUGE:INTERVAL:EARTBEAT:MIN:MAX \
+% #     RRA:MAX:XF:STEPS:ROW
+
+"create --step 5 DS:latency:GAUGE:10:0:U \
+    RRA:AVERAGE:0.5:1:120   \ % 5 x 1 x 120 = 10 minutes
+    RRA:AVERAGE:0.5:30:60   \ % 5 x 12 x 60 = 1 heure
+    RRA:AVERAGE:0.5:120:144 \ % 5 x 120 x 144 = 24 h
