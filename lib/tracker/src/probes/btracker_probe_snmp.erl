@@ -70,7 +70,7 @@ exec({_,#probe{
             timeout = Timeout
         }
     }) -> 
-    Rep = snmpm:sync_get(?SNMP_USER, Agent, Oids, Timeout),
+    Rep = snmpm:sync_get(?SNMP_USER, Agent, Oids, Timeout * 1000),
     case Rep of
         {error, Error} ->
             io:format("rep is error ~p~n",[Error]);
