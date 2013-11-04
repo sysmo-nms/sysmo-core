@@ -25,10 +25,10 @@
 		{modules, [
                 supercast_app,
                 supercast_sup,
+                supercast_mpd,
                 supercast_server,
-                supercast_rbac,
-                supercast_auth_ldap,
-                asncli,
+                clsupercast,
+                gen_channel,
                 ssl_client,
                 ssl_client_sup,
                 ssl_server_sup,
@@ -36,16 +36,24 @@
                 tcp_client,
                 tcp_client_sup,
                 tcp_server_sup,
-                tcp_listener
+                tcp_listener,
+                bsupercast_acctrl_rbac,
+                bsupercast_auth_ldap,
+                bsupercast_auth_local,
+                bsupercast_encoder_asn,
+                bsupercast_encoder_json,
+                bsupercast_encoder_native
             ]},
 		{registered, [
                 supercast_sup,
                 supercast_server,
                 supercast_mpd,
-                supercast_auth_ldap,
                 ssl_client_sup,
                 ssl_server_sup,
-                ssl_listener
+                ssl_listener,
+                tcp_server_sup,
+                tcp_client_sup,
+                tcp_listener
             ]},
 		{applications, 
             [kernel, stdlib, crypto, public_key, ssl]

@@ -23,13 +23,27 @@
         {description, "Data store of trackers configuration"},
         {vsn, "0.1.0"},
         {modules, [
-                tracker,
                 tracker_app,
+                tracker_api,
+                tracker_master_channel,
+                tracker_misc,
+                tracker_probe_sup,
+                tracker_probe,
+                tracker_target_channel,
+                tracker_target_channel_sup,
                 tracker_sup,
-                tracker_ifs,
-                tracker_events
+                btracker_inspector_standard,
+                btracker_logger_rrd,
+                btracker_logger_text,
+                btracker_probe_nagios,
+                btracker_probe_snmp
             ]},
         {registered, [
+                'target-MasterChan',
+                tracker_misc,
+                tracker_probe_sup,
+                tracker_sup,
+                tracker_target_channel_sup
             ]},
         {applications, 
             [kernel, stdlib, supercast, errd, tlogger_text, snmp]
