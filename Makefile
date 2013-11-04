@@ -15,14 +15,16 @@ test:
 doc:
 	@cd lib; make doc
 
-tclean:
+var-clean:
 	rm -rf var/tracker/*/
+	rm -f var/snmp/snmpm_config_db
+	rm -f var/sasl/sasl.log
 
 rel-clean:
 	rm -f $(REL_NAME).script
 	rm -f $(REL_NAME).boot
 
-clean: tclean
+clean: var-clean
 	rm -f erl_crash.dump
 	rm -f $(REL_NAME).script
 	rm -f $(REL_NAME).boot
