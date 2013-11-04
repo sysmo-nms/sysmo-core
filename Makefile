@@ -18,10 +18,15 @@ doc:
 tclean:
 	rm -rf var/tracker/*/
 
+rel-clean:
+	rm -f $(REL_NAME).script
+	rm -f $(REL_NAME).boot
+
 clean: tclean
 	rm -f erl_crash.dump
 	rm -f $(REL_NAME).script
 	rm -f $(REL_NAME).boot
+	rm -f $(REL_NAME).tar.gz
 	@cd lib; make clean
 
     
@@ -46,16 +51,25 @@ MODS_EBIN_DIR	= $(addprefix ./lib/, $(addsuffix /ebin, $(MODS)))
 MODS_DEF_FILE	= $(foreach app, $(MODS_EBIN_DIR), $(wildcard $(app)/*.app))
 ERL_NMS_PATH	= $(addprefix -pa ,$(MODS_EBIN_DIR))
 ERL_REL_COMM    = 'systools:make_script("$(REL_NAME)", [local]), init:stop()'
+ERL_REL_COMM2   = '\
+systools:make_script("$(REL_NAME)", []), \
+systools:make_tar("$(REL_NAME)", [{erts, code:root_dir()}]),\
+init:stop()\
+'
 
 start: local-release
 	@$(ERL) -sname server -boot ./$(REL_NAME) -config ./sys
 
 
-
-
 # RELEASES
+release: clean compile tar rel-clean
+
+tar:
+	@echo "Generating $(REL_NAME).tar.gz"
+	@$(ERL) -noinput $(ERL_NMS_PATH) -eval $(ERL_REL_COMM2)
+
 local-release: compile $(REL_NAME).script 
 
 $(REL_NAME).script: $(MODS_DEF_FILE) $(REL_NAME).rel
-	echo "Generating $(REL_NAME).script and $(REL_NAME).boot files..."
+	@echo "Generating $(REL_NAME).script and $(REL_NAME).boot files..."
 	@$(ERL) -noinput $(ERL_NMS_PATH) -eval $(ERL_REL_COMM)
