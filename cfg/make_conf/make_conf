@@ -1,0 +1,29 @@
+#!/bin/sh
+# This script transform the /etc/tracker/targets.yaml configuration file
+# in a tuple list understandable by the system.
+
+set -e
+
+BADFILE=1
+BADSIZE=2
+FILENAME="targets.yamls"
+
+if [ ! -e $FILENAME ]
+then
+    echo "$0:ERROR: configuration file \"$FILENAME\" not found" 1>&2
+    exit $BADFILE
+fi
+
+if [ ! -s $FILENAME ]
+then
+    echo "$0:ERROR: configuration file \"$FILENAME\" is empty" 1>&2
+    exit $BADSIZE
+fi
+
+cat $FILENAME | awk '
+    BEGIN   {print "begin"}
+    {print $0}
+    END     {print "end"}
+'
+
+exit 0
