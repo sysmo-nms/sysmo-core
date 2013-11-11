@@ -1,0 +1,7 @@
+{target,
+    ID,
+    GLOBAL_PERM,
+    PROPERTIES,
+    PROBES,
+    DIRECTORY
+}

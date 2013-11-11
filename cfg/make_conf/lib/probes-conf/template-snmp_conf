@@ -1,0 +1,13 @@
+{snmp_conf,
+    AGENT_NAME,
+    IP,
+    PORT,
+    VERSION,
+    SECLEVEL,
+    COMMUNITY,
+    AUTHKEY,
+    AUTHALGO,
+    ENCKEY,
+    ENCALGO,
+    OIDS
+}
