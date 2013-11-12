@@ -319,7 +319,7 @@ pdu(probeInfo, {InfoType, Id,
                     gen_asn_probe_inspectors(Probe#probe.inspectors),
                     gen_asn_probe_loggers(Probe#probe.loggers),
                     gen_asn_probe_properties(Probe#probe.properties),
-                    Probe#probe.active,
+                    gen_asn_probe_active(Probe#probe.active),
                     InfoType}}}};
 
 pdu(probeModInfo,  {ProbeName, ProbeInfo}) ->
@@ -363,6 +363,11 @@ init_dir(Dir) ->
         Other ->
             {error, Other}
     end.
+
+gen_asn_probe_active(true) ->
+    1;
+gen_asn_probe_active(false) ->
+    0.
 
 gen_asn_probe_conf(Conf) when is_record(Conf, nagios_plugin_conf) ->
     #nagios_plugin_conf{executable = Exe, args = Args} = Conf,

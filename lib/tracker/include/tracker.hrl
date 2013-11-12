@@ -76,10 +76,7 @@
     inspectors          = []            :: [#inspector{}],
     loggers             = []            :: [#logger{}],
     properties          = []            :: [property()],
-
-    active              = 1             :: 1 | 0,
-    % if it is a snmp probe this field must exist
-    snmp_oids           = []            :: [oid()]
+    active              = true          :: true | false
 }).
 
 -record(target, {
