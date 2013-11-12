@@ -214,9 +214,17 @@ init([Encoder]) ->
         encoding_mod    = Encoder} = State
     ) ->
     {ok, PduList} = Fun(),
+    PduList2 = lists:filter(fun(X) ->
+        case X of
+            ignore ->
+                false;
+            _ ->
+                true
+        end
+    end, PduList),
     lists:foreach(fun(Pdu) -> 
         gen_tcp:send(Sock, Encoder:encode(Pdu))
-    end, PduList),
+    end, PduList2),
     {next_state, 'RUNNING', State};
 
 'RUNNING'(timeout, State) ->
