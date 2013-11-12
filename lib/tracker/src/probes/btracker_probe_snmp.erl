@@ -59,8 +59,13 @@ init(#probe_server_state{
         {version,   Version},
         {community, Community}
     ],
-    snmpm:register_agent(?SNMP_USER, atom_to_list(Name), SnmpConf),
-    S.
+    Agent = atom_to_list(Name),
+    case agent_is_registered(Agent) of
+        true -> S;
+        false ->
+            snmpm:register_agent(?SNMP_USER, Agent, SnmpConf),
+            S
+    end.
 
 exec({_,#probe{
             tracker_probe_conf = #snmp_conf{
@@ -70,25 +75,38 @@ exec({_,#probe{
             timeout = Timeout
         }
     }) -> 
-    Rep = snmpm:sync_get(?SNMP_USER, Agent, Oids, Timeout * 1000),
+    Request = [Oid || {_, Oid} <- Oids],
+    Rep = snmpm:sync_get(?SNMP_USER, Agent, Request, Timeout * 1000),
     case Rep of
         {error, _Error} = R ->
             #probe_return{
+                status          = 'CRITICAL',
                 original_reply  = to_string(R),
+                key_vals        = [{"status", 'CRITICAL'}],
                 timestamp       = tracker_misc:timestamp(second)
             };
-        {ok, _SnmpReply, _Remaining} = R ->
+        {ok, SnmpReply, _Remaining} ->
             % from snmpm documentation: snmpm, Common Data Types 
             % snmp_reply() = {error_status(), error_index(), varbinds()}
             % {_ErrStatus, _ErrId, VarBinds} = SnmpReply,
             % lists:foreach(fun(X) ->
                 % io:format("rep is noError ~p~n",[X#varbind.value])
             % end, VarBinds)
-            #probe_return{
-                original_reply  = to_string(R),
-                timestamp       = tracker_misc:timestamp(second)
-            }
+            PR = eval_snmp_return(SnmpReply, Oids),
+            PR
     end.
+
+eval_snmp_return({noError, _, VarBinds}, Oids) ->
+    KeyVals = [
+        {Key, (lists:keyfind(Oid, 2, VarBinds))#varbind.value} || 
+        {Key, Oid} <- Oids
+    ],
+    #probe_return{
+        status          = 'OK',
+        original_reply  = to_string(VarBinds),
+        key_vals        = [{"status", 'OK'} | KeyVals],
+        timestamp       = tracker_misc:timestamp(second)
+    }.
 
 info() -> {ok, "snmp get and walk module"}.
 
@@ -121,3 +139,6 @@ handle_report(_TargetName, _SnmpReport, _UserData) ->
 
 to_string(Term) ->
     lists:flatten(io_lib:format("~p~n", [Term])).
+
+agent_is_registered(Agent) ->
+    lists:member(Agent, snmpm:which_agents(?SNMP_USER)).

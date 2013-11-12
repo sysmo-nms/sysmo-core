@@ -47,21 +47,16 @@ exec({_, #probe{
 
     case receive_port_info() of
         {0, Stdout} ->
-            PR =  evaluate_nagios_output(Stdout),
-            PR#probe_return{status = 'OK'};
+            evaluate_nagios_output(Stdout, 'OK');
         {1, Stdout} ->
-            PR =  evaluate_nagios_output(Stdout),
-            PR#probe_return{status = 'WARNING'};
+            evaluate_nagios_output(Stdout, 'WARNING');
         {2, Stdout} ->
-            PR =  evaluate_nagios_output(Stdout),
-            PR#probe_return{status = 'CRITICAL'};
+            evaluate_nagios_output(Stdout, 'CRITICAL');
         {3, Stdout} ->
-            PR =  evaluate_nagios_output(Stdout),
-            PR#probe_return{status = 'UNKNOWN'};
+            evaluate_nagios_output(Stdout, 'UNKNOWN');
         {Any, Stdout} ->
             io:format("Other return status~p~n", [Any]),
-            PR =  evaluate_nagios_output(Stdout),
-            PR#probe_return{status = 'UNKNOWN'}
+            evaluate_nagios_output(Stdout, 'UNKNOWN')
     end.
 
 receive_port_info() ->
@@ -80,7 +75,7 @@ info() ->
     {ok, "Nagios plugin compatible probe"}.
 
 % @private
-evaluate_nagios_output(StdOutput) ->
+evaluate_nagios_output(StdOutput, Status) ->
 
     {_, PerfLines} = lists:foldr(fun(X, {TextOut, Perfs}) ->
         case string:tokens(X, "|") of
@@ -158,13 +153,16 @@ evaluate_nagios_output(StdOutput) ->
     case KeyValList of
         []  ->
             #probe_return{
+                status          = Status,
                 original_reply  = StdOutput,
+                key_vals        = [{"status", Status}],
                 timestamp       = tracker_misc:timestamp(second)
             };
         _   ->
             #probe_return{
+                status          = Status,
                 original_reply  = StdOutput,
-                key_vals        = KeyValList,
+                key_vals        = [{"status", Status} | KeyValList],
                 timestamp       = tracker_misc:timestamp(second)
             }
     end.

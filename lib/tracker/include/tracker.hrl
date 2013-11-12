@@ -48,7 +48,7 @@
     status          = 'UNKNOWN' :: 'OK' | 'UNKNOWN' | 'WARNING' | 'CRITICAL',
     original_reply  = undefined :: string(),
     timestamp       = undefined :: integer(),
-    key_vals        = []        :: [{any(), integer()}]
+    key_vals        = []        :: [{string(), any()}]
 }).
 
 -record(rrd_ds_bind, {
