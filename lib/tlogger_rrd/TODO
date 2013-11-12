@@ -1,1 +1,1 @@
-- refactor errd to tlogger_rrd
+P = erlang:open_port({spawn, "/usr/bin/rrdtool - "}, [use_stdio, exit_status, {line, 100}])

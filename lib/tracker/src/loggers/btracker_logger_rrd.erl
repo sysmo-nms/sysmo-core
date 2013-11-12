@@ -33,22 +33,28 @@
     dump/1
 ]).
 
-%-record(rrd_logger_state, {
-    %file,
-    %binds
-%}).
-
-init(_, PSS) ->
-    io:format("initrrd~n"),
-    {ok, PSS}.
+init(Cfg, #probe_server_state{
+        target          = Target,
+        probe           = Probe,
+        loggers_state   = _LoggersState} = ProbeSrvState) ->
+    RrdFile = generate_filename(Target, Probe),
+    {create, String} = lists:keyfind(create, 1, Cfg),
+    RrdCommand = re:replace(String, "<FILE>", RrdFile, [{return, list}]),
+    io:format("command is ~p~n", [RrdCommand]),
+    {ok, ProbeSrvState}.
 
 log(_, _) ->
-    io:format("logtorrd~n"),
     ok.
 
 dump(_) ->
     io:format("dumpfromrrd~n"),
     ignore.
+
+generate_filename(Target, Probe) ->
+    TargetDir   = Target#target.directory,
+    ProbeName   = Probe#probe.name,
+    FileName    = io_lib:format("~s.rrd", [ProbeName]),
+    filename:absname_join(TargetDir, FileName).
 
 % init(Conf, #probe_server_state{
 %             target          = #target{directory = TargetDir},
