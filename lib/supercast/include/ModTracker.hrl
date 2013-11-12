@@ -21,7 +21,7 @@ module, conf}).
 name, type}).
 
 -record('ProbeInfo',{
-channel, probeId, name, permissions, probeMod, probeConf, status, timeout, step, type, inspectors, loggers, properties, active, infoType}).
+channel, probeId, name, permissions, probeMod, probeConf, status, timeout, step, inspectors, loggers, properties, active, infoType}).
 
 -record('ProbeActivity',{
 channel, probeId, timestamp, state, returnStatus, textual}).
@@ -36,7 +36,7 @@ channel, probeId, status, originalReply, timestamp, keysVals}).
 name, info}).
 
 -record('ProbeDump',{
-channel, probeId, probeType, probeModule, binaryData}).
+channel, probeId, probeModule, binaryData}).
 
 -record('ProbeFetch',{
 channel, probe, probeType, probeValue}).

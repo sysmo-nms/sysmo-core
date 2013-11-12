@@ -15,7 +15,6 @@
             'UNKNOWN',
             5,
             4,
-            status,
             [
                 {inspector, btracker_inspector_status_set,[]},
                 {inspector, btracker_inspector_property_set, ["status"]}
@@ -41,7 +40,6 @@
             'UNKNOWN',
             5,
             4,
-            status,
             [
                 {inspector, btracker_inspector_status_set,[]},
                 {inspector, btracker_inspector_property_set, ["status"]}
@@ -81,7 +79,6 @@
             'UNKNOWN',
             5,
             4,
-            status,
             [
                 {inspector, btracker_inspector_status_set,[]},
                 {inspector, btracker_inspector_property_set, 
@@ -122,7 +119,6 @@
             'UNKNOWN',
             5,
             4,
-            status,
             [
                 {inspector, btracker_inspector_status_set,[]},
                 {inspector, btracker_inspector_property_set, ["status"]}

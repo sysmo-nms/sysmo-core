@@ -73,12 +73,10 @@ ProbeInfo   ::= SEQUENCE {
     status      ProbeStatus,
     timeout     ProbeTimeout,
     step        ProbeStep,
-    type        ProbeType,
     inspectors  Inspectors,
     loggers     Loggers,
     properties  Properties,
     active      INTEGER,
-    -- snmpOids    SEQUENCE OF OID
     infoType    ProbeInfoType
 }
 
@@ -113,7 +111,6 @@ ProbeModuleInfo ::= SEQUENCE {
 ProbeDump   ::= SEQUENCE {
     channel     TargetId,
     probeId     ProbeId,
-    probeType   ProbeType,
     probeModule PrintableString,
     binaryData  FileData  
 }

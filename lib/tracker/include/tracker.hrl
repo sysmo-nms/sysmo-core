@@ -35,7 +35,6 @@
     status              = 'UNKNOWN'     :: 'UNKNOWN' | atom(),
     timeout             = 5             :: integer(),
     step                = 60            :: integer(),
-    type                = undefined     :: undefined, % XXX
     inspectors          = []            :: [#inspector{}],
     loggers             = []            :: [#logger{}],
     properties          = []            :: [{string(), any()}],

@@ -59,21 +59,20 @@ log(
 dump(#probe_server_state{
         loggers_state   = LState,
         target          = #target{id = TId},
-        probe           = #probe{id = PId, type = Type}
+        probe           = #probe{id = PId}
     }) ->
     LogSrv  = get_key(log_srv, LState),
     Bin     = tlogger_text:dump(LogSrv),
-    Pdu     = pdu('probeDump', {TId, PId, Type, Bin}),
+    Pdu     = pdu('probeDump', {TId, PId, Bin}),
     Pdu.
 
-pdu('probeDump', {TargetId, ProbeId, ProbeType, Binary}) ->
+pdu('probeDump', {TargetId, ProbeId, Binary}) ->
     {modTrackerPDU,
         {fromServer,
             {probeDump,
                 {'ProbeDump',
                     atom_to_list(TargetId),
                     ProbeId,
-                    ProbeType,
                     atom_to_list(?MODULE),
                     Binary}}}}.
 
