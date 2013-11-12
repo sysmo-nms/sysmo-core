@@ -19,10 +19,13 @@
 % You should have received a copy of the GNU General Public License
 % along with Enms. If not, see <http://www.gnu.org/licenses/>.
 % @doc
-% The most simple and mandatory inspector. It set re return status of the
-% ProbeServer to the return status of the probe return.
+% This simple inspector set the value of defined key in the probe property
+% record. The key must appear in the configuration list, and be returned by
+% the probe in the #probe_return.key_vals list to be set.
+% If the key did not appear in the #probe_return.key_vals list, the inspector
+% do nothing (if key_val exist, it will not be modified).
 % @end
--module(btracker_inspector_standard).
+-module(btracker_inspector_property_set).
 -behaviour(beha_tracker_inspector).
 -include("../../include/tracker.hrl").
 
@@ -36,16 +39,27 @@
 info() ->
     [].
 
-init(_Conf, ProbeServerState) ->
-    {ok, ProbeServerState}.
+init(Conf, #probe_server_state{inspectors_state=IState} = ProbeServerState) ->
+    IConf = lists:keystore(?MODULE, 1, IState, {?MODULE, Conf}),
+    {ok, ProbeServerState#probe_server_state{inspectors_state = IConf}}.
 
 % @end
-inspect(_InitS,
+inspect(_InitialP,
             #probe_server_state{
-                probe = Probe
+                probe = #probe{properties = Properties} = Probe,
+                inspectors_state = IConf
             } = ProbeServerState,
             #probe_return{
-                status = Status
+                key_vals = KeyVals
             }) ->
-    NewProbe = Probe#probe{status = Status},
+    {?MODULE, Binds} = lists:keyfind(?MODULE, 1, IConf),
+    NewProp = lists:foldl(fun(Key, Acc) ->
+        case lists:keyfind(Key, 1, KeyVals) of
+            false -> 
+                Acc;
+            Value ->
+                lists:keystore(Key, 1, Acc, Value)
+        end
+    end, Properties, Binds),
+    NewProbe = Probe#probe{properties = NewProp},
     {ok, ProbeServerState#probe_server_state{probe = NewProbe}}.
