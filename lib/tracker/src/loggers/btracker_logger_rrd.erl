@@ -39,13 +39,17 @@
 %}).
 
 init(_, PSS) ->
-    PSS.
+    io:format("initrrd~n"),
+    {ok, PSS}.
 
 log(_, _) ->
+    io:format("logtorrd~n"),
     ok.
 
 dump(_) ->
+    io:format("dumpfromrrd~n"),
     ignore.
+
 % init(Conf, #probe_server_state{
 %             target          = #target{directory = TargetDir},
 %             loggers_state   = LoggersState
