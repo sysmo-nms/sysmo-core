@@ -31,7 +31,7 @@
 -export([
     init/2,
     log/2,
-    dump/2
+    dump/1
 ]).
 
 % @private
@@ -67,16 +67,15 @@ init(_Conf, ProbeServerState) ->
 log(_ProbeServerState, _Msg) ->
     ok.
 
--spec dump(ProbeServerState::#probe_server_state{}, Timeout::integer()) -> 
+-spec dump(ProbeServerState::#probe_server_state{}) -> 
     {ok, binary()} | ignore | timeout.
 % @doc
 % Called by a tracker_target_channel on a subscribe request by a client. Must
 % return a binary form of the data logged, ignore or timeout.
 % For synchronisation, the tracker_target_channel server will wait for a
-% a responce. The function MUST return before Timeout or return timeout if
-% it is reached.
-% Take care, a bugy function here can lock indefinetely wich will result in a 
+% a responce. The function MUST return before some kind of timeout return
+% it is reached a buggy logger which lock indefinetely will result in a 
 % crash of the channel.
 % @end
-dump(_ProbeServerState, _Timeout) ->
+dump(_ProbeServerState) ->
     ignore.
