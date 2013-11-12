@@ -1,0 +1,30 @@
+#!/bin/sh
+# This script transform the /etc/tracker/targets.yaml configuration file
+# in a tuple list understandable by the system.
+
+set -e
+
+BADFILE=1
+BADSIZE=2
+CONFIG_SRC="../cfg/targets.yamls"
+CONFIG_DST="../var/tracker/tracker.conf"
+
+if [ ! -e $CONFIG_SRC ]
+then
+    echo "$0:ERROR: configuration file \"$CONFIG_SRC\" not found" 1>&2
+    exit $BADFILE
+fi
+
+if [ ! -s $CONFIG_SRC ]
+then
+    echo "$0:ERROR: configuration file \"$CONFIG_SRC\" is empty" 1>&2
+    exit $BADSIZE
+fi
+
+cat $CONFIG_SRC | awk '
+    BEGIN   {print "begin"}
+    {print $0}
+    END     {print "end"}
+'
+
+exit 0
