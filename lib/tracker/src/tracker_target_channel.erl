@@ -94,7 +94,7 @@ cold_start(Pid) ->
 update(Chan, ProbeId, Message) ->
     gen_server:cast(Chan, {update, ProbeId, Message}).
 
--spec subscribe(target_id(), any()) -> ok.
+-spec subscribe(atom(), any()) -> ok.
 % @doc
 % supercast module related.
 % The logic is here:

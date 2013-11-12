@@ -3,32 +3,6 @@
 -include("../supercast/include/supercast.hrl").
 -include("../tlogger_rrd/include/errd.hrl").
 
-% syslog like security levels
--define(EMERGENCY,  0).
--define(ALERT,      1).
--define(CRITICAL,   2).
--define(ERROR,      3).
--define(WARNING,    4).
--define(NOTICE,     5).
--define(INFO,       6).
--define(DEBUG,      7).
-
--type hostname()                :: undefined | inet:hostname().
--type ip_add()                  :: undefined | inet:ip_address().
--type probe_id()                :: undefined | integer().
--type probe_type()              :: undefined | fetch | status | set_property.
--type property_key()            :: any().
--type property_val()            :: any().
--type role()                    :: string().
--type seconds()                 :: integer().
--type property()                :: {any(),any()}.
--type tag()                     :: any().
--type target_id()               :: atom().
--type tfun()                    :: fun() | undefined.
--type timeout_alert()           :: fun() | undefined.
--type timeout_threshold()       :: integer() | undefined.
--type oid()                     :: [byte()].
-
 -record(inspector, {
     module,
     conf
@@ -41,7 +15,7 @@
 
 -record(nagios_plugin_conf, {
     executable  = undefined             :: string(),
-    args        = []                    :: [property()]
+    args        = []                    :: [{any(), any()}]
 }).
 
 -record(probe_return, {
@@ -51,19 +25,8 @@
     key_vals        = []        :: [{string(), any()}]
 }).
 
--record(rrd_ds_bind, {
-    term    = undefined             :: any(),
-    key     = ""                    :: string()
-}).
-
--record(rrd_def, {
-    create          = undefined     :: undefined | #rrd_create{},
-    update_binds    = undefined     :: undefined | [#rrd_ds_bind{}],
-    graph           = ""            :: string()
-}).
-
 -record(probe, {
-    id                  = undefined     :: probe_id(), % unique in a target
+    id                  = undefined     :: integer(), % unique in a target
     pid                 = undefined     :: undefined | pid(),
     name                = undefined     :: string(),
     permissions         = #perm_conf{}  :: #perm_conf{},
@@ -72,15 +35,15 @@
     status              = 'UNKNOWN'     :: 'UNKNOWN' | atom(),
     timeout             = 5             :: integer(),
     step                = 60            :: integer(),
-    type                = undefined     :: fetch|status|{property, atom()},
+    type                = undefined     :: undefined, % XXX
     inspectors          = []            :: [#inspector{}],
     loggers             = []            :: [#logger{}],
-    properties          = []            :: [property()],
+    properties          = []            :: [{string(), any()}],
     active              = true          :: true | false
 }).
 
 -record(target, {
-    id          = undefined     :: target_id(),
+    id          = undefined     :: atom(),
     global_perm = #perm_conf{
         read        =   ["admin"],
         write       =   ["admin"]
@@ -90,7 +53,7 @@
         {hostname,      undefined},
         {sysname,       undefined},
         {snmp_conf,     undefined}
-    ]        :: [property()],
+    ]        :: [{any(), any()}],
     probes      = [] :: [#probe{}],
     directory   = ""
 }).
@@ -113,5 +76,5 @@
     authalgo    = none          :: none | 'hmac-md5' | 'hmac-sha1',
     enckey      = none          :: none | string(),
     encalgo     = none          :: none | des | aes,
-    oids        = []            :: [oid()]
+    oids        = []            :: [any()]
 }).
