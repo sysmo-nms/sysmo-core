@@ -20,7 +20,8 @@
                 {inspector, btracker_inspector_property_set, ["status"]}
             ],
             [
-                {logger, btracker_logger_text, []}
+                {logger, btracker_logger_text, []},
+                {logger, btracker_logger_rrd, []}
             ],
             [
                 {"propertyX", "propertyXValue"},
@@ -111,9 +112,10 @@
                 none,
                 none,
                 [
-                    {"sis0", [1,3,6,1,2,1,1,5,0]},
-                    {"sis1", [1,3,6,1,2,1,1,6,0]}
-
+                    {"sis0-in",     [1,3,6,1,2,1,2,2,1,10,1,0]},
+                    {"sis0-out",    [1,3,6,1,2,1,2,2,1,16,1,0]},
+                    {"sis1-in",     [1,3,6,1,2,1,2,2,1,10,2,0]},
+                    {"sis1-out",    [1,3,6,1,2,1,2,2,1,16,2,0]}
                 ]
             },
             'UNKNOWN',
@@ -124,7 +126,8 @@
                 {inspector, btracker_inspector_property_set, ["status"]}
             ],
             [
-                {logger, btracker_logger_text, []}
+                {logger, btracker_logger_text, []},
+                {logger, btracker_logger_rrd, []}
             ],
             [
                 {"propertyX", "propertyXValue"},
