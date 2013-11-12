@@ -33,99 +33,107 @@
     dump/1
 ]).
 
--record(rrd_logger_state, {
-    file,
-    binds
-}).
+%-record(rrd_logger_state, {
+    %file,
+    %binds
+%}).
 
-init(Conf, #probe_server_state{
-            target          = #target{directory = TargetDir},
-            loggers_state   = LoggersState
-        } = ProbeServerState) -> 
+init(_, PSS) ->
+    PSS.
 
-    #rrd_def{
-        create          = #rrd_create{file = FileName} = RrdCreate,
-        update_binds    = Binds
-    } = Conf,
-
-    File = filename:absname_join(TargetDir, FileName),
-
-    case errd_server:info(rrd_tracker, File) of
-        {error, _}  ->
-            {ok, _} = errd_server:command(rrd_tracker, 
-                    RrdCreate#rrd_create{file = File});
-        {rrd, _, _, _, _, _, _}    ->
-            ok;
-        A ->
-            io:format("rrd:info is ~p~n", [A])
-    end,
-
-    
-    
-    RrdLoggerState = #rrd_logger_state{
-        file            = File,
-        binds           = Binds
-    },
-    {ok, ProbeServerState#probe_server_state{
-            loggers_state = [RrdLoggerState | LoggersState]
-        }
-    }.
-
-log(_, #probe_return{key_vals = []}) ->
-    io:format("no data do nothing~n"),
-    ok;
-
-log(    #probe_server_state{
-            loggers_state = LoggersState
-        }, 
-        #probe_return{
-            timestamp   = Timestamp,
-            key_vals    = Datas
-        }) ->
-
-    #rrd_logger_state{
-        file            = File,
-        binds           = Binds
-    } = lists:keyfind(rrd_logger_state, 1, LoggersState),
-
-    RrdUpdateList = lists:foldl(fun({rrd_ds_bind, Term, DsName}, Acc) ->
-        case get_ds_data_for(Term, Datas) of
-            false ->
-                Acc;
-            {ok, Value} ->
-                [
-                    #rrd_ds_update{
-                        name    =   DsName,
-                        value   =   Value
-                    }
-                | Acc]
-        end
-    end, [], Binds),
-
-    RrdUpdate = #rrd_update {
-        file    =   File,
-        time    =   integer_to_list(Timestamp),
-        updates =   RrdUpdateList
-    },
-
-    case RrdUpdate of
-        #rrd_update{updates = []} ->
-            ok;
-        _  ->
-            {ok, _} = errd_server:command(rrd_tracker, RrdUpdate)
-    end,
-
+log(_, _) ->
     ok.
 
-dump(_S) ->
+dump(_) ->
     ignore.
-
-% PRIVATE
-% @private
-get_ds_data_for(Term, DataList) ->
-    case lists:keyfind(Term, 1, DataList) of
-        false ->
-            false;
-        {Term, Value}       ->
-            {ok, Value}
-    end.
+% init(Conf, #probe_server_state{
+%             target          = #target{directory = TargetDir},
+%             loggers_state   = LoggersState
+%         } = ProbeServerState) -> 
+% 
+%     #rrd_def{
+%         create          = #rrd_create{file = FileName} = RrdCreate,
+%         update_binds    = Binds
+%     } = Conf,
+% 
+%     File = filename:absname_join(TargetDir, FileName),
+% 
+%     case errd_server:info(rrd_tracker, File) of
+%         {error, _}  ->
+%             {ok, _} = errd_server:command(rrd_tracker, 
+%                     RrdCreate#rrd_create{file = File});
+%         {rrd, _, _, _, _, _, _}    ->
+%             ok;
+%         A ->
+%             io:format("rrd:info is ~p~n", [A])
+%     end,
+% 
+%     
+%     
+%     RrdLoggerState = #rrd_logger_state{
+%         file            = File,
+%         binds           = Binds
+%     },
+%     {ok, ProbeServerState#probe_server_state{
+%             loggers_state = [RrdLoggerState | LoggersState]
+%         }
+%     }.
+% 
+% log(_, #probe_return{key_vals = []}) ->
+%     io:format("no data do nothing~n"),
+%     ok;
+% 
+% log(    #probe_server_state{
+%             loggers_state = LoggersState
+%         }, 
+%         #probe_return{
+%             timestamp   = Timestamp,
+%             key_vals    = Datas
+%         }) ->
+% 
+%     #rrd_logger_state{
+%         file            = File,
+%         binds           = Binds
+%     } = lists:keyfind(rrd_logger_state, 1, LoggersState),
+% 
+%     RrdUpdateList = lists:foldl(fun({rrd_ds_bind, Term, DsName}, Acc) ->
+%         case get_ds_data_for(Term, Datas) of
+%             false ->
+%                 Acc;
+%             {ok, Value} ->
+%                 [
+%                     #rrd_ds_update{
+%                         name    =   DsName,
+%                         value   =   Value
+%                     }
+%                 | Acc]
+%         end
+%     end, [], Binds),
+% 
+%     RrdUpdate = #rrd_update {
+%         file    =   File,
+%         time    =   integer_to_list(Timestamp),
+%         updates =   RrdUpdateList
+%     },
+% 
+%     case RrdUpdate of
+%         #rrd_update{updates = []} ->
+%             ok;
+%         _  ->
+%             {ok, _} = errd_server:command(rrd_tracker, RrdUpdate)
+%     end,
+% 
+%     ok.
+% 
+% dump(_S) ->
+%     ignore.
+% 
+% % PRIVATE
+% % @private
+% get_ds_data_for(Term, DataList) ->
+%     case lists:keyfind(Term, 1, DataList) of
+%         false ->
+%             false;
+%         {Term, Value}       ->
+%             {ok, Value}
+%     end.
