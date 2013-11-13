@@ -21,32 +21,23 @@ start_link() ->
     gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
 exec(Command) ->
-    gen_server:call(?MODULE, {exec, Command}).
+    gen_server:call(?MODULE, {exec, string:concat(Command, "\n")}).
 
 init([]) ->
-    io:format("self is ~p~n",[self()]),
-    P = erlang:open_port(
-        {spawn, "/usr/bin/rrdtool -"}, 
-        [use_stdio, exit_status, {line, 100}]
-    ),
+    {ok, Exe} =application:get_env(tlogger_rrd, command),
+    P = erlang:open_port({spawn, Exe}, 
+        [use_stdio, exit_status, {line, 100}]),
     {ok, P}.
 
 handle_call({exec, Command}, _F, P) ->
     erlang:port_command(P, Command),
-    case collect_response(P) of
-        {response, Response} -> 
-            {reply, Response, P};
-        timeout -> 
-            {stop, port_timeout, P}
-    end.
-
-    %{reply, ok, P}.
+    Rep = get_response(P),
+    {reply, Rep, P}.
 
 handle_cast(_,S) ->
     {noreply, S}.
 
-handle_info(Info, S) ->
-    io:format("received info ~p~n",[Info]),
+handle_info(_, S) ->
     {noreply, S}.
 
 terminate(_,_) ->
@@ -55,23 +46,14 @@ terminate(_,_) ->
 code_change(_,S,_) ->
     {ok, S}.
 
-collect_response(Port) ->
-    collect_response(Port, [], []).
-
-collect_response(Port, RespAcc, LineAcc) ->
+get_response(Port) ->
     receive
-        {Port, {data, {eol, "OK"}}} ->
-            {response, lists:reverse(RespAcc)};
-
-        {Port, {data, {eol, Result}}} ->
-            Line = lists:reverse([Result | LineAcc]),
-            collect_response(Port, [Line | RespAcc], []);
-
-        {Port, {data, {noeol, Result}}} ->
-            collect_response(Port, RespAcc, [Result | LineAcc])
-
-    %% Prevent the gen_server from hanging indefinitely in case the
-    %% spawned process is taking too long processing the request.
+        {Port, {data, {eol, "ERROR: " ++ _}}} ->
+            error;
+        {Port, {data, {eol, "OK " ++ _}}} ->
+            ok;
+        {Port, {data, _}} ->
+            get_response(Port)
     after 5000 -> 
             timeout
     end.

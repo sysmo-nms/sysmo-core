@@ -26,4 +26,4 @@ clean:
 	rm -f priv/asn1/build/*
 
 start: compile
-	erl -pa ebin -eval 'application:start(tlogger_rrd)'
+	erl -pa ebin -eval 'application:start(tlogger_rrd), tlogger_rrd:exec("create dd.rrd")'
