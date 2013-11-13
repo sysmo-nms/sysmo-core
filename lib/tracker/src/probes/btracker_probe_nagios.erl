@@ -37,7 +37,9 @@ init(#probe_server_state{
         probes_state = lists:keystore(?MODULE, 1, Ps, {?MODULE, Conf})
     }.
 
-exec({_, #probe{
+exec({#probe_server_state{
+        probes_state = Conf
+    }, #probe{
             tracker_probe_conf  = #nagios_plugin_conf{
                 executable  = Exec,
                 args        = Args
@@ -45,7 +47,9 @@ exec({_, #probe{
         }
     }) ->
  
-    % TODO use the #probe_server_state.probes_state, delete tracker_misc
+    {?MODULE, Cl}   = lists:keyfind(?MODULE, 1, Conf),
+    {nag_re,  Re}   = lists:keyfind(nag_re,  1, Cl),
+
     ArgList = [erlang:tuple_to_list(X) || X <- Args],
 
     Lts = sys_timestamp(),
@@ -54,18 +58,19 @@ exec({_, #probe{
 
     case receive_port_info() of
         {0, Stdout} ->
-            PR = evaluate_nagios_output(Stdout, 'OK');
+            PR = evaluate_nagios_output(Stdout, Re, 'OK');
         {1, Stdout} ->
-            PR = evaluate_nagios_output(Stdout, 'WARNING');
+            PR = evaluate_nagios_output(Stdout, Re, 'WARNING');
         {2, Stdout} ->
-            PR = evaluate_nagios_output(Stdout, 'CRITICAL');
+            PR = evaluate_nagios_output(Stdout, Re, 'CRITICAL');
         {3, Stdout} ->
-            PR = evaluate_nagios_output(Stdout, 'UNKNOWN');
+            PR = evaluate_nagios_output(Stdout, Re, 'UNKNOWN');
         {Any, Stdout} ->
             io:format("Other return status~p~n", [Any]),
-            PR = evaluate_nagios_output(Stdout, 'UNKNOWN')
+            PR = evaluate_nagios_output(Stdout, Re, 'UNKNOWN')
     end,
     Rts = sys_timestamp(),
+    ?LOG(PR),
     PR#probe_return{
         timestamp   = Rts,
         key_vals    = [{"sys_latency", Rts - Lts} | PR#probe_return.key_vals]
@@ -87,7 +92,7 @@ info() ->
     {ok, "Nagios plugin compatible probe"}.
 
 % @private
-evaluate_nagios_output(StdOutput, Status) ->
+evaluate_nagios_output(StdOutput, Re, Status) ->
 
     {_, PerfLines} = lists:foldr(fun(X, {TextOut, Perfs}) ->
         case string:tokens(X, "|") of
@@ -110,7 +115,7 @@ evaluate_nagios_output(StdOutput, Status) ->
         case PerfDataList of
             [LabelValue, Warn, Crit, Min, Max] ->
                 [Label, ValueUom]   = string:tokens(LabelValue, "="),
-                {ok, {Value, Uom}}  = tracker_misc:extract_nag_uom(ValueUom),
+                {ok, {Value, Uom}}  = nag_uom_test(ValueUom, Re),
                 Vars = [
                     {string:concat(Label, "_value"), to_number(Value)},
                     {string:concat(Label, "_uom"),   to_number(Uom)},
@@ -122,7 +127,7 @@ evaluate_nagios_output(StdOutput, Status) ->
                 lists:concat([Acc, Vars]);
             [LabelValue, Warn, Crit, Min] ->
                 [Label, ValueUom] = string:tokens(LabelValue, "="),
-                {ok, {Value, Uom}}  = tracker_misc:extract_nag_uom(ValueUom),
+                {ok, {Value, Uom}}  = nag_uom_test(ValueUom, Re),
                 Vars = [
                     {string:concat(Label, "_value"), to_number(Value)},
                     {string:concat(Label, "_uom"),   to_number(Uom)},
@@ -133,7 +138,7 @@ evaluate_nagios_output(StdOutput, Status) ->
                 lists:concat([Acc, Vars]);
             [LabelValue, Warn, Crit] ->
                 [Label, ValueUom] = string:tokens(LabelValue, "="),
-                {ok, {Value, Uom}}  = tracker_misc:extract_nag_uom(ValueUom),
+                {ok, {Value, Uom}}  = nag_uom_test(ValueUom, Re),
                 Vars = [
                     {string:concat(Label, "_value"), to_number(Value)},
                     {string:concat(Label, "_uom"),   to_number(Uom)},
@@ -143,7 +148,7 @@ evaluate_nagios_output(StdOutput, Status) ->
                 lists:concat([Acc, Vars]);
             [LabelValue, Warn] ->
                 [Label, ValueUom] = string:tokens(LabelValue, "="),
-                {ok, {Value, Uom}}  = tracker_misc:extract_nag_uom(ValueUom),
+                {ok, {Value, Uom}}  = nag_uom_test(ValueUom, Re),
                 Vars = [
                     {string:concat(Label, "_value"), to_number(Value)},
                     {string:concat(Label, "_uom"),   to_number(Uom)},
@@ -152,7 +157,7 @@ evaluate_nagios_output(StdOutput, Status) ->
                 lists:concat([Acc, Vars]);
             [LabelValue] ->
                 [Label, ValueUom] = string:tokens(LabelValue, "="),
-                {ok, {Value, Uom}}  = tracker_misc:extract_nag_uom(ValueUom),
+                {ok, {Value, Uom}}  = nag_uom_test(ValueUom, Re),
                 Vars = [
                     {string:concat(Label, "_value"), to_number(Value)},
                     {string:concat(Label, "_uom"),   to_number(Uom)}
@@ -212,3 +217,15 @@ compile_nagios_re() ->
     end, NagUomRe),
     NagCompiledRe.
 
+nag_uom_test(String, []) ->
+    {String, no_unit};
+
+nag_uom_test(String, [{ReName, Re} |ReList]) ->
+    case re:run(String, Re) of
+        nomatch ->
+            nag_uom_test(String, ReList);
+        {match, _} ->
+            [Val, _] = re:replace(String, Re, ""),
+            ?LOG(Val),
+            {ok, {erlang:binary_to_list(Val), ReName}}
+    end.

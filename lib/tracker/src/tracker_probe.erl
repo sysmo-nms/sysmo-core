@@ -93,8 +93,8 @@ init([Target, Probe]) ->
     },
     {ok, S2}    = init_loggers(S1),
     {ok, S3}    = init_inspectors(S2),
-    {ok, _SF}    = init_probe(S3),
-    {ok, S3}.
+    {ok, SF}    = init_probe(S3),
+    {ok, SF}.
         
     
 %%-------------------------------------------------------------
@@ -212,15 +212,14 @@ code_change(_O, S, _E) ->
 %% PRIVATE FUNS
 %%-------------------------------------------------------------
 %%-------------------------------------------------------------
-% TODO send conf here
 -spec probe_pass(#probe_server_state{}) -> ok.
 % @doc
 % It is the spawned proc who call the "gen_probe" module defined in the 
 % #probe{} record. Called from "initial_pass" and "next_pass" modules.
 % @end
-probe_pass(#probe_server_state{target = Target, probe  = Probe } = S) ->
+probe_pass(#probe_server_state{probe  = Probe } = S) ->
     Mod         = Probe#probe.tracker_probe_mod,
-    ProbeReturn = Mod:exec({Target, Probe}),
+    ProbeReturn = Mod:exec({S, Probe}),
 
     % tracker_target_channel is the processus wich synchronize
     % with the client. Thus, it is in his gen_server loop that

@@ -47,6 +47,7 @@ init(Cfg, #probe_server_state{
                 [{return, list}]),
             tlogger_rrd:exec(RrdCommand)
     end,
+    ?LOG(Cfg),
     {ok, ProbeSrvState}.
 
 log(_, _) ->
