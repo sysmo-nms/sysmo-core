@@ -70,7 +70,6 @@ exec({#probe_server_state{
             PR = evaluate_nagios_output(Stdout, Re, 'UNKNOWN')
     end,
     Rts = sys_timestamp(),
-    ?LOG(PR),
     PR#probe_return{
         timestamp   = Rts,
         key_vals    = [{"sys_latency", Rts - Lts} | PR#probe_return.key_vals]
@@ -226,6 +225,5 @@ nag_uom_test(String, [{ReName, Re} |ReList]) ->
             nag_uom_test(String, ReList);
         {match, _} ->
             [Val, _] = re:replace(String, Re, ""),
-            ?LOG(Val),
             {ok, {erlang:binary_to_list(Val), ReName}}
     end.
