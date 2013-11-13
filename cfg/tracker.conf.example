@@ -134,7 +134,7 @@
                 {logger, btracker_logger_text, []},
                 {logger,
                     btracker_logger_rrd, [
-                        {create, "create <FILE> --step 5 --no-overwrite DS:sis0-in:COUNTER:10:U:U DS:sis0-out:COUNTER:10:U:U DS:sis1-in:COUNTER:10:U:U DS:sis-out:COUNTER:10:U:U RRA:AVERAGE:0.5:1:600 RRA:AVERAGE:0.5:6:700 RRA:AVERAGE:0.5:24:775 RRA:AVERAGE:0.5:288:797"},
+                        {create, "create <FILE> --step 5 --no-overwrite DS:sis0-in:COUNTER:10:U:U DS:sis0-out:COUNTER:10:U:U DS:sis1-in:COUNTER:10:U:U DS:sis1-out:COUNTER:10:U:U RRA:AVERAGE:0.5:1:600 RRA:AVERAGE:0.5:6:700 RRA:AVERAGE:0.5:24:775 RRA:AVERAGE:0.5:288:797"},
                         {update, "update <FILE> --template sis0-in:sis0-out:sis1-in:sis1-out <TIMESTAMP>:<sis0-in>:<sis0-out>:<sis1-in>:<sis1-out>"}
                     ]
                 }

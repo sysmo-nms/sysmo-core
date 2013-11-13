@@ -42,22 +42,28 @@ exec({_, #probe{
  
     ArgList = [erlang:tuple_to_list(X) || X <- Args],
 
+    Lts = sys_timestamp(),
     erlang:open_port({spawn_executable, Exec}, 
         [exit_status, {args, ArgList}]),
 
     case receive_port_info() of
         {0, Stdout} ->
-            evaluate_nagios_output(Stdout, 'OK');
+            PR = evaluate_nagios_output(Stdout, 'OK');
         {1, Stdout} ->
-            evaluate_nagios_output(Stdout, 'WARNING');
+            PR = evaluate_nagios_output(Stdout, 'WARNING');
         {2, Stdout} ->
-            evaluate_nagios_output(Stdout, 'CRITICAL');
+            PR = evaluate_nagios_output(Stdout, 'CRITICAL');
         {3, Stdout} ->
-            evaluate_nagios_output(Stdout, 'UNKNOWN');
+            PR = evaluate_nagios_output(Stdout, 'UNKNOWN');
         {Any, Stdout} ->
             io:format("Other return status~p~n", [Any]),
-            evaluate_nagios_output(Stdout, 'UNKNOWN')
-    end.
+            PR = evaluate_nagios_output(Stdout, 'UNKNOWN')
+    end,
+    Rts = sys_timestamp(),
+    PR#probe_return{
+        timestamp   = Rts,
+        key_vals    = [{"sys_latency", Rts - Lts} | PR#probe_return.key_vals]
+    }.
 
 receive_port_info() ->
     receive_port_info("").
@@ -155,15 +161,13 @@ evaluate_nagios_output(StdOutput, Status) ->
             #probe_return{
                 status          = Status,
                 original_reply  = StdOutput,
-                key_vals        = [{"status", Status}],
-                timestamp       = tracker_misc:timestamp(second)
+                key_vals        = [{"status", Status}]
             };
         _   ->
             #probe_return{
                 status          = Status,
                 original_reply  = StdOutput,
-                key_vals        = [{"status", Status} | KeyValList],
-                timestamp       = tracker_misc:timestamp(second)
+                key_vals        = [{"status", Status} | KeyValList]
             }
     end.
 
@@ -178,3 +182,7 @@ to_number(String, [ToSomething | T]) ->
         Other ->
             Other
     end.
+
+sys_timestamp() ->
+    {Meg, Sec, _} = os:timestamp(),
+    Meg * 1000000 + Sec.

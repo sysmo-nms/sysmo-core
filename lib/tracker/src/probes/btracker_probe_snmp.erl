@@ -76,14 +76,17 @@ exec({_,#probe{
         }
     }) -> 
     Request = [Oid || {_, Oid} <- Oids],
+    Lts = sys_timestamp(),
     Rep = snmpm:sync_get(?SNMP_USER, Agent, Request, Timeout * 1000),
+    Rts = sys_timestamp(),
     case Rep of
         {error, _Error} = R ->
             #probe_return{
                 status          = 'CRITICAL',
                 original_reply  = to_string(R),
-                key_vals        = [{"status", 'CRITICAL'}],
-                timestamp       = tracker_misc:timestamp(second)
+                key_vals        = [ {"status", 'CRITICAL'}, 
+                                    {"sys_latency", Lts - Rts}],
+                timestamp       = Rts
             };
         {ok, SnmpReply, _Remaining} ->
             % from snmpm documentation: snmpm, Common Data Types 
@@ -92,8 +95,11 @@ exec({_,#probe{
             % lists:foreach(fun(X) ->
                 % io:format("rep is noError ~p~n",[X#varbind.value])
             % end, VarBinds)
-            PR = eval_snmp_return(SnmpReply, Oids),
-            PR
+            #probe_return{key_vals = KV} = PR = eval_snmp_return(SnmpReply, Oids),
+            PR#probe_return{
+                timestamp = Rts,
+                key_vals  = [{"sys_latency", Lts - Rts} | KV]
+            }
     end.
 
 eval_snmp_return({noError, _, VarBinds}, Oids) ->
@@ -104,8 +110,7 @@ eval_snmp_return({noError, _, VarBinds}, Oids) ->
     #probe_return{
         status          = 'OK',
         original_reply  = to_string(VarBinds),
-        key_vals        = [{"status", 'OK'} | KeyVals],
-        timestamp       = tracker_misc:timestamp(second)
+        key_vals        = [{"status", 'OK'} | KeyVals]
     }.
 
 info() -> {ok, "snmp get and walk module"}.
@@ -142,3 +147,7 @@ to_string(Term) ->
 
 agent_is_registered(Agent) ->
     lists:member(Agent, snmpm:which_agents(?SNMP_USER)).
+
+sys_timestamp() ->
+    {Meg, Sec, _} = os:timestamp(),
+    Meg * 1000000 + Sec.

@@ -2,7 +2,7 @@
 -include_lib("kernel/include/file.hrl").
 -include("../supercast/include/supercast.hrl").
 
--define(DEBUG(Arg), io:format("DEBUG: ~p~n", [Arg]).
+-define(LOG(X), io:format("{~p, ~p}: DEBUG: ~p~n", [?MODULE, ?LINE, X])).
 
 -record(inspector, {
     module,
