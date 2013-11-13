@@ -212,6 +212,7 @@ code_change(_O, S, _E) ->
 %% PRIVATE FUNS
 %%-------------------------------------------------------------
 %%-------------------------------------------------------------
+% TODO send conf here
 -spec probe_pass(#probe_server_state{}) -> ok.
 % @doc
 % It is the spawned proc who call the "gen_probe" module defined in the 
@@ -249,6 +250,7 @@ next_pass(#probe_server_state{probe = Probe} = State, ProbeReturn) ->
     gen_server:cast(Probe#probe.pid, {next_pass, State, ProbeReturn}).
  
 % INIT PROBE
+% TODO keystore conf here
 -spec init_probe(#probe_server_state{}) -> #probe_server_state{}.
 init_probe(#probe_server_state{
         probe = #probe{tracker_probe_mod = Mod}
@@ -257,6 +259,7 @@ init_probe(#probe_server_state{
     {ok, SF}.
 
 % LOGGERS
+% TODO keystore conf here
 -spec init_loggers(#probe_server_state{}) -> #probe_server_state{}.
 init_loggers(#probe_server_state{probe = Probe} = State) ->
     NewState = lists:foldl(
@@ -266,6 +269,7 @@ init_loggers(#probe_server_state{probe = Probe} = State) ->
         end, State, Probe#probe.loggers),
     {ok, NewState}.
 
+% TODO send conf here
 -spec log(#probe_server_state{}, {atom(), any()}) -> ok.
 log(#probe_server_state{probe = Probe} = PSState, Msg) ->
     lists:foreach(fun(#logger{module = Mod}) ->
@@ -280,6 +284,7 @@ log_dump(#probe_server_state{probe = Probe} = PSState) ->
     L.
 
 % INSPECTORS
+% TODO keystore conf here
 -spec init_inspectors(#probe_server_state{}) -> #probe_server_state{}.
 init_inspectors(#probe_server_state{probe = Probe} = State) ->
     Inspectors = Probe#probe.inspectors,
@@ -289,6 +294,7 @@ init_inspectors(#probe_server_state{probe = Probe} = State) ->
     end, State, Inspectors),
     {ok, NewState}.
 
+% TODO send conf here
 -spec inspect(#probe_server_state{}, Msg::tuple()) -> #probe_server_state{}.
 inspect(#probe_server_state{probe = Probe} = State, Msg) ->
     Inspectors = Probe#probe.inspectors,

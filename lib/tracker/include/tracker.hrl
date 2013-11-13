@@ -62,7 +62,8 @@
     target,
     probe,
     inspectors_state    = [],
-    loggers_state       = []
+    loggers_state       = [],
+    probes_state        = []
 }).
 
 -record(snmp_conf, {

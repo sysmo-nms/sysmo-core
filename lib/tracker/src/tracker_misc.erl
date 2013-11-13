@@ -26,8 +26,7 @@
 -export([
     start_link/0,
     random/1,
-    extract_nag_uom/1,
-    timestamp/1
+    extract_nag_uom/1
 ]).
 
 -export([
@@ -104,14 +103,6 @@ code_change(_O, S, _E) ->
 %%-------------------------------------------------------------
 %% end of gen_server
 %%-------------------------------------------------------------
-
-timestamp(second) ->
-    {Meg, Sec, _} = os:timestamp(),
-    Meg * 1000000 + Sec;
-
-timestamp(microsecond) ->
-    {Meg, Sec, Mic} = os:timestamp(),
-    Meg * 1000000 * 1000000 + Sec * 1000000 + Mic.
 
 nag_uom_test(String, []) ->
     {String, no_unit};

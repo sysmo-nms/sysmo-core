@@ -29,8 +29,13 @@
     info/0
 ]).
 
-init(S) ->
-    S.
+init(#probe_server_state{
+        probes_state = Ps
+    } = S) ->
+    Conf = lists:keystore(nag_re, 1, [], {nag_re, compile_nagios_re()}),
+    S#probe_server_state{
+        probes_state = lists:keystore(?MODULE, 1, Ps, {?MODULE, Conf})
+    }.
 
 exec({_, #probe{
             tracker_probe_conf  = #nagios_plugin_conf{
@@ -40,6 +45,7 @@ exec({_, #probe{
         }
     }) ->
  
+    % TODO use the #probe_server_state.probes_state, delete tracker_misc
     ArgList = [erlang:tuple_to_list(X) || X <- Args],
 
     Lts = sys_timestamp(),
@@ -186,3 +192,23 @@ to_number(String, [ToSomething | T]) ->
 sys_timestamp() ->
     {Meg, Sec, _} = os:timestamp(),
     Meg * 1000000 + Sec.
+
+compile_nagios_re() ->
+    NagUomRe = [
+        {usecond,       "us$"   },
+        {msecond,       "ms$"   },
+        {second,        "s$"    },
+        {percent,       "%$"    },
+        {kbytes,        "KB$"   },
+        {mbytes,        "MB$"   },
+        {tbytes,        "TB$"   },
+        {bytes,         "B$"    },
+        {counter,       "c$"    }
+    ],
+
+    NagCompiledRe = lists:map(fun({Unit, Re}) ->
+        {ok, RE} = re:compile(Re),
+        {Unit, RE}
+    end, NagUomRe),
+    NagCompiledRe.
+
