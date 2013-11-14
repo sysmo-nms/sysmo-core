@@ -52,7 +52,7 @@ exec({#probe_server_state{
 
     ArgList = [erlang:tuple_to_list(X) || X <- Args],
 
-    Lts = sys_timestamp(),
+    {_, Ltm} = sys_timestamp(),
     erlang:open_port({spawn_executable, Exec}, 
         [exit_status, {args, ArgList}]),
 
@@ -69,10 +69,10 @@ exec({#probe_server_state{
             io:format("Other return status~p~n", [Any]),
             PR = evaluate_nagios_output(Stdout, Re, 'UNKNOWN')
     end,
-    Rts = sys_timestamp(),
+    {Rt, Rtm} = sys_timestamp(),
     PR#probe_return{
-        timestamp   = Rts,
-        key_vals    = [{"sys_latency", Rts - Lts} | PR#probe_return.key_vals]
+        timestamp   = Rt,
+        key_vals    = [{"sys_latency", Rtm - Ltm} | PR#probe_return.key_vals]
     }.
 
 receive_port_info() ->
@@ -194,8 +194,10 @@ to_number(String, [ToSomething | T]) ->
     end.
 
 sys_timestamp() ->
-    {Meg, Sec, _} = os:timestamp(),
-    Meg * 1000000 + Sec.
+    {Meg, Sec, Micro} = os:timestamp(),
+    Seconds = Meg * 1000000 + Sec,
+    Micro   = Seconds * 1000000 + Micro,
+    {Seconds, Micro}.
 
 compile_nagios_re() ->
     NagUomRe = [

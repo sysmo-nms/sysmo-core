@@ -76,17 +76,17 @@ exec({_,#probe{
         }
     }) -> 
     Request = [Oid || {_, Oid} <- Oids],
-    Lts = sys_timestamp(),
+    {_, Ltm} = sys_timestamp(),
     Rep = snmpm:sync_get(?SNMP_USER, Agent, Request, Timeout * 1000),
-    Rts = sys_timestamp(),
+    {Rt, Rtm} = sys_timestamp(),
     case Rep of
         {error, _Error} = R ->
             #probe_return{
                 status          = 'CRITICAL',
                 original_reply  = to_string(R),
                 key_vals        = [ {"status", 'CRITICAL'}, 
-                                    {"sys_latency", Lts - Rts}],
-                timestamp       = Rts
+                                    {"sys_latency", Ltm - Rtm}],
+                timestamp       = Rt
             };
         {ok, SnmpReply, _Remaining} ->
             % from snmpm documentation: snmpm, Common Data Types 
@@ -97,8 +97,8 @@ exec({_,#probe{
             % end, VarBinds)
             #probe_return{key_vals = KV} = PR = eval_snmp_return(SnmpReply, Oids),
             PR#probe_return{
-                timestamp = Rts,
-                key_vals  = [{"sys_latency", Lts - Rts} | KV]
+                timestamp = Rt,
+                key_vals  = [{"sys_latency", Ltm - Rtm} | KV]
             }
     end.
 
@@ -149,5 +149,7 @@ agent_is_registered(Agent) ->
     lists:member(Agent, snmpm:which_agents(?SNMP_USER)).
 
 sys_timestamp() ->
-    {Meg, Sec, _} = os:timestamp(),
-    Meg * 1000000 + Sec.
+    {Meg, Sec, Micro} = os:timestamp(),
+    Seconds      = Meg * 1000000 + Sec,
+    Microseconds = Seconds * 1000000 + Micro,
+    {Seconds, Microseconds}.
