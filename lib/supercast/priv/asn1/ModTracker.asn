@@ -91,7 +91,7 @@ ProbeActivity ::= SEQUENCE {
 
 KeyVal      ::= SEQUENCE {
     key PrintableString,
-    val INTEGER
+    val PrintableString
 }
 
 ProbeReturn ::= SEQUENCE {

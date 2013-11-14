@@ -121,27 +121,40 @@ handle_call(_R, _F, S) ->
 % HANDLE_CAST
 %%-------------------------------------------------------------
 
-% if Status and Properties are equal then the probe have moved nothing.
-% XXX: will need to notify target_channel to update loggers.
-handle_cast({next_pass, 
-        #probe_server_state{
-            probe  = #probe{status          = Status},
-            target = #target{properties     = SysProp}},
-        ProbeReturn
-        },
-        #probe_server_state{
-            probe  = #probe{status          = Status}   = Probe,
-            target = #target{properties     = SysProp}  = Target} = S) ->
+% PsState are equal, notify only tracker_target_channel
+handle_cast({next_pass, S, PR}, 
+            #probe_server_state{
+                target  = Target,
+                probe   = Probe} = S) ->
     tracker_target_channel:update(
         Target#target.id,
         Probe#probe.id,
-        {local_event, ProbeReturn}
+        {local_event, PR}
     ),
     After = Probe#probe.step * 1000,
     timer:apply_after(After, ?MODULE, probe_pass, [S]),
     {noreply, S};
 
-% else notify the parent channel of property or status modification
+% handle_cast({next_pass, 
+%         #probe_server_state{
+%             probe  = #probe{status          = Status},
+%             target = #target{properties     = SysProp}},
+%         ProbeReturn
+%         },
+%         #probe_server_state{
+%             probe  = #probe{status          = Status}   = Probe,
+%             target = #target{properties     = SysProp}  = Target} = S) ->
+%     tracker_target_channel:update(
+%         Target#target.id,
+%         Probe#probe.id,
+%         {local_event, ProbeReturn}
+%     ),
+%     After = Probe#probe.step * 1000,
+%     timer:apply_after(After, ?MODULE, probe_pass, [S]),
+%     {noreply, S};
+
+% else notify the master channel that a change has occur
+% AND update tracker_target_channel
 handle_cast({next_pass, 
         #probe_server_state{probe = NProbe, target = NTarget} = NewS,
         ProbeReturn
