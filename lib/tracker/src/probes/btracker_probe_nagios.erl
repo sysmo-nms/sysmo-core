@@ -195,9 +195,9 @@ to_number(String, [ToSomething | T]) ->
 
 sys_timestamp() ->
     {Meg, Sec, Micro} = os:timestamp(),
-    Seconds = Meg * 1000000 + Sec,
-    Micro   = Seconds * 1000000 + Micro,
-    {Seconds, Micro}.
+    Seconds  = Meg * 1000000 + Sec,
+    Microsec = Seconds * 1000000 + Micro,
+    {Seconds, Microsec}.
 
 compile_nagios_re() ->
     NagUomRe = [
