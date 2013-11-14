@@ -13,7 +13,8 @@
 
 -export([
     start_link/0,
-    exec/1
+    exec/1,
+    dump/1
 ]).
 
 
@@ -22,6 +23,9 @@ start_link() ->
 
 exec(Command) ->
     gen_server:call(?MODULE, {exec, string:concat(Command, "\n")}).
+
+dump(File) ->
+    gen_server:call(?MODULE, {dump, File}).
 
 init([]) ->
     {ok, Exe} =application:get_env(tlogger_rrd, command),
@@ -32,7 +36,11 @@ init([]) ->
 handle_call({exec, Command}, _F, P) ->
     erlang:port_command(P, Command),
     Rep = get_response(P),
-    {reply, Rep, P}.
+    {reply, Rep, P};
+
+handle_call({dump, File}, _F, P) ->
+    {ok, Bin} = file:read_file(File),
+    {reply, Bin, P}.
 
 handle_cast(_,S) ->
     {noreply, S}.

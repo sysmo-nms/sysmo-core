@@ -75,9 +75,26 @@ log(
             ?LOG({logger_rrd_error, String})
     end.
 
-dump(_) ->
-    io:format("dumpfromrrd~n"),
-    ignore.
+dump(#probe_server_state{
+        loggers_state   = LState,
+        target          = #target{id = TId},
+        probe           = #probe{id = PId}
+    }) ->
+    File    = get_file(LState),
+    Bin     = tlogger_rrd:dump(File),
+    Pdu     = pdu('probeDump', {TId, PId, Bin}),
+    Pdu.
+
+pdu('probeDump', {TId, PId, Bin}) ->
+    {modTrackerPDU,
+        {fromServer,
+            {probeDump,
+                {'ProbeDump',
+                    atom_to_list(TId),
+                    PId,
+                    atom_to_list(?MODULE),
+                    Bin}}}}.
+
 
 generate_filename(Dir, Name) ->
     FileName    = io_lib:format("~s.rrd", [Name]),
@@ -111,3 +128,8 @@ to_string(Term) when is_float(Term) ->
     float_to_list(Term, [{decimals, 0}, compact]);
 to_string(Term) when is_integer(Term) ->
     integer_to_list(Term).
+
+get_file(LState) ->
+    {?MODULE, Conf} = lists:keyfind(?MODULE, 1, LState),
+    {file,    File} = lists:keyfind(file, 1, Conf),
+    File.

@@ -14,6 +14,15 @@ key, value}).
 -record('Inspector',{
 module, conf}).
 
+-record('Bind',{
+replacement, macro}).
+
+-record('LoggerRrd',{
+module, create, update, graph, binds}).
+
+-record('LoggerText',{
+module, conf}).
+
 -record('Logger',{
 module, conf}).
 

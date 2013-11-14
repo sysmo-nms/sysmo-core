@@ -48,12 +48,32 @@ Inspector   ::= SEQUENCE {
     module  ErlangModule,
     conf    PrintableString
 }
+
 Inspectors  ::= SEQUENCE OF Inspector
+
+Bind        ::= SEQUENCE {
+    replacement PrintableString,
+    macro       PrintableString
+}
+
+LoggerRrd   ::= SEQUENCE {
+    module  ErlangModule,
+    create  PrintableString,
+    update  PrintableString,
+    graph   PrintableString,
+    binds   SEQUENCE OF Bind
+}
+
+LoggerText  ::= SEQUENCE {
+    module  ErlangModule,
+    conf    PrintableString
+}
 
 Logger      ::= SEQUENCE {
     module  ErlangModule,
     conf    PrintableString
 }
+
 Loggers     ::= SEQUENCE OF Logger
 
 ProbeConf       ::= SEQUENCE {

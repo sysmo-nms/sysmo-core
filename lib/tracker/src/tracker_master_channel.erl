@@ -376,12 +376,18 @@ gen_asn_probe_conf(Conf) when is_record(Conf, snmp_conf) ->
     lists:flatten(io_lib:format("~p", [Conf])).
 
 gen_asn_probe_inspectors(Inspectors) ->
-    [{'Inspector', atom_to_list(Module), "ici configuration temp"} 
-        || {_, Module, _} <- Inspectors].
+    [{
+        'Inspector',
+        atom_to_list(Module),
+        lists:flatten(io_lib:format("~p", [Conf]))
+    } || {_, Module, Conf} <- Inspectors].
 
 gen_asn_probe_loggers(Loggers) ->
-    [{'Logger', atom_to_list(Module), "ici configuration temp"} 
-        || {_, Module, _} <- Loggers].
+    [{
+        'Logger', 
+        atom_to_list(Module),
+        lists:flatten(io_lib:format("~p", [Conf]))
+    } || {_, Module, Conf} <- Loggers].
 
 gen_asn_probe_properties(Properties) ->
     [{'Property', Key, Value} 
