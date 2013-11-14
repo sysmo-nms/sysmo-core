@@ -69,9 +69,15 @@ LoggerText  ::= SEQUENCE {
     conf    PrintableString
 }
 
-Logger      ::= SEQUENCE {
-    module  ErlangModule,
-    conf    PrintableString
+-- Logger      ::= SEQUENCE {
+--    module  ErlangModule,
+--    conf    PrintableString
+-- }
+--
+
+Logger  ::= CHOICE {
+    loggerRrd   [0] LoggerRrd,
+    loggerText  [1] LoggerText
 }
 
 Loggers     ::= SEQUENCE OF Logger

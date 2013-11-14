@@ -302,7 +302,7 @@ pdu(probeInfo, {InfoType, Id,
             tracker_probe_conf = ProbeConf
         } = Probe
     }) ->
-    {modTrackerPDU,
+    P = {modTrackerPDU,
         {fromServer,
             {probeInfo,
                 {'ProbeInfo',
@@ -319,7 +319,8 @@ pdu(probeInfo, {InfoType, Id,
                     gen_asn_probe_loggers(Probe#probe.loggers),
                     gen_asn_probe_properties(Probe#probe.properties),
                     gen_asn_probe_active(Probe#probe.active),
-                    InfoType}}}};
+                    InfoType}}}},
+    P;
 
 pdu(probeModInfo,  {ProbeName, ProbeInfo}) ->
     {modTrackerPDU,
@@ -383,11 +384,23 @@ gen_asn_probe_inspectors(Inspectors) ->
     } || {_, Module, Conf} <- Inspectors].
 
 gen_asn_probe_loggers(Loggers) ->
-    [{
-        'Logger', 
-        atom_to_list(Module),
-        lists:flatten(io_lib:format("~p", [Conf]))
-    } || {_, Module, Conf} <- Loggers].
+    [gen_logger_pdu(LConf) || LConf <- Loggers].
+
+gen_logger_pdu({logger, btracker_logger_text = N, Cfg}) ->
+    {loggerText, {'LoggerText', atom_to_list(N), to_string(Cfg)}};
+gen_logger_pdu({logger, btracker_logger_rrd = N, Cfg}) ->
+    {create, Create} = lists:keyfind(create, 1, Cfg),
+    {update, Update} = lists:keyfind(update, 1, Cfg),
+    {graph,   Graph} = lists:keyfind(graph,  1, Cfg),
+    {binds,   Binds} = lists:keyfind(binds,  1, Cfg),
+    {loggerRrd, {'LoggerRrd',
+        atom_to_list(N),
+        Create,
+        Update,
+        Graph,
+        [{'Bind', Rep, Mac} || {Rep, Mac} <- Binds]
+        }
+    }.
 
 gen_asn_probe_properties(Properties) ->
     [{'Property', Key, Value} 
@@ -410,3 +423,5 @@ gen_dump_pdus(CState, TargetsPDUs, ProbesPDUs, [{TId, Probes}|T]) ->
         Probe <- AllowedThings],
     gen_dump_pdus(CState, TargetsPDUs, lists:append(ProbesPDUs, Result), T).
 
+to_string(Term) ->
+    lists:flatten(io_lib:format("~p", [Term])).

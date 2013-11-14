@@ -23,9 +23,6 @@ module, create, update, graph, binds}).
 -record('LoggerText',{
 module, conf}).
 
--record('Logger',{
-module, conf}).
-
 -record('ProbeConf',{
 name, type}).
 
