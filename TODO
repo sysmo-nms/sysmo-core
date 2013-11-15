@@ -105,4 +105,5 @@ TODO UB2:
 - wmap
 
 TODO performance:
-btracker_probe_nagios:eval_nagios_output/1
+btracker_probe_nagios:eval_nagios_output/1 might use re:run instead 
+of string:token
