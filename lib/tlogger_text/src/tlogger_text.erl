@@ -19,7 +19,9 @@
 
 -record(state, {
     file,
-    dump_size
+    dump_size,
+    return_re,
+    space_re
 }).
 
 start_link(Args) ->
@@ -35,7 +37,15 @@ dump(Pid) ->
 init(FileName) ->
     {ok, DumpSize} = application:get_env(tlogger_text, dump_size),
     file:write_file(FileName, <<>>, [append]),
-    {ok, #state{file = FileName, dump_size = DumpSize}}.
+    {ok, Newline} = re:compile("\n+"),
+    {ok, Spaces}  = re:compile(" +"),
+    {ok, #state{
+            file = FileName,
+            dump_size = DumpSize,
+            return_re = Newline,
+            space_re  = Spaces
+        }
+    }.
 
 handle_call(dump, _, #state{file = F, dump_size = DS} = S) ->
     {ok, FInfo} = file:read_file_info(F),
@@ -53,8 +63,11 @@ handle_call(dump, _, #state{file = F, dump_size = DS} = S) ->
 handle_call(_,_,S) ->
     {reply, ok, S}.
 
-handle_cast({log, Message}, #state{file = F} = S) ->
-    file:write_file(F, Message, [append]),
+handle_cast({log, Message}, 
+        #state{file = F, return_re = RRe, space_re = SRe} = S) ->
+    A1 = re:replace(Message, RRe, " ", [{return, list}, global]),
+    A0 = re:replace(A1,      SRe, " ", [{return, list}, global]),
+    file:write_file(F, lists:append(A0, "\n"), [append]),
     {noreply, S};
 handle_cast(_,S) ->
     {noreply, S}.
