@@ -8,7 +8,9 @@ Live list of targets, associate tags to traps/inform they produce and own the
 mermisions associated. 
 - probe_snmp_v2           HIGH          100%
 SNMP utility and monitoring + Live list of snmp targets
-- probe nagios compatible HIGH          100%
+- probe nagios compatible HIGH          90% 
+Add the possibility to not interpret perf values. It should not be encouraged
+since these values are not standardized.
 - probe logging text      HIGH          100%
 - probe logging rrd       HIGH          100%%
 Generate data for RRD or flat file for example. These files must be
@@ -16,8 +18,8 @@ understood by the client.
 - create read only client               80%
 Using Qt
 - config file               HIGH        0%
-Human readable configuration file.yaml. Generate erlang terms with m4 or awk or
-sh or perl. Use of templates.
+Human readable configuration file.yaml or sh source. Generate erlang terms 
+with m4 or awk or sh or perl. Use of templates.
 ---------> RELEASE 0.9,
 
 
@@ -27,22 +29,25 @@ Parent/child probe association.
 - inspector_warn          HIGH          0%
 Create alerts with events patterns or events values. See Mmonit sintax
 language. Use an allready existing job scheduler?
-- snmp autodiscovery      HIGH          0%
+--------> RELEASE 1.0
+
 - inspector_rrd_warn      HIGH          0%
 Alerts on rrdfetch and probe status events.
 Alert on value returned by rrdfetch. Compare with an AVERAGE expected
 value. Apply an algorithm. Send an alert if needed.
 Will need to use a gen_event somewhere in tlogger_rrd to put a fun which will 
 wait for the current probe_return to be writed to the file.rrd and then query
-the rrd. A delayed inspector in some way.
+the rrd. A delayed inspector in some way because inspectors are launch before
+loggers.
 - inspector_inertie       HIGH          0%
 False positive detection.
+---------> RELEASE 1.1,
+
+
 - logger_events           HIGH          0%
 Target events of interest. Will be represented as time plots on the
-client.
----------> RELEASE 1.0,
-
-
+client. Include work on future traps_mod and syslog_mod.
+- snmp autodiscovery      HIGH          0%
 - nagios_conf                            0%
 Extract nagios config for his config files. (Makefile)
 (inspectors)
@@ -72,24 +77,24 @@ V4-ARP V6-CDP traffic monitoring:
     Address conflict detection
     MAC address traking
     VLAN tracking
-- mod_rmon                MEDIUM      0%            will rock!!!
+- mod_rmon                MEDIUM      0%
 Collect RMON data and produce graphs with rrd (or D3)for
 mac address/ip address traffic (protocol port ...)
 ---------> RELEASE XXX
 
 
-- mod_syslog              ONE DAY     0%            to much?
+- mod_syslog              ONE DAY     0%
 Collect syslog data. Can be used to feed logger_events
 ---------> RELEASE XXX
 
 - mod_snmp_disco          MEDIUM      0%
 Autodiscover snmp nodes. Later, auto discover neighborchip and auto
 generate maps.
-- mod_sysdoc              OPT         0%            would rock!!!
+- mod_sysdoc              OPT         0%
 Documentation system
-- mod_support             OPT         0%            would rock!!!
+- mod_support             OPT         0%
 Ticket gestion linked to mod_sysdoc
-- mod_repport             OPT         0%            a must for a VRP...
+- mod_repport             OPT         0%
 Generate various report using sysdoc, support or other monitors
 ---------> RELEASE XXX
 
@@ -101,8 +106,8 @@ Manage multiple devices with identic configuration
 ---------> RELEASE XXX
 
 
-- mod_time_machine        ONE DAY     0%            scifi
-Replay events in a specific timeframe
+- mod_time_machine        ONE DAY     0%
+Replay events in a specific timeframe using previously developped event module
 ---------> RELEASE XXX
 
 
