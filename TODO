@@ -15,6 +15,9 @@ Generate data for RRD or flat file for example. These files must be
 understood by the client.
 - create read only client               80%
 Using Qt
+- config file               HIGH        0%
+Human readable configuration file.yaml. Generate erlang terms with m4 or awk or
+sh or perl. Use of templates.
 ---------> RELEASE 0.9,
 
 
@@ -24,6 +27,7 @@ Parent/child probe association.
 - inspector_warn          HIGH          0%
 Create alerts with events patterns or events values. See Mmonit sintax
 language. Use an allready existing job scheduler?
+- snmp autodiscovery      HIGH          0%
 - inspector_rrd_warn      HIGH          0%
 Alerts on rrdfetch and probe status events.
 Alert on value returned by rrdfetch. Compare with an AVERAGE expected
@@ -36,9 +40,6 @@ False positive detection.
 - logger_events           HIGH          0%
 Target events of interest. Will be represented as time plots on the
 client.
-- config file               HIGH        0%
-Human readable configuration file.yaml. Generate erlang terms with m4 or awk or
-sh or perl or both. Use of templates.
 ---------> RELEASE 1.0,
 
 
@@ -73,7 +74,7 @@ V4-ARP V6-CDP traffic monitoring:
     VLAN tracking
 - mod_rmon                MEDIUM      0%            will rock!!!
 Collect RMON data and produce graphs with rrd (or D3)for
-mac address/ip address traffic
+mac address/ip address traffic (protocol port ...)
 ---------> RELEASE XXX
 
 
