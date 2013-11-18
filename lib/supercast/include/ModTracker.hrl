@@ -18,7 +18,7 @@ module, conf}).
 replacement, macro}).
 
 -record('LoggerRrd',{
-module, create, update, graph, binds}).
+module, create, update, graphs, binds}).
 
 -record('LoggerText',{
 module, conf}).

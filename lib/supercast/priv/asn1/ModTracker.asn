@@ -56,11 +56,13 @@ Bind        ::= SEQUENCE {
     macro       PrintableString
 }
 
+Graph       ::= PrintableString
+
 LoggerRrd   ::= SEQUENCE {
     module  ErlangModule,
     create  PrintableString,
     update  PrintableString,
-    graph   PrintableString,
+    graphs  SEQUENCE OF Graph,
     binds   SEQUENCE OF Bind
 }
 

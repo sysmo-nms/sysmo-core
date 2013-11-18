@@ -391,7 +391,7 @@ gen_logger_pdu({logger, btracker_logger_text = N, Cfg}) ->
 gen_logger_pdu({logger, btracker_logger_rrd = N, Cfg}) ->
     {create, Create} = lists:keyfind(create, 1, Cfg),
     {update, Update} = lists:keyfind(update, 1, Cfg),
-    {graph,   Graph} = lists:keyfind(graph,  1, Cfg),
+    {graphs,  Graph} = lists:keyfind(graphs, 1, Cfg),
     {binds,   Binds} = lists:keyfind(binds,  1, Cfg),
     {loggerRrd, {'LoggerRrd',
         atom_to_list(N),
