@@ -1,5 +1,3 @@
-The development flow should follow this order:
-
 #MODULE/OTHER           #PRIORITY   #COMPLETED
 - supercast               HIGH          100% Module events and client
                                                 communication/auth
@@ -24,6 +22,8 @@ with m4 or awk or sh or perl. Use of templates.
 
 
 - probe_snmp_v3           HIGH          0%
+- kill -HUP server        HIGH          0%
+should reload the conf without stoping the server
 - inspector_parent        HIGH          0%
 Parent/child probe association.
 - inspector_warn          HIGH          0%
@@ -48,7 +48,7 @@ False positive detection.
 Target events of interest. Will be represented as time plots on the
 client. Include work on future traps_mod and syslog_mod.
 - snmp autodiscovery      HIGH          0%
-- nagios_conf                            0%
+- nagios_conf                           0%
 Extract nagios config for his config files. (Makefile)
 (inspectors)
 - wmaps                   HIGH        0%
@@ -103,11 +103,6 @@ Generate various report using sysdoc, support or other monitors
 Routing protocols monitoring/maps
 - mod_multiman            MAYBE       0%
 Manage multiple devices with identic configuration
----------> RELEASE XXX
-
-
-- mod_time_machine        ONE DAY     0%
-Replay events in a specific timeframe using previously developped event module
 ---------> RELEASE XXX
 
 
