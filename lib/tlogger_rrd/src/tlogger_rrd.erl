@@ -57,6 +57,7 @@ code_change(_,S,_) ->
 get_response(Port) ->
     receive
         {Port, {data, {eol, "ERROR: " ++ _}}} ->
+            io:format("ERROR: ~p ~p~n", [?MODULE, ?LINE]),
             error;
         {Port, {data, {eol, "OK " ++ _}}} ->
             ok;
