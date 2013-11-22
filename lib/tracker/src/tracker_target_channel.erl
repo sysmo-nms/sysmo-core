@@ -296,10 +296,11 @@ pdu(probeReturn, {
             status      = Status,
             original_reply = OriginalReply,
             timestamp   = Timestamp,
-            key_vals    = _KeyVals
+            key_vals    = KeyVals
         },
         ChannelId, ProbeId}) ->
     %TODO rrd keyvals
+    %?LOG(make_key_values(_KeyVals)),
     {modTrackerPDU,
         {fromServer,
             {probeReturn,
@@ -309,5 +310,18 @@ pdu(probeReturn, {
                     atom_to_list(Status),
                     OriginalReply,
                     Timestamp,
-                    []
+                    make_key_values(KeyVals)
                 }}}}.
+
+make_key_values(K) ->
+    make_key_values(K, []).
+make_key_values([], S) ->
+    S;
+make_key_values([{K,V} | T], S) when is_list(V) ->
+    make_key_values(T, [{'KeyVal', K, V} | S]);
+make_key_values([{K,V} | T], S) when is_integer(V) ->
+    make_key_values(T, [{'KeyVal', K, integer_to_list(V)} | S]);
+make_key_values([{K,V} | T], S) when is_float(V) ->
+    make_key_values(T, [{'KeyVal', K, float_to_list(V, [{decimals, 10}])} | S]);
+make_key_values([{K,V} | T], S) when is_atom(V) ->
+    make_key_values(T, [{'KeyVal', K, atom_to_list(V)} | S]).
