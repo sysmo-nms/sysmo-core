@@ -2,7 +2,9 @@
 - double check permissions when sending a probePdu: if a user is not allowed
 to receave a channel, he should not be allowed to receive a pdu from one of
 these probes.
+- lock on subscribe rationalize (channel, client, loggers) and document,
 - Add test (eunit, dializer)
 - XML support,
+- JSON support,
 - Websocket/secure Websocket support,
 - Behaviour in a distributed environment with multiple ifs servers running?
