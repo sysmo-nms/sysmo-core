@@ -1,7 +1,8 @@
-# in the future
 - get the time a probe might get informations to initialize timer on the
 client at connexion time. If not, the client will only be initialized with
 the first reception of a probe message (deducing the time using the probe
 specific properties step and timeout).
 - only send messages to ifs_mpd when "clients > 0".
+- make probes full channels. For perf reason, it will be beter for the client
+who need only one probe from a target.
 - eunit/dializer

@@ -15,11 +15,7 @@ Generate data for RRD or flat file for example. These files must be
 understood by the client.
 - create read only client               80%
 Using Qt
-- config file               HIGH        0%
-Human readable configuration file.yaml or sh source. Generate erlang terms 
-with m4 or awk or sh or perl. Use of templates.
----------> RELEASE 0.9,
-
+---------> RELEASE 0.9
 
 - probe_snmp_v3           HIGH          0%
 - kill -HUP server        HIGH          0%
@@ -27,9 +23,12 @@ should reload the conf without stoping the server
 - inspector_parent        HIGH          0%
 Parent/child probe association.
 - inspector_warn          HIGH          0%
-Create alerts with events patterns or events values. See Mmonit sintax
+Create alerts with events patterns or events values. See Mmonit syntax
 language. Use an allready existing job scheduler?
---------> RELEASE 1.0
+- logger_events           HIGH          0%
+Target events of interest. Will be represented as time plots on the
+client. Include work on future traps_mod and syslog_mod.
+--------> RELEASE B1.0
 
 - inspector_rrd_warn      HIGH          0%
 Alerts on rrdfetch and probe status events.
@@ -41,28 +40,25 @@ the rrd. A delayed inspector in some way because inspectors are launch before
 loggers.
 - inspector_inertie       HIGH          0%
 False positive detection.
----------> RELEASE 1.1,
+- config file               HIGH        0%
+Human readable configuration file.yaml or sh source. Generate erlang terms 
+with m4 or awk or sh or perl. Use of templates.
+---------> RELEASE 1
 
 
-- logger_events           HIGH          0%
-Target events of interest. Will be represented as time plots on the
-client. Include work on future traps_mod and syslog_mod.
-- snmp autodiscovery      HIGH          0%
-- nagios_conf                           0%
-Extract nagios config for his config files. (Makefile)
-(inspectors)
 - wmaps                   HIGH        0%
 Create, save and generate (what format?) maps (manual links between nodes).
 The final map should look like the cacti/weathermap module + visual alerts.
 (http://graphite.wikidot.com/whisper viewable in web browsers???)
----------> RELEASE 2.0,
+- snmp autodiscovery      HIGH          0%
+---------> RELEASE 2.0
 
 
 - read/write client with permissions.   MEDIUM  0%
 need definition of API. The system should be usable without writing the
 configuration file. Targets should be added deleted in live.
 - telnet_client                         MEDIUM  0%
----------> RELEASE 3.0,
+---------> RELEASE 3.0
 
 
 
