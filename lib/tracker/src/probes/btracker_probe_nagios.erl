@@ -42,7 +42,8 @@ exec({#probe_server_state{
     }, #probe{
             tracker_probe_conf  = #nagios_plugin_conf{
                 executable  = Exec,
-                args        = Args
+                args        = Args,
+                eval_perfs  = Evaluate
             }
         }
     }) ->
@@ -58,16 +59,16 @@ exec({#probe_server_state{
 
     case receive_port_info() of
         {0, Stdout} ->
-            PR = evaluate_nagios_output(Stdout, Re, 'OK');
+            PR = evaluate_nagios_output(Evaluate, Stdout, Re, 'OK');
         {1, Stdout} ->
-            PR = evaluate_nagios_output(Stdout, Re, 'WARNING');
+            PR = evaluate_nagios_output(Evaluate, Stdout, Re, 'WARNING');
         {2, Stdout} ->
-            PR = evaluate_nagios_output(Stdout, Re, 'CRITICAL');
+            PR = evaluate_nagios_output(Evaluate, Stdout, Re, 'CRITICAL');
         {3, Stdout} ->
-            PR = evaluate_nagios_output(Stdout, Re, 'UNKNOWN');
+            PR = evaluate_nagios_output(Evaluate, Stdout, Re, 'UNKNOWN');
         {Any, Stdout} ->
             io:format("Other return status~p~n", [Any]),
-            PR = evaluate_nagios_output(Stdout, Re, 'UNKNOWN')
+            PR = evaluate_nagios_output(Evaluate, Stdout, Re, 'UNKNOWN')
     end,
     {Rt, Rtm} = sys_timestamp(),
     PR#probe_return{
@@ -91,7 +92,14 @@ info() ->
     {ok, "Nagios plugin compatible probe"}.
 
 % @private
-evaluate_nagios_output(StdOutput, Re, Status) ->
+evaluate_nagios_output(false, StdOutput, _, Status) ->
+    #probe_return{
+        status          = Status,
+        original_reply  = StdOutput,
+        key_vals        = [{"status", Status}]
+    };
+
+evaluate_nagios_output(true, StdOutput, Re, Status) ->
 
     {_, PerfLines} = lists:foldr(fun(X, {TextOut, Perfs}) ->
         case string:tokens(X, "|") of
