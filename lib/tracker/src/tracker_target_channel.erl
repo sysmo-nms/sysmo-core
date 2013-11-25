@@ -85,9 +85,9 @@ cold_start(Pid) ->
 -spec update(Self::pid(), integer(), Msg::tuple()) -> ok.
 % @doc
 % Called by one of the tracker_probes belonging to the tracker_target_channel
-% identified by Chan. Needed for handling of client synchronisation.
-% A tracker_probe will call this function at probe status change, or when
-% there is a need to update a probe file.
+% identified by Chan.
+% A tracker_probe will call this function at probe status or property change.
+% The message will be forwarded to the clients of master_channel.
 % @end
 update(Chan, ProbeId, Message) ->
     gen_server:cast(Chan, {update, ProbeId, Message}).
@@ -158,7 +158,7 @@ handle_call(_R, _F, S) ->
 %% HANDLE_CAST
 %%----------------------------------------------------------------------------
 %%----------------------------------------------------------------------------
-% broad_event, will not be forwarded to the subscribers of
+% update (status or property), will be forwarded to the subscribers of
 % 'target-MasterChannel'.
 handle_cast({update, ProbeId, {NewProbe, _ProbeReturn}},
         #state{
@@ -171,17 +171,6 @@ handle_cast({update, ProbeId, {NewProbe, _ProbeReturn}},
     NewS        = S#state{target = NewTarget},
     tracker_master_channel:probe_update(NewTarget, NewProbe),
     {noreply, NewS};
-
-% broad_event, will not be forwarded to the subscribers of this
-% channel, but to 'target-MasterChannel'.
-handle_cast({update, _ProbeId, 
-    {broad_event, {property_set, _Properties,ProbeReturn}}},
-        #state{target = _Target} = S) ->
-    % TODO
-    % - MASTERCHAN send
-    % - update loggers
-    io:format("~p PROBE PROPERTY MOVE ~p ~p~n", [?MODULE, _ProbeId, ProbeReturn]),
-    {noreply, S};
 
 handle_cast(_R, S) ->
     io:format("unknown cast ~p~n", [_R]),
