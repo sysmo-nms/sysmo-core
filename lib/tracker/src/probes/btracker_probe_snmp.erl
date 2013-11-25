@@ -76,17 +76,17 @@ exec({_,#probe{
         }
     }) -> 
     Request = [Oid || {_, Oid} <- Oids],
-    {_, Ltm} = sys_timestamp(),
+    {_, MicroSec1} = sys_timestamp(),
     Rep = snmpm:sync_get(?SNMP_USER, Agent, Request, Timeout * 1000),
-    {Rt, Rtm} = sys_timestamp(),
+    {_, MicroSec2} = sys_timestamp(),
     case Rep of
         {error, _Error} = R ->
             #probe_return{
                 status          = 'CRITICAL',
                 original_reply  = to_string(R),
                 key_vals        = [ {"status", 'CRITICAL'}, 
-                                    {"sys_latency", Ltm - Rtm}],
-                timestamp       = Rt
+                                    {"sys_latency", MicroSec2 - MicroSec1}],
+                timestamp       = MicroSec2
             };
         {ok, SnmpReply, _Remaining} ->
             % from snmpm documentation: snmpm, Common Data Types 
@@ -97,8 +97,8 @@ exec({_,#probe{
             % end, VarBinds)
             #probe_return{key_vals = KV} = PR = eval_snmp_return(SnmpReply, Oids),
             PR#probe_return{
-                timestamp = Rt,
-                key_vals  = [{"sys_latency", Ltm - Rtm} | KV]
+                timestamp = MicroSec2,
+                key_vals  = [{"sys_latency", MicroSec2 - MicroSec1} | KV]
             }
     end.
 
