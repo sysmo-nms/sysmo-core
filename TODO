@@ -50,7 +50,7 @@ Supercast, tracker config, client.
 ---------> RELEASE 1
 
 
-- wmaps                   HIGH        0%
+- wmaps                   HIGH          0%
 Create, save and generate (what format?) maps (manual links between nodes).
 The final map should look like the cacti/weathermap module + visual alerts.
 (http://graphite.wikidot.com/whisper viewable in web browsers???)
