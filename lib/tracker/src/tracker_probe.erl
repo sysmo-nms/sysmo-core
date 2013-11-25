@@ -36,9 +36,8 @@
 -export([
     start_link/1,
     cold_start/1,
-    loggers_update/2,
     probe_pass/1,
-    dump/1
+    synchronize_dump/2
 ]).
 
 
@@ -48,8 +47,8 @@
 %%-------------------------------------------------------------
 %%-------------------------------------------------------------
 
-start_link({Target, Probe}) ->
-    gen_server:start_link(?MODULE, [Target, Probe], []).
+start_link({Target, #probe{name = Name} = Probe}) ->
+    gen_server:start_link({local, Name}, ?MODULE, [Target, Probe], []).
 
 -spec cold_start(pid()) -> ok.
 % @doc
@@ -61,20 +60,9 @@ cold_start(Pid) ->
     gen_server:call(Pid, initial_pass).
 
 
--spec loggers_update(pid(), any()) -> ok.
-% @doc
-% The server who synchronise subscription is the tracker_target_channel. It
-% is him who decide to notify loggers of a message.
-% @end
-loggers_update(Pid, Msg) ->
-    gen_server:cast(Pid, {loggers_update, Msg}).
+synchronize_dump(#probe{name = Name}, CState) ->
+    gen_server:call(Name, {synchronize, CState}).
 
--spec dump(pid()) -> [any()].
-% @doc
-% from the _client -> traget_target_channel -> tracker_probe
-% @end
-dump(Pid) ->
-    gen_server:call(Pid, probe_dump).
 %%-------------------------------------------------------------
 %%-------------------------------------------------------------
 %% GEN_SERVER CALLBACKS
@@ -109,9 +97,22 @@ handle_call(initial_pass, _, #probe_server_state{probe = Probe} = S) ->
     timer:apply_after(InitialLaunch, ?MODULE, probe_pass, [S]),
     {reply, ok, S};
 
-handle_call(probe_dump, _, S) ->
-    Rep = log_dump(S),
-    {reply, Rep, S};
+
+% gen_channel calls
+handle_call(get_perms, _F, #probe_server_state{probe = Probe} = S) ->
+    {reply, Probe#probe.permissions, S};
+
+handle_call({synchronize, #client_state{module = CMod} = CState},
+        _F, #probe_server_state{probe = Probe} = S) ->
+    supercast_mpd:subscribe_stage3(Probe#probe.name, CState),
+    Pdus = log_dump(S),
+    Pdus2 = [{CState, Pdu} || Pdu <- Pdus],
+    % no need to filter witch acctrl because the stage1 synchronize have
+    % allready do it.
+    lists:foreach(fun({C_State, Pdu}) ->
+        CMod:send(C_State, Pdu)
+    end, Pdus2),
+    {reply, ok, S};
 
 handle_call(_R, _F, S) ->
     {noreply, S}.
@@ -122,74 +123,38 @@ handle_call(_R, _F, S) ->
 %%-------------------------------------------------------------
 
 % PsState are equal, notify only tracker_target_channel
-handle_cast({next_pass, S, PR}, 
+handle_cast({next_pass,                 S    , PR}, 
             #probe_server_state{
                 target  = Target,
-                probe   = Probe} = S) ->
-    tracker_target_channel:update(
-        Target#target.id,
-        Probe#probe.id,
-        {local_event, PR}
-    ),
+                probe   = Probe} =      S   ) ->
+    supercast_mpd:multicast_msg(Probe#probe.name, {
+            Probe#probe.permissions,
+            pdu(probeReturn, {PR, Target#target.id, Probe#probe.id})}),
+    log(S, PR),
     After = Probe#probe.step * 1000,
     timer:apply_after(After, ?MODULE, probe_pass, [S]),
     {noreply, S};
 
-% handle_cast({next_pass, 
-%         #probe_server_state{
-%             probe  = #probe{status          = Status},
-%             target = #target{properties     = SysProp}},
-%         ProbeReturn
-%         },
-%         #probe_server_state{
-%             probe  = #probe{status          = Status}   = Probe,
-%             target = #target{properties     = SysProp}  = Target} = S) ->
-%     tracker_target_channel:update(
-%         Target#target.id,
-%         Probe#probe.id,
-%         {local_event, ProbeReturn}
-%     ),
-%     After = Probe#probe.step * 1000,
-%     timer:apply_after(After, ?MODULE, probe_pass, [S]),
-%     {noreply, S};
-
-% else notify the master channel that a change has occur
-% AND update tracker_target_channel
+% else update target_channel
 handle_cast({next_pass, 
-        #probe_server_state{probe = NProbe, target = NTarget} = NewS,
-        ProbeReturn
-        },
-        #probe_server_state{probe = Probe,  target = Target}  = _OldS) ->
-    CurrentStatus   = Probe#probe.status,
-    NewStatus       = NProbe#probe.status,
-    case NewStatus of
-        CurrentStatus   -> ignore;
-        OtherStatus     -> 
-            tracker_target_channel:update(
-                Target#target.id,
-                Probe#probe.id,
-                {broad_event, 
-                    {probe_status_move, OtherStatus, ProbeReturn}}
-            )
-    end,
-    CurrentSysP     = Target#target.properties,
-    NewSysP         = NTarget#target.properties,
-    case NewSysP of
-        CurrentSysP     -> ignore;
-        OtherSysP       ->
-            tracker_target_channel:update(
-                Target#target.id,
-                Probe#probe.id,
-                {broad_event, {property_set, OtherSysP, ProbeReturn}}
-            )
-    end,
-    After = NProbe#probe.step * 1000,
+        #probe_server_state{
+            probe   = Probe,
+            target  = Target
+        } = NewS,
+        PR
+    }, #probe_server_state{probe = _OldProbe} = _OldState) ->
+    tracker_target_channel:update(
+        Target#target.id,
+        Probe#probe.id,
+        {Probe, PR}
+    ),
+    supercast_mpd:multicast_msg(Probe#probe.name, {
+            Probe#probe.permissions,
+            pdu(probeReturn, {PR, Target#target.id, Probe#probe.id})}),
+    log(NewS, PR),
+    After = Probe#probe.step * 1000,
     timer:apply_after(After, ?MODULE, probe_pass, [NewS]),
     {noreply, NewS};
-
-handle_cast({loggers_update, Msg}, S) ->
-    log(S,Msg),
-    {noreply, S};
 
 handle_cast(_R, S) ->
     io:format("Unknown message ~p ~p ~p ~p~n", [?MODULE, ?LINE, _R, S]),
@@ -233,25 +198,7 @@ code_change(_O, S, _E) ->
 probe_pass(#probe_server_state{probe  = Probe } = S) ->
     Mod         = Probe#probe.tracker_probe_mod,
     ProbeReturn = Mod:exec({S, Probe}),
-
-    % tracker_target_channel is the processus wich synchronize
-    % with the client. Thus, it is in his gen_server loop that
-    % a write of Result will occur. He will do this by calling
-    % tracker_probe:loggers_update/x.
-    % Subscribers of the target_channel will also recive this
-    % Result message.
-    % NOTE: tracker_target_channel will forward the lock to the loggers,
-    % and continue. The client will only lock himself wile he synchronise,
-    % because loggers themself will spawn the process of sync and 
-    % then continue to fill the client process of update. Client will 
-    % treat them after sync.
-
     NewS        = inspect(S, ProbeReturn),
-
-    %io:format("result is ~p~n", [ProbeReturn]),
-    % probe return is lost here (ProbeReturn) but will be needed by 
-    % target_channel to update loggers.
-
     next_pass(NewS, ProbeReturn).
 
 -spec next_pass(#probe_server_state{}, #probe_return{}) -> ok.
@@ -291,7 +238,7 @@ log(#probe_server_state{probe = Probe} = PSState, Msg) ->
 
 -spec log_dump(#probe_server_state{}) -> any().
 log_dump(#probe_server_state{probe = Probe} = PSState) ->
-    L = [{Probe#probe.permissions, Mod:dump(PSState)} || 
+    L = [Mod:dump(PSState) || 
             #logger{module = Mod} <- Probe#probe.loggers],
     L.
 
@@ -316,3 +263,39 @@ inspect(#probe_server_state{probe = Probe} = State, Msg) ->
             {Orig, New, Message}
         end, {State, State, Msg}, Inspectors),
     NewState.
+
+% @private
+pdu(probeReturn, {
+        #probe_return{ 
+            status      = Status,
+            original_reply = OriginalReply,
+            timestamp   = Timestamp,
+            key_vals    = KeyVals
+        },
+        ChannelId, ProbeId}) ->
+    %TODO rrd keyvals
+    %?LOG(make_key_values(_KeyVals)),
+    {modTrackerPDU,
+        {fromServer,
+            {probeReturn,
+                {'ProbeReturn',
+                    atom_to_list(ChannelId),
+                    ProbeId,
+                    atom_to_list(Status),
+                    OriginalReply,
+                    Timestamp,
+                    make_key_values(KeyVals)
+                }}}}.
+
+make_key_values(K) ->
+    make_key_values(K, []).
+make_key_values([], S) ->
+    S;
+make_key_values([{K,V} | T], S) when is_list(V) ->
+    make_key_values(T, [{'Property', K, V} | S]);
+make_key_values([{K,V} | T], S) when is_integer(V) ->
+    make_key_values(T, [{'Property', K, integer_to_list(V)} | S]);
+make_key_values([{K,V} | T], S) when is_float(V) ->
+    make_key_values(T, [{'Property', K, float_to_list(V, [{decimals, 10}])} | S]);
+make_key_values([{K,V} | T], S) when is_atom(V) ->
+    make_key_values(T, [{'Property', K, atom_to_list(V)} | S]).

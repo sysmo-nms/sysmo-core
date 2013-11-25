@@ -32,9 +32,6 @@ channel, probeId, name, permissions, probeMod, probeConf, status, timeout, step,
 -record('ProbeActivity',{
 channel, probeId, timestamp, state, returnStatus, textual}).
 
--record('KeyVal',{
-key, val}).
-
 -record('ProbeReturn',{
 channel, probeId, status, originalReply, timestamp, keysVals}).
 

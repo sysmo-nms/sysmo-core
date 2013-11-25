@@ -56,8 +56,6 @@
     start_link/1,
     cold_start/1,
     update/3,
-    subscribe/2,
-    synchronize_dump/2,
     dump/1
 ]).
 
@@ -94,36 +92,11 @@ cold_start(Pid) ->
 update(Chan, ProbeId, Message) ->
     gen_server:cast(Chan, {update, ProbeId, Message}).
 
--spec subscribe(atom(), any()) -> ok.
-% @doc
-% supercast module related.
-% The logic is here:
-% - dump every informations pending,
-% - send all target related data to client,
-% All this must be done by using a single gen_server:call() fully
-% synchronize the client.
-% @end
-subscribe(TargetId, Client) ->
-    gen_server:call(TargetId, {new_subscriber, Client}).
-
--spec synchronize_dump(#target{}, #client_state{}) -> {ok, any()}.
-% @doc
-% This function is used to by one of the clients to finaly synchronize
-% to probes of a specified target.
-% @end
-synchronize_dump(#target{probes = Probes} = _Target, CState) ->
-    % get pdus of probe loggers
-    L = [ tracker_probe:dump(PID) || #probe{pid = PID} <- Probes],
-    % filter them
-    L2 = supercast_mpd:filter_things(CState, lists:flatten(L)),
-    {ok, L2}.
-
 % @doc
 % DEBUG function
 % @end
 dump(Id) ->
     gen_server:call(Id, dump).
-
 
 
 %%----------------------------------------------------------------------------
@@ -173,16 +146,6 @@ handle_call(cold_start, _F, #state{target = Target} = S) ->
 %%----------------------------------------------------------------------------
 %% CALLS VIA GEN_CHANNEL BEHAVIOUR
 %%----------------------------------------------------------------------------
-handle_call(get_perms, _F, #state{target = Target} = S) ->
-    {reply, Target#target.global_perm, S};
-
-handle_call({synchronize, #client_state{module = CMod} = CState},
-        _F, #state{target = T} = S) ->
-    supercast_mpd:subscribe_stage3(S#state.chan_id, CState),
-    CMod:synchronize(CState,
-        fun() -> ?MODULE:synchronize_dump(T,CState) end),
-    {reply, ok, S};
-
 handle_call(dump, _F, S) ->
     {reply, S, S};
 
@@ -195,32 +158,19 @@ handle_call(_R, _F, S) ->
 %% HANDLE_CAST
 %%----------------------------------------------------------------------------
 %%----------------------------------------------------------------------------
-% channel event, will not be forwarded to 'tartet-MasterChannel'
-handle_cast({update, ProbeId, {local_event, ProbeReturn}}, 
-        #state{target = #target{probes = Probes, id = Id} = Target} = S) ->
-    Probe = lists:keyfind(ProbeId, 2, Probes),
-    tracker_master_channel:chan_update(probe_activity, 
-        {Target, Probe, ProbeReturn}),
-    supercast_mpd:multicast_msg(Id, {Probe#probe.permissions,
-        pdu(probeReturn, {ProbeReturn, Id, ProbeId})}),
-    tracker_probe:loggers_update(Probe#probe.pid, ProbeReturn),
-    {noreply, S};
-
-% broad_event, will not be forwarded to the subscribers of this
-% channel, but to 'target-MasterChannel'.
-handle_cast({update, ProbeId, {broad_event, 
-        {probe_status_move, NewStatus, ProbeReturn}}},
-        #state{target = #target{probes = Probes} = Target} = S) ->
-    Probe   = lists:keyfind(ProbeId, 2, Probes),
-    UpdatedProbe = Probe#probe{status = NewStatus},
-    NProbes = lists:keyreplace(
-            ProbeId, 2, Probes, UpdatedProbe),
-    tracker_master_channel:chan_update(probe_activity,
-        {Target,UpdatedProbe, ProbeReturn}),
-    tracker_master_channel:chan_update(probe_status,{Target,UpdatedProbe}),
-    tracker_probe:loggers_update(Probe#probe.pid, ProbeReturn),
-    S2      = S#state{target = Target#target{probes = NProbes}},
-    {noreply, S2};
+% broad_event, will not be forwarded to the subscribers of
+% 'target-MasterChannel'.
+handle_cast({update, ProbeId, {NewProbe, _ProbeReturn}},
+        #state{
+            target = #target{
+                probes = Probes
+            } = Target
+        } = S) ->
+    NProbes     = lists:keyreplace(ProbeId, 2, Probes, NewProbe),
+    NewTarget   = Target#target{probes = NProbes},
+    NewS        = S#state{target = NewTarget},
+    tracker_master_channel:probe_update(NewTarget, NewProbe),
+    {noreply, NewS};
 
 % broad_event, will not be forwarded to the subscribers of this
 % channel, but to 'target-MasterChannel'.
@@ -290,38 +240,3 @@ init_probes(#target{probes = Probes} = Target) ->
     end, [], Probes),
     {ok, Target#target{probes = ProbesF}}.
 
-% @private
-pdu(probeReturn, {
-        #probe_return{ 
-            status      = Status,
-            original_reply = OriginalReply,
-            timestamp   = Timestamp,
-            key_vals    = KeyVals
-        },
-        ChannelId, ProbeId}) ->
-    %TODO rrd keyvals
-    %?LOG(make_key_values(_KeyVals)),
-    {modTrackerPDU,
-        {fromServer,
-            {probeReturn,
-                {'ProbeReturn',
-                    atom_to_list(ChannelId),
-                    ProbeId,
-                    atom_to_list(Status),
-                    OriginalReply,
-                    Timestamp,
-                    make_key_values(KeyVals)
-                }}}}.
-
-make_key_values(K) ->
-    make_key_values(K, []).
-make_key_values([], S) ->
-    S;
-make_key_values([{K,V} | T], S) when is_list(V) ->
-    make_key_values(T, [{'KeyVal', K, V} | S]);
-make_key_values([{K,V} | T], S) when is_integer(V) ->
-    make_key_values(T, [{'KeyVal', K, integer_to_list(V)} | S]);
-make_key_values([{K,V} | T], S) when is_float(V) ->
-    make_key_values(T, [{'KeyVal', K, float_to_list(V, [{decimals, 10}])} | S]);
-make_key_values([{K,V} | T], S) when is_atom(V) ->
-    make_key_values(T, [{'KeyVal', K, atom_to_list(V)} | S]).
