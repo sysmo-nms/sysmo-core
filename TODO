@@ -6,7 +6,7 @@ Live list of targets, associate tags inform they produce and own the
 mermisions associated. 
 - probe_snmp_v2           HIGH          100%
 SNMP utility and monitoring + Live list of snmp targets
-- probe nagios compatible HIGH          90% 
+- probe nagios compatible HIGH          100%
 Add the possibility to not interpret perf values. It should not be encouraged
 since these values are not standardized.
 - probe logging text      HIGH          100%
