@@ -36,8 +36,7 @@
 -export([
     start_link/1,
     cold_start/1,
-    probe_pass/1,
-    synchronize_dump/2
+    probe_pass/1
 ]).
 
 
@@ -58,10 +57,6 @@ start_link({Target, #probe{name = Name} = Probe}) ->
 % @end
 cold_start(Pid) ->
     gen_server:call(Pid, initial_pass).
-
-
-synchronize_dump(#probe{name = Name}, CState) ->
-    gen_server:call(Name, {synchronize, CState}).
 
 %%-------------------------------------------------------------
 %%-------------------------------------------------------------
@@ -114,6 +109,7 @@ handle_call({synchronize, #client_state{module = CMod} = CState},
     end, Pdus2),
     {reply, ok, S};
 
+%
 handle_call(_R, _F, S) ->
     {noreply, S}.
 

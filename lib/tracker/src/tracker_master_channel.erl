@@ -44,8 +44,7 @@
 -record(state, {
     chans,
     perm,
-    probe_modules,
-    log_file
+    probe_modules
 }).
 
 -define(MASTER_CHAN, 'target-MasterChan').
@@ -72,7 +71,7 @@ start_link(ProbeModules) ->
 % @end
 chan_add(Target) ->
     io:format("Chan add ~p~n", [?MODULE]),
-    gen_server:call(?MASTER_CHAN, {chan_add, Target}).
+    gen_server:call(?MASTER_CHAN, {chan_update, Target}).
 
     
 -spec chan_del(#target{}) -> ok.
@@ -85,12 +84,15 @@ chan_del(Target) ->
 
 % @doc
 % Called by a tracker_target_channel when information must be forwarded
-% to subscribers of 'target-MasterChan'. Also used from the tracker_api
-% module to send arbitrary message to clients wich are subscribed.
+% to subscribers of 'target-MasterChan'.
 % @end
 chan_update(NewTarget) ->
     gen_server:call(?MASTER_CHAN, {chan_update, NewTarget}).
 
+% @doc
+% Called by a tracker_target_channel when information must be forwarded
+% to subscribers of 'target-MasterChan' concerning one of the probes.
+% @end
 probe_update(NewTarget, NewProbe) ->
     gen_server:call(?MASTER_CHAN, {probe_update, NewTarget, NewProbe}).
 
@@ -113,19 +115,13 @@ dump() ->
 %%----------------------------------------------------------------------------
 init([ProbeModules]) ->
     P = extract_probes_info(ProbeModules),
-    {ok, DataDir} = application:get_env(tracker, targets_data_dir),
-    MasterChanString = atom_to_list(?MASTER_CHAN),
-    MasterChanDir = filename:join(DataDir,MasterChanString),
-    init_dir(MasterChanDir),
-    LogFile = filename:join(MasterChanDir, "activity.log"),
     {ok, #state{
             chans = [],
             perm = #perm_conf{
                 read    = ["admin", "wheel"],
                 write   = ["admin"]
             },
-            probe_modules = P,
-            log_file = LogFile
+            probe_modules = P
         }
     }.
     
@@ -147,9 +143,8 @@ handle_call({probe_update,
         pdu(probeInfo, {update, TargetId, NewProbe})}),
     {reply, ok, S#state{chans = NewChans}};
 
-handle_call({chan_add, #target{id = Id, global_perm = Perm} = Target}, _F, 
+handle_call({chan_update, #target{id = Id, global_perm = Perm} = Target}, _F, 
         #state{chans = C} = S) ->
-    %{global_perm, Perm} = get_property(global_perm, Prop),
     case lists:keyfind(Id, 2, C) of
         false ->    % did not exist insert
             supercast_mpd:multicast_msg(?MASTER_CHAN, {Perm,
@@ -158,7 +153,7 @@ handle_call({chan_add, #target{id = Id, global_perm = Perm} = Target}, _F,
                     chans = [Target | C]
                 }
             };
-        _ ->        % exist update
+        _ -> % exist update
             supercast_mpd:multicast_msg(?MASTER_CHAN, {Perm,
                 pdu(targetInfo, Target)}),
             {reply, ok, 
@@ -316,16 +311,6 @@ extract_probes_info(ProbeModules) ->
             [{PMod, Info} | Acc] 
         end, 
     [], ProbeModules).
-
-init_dir(Dir) ->
-    case file:read_file_info(Dir) of
-        {ok, _} ->
-            ok;
-        {error, enoent} ->
-            file:make_dir(Dir);
-        Other ->
-            {error, Other}
-    end.
 
 gen_asn_probe_active(true) ->
     1;
