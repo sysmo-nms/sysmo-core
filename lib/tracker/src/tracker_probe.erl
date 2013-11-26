@@ -84,8 +84,7 @@ init([Target, Probe]) ->
 %% HANDLE_CALL
 %%-------------------------------------------------------------
 
-% launch a probe for the first time. Give a way for inspectors and loggers
-% to initialize themself and Randomise start.
+% launch a probe for the first time.
 handle_call(initial_pass, _, #probe_server_state{probe = Probe} = S) ->
     Step            = Probe#probe.step, 
     InitialLaunch   = tracker_misc:random(Step * 1000),
@@ -269,8 +268,6 @@ pdu(probeReturn, {
             key_vals    = KeyVals
         },
         ChannelId, ProbeId}) ->
-    %TODO rrd keyvals
-    %?LOG(make_key_values(_KeyVals)),
     {modTrackerPDU,
         {fromServer,
             {probeReturn,
