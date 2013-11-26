@@ -56,6 +56,8 @@ The final map should look like the cacti/weathermap module + visual alerts.
 (http://graphite.wikidot.com/whisper viewable in web browsers???)
 client work (qt).
 - snmp autodiscovery      HIGH          0%
+- metrologie              HIGH          0%
+pmacct, netflow, sflow, rmon.
 ---------> RELEASE 2.0
 
 
@@ -121,3 +123,6 @@ TODO UB2:
 TODO performance:
 btracker_probe_nagios:eval_nagios_output/1 might use re:run instead 
 of string:token
+
+TODO mib2 counters:
+packets, discard, %discard, error, %error
