@@ -1,4 +1,0 @@
-{nagios_plugin_conf,
-    PATH_TO_EXE,
-    OPTIONS
-}
