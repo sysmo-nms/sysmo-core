@@ -126,3 +126,6 @@ of string:token
 
 TODO mib2 counters:
 packets, discard, %discard, error, %error
+
+TODO design:
+add max channel subscribe limit to supercast
