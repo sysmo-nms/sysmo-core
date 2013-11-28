@@ -5,7 +5,6 @@
 *.html
 *.css
 cfg/ssl/*.pem
-cfg/tracker.conf
 doc
 www/*.png
 var/tracker/*
