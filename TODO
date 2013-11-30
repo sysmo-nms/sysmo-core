@@ -129,3 +129,6 @@ packets, discard, %discard, error, %error
 
 TODO design:
 add max channel subscribe limit to supercast
+
+TODO maybe:
+smokeping probe compatibility
