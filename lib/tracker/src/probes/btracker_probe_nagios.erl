@@ -42,7 +42,8 @@ exec({#probe_server_state{
     }, #probe{
             tracker_probe_conf  = #nagios_plugin_conf{
                 executable  = Exec,
-                args        = Args
+                args        = Args,
+                eval_perfs  = Evaluate
             }
         }
     }) ->
@@ -52,27 +53,29 @@ exec({#probe_server_state{
 
     ArgList = [erlang:tuple_to_list(X) || X <- Args],
 
-    {_, Ltm} = sys_timestamp(),
+    {_, MicroSec1} = sys_timestamp(),
     erlang:open_port({spawn_executable, Exec}, 
         [exit_status, {args, ArgList}]),
 
     case receive_port_info() of
         {0, Stdout} ->
-            PR = evaluate_nagios_output(Stdout, Re, 'OK');
+            PR = evaluate_nagios_output(Evaluate, Stdout, Re, 'OK');
         {1, Stdout} ->
-            PR = evaluate_nagios_output(Stdout, Re, 'WARNING');
+            PR = evaluate_nagios_output(Evaluate, Stdout, Re, 'WARNING');
         {2, Stdout} ->
-            PR = evaluate_nagios_output(Stdout, Re, 'CRITICAL');
+            PR = evaluate_nagios_output(Evaluate, Stdout, Re, 'CRITICAL');
         {3, Stdout} ->
-            PR = evaluate_nagios_output(Stdout, Re, 'UNKNOWN');
+            PR = evaluate_nagios_output(Evaluate, Stdout, Re, 'UNKNOWN');
         {Any, Stdout} ->
             io:format("Other return status~p~n", [Any]),
-            PR = evaluate_nagios_output(Stdout, Re, 'UNKNOWN')
+            PR = evaluate_nagios_output(Evaluate, Stdout, Re, 'UNKNOWN')
     end,
-    {Rt, Rtm} = sys_timestamp(),
+    {_, MicroSec2} = sys_timestamp(),
     PR#probe_return{
-        timestamp   = Rt,
-        key_vals    = [{"sys_latency", Rtm - Ltm} | PR#probe_return.key_vals]
+        timestamp   = MicroSec2,
+        key_vals    = [
+            {"sys_latency", MicroSec2 - MicroSec1} | PR#probe_return.key_vals
+        ]
     }.
 
 receive_port_info() ->
@@ -91,7 +94,14 @@ info() ->
     {ok, "Nagios plugin compatible probe"}.
 
 % @private
-evaluate_nagios_output(StdOutput, Re, Status) ->
+evaluate_nagios_output(false, StdOutput, _, Status) ->
+    #probe_return{
+        status          = Status,
+        original_reply  = StdOutput,
+        key_vals        = [{"status", Status}]
+    };
+
+evaluate_nagios_output(true, StdOutput, Re, Status) ->
 
     {_, PerfLines} = lists:foldr(fun(X, {TextOut, Perfs}) ->
         case string:tokens(X, "|") of

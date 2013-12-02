@@ -117,18 +117,13 @@ ProbeActivity ::= SEQUENCE {
     textual     PrintableString
 }
 
-KeyVal      ::= SEQUENCE {
-    key PrintableString,
-    val PrintableString
-}
-
 ProbeReturn ::= SEQUENCE {
-    channel         TargetId,
-    probeId         ProbeId,
+    target          TargetId,
+    probeId         PrintableString,
     status          ProbeStatus,
     originalReply   PrintableString,
     timestamp       INTEGER,
-    keysVals        SEQUENCE OF KeyVal
+    keysVals        Properties
 }
 
 ProbeModuleInfo ::= SEQUENCE {
@@ -137,8 +132,8 @@ ProbeModuleInfo ::= SEQUENCE {
 }
 
 ProbeDump   ::= SEQUENCE {
-    channel     TargetId,
-    probeId     ProbeId,
+    target      TargetId,
+    probeName   PrintableString,
     probeModule PrintableString,
     binaryData  FileData  
 }

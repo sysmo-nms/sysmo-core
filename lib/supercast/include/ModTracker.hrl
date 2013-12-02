@@ -32,17 +32,14 @@ channel, probeId, name, permissions, probeMod, probeConf, status, timeout, step,
 -record('ProbeActivity',{
 channel, probeId, timestamp, state, returnStatus, textual}).
 
--record('KeyVal',{
-key, val}).
-
 -record('ProbeReturn',{
-channel, probeId, status, originalReply, timestamp, keysVals}).
+target, probeId, status, originalReply, timestamp, keysVals}).
 
 -record('ProbeModuleInfo',{
 name, info}).
 
 -record('ProbeDump',{
-channel, probeId, probeModule, binaryData}).
+target, probeName, probeModule, binaryData}).
 
 -record('ProbeFetch',{
 channel, probe, probeType, probeValue}).

@@ -36,16 +36,15 @@
     start_link/1,
     chan_add/1,
     chan_del/1,
-    chan_update/2,
-    synchronize_dump/2,
+    chan_update/1,
+    probe_update/2,
     dump/0
 ]).
 
 -record(state, {
     chans,
     perm,
-    probe_modules,
-    log_file
+    probe_modules
 }).
 
 -define(MASTER_CHAN, 'target-MasterChan').
@@ -72,7 +71,7 @@ start_link(ProbeModules) ->
 % @end
 chan_add(Target) ->
     io:format("Chan add ~p~n", [?MODULE]),
-    gen_server:call(?MASTER_CHAN, {chan_add, Target}).
+    gen_server:call(?MASTER_CHAN, {chan_update, Target}).
 
     
 -spec chan_del(#target{}) -> ok.
@@ -83,37 +82,19 @@ chan_del(Target) ->
     io:format("Chan del ~p~n", [?MODULE]),
     gen_server:call(?MASTER_CHAN, {chan_del, Target}).
 
--spec chan_update(
-        probe_create    |       % called from a channel
-        probe_delete    |       % idem
-        probe_update    |       % idem
-        chan_update     |       % idem
-        wide_warning,           % call from tracker_api or channel
-        {#target{}, #probe{}}) -> ok.
 % @doc
 % Called by a tracker_target_channel when information must be forwarded
-% to subscribers of 'target-MasterChan'. Also used from the tracker_api
-% module to send arbitrary message to clients wich are subscribed.
+% to subscribers of 'target-MasterChan'.
 % @end
-chan_update(probe_status, {Target,Probe}) ->
-    gen_server:call(?MASTER_CHAN, {probe_status_move, {Target, Probe}});
+chan_update(NewTarget) ->
+    gen_server:call(?MASTER_CHAN, {chan_update, NewTarget}).
 
-chan_update(probe_activity, {Target,Probe, Msg}) ->
-    gen_server:call(?MASTER_CHAN, {probe_activity, {Target, Probe, Msg}});
-
-chan_update(_, {_,_}) ->
-    io:format("unknown update~n").
-
--spec synchronize_dump(#state{}, #client_state{}) -> {ok, [any()]}.
 % @doc
-% !Permissions config of targets and probes must be consistant. A
-% group can not be allowed to read a probe but not his target. This
-% will not work.
+% Called by a tracker_target_channel when information must be forwarded
+% to subscribers of 'target-MasterChan' concerning one of the probes.
 % @end
-synchronize_dump(#state{chans = Chans, probe_modules = PMods}, CState) ->
-    PMList = [pdu(probeModInfo, Probe) || Probe <- PMods],
-    PDUs = gen_dump_pdus(CState, Chans),
-    {ok, lists:append(PMList, PDUs)}.
+probe_update(NewTarget, NewProbe) ->
+    gen_server:call(?MASTER_CHAN, {probe_update, NewTarget, NewProbe}).
 
 dump() ->
     gen_server:call(?MASTER_CHAN, dump).
@@ -134,19 +115,13 @@ dump() ->
 %%----------------------------------------------------------------------------
 init([ProbeModules]) ->
     P = extract_probes_info(ProbeModules),
-    {ok, DataDir} = application:get_env(tracker, targets_data_dir),
-    MasterChanString = atom_to_list(?MASTER_CHAN),
-    MasterChanDir = filename:join(DataDir,MasterChanString),
-    init_dir(MasterChanDir),
-    LogFile = filename:join(MasterChanDir, "activity.log"),
     {ok, #state{
             chans = [],
             perm = #perm_conf{
                 read    = ["admin", "wheel"],
                 write   = ["admin"]
             },
-            probe_modules = P,
-            log_file = LogFile
+            probe_modules = P
         }
     }.
     
@@ -159,40 +134,17 @@ init([ProbeModules]) ->
 %%----------------------------------------------------------------------------
 %% SELF API CALLS
 %%----------------------------------------------------------------------------
-handle_call(
-    {probe_status_move, 
-            {
-                #target{id = TargetId, probes = ProbeList} = Target, 
-                #probe{permissions = Perm, id = ProbeId} = NewProbe
-            }
-        }, _F, #state{chans = Chans} = S) ->
-    NewProbeList    = lists:keyreplace(ProbeId, 2, ProbeList, NewProbe),
-    NewTarget       = Target#target{probes = NewProbeList},
-    NewChans        = lists:keyreplace(TargetId, 2, Chans, NewTarget),
+handle_call({probe_update, 
+        #target{id = TargetId}      = NewTarget, 
+        #probe{permissions = Perm}  = NewProbe
+    }, _F, #state{chans = Chans} = S) ->
+    NewChans = lists:keyreplace(TargetId, 2, Chans, NewTarget),
     supercast_mpd:multicast_msg(?MASTER_CHAN, {Perm, 
         pdu(probeInfo, {update, TargetId, NewProbe})}),
     {reply, ok, S#state{chans = NewChans}};
 
-handle_call(
-    {probe_activity,
-        {
-            #target{id = TargetId}, 
-            #probe{id = ProbeId, permissions = Perm, status = PState},
-            #probe_return{
-                original_reply  = Msg,
-                status          = ReturnStatus,
-                timestamp       = Time
-            }
-        }
-    }, _F, S) ->
-    supercast_mpd:multicast_msg(?MASTER_CHAN, 
-        {Perm, pdu(probeActivity, 
-            {TargetId, ProbeId, PState, Msg, ReturnStatus, Time})}),
-    {reply, ok, S};
-
-handle_call({chan_add, #target{id = Id, global_perm = Perm} = Target}, _F, 
+handle_call({chan_update, #target{id = Id, global_perm = Perm} = Target}, _F, 
         #state{chans = C} = S) ->
-    %{global_perm, Perm} = get_property(global_perm, Prop),
     case lists:keyfind(Id, 2, C) of
         false ->    % did not exist insert
             supercast_mpd:multicast_msg(?MASTER_CHAN, {Perm,
@@ -201,7 +153,7 @@ handle_call({chan_add, #target{id = Id, global_perm = Perm} = Target}, _F,
                     chans = [Target | C]
                 }
             };
-        _ ->        % exist update
+        _ -> % exist update
             supercast_mpd:multicast_msg(?MASTER_CHAN, {Perm,
                 pdu(targetInfo, Target)}),
             {reply, ok, 
@@ -228,12 +180,17 @@ handle_call(get_perms, _F, #state{perm = P} = S) ->
     {reply, P, S};
 
 handle_call({synchronize, #client_state{module = CMod} = CState}, 
-        _F, State) ->
+        _F, #state{chans = Chans, probe_modules = PMods} = State) ->
     % subscribe the client to mpd,
     supercast_mpd:subscribe_stage3(?MASTER_CHAN, CState),
-    % then send him the fun which will return him a list of pdu to receive
-    CMod:synchronize(CState, 
-        fun() -> ?MODULE:synchronize_dump(State, CState) end),
+    PMList  = [pdu(probeModInfo, Probe) || Probe <- PMods],
+    % gen_dump_pdus will filter based on CState permissions
+    PDUs    = gen_dump_pdus(CState, Chans),
+    PTotal  = lists:append(PMList, PDUs),
+    PSend   = [{CState, Pdu} || Pdu <- PTotal],
+    lists:foreach(fun({C_State, Pdu}) ->
+        CMod:send(C_State, Pdu)
+    end, PSend),
     {reply, ok, State};
 
 handle_call(dump, _F, State) ->
@@ -294,6 +251,7 @@ pdu(targetDelete, Id) ->
             {targetInfo,
                 {'TargetInfo',
                     atom_to_list(Id),
+                    [],
                     delete}}}};
 
 pdu(probeInfo, {InfoType, Id, 
@@ -354,16 +312,6 @@ extract_probes_info(ProbeModules) ->
         end, 
     [], ProbeModules).
 
-init_dir(Dir) ->
-    case file:read_file_info(Dir) of
-        {ok, _} ->
-            ok;
-        {error, enoent} ->
-            file:make_dir(Dir);
-        Other ->
-            {error, Other}
-    end.
-
 gen_asn_probe_active(true) ->
     1;
 gen_asn_probe_active(false) ->
@@ -402,9 +350,9 @@ gen_logger_pdu({logger, btracker_logger_rrd = N, Cfg}) ->
         }
     }.
 
-gen_asn_probe_properties(Properties) ->
-    [{'Property', Key, Value} 
-        || {Key,Value} <- Properties].
+%gen_asn_probe_properties(Properties) ->
+    %[{'Property', Key, Value} 
+        %|| {Key,Value} <- Properties].
 
 gen_dump_pdus(CState, Targets) ->
     FTargets    = supercast_mpd:filter_things(CState, [{Perm, Target} ||
@@ -425,3 +373,16 @@ gen_dump_pdus(CState, TargetsPDUs, ProbesPDUs, [{TId, Probes}|T]) ->
 
 to_string(Term) ->
     lists:flatten(io_lib:format("~p", [Term])).
+
+gen_asn_probe_properties(K) ->
+    gen_asn_probe_properties(K, []).
+gen_asn_probe_properties([], S) ->
+    S;
+gen_asn_probe_properties([{K,V} | T], S) when is_list(V) ->
+    gen_asn_probe_properties(T, [{'Property', K, V} | S]);
+gen_asn_probe_properties([{K,V} | T], S) when is_integer(V) ->
+    gen_asn_probe_properties(T, [{'Property', K, integer_to_list(V)} | S]);
+gen_asn_probe_properties([{K,V} | T], S) when is_float(V) ->
+    gen_asn_probe_properties(T, [{'Property', K, float_to_list(V, [{decimals, 10}])} | S]);
+gen_asn_probe_properties([{K,V} | T], S) when is_atom(V) ->
+    gen_asn_probe_properties(T, [{'Property', K, atom_to_list(V)} | S]).

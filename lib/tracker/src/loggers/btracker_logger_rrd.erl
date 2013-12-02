@@ -77,8 +77,8 @@ log(
 
 dump(#probe_server_state{
         loggers_state   = LState,
-        target          = #target{id = TId},
-        probe           = #probe{id = PId}
+        target          = #target{id    = TId},
+        probe           = #probe{name   = PId}
     }) ->
     File    = get_file(LState),
     Bin     = tlogger_rrd:dump(File),
@@ -91,7 +91,7 @@ pdu('probeDump', {TId, PId, Bin}) ->
             {probeDump,
                 {'ProbeDump',
                     atom_to_list(TId),
-                    PId,
+                    atom_to_list(PId),
                     atom_to_list(?MODULE),
                     Bin}}}}.
 

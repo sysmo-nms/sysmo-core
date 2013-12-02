@@ -2,11 +2,11 @@
 - supercast               HIGH          100% Module events and client
                                                 communication/auth
 - tracker                 HIGH          100%
-Live list of targets, associate tags to traps/inform they produce and own the
+Live list of targets, associate tags inform they produce and own the
 mermisions associated. 
 - probe_snmp_v2           HIGH          100%
 SNMP utility and monitoring + Live list of snmp targets
-- probe nagios compatible HIGH          90% 
+- probe nagios compatible HIGH          100%
 Add the possibility to not interpret perf values. It should not be encouraged
 since these values are not standardized.
 - probe logging text      HIGH          100%
@@ -24,10 +24,18 @@ should reload the conf without stoping the server
 Parent/child probe association.
 - inspector_warn          HIGH          0%
 Create alerts with events patterns or events values. See Mmonit syntax
-language. Use an allready existing job scheduler?
+language. Use an allready existing job scheduler? Include acknolegement.
+Acknowledgement should be possible both by mail (responde with
+a COMMENT), or with the interface wich will result in a mail sent to
+destinators in responce to the alert to the recipient list.
 - logger_events           HIGH          0%
 Target events of interest. Will be represented as time plots on the
 client. Include work on future traps_mod and syslog_mod.
+- snmp traps handling     HIGH          0%
+With logger_events
+- config file               HIGH        0%
+Human readable configuration file.yaml or sh source. Generate erlang terms 
+with m4 or awk or sh or perl. Use of templates.
 --------> RELEASE B1.0
 
 - inspector_rrd_warn      HIGH          0%
@@ -40,17 +48,19 @@ the rrd. A delayed inspector in some way because inspectors are launch before
 loggers.
 - inspector_inertie       HIGH          0%
 False positive detection.
-- config file               HIGH        0%
-Human readable configuration file.yaml or sh source. Generate erlang terms 
-with m4 or awk or sh or perl. Use of templates.
+- documentation           HIGH          0%
+Supercast, tracker config, client.
 ---------> RELEASE 1
 
 
-- wmaps                   HIGH        0%
+- wmaps                   HIGH          0%
 Create, save and generate (what format?) maps (manual links between nodes).
 The final map should look like the cacti/weathermap module + visual alerts.
 (http://graphite.wikidot.com/whisper viewable in web browsers???)
+client work (qt).
 - snmp autodiscovery      HIGH          0%
+- metrologie              HIGH          0%
+pmacct, netflow, sflow, rmon.
 ---------> RELEASE 2.0
 
 
@@ -59,8 +69,6 @@ need definition of API. The system should be usable without writing the
 configuration file. Targets should be added deleted in live.
 - telnet_client                         MEDIUM  0%
 ---------> RELEASE 3.0
-
-
 
 
 
@@ -118,3 +126,12 @@ TODO UB2:
 TODO performance:
 btracker_probe_nagios:eval_nagios_output/1 might use re:run instead 
 of string:token
+
+TODO mib2 counters:
+packets, discard, %discard, error, %error
+
+TODO design:
+add max channel subscribe limit to supercast
+
+TODO maybe:
+smokeping probe compatibility

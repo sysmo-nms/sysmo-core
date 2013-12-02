@@ -16,7 +16,8 @@
 
 -record(nagios_plugin_conf, {
     executable  = undefined             :: string(),
-    args        = []                    :: [{any(), any()}]
+    args        = []                    :: [{any(), any()}],
+    eval_perfs  = false                 :: false | true
 }).
 
 -record(probe_return, {
