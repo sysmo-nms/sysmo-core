@@ -24,7 +24,10 @@ should reload the conf without stoping the server
 Parent/child probe association.
 - inspector_warn          HIGH          0%
 Create alerts with events patterns or events values. See Mmonit syntax
-language. Use an allready existing job scheduler?
+language. Use an allready existing job scheduler? Include acknolegement.
+Acknowledgement should be possible both by mail (responde with
+a COMMENT), or with the interface wich will result in a mail sent to
+destinators in responce to the alert to the recipient list.
 - logger_events           HIGH          0%
 Target events of interest. Will be represented as time plots on the
 client. Include work on future traps_mod and syslog_mod.
