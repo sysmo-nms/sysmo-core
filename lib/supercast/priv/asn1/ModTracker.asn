@@ -118,8 +118,8 @@ ProbeActivity ::= SEQUENCE {
 }
 
 ProbeReturn ::= SEQUENCE {
-    channel         TargetId,
-    probeId         ProbeId,
+    target          TargetId,
+    probeId         PrintableString,
     status          ProbeStatus,
     originalReply   PrintableString,
     timestamp       INTEGER,

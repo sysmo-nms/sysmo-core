@@ -33,7 +33,7 @@ channel, probeId, name, permissions, probeMod, probeConf, status, timeout, step,
 channel, probeId, timestamp, state, returnStatus, textual}).
 
 -record('ProbeReturn',{
-channel, probeId, status, originalReply, timestamp, keysVals}).
+target, probeId, status, originalReply, timestamp, keysVals}).
 
 -record('ProbeModuleInfo',{
 name, info}).
