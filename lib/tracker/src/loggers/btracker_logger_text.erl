@@ -59,7 +59,7 @@ log(
 dump(#probe_server_state{
         loggers_state   = LState,
         target          = #target{id = TId},
-        probe           = #probe{id = PId}
+        probe           = #probe{name = PId}
     }) ->
     LogSrv  = get_key(log_srv, LState),
     Bin     = tlogger_text:dump(LogSrv),
@@ -72,7 +72,7 @@ pdu('probeDump', {TargetId, ProbeId, Binary}) ->
             {probeDump,
                 {'ProbeDump',
                     atom_to_list(TargetId),
-                    ProbeId,
+                    atom_to_list(ProbeId),
                     atom_to_list(?MODULE),
                     Binary}}}}.
 

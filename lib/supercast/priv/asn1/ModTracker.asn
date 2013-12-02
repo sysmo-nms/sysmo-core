@@ -132,8 +132,8 @@ ProbeModuleInfo ::= SEQUENCE {
 }
 
 ProbeDump   ::= SEQUENCE {
-    channel     TargetId,
-    probeId     ProbeId,
+    target      TargetId,
+    probeName   PrintableString,
     probeModule PrintableString,
     binaryData  FileData  
 }
