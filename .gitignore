@@ -8,6 +8,7 @@ cfg/ssl/*.pem
 doc
 www/*.png
 var/tracker/*
+cfg/tracker.conf
 edoc-info
 activity.log
 *.bin

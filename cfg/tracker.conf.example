@@ -1,12 +1,12 @@
 {target,
-    'secondTestHost-251',
+    'secondTestHost-1',
     {perm_conf,     ["admin"], ["admin"]},
     [{ip, ["192.168.0.5"]}],
     [
         {probe,
             1,
             undefined,
-            'check_icmp-1',
+            'check_icmp-1-1',
             {perm_conf, ["admin"], ["admin"]},
             btracker_probe_nagios,
             {nagios_plugin_conf,
@@ -46,43 +46,13 @@
             true
         },
         {probe,
-            2,
-            undefined,
-            'check_http-2',
-            {perm_conf, ["admin", "other"], ["admin"]},
-            btracker_probe_nagios,
-            {nagios_plugin_conf,
-                "/opt/nagios-plugins-1.4.16/libexec/check_http",
-                [
-                    {"-H", "192.168.0.5"},
-                    {"-t", "5"}
-                ],
-                false
-            },
-            'UNKNOWN',
-            5,
-            4,
-            [
-                {inspector, btracker_inspector_status_set,[]},
-                {inspector, btracker_inspector_property_set, ["status"]}
-            ],
-            [
-                {logger, btracker_logger_text, []}
-            ],
-            [
-                {"propertyX", "propertyXValue"},
-                {"propertyY", "propertyYValue"}
-            ],
-            true 
-        },
-        {probe,
             3,
             undefined,
-            'snmp-walk-properties-3',
+            'snmp-walk-properties-1-3',
             {perm_conf, ["admin", "other"], ["admin"]},
             btracker_probe_snmp,
             {snmp_conf,
-                "secondTestHost-251",
+                "secondTestHost-1",
                 "192.168.0.5",
                 161,
                 v2,
@@ -118,11 +88,11 @@
         {probe,
             4,
             undefined,
-            'snmp-walk-numerics-4',
+            'snmp-walk-numerics-1-4',
             {perm_conf, ["admin", "other"], ["admin"]},
             btracker_probe_snmp,
             {snmp_conf,
-                "secondTestHost-251",
+                "secondTestHost-1",
                 "192.168.0.5",
                 161,
                 v2,
@@ -175,17 +145,17 @@
             true 
         }
     ],
-    "var/tracker/secondTestHost-251"
+    "var/tracker/secondTestHost-1"
 }.
 {target,
-    'secondTestHost-252',
+    'secondTestHost-2',
     {perm_conf,     ["admin"], ["admin"]},
     [{ip, ["192.168.0.5"]}],
     [
         {probe,
             1,
             undefined,
-            'check_icmp-5',
+            'check_icmp-2-1',
             {perm_conf, ["admin"], ["admin"]},
             btracker_probe_nagios,
             {nagios_plugin_conf,
@@ -225,43 +195,13 @@
             true
         },
         {probe,
-            2,
-            undefined,
-            'check_http-6',
-            {perm_conf, ["admin", "other"], ["admin"]},
-            btracker_probe_nagios,
-            {nagios_plugin_conf,
-                "/opt/nagios-plugins-1.4.16/libexec/check_http",
-                [
-                    {"-H", "192.168.0.5"},
-                    {"-t", "5"}
-                ],
-                false
-            },
-            'UNKNOWN',
-            5,
-            4,
-            [
-                {inspector, btracker_inspector_status_set,[]},
-                {inspector, btracker_inspector_property_set, ["status"]}
-            ],
-            [
-                {logger, btracker_logger_text, []}
-            ],
-            [
-                {"propertyX", "propertyXValue"},
-                {"propertyY", "propertyYValue"}
-            ],
-            true 
-        },
-        {probe,
             3,
             undefined,
-            'snmp-walk-properties-7',
+            'snmp-walk-properties-2-3',
             {perm_conf, ["admin", "other"], ["admin"]},
             btracker_probe_snmp,
             {snmp_conf,
-                "secondTestHost-252",
+                "secondTestHost-2",
                 "192.168.0.5",
                 161,
                 v2,
@@ -297,11 +237,11 @@
         {probe,
             4,
             undefined,
-            'snmp-walk-numerics-8',
+            'snmp-walk-numerics-2-4',
             {perm_conf, ["admin", "other"], ["admin"]},
             btracker_probe_snmp,
             {snmp_conf,
-                "secondTestHost-252",
+                "secondTestHost-2",
                 "192.168.0.5",
                 161,
                 v2,
@@ -354,5 +294,1197 @@
             true 
         }
     ],
-    "var/tracker/secondTestHost-252"
+    "var/tracker/secondTestHost-2"
+}.
+{target,
+    'secondTestHost-3',
+    {perm_conf,     ["admin"], ["admin"]},
+    [{ip, ["192.168.0.5"]}],
+    [
+        {probe,
+            1,
+            undefined,
+            'check_icmp-3-1',
+            {perm_conf, ["admin"], ["admin"]},
+            btracker_probe_nagios,
+            {nagios_plugin_conf,
+                "/opt/nagios-plugins-1.4.16/libexec/check_icmp",
+                [
+                    {"-H", "192.168.0.5"},
+                    {"-t", "5"}
+                ],
+                true
+            },
+            'UNKNOWN',
+            5,
+            4,
+            [
+                {inspector, btracker_inspector_status_set,[]},
+                {inspector, btracker_inspector_property_set, ["status"]}
+            ],
+            [
+                {logger, btracker_logger_text, []},
+                {logger, 
+                    btracker_logger_rrd, [
+                        {create, "create <FILE> --step 5 --no-overwrite DS:latency:COUNTER:10:0:U RRA:AVERAGE:0.5:1:600 RRA:AVERAGE:0.5:6:700 RRA:AVERAGE:0.5:24:775 RRA:AVERAGE:0.5:288:797"},
+                        {update, "update <FILE> --template latency N:<LATENCY>"},
+                        {graphs,  
+                            [
+                                "DEF:lat=<FILE>:latency:AVERAGE LINE1:lat#3465A4"
+                            ]
+                        },
+                        {binds, [{"rtmax_value", "<LATENCY>"}]}
+                    ]
+                }
+            ],
+            [
+                {"propertyX", "propertyXValue"},
+                {"propertyY", "propertyYValue"}
+            ],
+            true
+        },
+        {probe,
+            3,
+            undefined,
+            'snmp-walk-properties-3-3',
+            {perm_conf, ["admin", "other"], ["admin"]},
+            btracker_probe_snmp,
+            {snmp_conf,
+                "secondTestHost-3",
+                "192.168.0.5",
+                161,
+                v2,
+                none,
+                "public",
+                none,
+                none,
+                none,
+                none,
+                [
+                    {"sysName", [1,3,6,1,2,1,1,5,0]},
+                    {"location", [1,3,6,1,2,1,1,6,0]}
+
+                ]
+            },
+            'UNKNOWN',
+            5,
+            4,
+            [
+                {inspector, btracker_inspector_status_set,[]},
+                {inspector, btracker_inspector_property_set, 
+                    ["status", "sysName", "location"]}
+            ],
+            [
+                {logger, btracker_logger_text, []}
+            ],
+            [
+                {"propertyX", "propertyXValue"},
+                {"propertyY", "propertyYValue"}
+            ],
+            true
+        },
+        {probe,
+            4,
+            undefined,
+            'snmp-walk-numerics-3-4',
+            {perm_conf, ["admin", "other"], ["admin"]},
+            btracker_probe_snmp,
+            {snmp_conf,
+                "secondTestHost-3",
+                "192.168.0.5",
+                161,
+                v2,
+                none,
+                "public",
+                none,
+                none,
+                none,
+                none,
+                [
+                    {"sis0-in",     [1,3,6,1,2,1,2,2,1,10,1,0]},
+                    {"sis0-out",    [1,3,6,1,2,1,2,2,1,16,1,0]},
+                    {"sis1-in",     [1,3,6,1,2,1,2,2,1,10,2,0]},
+                    {"sis1-out",    [1,3,6,1,2,1,2,2,1,16,2,0]}
+                ]
+            },
+            'UNKNOWN',
+            5,
+            4,
+            [
+                {inspector, btracker_inspector_status_set,[]},
+                {inspector, btracker_inspector_property_set, ["status"]}
+            ],
+            [
+                {logger, btracker_logger_text, []},
+                {logger,
+                    btracker_logger_rrd, [
+                        {create, "create <FILE> --step 5 --no-overwrite DS:sis0-in:COUNTER:10:U:U DS:sis0-out:COUNTER:10:U:U DS:sis1-in:COUNTER:10:U:U DS:sis1-out:COUNTER:10:U:U RRA:AVERAGE:0.5:1:600 RRA:AVERAGE:0.5:6:700 RRA:AVERAGE:0.5:24:775 RRA:AVERAGE:0.5:288:797"},
+                        {update, "update <FILE> --template sis0-in:sis0-out:sis1-in:sis1-out N:<SIS0-IN>:<SIS0-OUT>:<SIS1-IN>:<SIS1-OUT>"},
+                        {graphs, 
+                            [
+                                "DEF:s0in=<FILE>:sis0-in:AVERAGE DEF:s0out=<FILE>:sis0-out:AVERAGE DEF:s1in=<FILE>:sis1-in:AVERAGE DEF:s1out=<FILE>:sis1-out:AVERAGE LINE1:s0in#3465A4 LINE2:s0out#CC0000 LINE3:s1in#4E9A06 LINE4:s1out#EDD400"
+                            ]
+                        },
+                        {binds, 
+                            [
+                                {"sis0-in",  "<SIS0-IN>"},
+                                {"sis0-out", "<SIS0-OUT>"},
+                                {"sis1-in",  "<SIS1-IN>"},
+                                {"sis1-out", "<SIS1-OUT>"}
+                            ]
+                        }
+                    ]
+                }
+            ],
+            [
+                {"propertyX", "propertyXValue"},
+                {"propertyY", "propertyYValue"}
+            ],
+            true 
+        }
+    ],
+    "var/tracker/secondTestHost-3"
+}.
+{target,
+    'secondTestHost-4',
+    {perm_conf,     ["admin"], ["admin"]},
+    [{ip, ["192.168.0.5"]}],
+    [
+        {probe,
+            1,
+            undefined,
+            'check_icmp-4-1',
+            {perm_conf, ["admin"], ["admin"]},
+            btracker_probe_nagios,
+            {nagios_plugin_conf,
+                "/opt/nagios-plugins-1.4.16/libexec/check_icmp",
+                [
+                    {"-H", "192.168.0.5"},
+                    {"-t", "5"}
+                ],
+                true
+            },
+            'UNKNOWN',
+            5,
+            4,
+            [
+                {inspector, btracker_inspector_status_set,[]},
+                {inspector, btracker_inspector_property_set, ["status"]}
+            ],
+            [
+                {logger, btracker_logger_text, []},
+                {logger, 
+                    btracker_logger_rrd, [
+                        {create, "create <FILE> --step 5 --no-overwrite DS:latency:COUNTER:10:0:U RRA:AVERAGE:0.5:1:600 RRA:AVERAGE:0.5:6:700 RRA:AVERAGE:0.5:24:775 RRA:AVERAGE:0.5:288:797"},
+                        {update, "update <FILE> --template latency N:<LATENCY>"},
+                        {graphs,  
+                            [
+                                "DEF:lat=<FILE>:latency:AVERAGE LINE1:lat#3465A4"
+                            ]
+                        },
+                        {binds, [{"rtmax_value", "<LATENCY>"}]}
+                    ]
+                }
+            ],
+            [
+                {"propertyX", "propertyXValue"},
+                {"propertyY", "propertyYValue"}
+            ],
+            true
+        },
+        {probe,
+            3,
+            undefined,
+            'snmp-walk-properties-4-3',
+            {perm_conf, ["admin", "other"], ["admin"]},
+            btracker_probe_snmp,
+            {snmp_conf,
+                "secondTestHost-4",
+                "192.168.0.5",
+                161,
+                v2,
+                none,
+                "public",
+                none,
+                none,
+                none,
+                none,
+                [
+                    {"sysName", [1,3,6,1,2,1,1,5,0]},
+                    {"location", [1,3,6,1,2,1,1,6,0]}
+
+                ]
+            },
+            'UNKNOWN',
+            5,
+            4,
+            [
+                {inspector, btracker_inspector_status_set,[]},
+                {inspector, btracker_inspector_property_set, 
+                    ["status", "sysName", "location"]}
+            ],
+            [
+                {logger, btracker_logger_text, []}
+            ],
+            [
+                {"propertyX", "propertyXValue"},
+                {"propertyY", "propertyYValue"}
+            ],
+            true
+        },
+        {probe,
+            4,
+            undefined,
+            'snmp-walk-numerics-4-4',
+            {perm_conf, ["admin", "other"], ["admin"]},
+            btracker_probe_snmp,
+            {snmp_conf,
+                "secondTestHost-4",
+                "192.168.0.5",
+                161,
+                v2,
+                none,
+                "public",
+                none,
+                none,
+                none,
+                none,
+                [
+                    {"sis0-in",     [1,3,6,1,2,1,2,2,1,10,1,0]},
+                    {"sis0-out",    [1,3,6,1,2,1,2,2,1,16,1,0]},
+                    {"sis1-in",     [1,3,6,1,2,1,2,2,1,10,2,0]},
+                    {"sis1-out",    [1,3,6,1,2,1,2,2,1,16,2,0]}
+                ]
+            },
+            'UNKNOWN',
+            5,
+            4,
+            [
+                {inspector, btracker_inspector_status_set,[]},
+                {inspector, btracker_inspector_property_set, ["status"]}
+            ],
+            [
+                {logger, btracker_logger_text, []},
+                {logger,
+                    btracker_logger_rrd, [
+                        {create, "create <FILE> --step 5 --no-overwrite DS:sis0-in:COUNTER:10:U:U DS:sis0-out:COUNTER:10:U:U DS:sis1-in:COUNTER:10:U:U DS:sis1-out:COUNTER:10:U:U RRA:AVERAGE:0.5:1:600 RRA:AVERAGE:0.5:6:700 RRA:AVERAGE:0.5:24:775 RRA:AVERAGE:0.5:288:797"},
+                        {update, "update <FILE> --template sis0-in:sis0-out:sis1-in:sis1-out N:<SIS0-IN>:<SIS0-OUT>:<SIS1-IN>:<SIS1-OUT>"},
+                        {graphs, 
+                            [
+                                "DEF:s0in=<FILE>:sis0-in:AVERAGE DEF:s0out=<FILE>:sis0-out:AVERAGE DEF:s1in=<FILE>:sis1-in:AVERAGE DEF:s1out=<FILE>:sis1-out:AVERAGE LINE1:s0in#3465A4 LINE2:s0out#CC0000 LINE3:s1in#4E9A06 LINE4:s1out#EDD400"
+                            ]
+                        },
+                        {binds, 
+                            [
+                                {"sis0-in",  "<SIS0-IN>"},
+                                {"sis0-out", "<SIS0-OUT>"},
+                                {"sis1-in",  "<SIS1-IN>"},
+                                {"sis1-out", "<SIS1-OUT>"}
+                            ]
+                        }
+                    ]
+                }
+            ],
+            [
+                {"propertyX", "propertyXValue"},
+                {"propertyY", "propertyYValue"}
+            ],
+            true 
+        }
+    ],
+    "var/tracker/secondTestHost-4"
+}.
+{target,
+    'secondTestHost-5',
+    {perm_conf,     ["admin"], ["admin"]},
+    [{ip, ["192.168.0.5"]}],
+    [
+        {probe,
+            1,
+            undefined,
+            'check_icmp-5-1',
+            {perm_conf, ["admin"], ["admin"]},
+            btracker_probe_nagios,
+            {nagios_plugin_conf,
+                "/opt/nagios-plugins-1.4.16/libexec/check_icmp",
+                [
+                    {"-H", "192.168.0.5"},
+                    {"-t", "5"}
+                ],
+                true
+            },
+            'UNKNOWN',
+            5,
+            4,
+            [
+                {inspector, btracker_inspector_status_set,[]},
+                {inspector, btracker_inspector_property_set, ["status"]}
+            ],
+            [
+                {logger, btracker_logger_text, []},
+                {logger, 
+                    btracker_logger_rrd, [
+                        {create, "create <FILE> --step 5 --no-overwrite DS:latency:COUNTER:10:0:U RRA:AVERAGE:0.5:1:600 RRA:AVERAGE:0.5:6:700 RRA:AVERAGE:0.5:24:775 RRA:AVERAGE:0.5:288:797"},
+                        {update, "update <FILE> --template latency N:<LATENCY>"},
+                        {graphs,  
+                            [
+                                "DEF:lat=<FILE>:latency:AVERAGE LINE1:lat#3465A4"
+                            ]
+                        },
+                        {binds, [{"rtmax_value", "<LATENCY>"}]}
+                    ]
+                }
+            ],
+            [
+                {"propertyX", "propertyXValue"},
+                {"propertyY", "propertyYValue"}
+            ],
+            true
+        },
+        {probe,
+            3,
+            undefined,
+            'snmp-walk-properties-5-3',
+            {perm_conf, ["admin", "other"], ["admin"]},
+            btracker_probe_snmp,
+            {snmp_conf,
+                "secondTestHost-5",
+                "192.168.0.5",
+                161,
+                v2,
+                none,
+                "public",
+                none,
+                none,
+                none,
+                none,
+                [
+                    {"sysName", [1,3,6,1,2,1,1,5,0]},
+                    {"location", [1,3,6,1,2,1,1,6,0]}
+
+                ]
+            },
+            'UNKNOWN',
+            5,
+            4,
+            [
+                {inspector, btracker_inspector_status_set,[]},
+                {inspector, btracker_inspector_property_set, 
+                    ["status", "sysName", "location"]}
+            ],
+            [
+                {logger, btracker_logger_text, []}
+            ],
+            [
+                {"propertyX", "propertyXValue"},
+                {"propertyY", "propertyYValue"}
+            ],
+            true
+        },
+        {probe,
+            4,
+            undefined,
+            'snmp-walk-numerics-5-4',
+            {perm_conf, ["admin", "other"], ["admin"]},
+            btracker_probe_snmp,
+            {snmp_conf,
+                "secondTestHost-5",
+                "192.168.0.5",
+                161,
+                v2,
+                none,
+                "public",
+                none,
+                none,
+                none,
+                none,
+                [
+                    {"sis0-in",     [1,3,6,1,2,1,2,2,1,10,1,0]},
+                    {"sis0-out",    [1,3,6,1,2,1,2,2,1,16,1,0]},
+                    {"sis1-in",     [1,3,6,1,2,1,2,2,1,10,2,0]},
+                    {"sis1-out",    [1,3,6,1,2,1,2,2,1,16,2,0]}
+                ]
+            },
+            'UNKNOWN',
+            5,
+            4,
+            [
+                {inspector, btracker_inspector_status_set,[]},
+                {inspector, btracker_inspector_property_set, ["status"]}
+            ],
+            [
+                {logger, btracker_logger_text, []},
+                {logger,
+                    btracker_logger_rrd, [
+                        {create, "create <FILE> --step 5 --no-overwrite DS:sis0-in:COUNTER:10:U:U DS:sis0-out:COUNTER:10:U:U DS:sis1-in:COUNTER:10:U:U DS:sis1-out:COUNTER:10:U:U RRA:AVERAGE:0.5:1:600 RRA:AVERAGE:0.5:6:700 RRA:AVERAGE:0.5:24:775 RRA:AVERAGE:0.5:288:797"},
+                        {update, "update <FILE> --template sis0-in:sis0-out:sis1-in:sis1-out N:<SIS0-IN>:<SIS0-OUT>:<SIS1-IN>:<SIS1-OUT>"},
+                        {graphs, 
+                            [
+                                "DEF:s0in=<FILE>:sis0-in:AVERAGE DEF:s0out=<FILE>:sis0-out:AVERAGE DEF:s1in=<FILE>:sis1-in:AVERAGE DEF:s1out=<FILE>:sis1-out:AVERAGE LINE1:s0in#3465A4 LINE2:s0out#CC0000 LINE3:s1in#4E9A06 LINE4:s1out#EDD400"
+                            ]
+                        },
+                        {binds, 
+                            [
+                                {"sis0-in",  "<SIS0-IN>"},
+                                {"sis0-out", "<SIS0-OUT>"},
+                                {"sis1-in",  "<SIS1-IN>"},
+                                {"sis1-out", "<SIS1-OUT>"}
+                            ]
+                        }
+                    ]
+                }
+            ],
+            [
+                {"propertyX", "propertyXValue"},
+                {"propertyY", "propertyYValue"}
+            ],
+            true 
+        }
+    ],
+    "var/tracker/secondTestHost-5"
+}.
+{target,
+    'secondTestHost-6',
+    {perm_conf,     ["admin"], ["admin"]},
+    [{ip, ["192.168.0.5"]}],
+    [
+        {probe,
+            1,
+            undefined,
+            'check_icmp-6-1',
+            {perm_conf, ["admin"], ["admin"]},
+            btracker_probe_nagios,
+            {nagios_plugin_conf,
+                "/opt/nagios-plugins-1.4.16/libexec/check_icmp",
+                [
+                    {"-H", "192.168.0.5"},
+                    {"-t", "5"}
+                ],
+                true
+            },
+            'UNKNOWN',
+            5,
+            4,
+            [
+                {inspector, btracker_inspector_status_set,[]},
+                {inspector, btracker_inspector_property_set, ["status"]}
+            ],
+            [
+                {logger, btracker_logger_text, []},
+                {logger, 
+                    btracker_logger_rrd, [
+                        {create, "create <FILE> --step 5 --no-overwrite DS:latency:COUNTER:10:0:U RRA:AVERAGE:0.5:1:600 RRA:AVERAGE:0.5:6:700 RRA:AVERAGE:0.5:24:775 RRA:AVERAGE:0.5:288:797"},
+                        {update, "update <FILE> --template latency N:<LATENCY>"},
+                        {graphs,  
+                            [
+                                "DEF:lat=<FILE>:latency:AVERAGE LINE1:lat#3465A4"
+                            ]
+                        },
+                        {binds, [{"rtmax_value", "<LATENCY>"}]}
+                    ]
+                }
+            ],
+            [
+                {"propertyX", "propertyXValue"},
+                {"propertyY", "propertyYValue"}
+            ],
+            true
+        },
+        {probe,
+            3,
+            undefined,
+            'snmp-walk-properties-6-3',
+            {perm_conf, ["admin", "other"], ["admin"]},
+            btracker_probe_snmp,
+            {snmp_conf,
+                "secondTestHost-6",
+                "192.168.0.5",
+                161,
+                v2,
+                none,
+                "public",
+                none,
+                none,
+                none,
+                none,
+                [
+                    {"sysName", [1,3,6,1,2,1,1,5,0]},
+                    {"location", [1,3,6,1,2,1,1,6,0]}
+
+                ]
+            },
+            'UNKNOWN',
+            5,
+            4,
+            [
+                {inspector, btracker_inspector_status_set,[]},
+                {inspector, btracker_inspector_property_set, 
+                    ["status", "sysName", "location"]}
+            ],
+            [
+                {logger, btracker_logger_text, []}
+            ],
+            [
+                {"propertyX", "propertyXValue"},
+                {"propertyY", "propertyYValue"}
+            ],
+            true
+        },
+        {probe,
+            4,
+            undefined,
+            'snmp-walk-numerics-6-4',
+            {perm_conf, ["admin", "other"], ["admin"]},
+            btracker_probe_snmp,
+            {snmp_conf,
+                "secondTestHost-6",
+                "192.168.0.5",
+                161,
+                v2,
+                none,
+                "public",
+                none,
+                none,
+                none,
+                none,
+                [
+                    {"sis0-in",     [1,3,6,1,2,1,2,2,1,10,1,0]},
+                    {"sis0-out",    [1,3,6,1,2,1,2,2,1,16,1,0]},
+                    {"sis1-in",     [1,3,6,1,2,1,2,2,1,10,2,0]},
+                    {"sis1-out",    [1,3,6,1,2,1,2,2,1,16,2,0]}
+                ]
+            },
+            'UNKNOWN',
+            5,
+            4,
+            [
+                {inspector, btracker_inspector_status_set,[]},
+                {inspector, btracker_inspector_property_set, ["status"]}
+            ],
+            [
+                {logger, btracker_logger_text, []},
+                {logger,
+                    btracker_logger_rrd, [
+                        {create, "create <FILE> --step 5 --no-overwrite DS:sis0-in:COUNTER:10:U:U DS:sis0-out:COUNTER:10:U:U DS:sis1-in:COUNTER:10:U:U DS:sis1-out:COUNTER:10:U:U RRA:AVERAGE:0.5:1:600 RRA:AVERAGE:0.5:6:700 RRA:AVERAGE:0.5:24:775 RRA:AVERAGE:0.5:288:797"},
+                        {update, "update <FILE> --template sis0-in:sis0-out:sis1-in:sis1-out N:<SIS0-IN>:<SIS0-OUT>:<SIS1-IN>:<SIS1-OUT>"},
+                        {graphs, 
+                            [
+                                "DEF:s0in=<FILE>:sis0-in:AVERAGE DEF:s0out=<FILE>:sis0-out:AVERAGE DEF:s1in=<FILE>:sis1-in:AVERAGE DEF:s1out=<FILE>:sis1-out:AVERAGE LINE1:s0in#3465A4 LINE2:s0out#CC0000 LINE3:s1in#4E9A06 LINE4:s1out#EDD400"
+                            ]
+                        },
+                        {binds, 
+                            [
+                                {"sis0-in",  "<SIS0-IN>"},
+                                {"sis0-out", "<SIS0-OUT>"},
+                                {"sis1-in",  "<SIS1-IN>"},
+                                {"sis1-out", "<SIS1-OUT>"}
+                            ]
+                        }
+                    ]
+                }
+            ],
+            [
+                {"propertyX", "propertyXValue"},
+                {"propertyY", "propertyYValue"}
+            ],
+            true 
+        }
+    ],
+    "var/tracker/secondTestHost-6"
+}.
+{target,
+    'secondTestHost-7',
+    {perm_conf,     ["admin"], ["admin"]},
+    [{ip, ["192.168.0.5"]}],
+    [
+        {probe,
+            1,
+            undefined,
+            'check_icmp-7-1',
+            {perm_conf, ["admin"], ["admin"]},
+            btracker_probe_nagios,
+            {nagios_plugin_conf,
+                "/opt/nagios-plugins-1.4.16/libexec/check_icmp",
+                [
+                    {"-H", "192.168.0.5"},
+                    {"-t", "5"}
+                ],
+                true
+            },
+            'UNKNOWN',
+            5,
+            4,
+            [
+                {inspector, btracker_inspector_status_set,[]},
+                {inspector, btracker_inspector_property_set, ["status"]}
+            ],
+            [
+                {logger, btracker_logger_text, []},
+                {logger, 
+                    btracker_logger_rrd, [
+                        {create, "create <FILE> --step 5 --no-overwrite DS:latency:COUNTER:10:0:U RRA:AVERAGE:0.5:1:600 RRA:AVERAGE:0.5:6:700 RRA:AVERAGE:0.5:24:775 RRA:AVERAGE:0.5:288:797"},
+                        {update, "update <FILE> --template latency N:<LATENCY>"},
+                        {graphs,  
+                            [
+                                "DEF:lat=<FILE>:latency:AVERAGE LINE1:lat#3465A4"
+                            ]
+                        },
+                        {binds, [{"rtmax_value", "<LATENCY>"}]}
+                    ]
+                }
+            ],
+            [
+                {"propertyX", "propertyXValue"},
+                {"propertyY", "propertyYValue"}
+            ],
+            true
+        },
+        {probe,
+            3,
+            undefined,
+            'snmp-walk-properties-7-3',
+            {perm_conf, ["admin", "other"], ["admin"]},
+            btracker_probe_snmp,
+            {snmp_conf,
+                "secondTestHost-7",
+                "192.168.0.5",
+                161,
+                v2,
+                none,
+                "public",
+                none,
+                none,
+                none,
+                none,
+                [
+                    {"sysName", [1,3,6,1,2,1,1,5,0]},
+                    {"location", [1,3,6,1,2,1,1,6,0]}
+
+                ]
+            },
+            'UNKNOWN',
+            5,
+            4,
+            [
+                {inspector, btracker_inspector_status_set,[]},
+                {inspector, btracker_inspector_property_set, 
+                    ["status", "sysName", "location"]}
+            ],
+            [
+                {logger, btracker_logger_text, []}
+            ],
+            [
+                {"propertyX", "propertyXValue"},
+                {"propertyY", "propertyYValue"}
+            ],
+            true
+        },
+        {probe,
+            4,
+            undefined,
+            'snmp-walk-numerics-7-4',
+            {perm_conf, ["admin", "other"], ["admin"]},
+            btracker_probe_snmp,
+            {snmp_conf,
+                "secondTestHost-7",
+                "192.168.0.5",
+                161,
+                v2,
+                none,
+                "public",
+                none,
+                none,
+                none,
+                none,
+                [
+                    {"sis0-in",     [1,3,6,1,2,1,2,2,1,10,1,0]},
+                    {"sis0-out",    [1,3,6,1,2,1,2,2,1,16,1,0]},
+                    {"sis1-in",     [1,3,6,1,2,1,2,2,1,10,2,0]},
+                    {"sis1-out",    [1,3,6,1,2,1,2,2,1,16,2,0]}
+                ]
+            },
+            'UNKNOWN',
+            5,
+            4,
+            [
+                {inspector, btracker_inspector_status_set,[]},
+                {inspector, btracker_inspector_property_set, ["status"]}
+            ],
+            [
+                {logger, btracker_logger_text, []},
+                {logger,
+                    btracker_logger_rrd, [
+                        {create, "create <FILE> --step 5 --no-overwrite DS:sis0-in:COUNTER:10:U:U DS:sis0-out:COUNTER:10:U:U DS:sis1-in:COUNTER:10:U:U DS:sis1-out:COUNTER:10:U:U RRA:AVERAGE:0.5:1:600 RRA:AVERAGE:0.5:6:700 RRA:AVERAGE:0.5:24:775 RRA:AVERAGE:0.5:288:797"},
+                        {update, "update <FILE> --template sis0-in:sis0-out:sis1-in:sis1-out N:<SIS0-IN>:<SIS0-OUT>:<SIS1-IN>:<SIS1-OUT>"},
+                        {graphs, 
+                            [
+                                "DEF:s0in=<FILE>:sis0-in:AVERAGE DEF:s0out=<FILE>:sis0-out:AVERAGE DEF:s1in=<FILE>:sis1-in:AVERAGE DEF:s1out=<FILE>:sis1-out:AVERAGE LINE1:s0in#3465A4 LINE2:s0out#CC0000 LINE3:s1in#4E9A06 LINE4:s1out#EDD400"
+                            ]
+                        },
+                        {binds, 
+                            [
+                                {"sis0-in",  "<SIS0-IN>"},
+                                {"sis0-out", "<SIS0-OUT>"},
+                                {"sis1-in",  "<SIS1-IN>"},
+                                {"sis1-out", "<SIS1-OUT>"}
+                            ]
+                        }
+                    ]
+                }
+            ],
+            [
+                {"propertyX", "propertyXValue"},
+                {"propertyY", "propertyYValue"}
+            ],
+            true 
+        }
+    ],
+    "var/tracker/secondTestHost-7"
+}.
+{target,
+    'secondTestHost-8',
+    {perm_conf,     ["admin"], ["admin"]},
+    [{ip, ["192.168.0.5"]}],
+    [
+        {probe,
+            1,
+            undefined,
+            'check_icmp-8-1',
+            {perm_conf, ["admin"], ["admin"]},
+            btracker_probe_nagios,
+            {nagios_plugin_conf,
+                "/opt/nagios-plugins-1.4.16/libexec/check_icmp",
+                [
+                    {"-H", "192.168.0.5"},
+                    {"-t", "5"}
+                ],
+                true
+            },
+            'UNKNOWN',
+            5,
+            4,
+            [
+                {inspector, btracker_inspector_status_set,[]},
+                {inspector, btracker_inspector_property_set, ["status"]}
+            ],
+            [
+                {logger, btracker_logger_text, []},
+                {logger, 
+                    btracker_logger_rrd, [
+                        {create, "create <FILE> --step 5 --no-overwrite DS:latency:COUNTER:10:0:U RRA:AVERAGE:0.5:1:600 RRA:AVERAGE:0.5:6:700 RRA:AVERAGE:0.5:24:775 RRA:AVERAGE:0.5:288:797"},
+                        {update, "update <FILE> --template latency N:<LATENCY>"},
+                        {graphs,  
+                            [
+                                "DEF:lat=<FILE>:latency:AVERAGE LINE1:lat#3465A4"
+                            ]
+                        },
+                        {binds, [{"rtmax_value", "<LATENCY>"}]}
+                    ]
+                }
+            ],
+            [
+                {"propertyX", "propertyXValue"},
+                {"propertyY", "propertyYValue"}
+            ],
+            true
+        },
+        {probe,
+            3,
+            undefined,
+            'snmp-walk-properties-8-3',
+            {perm_conf, ["admin", "other"], ["admin"]},
+            btracker_probe_snmp,
+            {snmp_conf,
+                "secondTestHost-8",
+                "192.168.0.5",
+                161,
+                v2,
+                none,
+                "public",
+                none,
+                none,
+                none,
+                none,
+                [
+                    {"sysName", [1,3,6,1,2,1,1,5,0]},
+                    {"location", [1,3,6,1,2,1,1,6,0]}
+
+                ]
+            },
+            'UNKNOWN',
+            5,
+            4,
+            [
+                {inspector, btracker_inspector_status_set,[]},
+                {inspector, btracker_inspector_property_set, 
+                    ["status", "sysName", "location"]}
+            ],
+            [
+                {logger, btracker_logger_text, []}
+            ],
+            [
+                {"propertyX", "propertyXValue"},
+                {"propertyY", "propertyYValue"}
+            ],
+            true
+        },
+        {probe,
+            4,
+            undefined,
+            'snmp-walk-numerics-8-4',
+            {perm_conf, ["admin", "other"], ["admin"]},
+            btracker_probe_snmp,
+            {snmp_conf,
+                "secondTestHost-8",
+                "192.168.0.5",
+                161,
+                v2,
+                none,
+                "public",
+                none,
+                none,
+                none,
+                none,
+                [
+                    {"sis0-in",     [1,3,6,1,2,1,2,2,1,10,1,0]},
+                    {"sis0-out",    [1,3,6,1,2,1,2,2,1,16,1,0]},
+                    {"sis1-in",     [1,3,6,1,2,1,2,2,1,10,2,0]},
+                    {"sis1-out",    [1,3,6,1,2,1,2,2,1,16,2,0]}
+                ]
+            },
+            'UNKNOWN',
+            5,
+            4,
+            [
+                {inspector, btracker_inspector_status_set,[]},
+                {inspector, btracker_inspector_property_set, ["status"]}
+            ],
+            [
+                {logger, btracker_logger_text, []},
+                {logger,
+                    btracker_logger_rrd, [
+                        {create, "create <FILE> --step 5 --no-overwrite DS:sis0-in:COUNTER:10:U:U DS:sis0-out:COUNTER:10:U:U DS:sis1-in:COUNTER:10:U:U DS:sis1-out:COUNTER:10:U:U RRA:AVERAGE:0.5:1:600 RRA:AVERAGE:0.5:6:700 RRA:AVERAGE:0.5:24:775 RRA:AVERAGE:0.5:288:797"},
+                        {update, "update <FILE> --template sis0-in:sis0-out:sis1-in:sis1-out N:<SIS0-IN>:<SIS0-OUT>:<SIS1-IN>:<SIS1-OUT>"},
+                        {graphs, 
+                            [
+                                "DEF:s0in=<FILE>:sis0-in:AVERAGE DEF:s0out=<FILE>:sis0-out:AVERAGE DEF:s1in=<FILE>:sis1-in:AVERAGE DEF:s1out=<FILE>:sis1-out:AVERAGE LINE1:s0in#3465A4 LINE2:s0out#CC0000 LINE3:s1in#4E9A06 LINE4:s1out#EDD400"
+                            ]
+                        },
+                        {binds, 
+                            [
+                                {"sis0-in",  "<SIS0-IN>"},
+                                {"sis0-out", "<SIS0-OUT>"},
+                                {"sis1-in",  "<SIS1-IN>"},
+                                {"sis1-out", "<SIS1-OUT>"}
+                            ]
+                        }
+                    ]
+                }
+            ],
+            [
+                {"propertyX", "propertyXValue"},
+                {"propertyY", "propertyYValue"}
+            ],
+            true 
+        }
+    ],
+    "var/tracker/secondTestHost-8"
+}.
+{target,
+    'secondTestHost-9',
+    {perm_conf,     ["admin"], ["admin"]},
+    [{ip, ["192.168.0.5"]}],
+    [
+        {probe,
+            1,
+            undefined,
+            'check_icmp-9-1',
+            {perm_conf, ["admin"], ["admin"]},
+            btracker_probe_nagios,
+            {nagios_plugin_conf,
+                "/opt/nagios-plugins-1.4.16/libexec/check_icmp",
+                [
+                    {"-H", "192.168.0.5"},
+                    {"-t", "5"}
+                ],
+                true
+            },
+            'UNKNOWN',
+            5,
+            4,
+            [
+                {inspector, btracker_inspector_status_set,[]},
+                {inspector, btracker_inspector_property_set, ["status"]}
+            ],
+            [
+                {logger, btracker_logger_text, []},
+                {logger, 
+                    btracker_logger_rrd, [
+                        {create, "create <FILE> --step 5 --no-overwrite DS:latency:COUNTER:10:0:U RRA:AVERAGE:0.5:1:600 RRA:AVERAGE:0.5:6:700 RRA:AVERAGE:0.5:24:775 RRA:AVERAGE:0.5:288:797"},
+                        {update, "update <FILE> --template latency N:<LATENCY>"},
+                        {graphs,  
+                            [
+                                "DEF:lat=<FILE>:latency:AVERAGE LINE1:lat#3465A4"
+                            ]
+                        },
+                        {binds, [{"rtmax_value", "<LATENCY>"}]}
+                    ]
+                }
+            ],
+            [
+                {"propertyX", "propertyXValue"},
+                {"propertyY", "propertyYValue"}
+            ],
+            true
+        },
+        {probe,
+            3,
+            undefined,
+            'snmp-walk-properties-9-3',
+            {perm_conf, ["admin", "other"], ["admin"]},
+            btracker_probe_snmp,
+            {snmp_conf,
+                "secondTestHost-9",
+                "192.168.0.5",
+                161,
+                v2,
+                none,
+                "public",
+                none,
+                none,
+                none,
+                none,
+                [
+                    {"sysName", [1,3,6,1,2,1,1,5,0]},
+                    {"location", [1,3,6,1,2,1,1,6,0]}
+
+                ]
+            },
+            'UNKNOWN',
+            5,
+            4,
+            [
+                {inspector, btracker_inspector_status_set,[]},
+                {inspector, btracker_inspector_property_set, 
+                    ["status", "sysName", "location"]}
+            ],
+            [
+                {logger, btracker_logger_text, []}
+            ],
+            [
+                {"propertyX", "propertyXValue"},
+                {"propertyY", "propertyYValue"}
+            ],
+            true
+        },
+        {probe,
+            4,
+            undefined,
+            'snmp-walk-numerics-9-4',
+            {perm_conf, ["admin", "other"], ["admin"]},
+            btracker_probe_snmp,
+            {snmp_conf,
+                "secondTestHost-9",
+                "192.168.0.5",
+                161,
+                v2,
+                none,
+                "public",
+                none,
+                none,
+                none,
+                none,
+                [
+                    {"sis0-in",     [1,3,6,1,2,1,2,2,1,10,1,0]},
+                    {"sis0-out",    [1,3,6,1,2,1,2,2,1,16,1,0]},
+                    {"sis1-in",     [1,3,6,1,2,1,2,2,1,10,2,0]},
+                    {"sis1-out",    [1,3,6,1,2,1,2,2,1,16,2,0]}
+                ]
+            },
+            'UNKNOWN',
+            5,
+            4,
+            [
+                {inspector, btracker_inspector_status_set,[]},
+                {inspector, btracker_inspector_property_set, ["status"]}
+            ],
+            [
+                {logger, btracker_logger_text, []},
+                {logger,
+                    btracker_logger_rrd, [
+                        {create, "create <FILE> --step 5 --no-overwrite DS:sis0-in:COUNTER:10:U:U DS:sis0-out:COUNTER:10:U:U DS:sis1-in:COUNTER:10:U:U DS:sis1-out:COUNTER:10:U:U RRA:AVERAGE:0.5:1:600 RRA:AVERAGE:0.5:6:700 RRA:AVERAGE:0.5:24:775 RRA:AVERAGE:0.5:288:797"},
+                        {update, "update <FILE> --template sis0-in:sis0-out:sis1-in:sis1-out N:<SIS0-IN>:<SIS0-OUT>:<SIS1-IN>:<SIS1-OUT>"},
+                        {graphs, 
+                            [
+                                "DEF:s0in=<FILE>:sis0-in:AVERAGE DEF:s0out=<FILE>:sis0-out:AVERAGE DEF:s1in=<FILE>:sis1-in:AVERAGE DEF:s1out=<FILE>:sis1-out:AVERAGE LINE1:s0in#3465A4 LINE2:s0out#CC0000 LINE3:s1in#4E9A06 LINE4:s1out#EDD400"
+                            ]
+                        },
+                        {binds, 
+                            [
+                                {"sis0-in",  "<SIS0-IN>"},
+                                {"sis0-out", "<SIS0-OUT>"},
+                                {"sis1-in",  "<SIS1-IN>"},
+                                {"sis1-out", "<SIS1-OUT>"}
+                            ]
+                        }
+                    ]
+                }
+            ],
+            [
+                {"propertyX", "propertyXValue"},
+                {"propertyY", "propertyYValue"}
+            ],
+            true 
+        }
+    ],
+    "var/tracker/secondTestHost-9"
+}.
+{target,
+    'secondTestHost-10',
+    {perm_conf,     ["admin"], ["admin"]},
+    [{ip, ["192.168.0.5"]}],
+    [
+        {probe,
+            1,
+            undefined,
+            'check_icmp-10-1',
+            {perm_conf, ["admin"], ["admin"]},
+            btracker_probe_nagios,
+            {nagios_plugin_conf,
+                "/opt/nagios-plugins-1.4.16/libexec/check_icmp",
+                [
+                    {"-H", "192.168.0.5"},
+                    {"-t", "5"}
+                ],
+                true
+            },
+            'UNKNOWN',
+            5,
+            4,
+            [
+                {inspector, btracker_inspector_status_set,[]},
+                {inspector, btracker_inspector_property_set, ["status"]}
+            ],
+            [
+                {logger, btracker_logger_text, []},
+                {logger, 
+                    btracker_logger_rrd, [
+                        {create, "create <FILE> --step 5 --no-overwrite DS:latency:COUNTER:10:0:U RRA:AVERAGE:0.5:1:600 RRA:AVERAGE:0.5:6:700 RRA:AVERAGE:0.5:24:775 RRA:AVERAGE:0.5:288:797"},
+                        {update, "update <FILE> --template latency N:<LATENCY>"},
+                        {graphs,  
+                            [
+                                "DEF:lat=<FILE>:latency:AVERAGE LINE1:lat#3465A4"
+                            ]
+                        },
+                        {binds, [{"rtmax_value", "<LATENCY>"}]}
+                    ]
+                }
+            ],
+            [
+                {"propertyX", "propertyXValue"},
+                {"propertyY", "propertyYValue"}
+            ],
+            true
+        },
+        {probe,
+            3,
+            undefined,
+            'snmp-walk-properties-10-3',
+            {perm_conf, ["admin", "other"], ["admin"]},
+            btracker_probe_snmp,
+            {snmp_conf,
+                "secondTestHost-10",
+                "192.168.0.5",
+                161,
+                v2,
+                none,
+                "public",
+                none,
+                none,
+                none,
+                none,
+                [
+                    {"sysName", [1,3,6,1,2,1,1,5,0]},
+                    {"location", [1,3,6,1,2,1,1,6,0]}
+
+                ]
+            },
+            'UNKNOWN',
+            5,
+            4,
+            [
+                {inspector, btracker_inspector_status_set,[]},
+                {inspector, btracker_inspector_property_set, 
+                    ["status", "sysName", "location"]}
+            ],
+            [
+                {logger, btracker_logger_text, []}
+            ],
+            [
+                {"propertyX", "propertyXValue"},
+                {"propertyY", "propertyYValue"}
+            ],
+            true
+        },
+        {probe,
+            4,
+            undefined,
+            'snmp-walk-numerics-10-4',
+            {perm_conf, ["admin", "other"], ["admin"]},
+            btracker_probe_snmp,
+            {snmp_conf,
+                "secondTestHost-10",
+                "192.168.0.5",
+                161,
+                v2,
+                none,
+                "public",
+                none,
+                none,
+                none,
+                none,
+                [
+                    {"sis0-in",     [1,3,6,1,2,1,2,2,1,10,1,0]},
+                    {"sis0-out",    [1,3,6,1,2,1,2,2,1,16,1,0]},
+                    {"sis1-in",     [1,3,6,1,2,1,2,2,1,10,2,0]},
+                    {"sis1-out",    [1,3,6,1,2,1,2,2,1,16,2,0]}
+                ]
+            },
+            'UNKNOWN',
+            5,
+            4,
+            [
+                {inspector, btracker_inspector_status_set,[]},
+                {inspector, btracker_inspector_property_set, ["status"]}
+            ],
+            [
+                {logger, btracker_logger_text, []},
+                {logger,
+                    btracker_logger_rrd, [
+                        {create, "create <FILE> --step 5 --no-overwrite DS:sis0-in:COUNTER:10:U:U DS:sis0-out:COUNTER:10:U:U DS:sis1-in:COUNTER:10:U:U DS:sis1-out:COUNTER:10:U:U RRA:AVERAGE:0.5:1:600 RRA:AVERAGE:0.5:6:700 RRA:AVERAGE:0.5:24:775 RRA:AVERAGE:0.5:288:797"},
+                        {update, "update <FILE> --template sis0-in:sis0-out:sis1-in:sis1-out N:<SIS0-IN>:<SIS0-OUT>:<SIS1-IN>:<SIS1-OUT>"},
+                        {graphs, 
+                            [
+                                "DEF:s0in=<FILE>:sis0-in:AVERAGE DEF:s0out=<FILE>:sis0-out:AVERAGE DEF:s1in=<FILE>:sis1-in:AVERAGE DEF:s1out=<FILE>:sis1-out:AVERAGE LINE1:s0in#3465A4 LINE2:s0out#CC0000 LINE3:s1in#4E9A06 LINE4:s1out#EDD400"
+                            ]
+                        },
+                        {binds, 
+                            [
+                                {"sis0-in",  "<SIS0-IN>"},
+                                {"sis0-out", "<SIS0-OUT>"},
+                                {"sis1-in",  "<SIS1-IN>"},
+                                {"sis1-out", "<SIS1-OUT>"}
+                            ]
+                        }
+                    ]
+                }
+            ],
+            [
+                {"propertyX", "propertyXValue"},
+                {"propertyY", "propertyYValue"}
+            ],
+            true 
+        }
+    ],
+    "var/tracker/secondTestHost-10"
 }.
