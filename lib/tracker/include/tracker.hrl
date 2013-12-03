@@ -80,3 +80,19 @@
     encalgo     = none          :: none | des | aes,
     oids        = []            :: [any()]
 }).
+
+
+% RRD related. The max line accpeted by rrdtool is reached with
+% a 48 ports switch. It is why we need to break rrd databases
+% in little parts.
+-record(rrd_binds, {
+    name    = ""                :: string(),
+    macro   = ""                :: string()
+}).
+
+-record(rrd_config, {
+    file    = ""                :: string(),
+    create  = ""                :: string(),
+    update  = ""                :: string(),
+    binds   = []                :: [#rrd_binds{}]
+}).
