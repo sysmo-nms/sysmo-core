@@ -18,6 +18,9 @@ Using Qt
 ---------> RELEASE 0.9
 
 - probe_snmp_v3           HIGH          0%
+- rrd_database second     HIGH          0%
+To handle in one probe a large number of DS rrd_logger must break the
+rrds in small parts.
 - kill -HUP server        HIGH          0%
 should reload the conf without stoping the server
 - inspector_parent        HIGH          0%
