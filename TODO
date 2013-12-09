@@ -10,10 +10,10 @@ SNMP utility and monitoring + Live list of snmp targets
 Add the possibility to not interpret perf values. It should not be encouraged
 since these values are not standardized.
 - probe logging text      HIGH          100%
-- probe logging rrd       HIGH          100%%
+- probe logging rrd       HIGH          100%
 Generate data for RRD or flat file for example. These files must be
 understood by the client.
-- create read only client               80%
+- create read only client               100%
 Using Qt
 ---------> RELEASE 0.9
 
@@ -23,6 +23,8 @@ rrds in small parts.
 - logger_events           HIGH          0%
 Target events of interest. Will be represented as time plots on the
 client. Include work on future traps_mod and syslog_mod.
+- update client                         0%
+Work on UI designs.
 --------> RELEASE B1.0
 
 - probe_snmp_v3           HIGH          0%
