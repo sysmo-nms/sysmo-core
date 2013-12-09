@@ -58,12 +58,16 @@ Bind        ::= SEQUENCE {
 
 Graph       ::= PrintableString
 
-LoggerRrd   ::= SEQUENCE {
-    module  ErlangModule,
+RrdConfig   ::= SEQUENCE {
+    file    PrintableString,
     create  PrintableString,
     update  PrintableString,
-    graphs  SEQUENCE OF Graph,
     binds   SEQUENCE OF Bind
+}
+
+LoggerRrd   ::= SEQUENCE {
+    module  ErlangModule,
+    config  SEQUENCE OF RrdConfig
 }
 
 LoggerText  ::= SEQUENCE {

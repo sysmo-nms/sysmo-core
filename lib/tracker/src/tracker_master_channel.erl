@@ -337,18 +337,25 @@ gen_asn_probe_loggers(Loggers) ->
 gen_logger_pdu({logger, btracker_logger_text = N, Cfg}) ->
     {loggerText, {'LoggerText', atom_to_list(N), to_string(Cfg)}};
 gen_logger_pdu({logger, btracker_logger_rrd = N, Cfg}) ->
-    {create, Create} = lists:keyfind(create, 1, Cfg),
-    {update, Update} = lists:keyfind(update, 1, Cfg),
-    {graphs,  Graph} = lists:keyfind(graphs, 1, Cfg),
-    {binds,   Binds} = lists:keyfind(binds,  1, Cfg),
-    {loggerRrd, {'LoggerRrd',
-        atom_to_list(N),
-        Create,
-        Update,
-        Graph,
-        [{'Bind', Rep, Mac} || {Rep, Mac} <- Binds]
+    {loggerRrd, 
+        {'LoggerRrd',
+            atom_to_list(N),
+            gen_rrd_configs(Cfg)
         }
     }.
+
+gen_rrd_configs(Cfg) ->
+    gen_rrd_configs(Cfg, []).
+gen_rrd_configs([], Ret) ->
+    Ret;
+gen_rrd_configs([H|T], Ret) ->
+    Conf = {'RrdConfig',
+        H#rrd_config.file,
+        H#rrd_config.create,
+        H#rrd_config.update,
+        [{'Bind', Repl, Macro} || {Repl, Macro} <- H#rrd_config.binds]
+    },
+    gen_rrd_configs(T, [Conf | Ret]).
 
 %gen_asn_probe_properties(Properties) ->
     %[{'Property', Key, Value} 

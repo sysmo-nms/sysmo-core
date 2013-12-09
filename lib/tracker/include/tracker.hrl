@@ -94,5 +94,6 @@
     file    = ""                :: string(),
     create  = ""                :: string(),
     update  = ""                :: string(),
-    binds   = []                :: [#rrd_binds{}]
+    binds   = []                :: [{string(), string()}], % {replacement, macro}
+    update_regexps = none       :: [any()]                 % {key, re}
 }).

@@ -17,8 +17,11 @@ module, conf}).
 -record('Bind',{
 replacement, macro}).
 
+-record('RrdConfig',{
+file, create, update, binds}).
+
 -record('LoggerRrd',{
-module, create, update, graphs, binds}).
+module, config}).
 
 -record('LoggerText',{
 module, conf}).

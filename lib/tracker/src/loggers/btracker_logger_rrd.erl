@@ -35,66 +35,99 @@
 
 init(Cfg, #probe_server_state{
         target          = #target{directory = Dir},
-        probe           = #probe{name = Name},
         loggers_state   = LoggersState} = ProbeSrvState) ->
-    RrdFile = generate_filename(Dir, Name),
-    case file:read_file_info(RrdFile) of
-        {ok, _}         ->
-            ok;
-        {error, enoent} ->
-            {create, Create} = lists:keyfind(create, 1, Cfg),
-            RrdCommand = re:replace(Create, "<FILE>", RrdFile, 
-                [{return, list}]),
-            tlogger_rrd:exec(RrdCommand)
-    end,
-    {update, Update} = lists:keyfind(update, 1, Cfg),
-    Update2 = re:replace(Update, "<FILE>", RrdFile, [{return, list}]),
-    {binds,  Binds}  = lists:keyfind(binds, 1, Cfg),
-    Binds2  = compile_re(Binds),
 
-    LS = lists:keystore(?MODULE, 1, LoggersState, 
-        {?MODULE, [
-                {file, RrdFile},
-                {binds, Binds2},
-                {update, Update2}
-            ]
-        }
+    % update #rrd_config.file and create the file if it does not exist.
+    Cfg1 = [RrdRec#rrd_config{file = generate_filename(Dir, RrdFile)} || 
+            #rrd_config{file = RrdFile} = RrdRec <- Cfg
+    ],
+    ok = lists:foreach(fun(RrdConf) ->
+        case file:read_file_info(RrdConf#rrd_config.file) of
+            {ok, _} ->
+                ok;
+            {error, enoent} ->
+                CreateString = RrdConf#rrd_config.create,
+                FileString   = RrdConf#rrd_config.file,
+                RrdCommand = re:replace(CreateString, "<FILE>", FileString,
+                    [{return, list}]),
+                tlogger_rrd:exec(RrdCommand)
+        end
+    end, Cfg1),
+
+    % update #rrd_config.update with the file name
+    Cfg2 = [
+        RrdRec#rrd_config{
+            update = re:replace(Update, "<FILE>", File, [{return, list}])
+        } || #rrd_config{update = Update, file = File} = RrdRec <- Cfg1
+    ],
+
+    % update #rrd_config.update_regexp with the compiled regexp
+    Cfg3 = [
+        RrdRec#rrd_config{
+            update_regexps = compile_re(Binds)
+        } || #rrd_config{binds = Binds} = RrdRec <- Cfg2
+    ],
+
+    % store config in the LoggersState
+    LoggersState2 = lists:keystore(?MODULE, 1, LoggersState,
+        {?MODULE, Cfg3}
     ),
-    {ok, ProbeSrvState#probe_server_state{loggers_state = LS}}.
 
-log(
-        #probe_server_state{loggers_state = LS}, 
+    % generate the new probe_server_state
+    NewProbeSrvState = ProbeSrvState#probe_server_state{
+        loggers_state = LoggersState2
+    },
+
+    % END init
+    {ok, NewProbeSrvState}.
+
+
+log(#probe_server_state{loggers_state = LoggersState}, 
         #probe_return{key_vals = Kv}) ->
-    {?MODULE, State}    = lists:keyfind(?MODULE, 1, LS),
-    {update,  Update}   = lists:keyfind(update, 1, State),
-    {binds,   Binds}    = lists:keyfind(binds,  1, State),
-    String = generate_update_string(Kv, Update, Binds),
+    % Config is a list of rrd_config records.
+    % Kv is a list of {bind, value:int()}
+    {?MODULE, Configs}   = lists:keyfind(?MODULE, 1, LoggersState),
+
+    % foreach rrd_config file
+    lists:foreach(fun(RrdConf) ->
+        UpdateString = RrdConf#rrd_config.update,
+        ReBinds      = RrdConf#rrd_config.update_regexps,
+        UpdateCommand = generate_update_string(Kv, UpdateString, ReBinds),
+        rrd_exec(UpdateCommand)
+    end, Configs),
+    ok.
+
+dump(#probe_server_state{
+        loggers_state   = _LState,
+        target          = #target{id    = _TId},
+        probe           = #probe{name   = _PId}
+    }) ->
+    ignore.
+
+%     File    = get_file(LState),
+%     Bin     = tlogger_rrd:dump(File),
+%     Pdu     = pdu('probeDump', {TId, PId, Bin}),
+%     Pdu.
+
+% pdu('probeDump', {TId, PId, Bin}) ->
+%     {modTrackerPDU,
+%         {fromServer,
+%             {probeDump,
+%                 {'ProbeDump',
+%                     atom_to_list(TId),
+%                     atom_to_list(PId),
+%                     atom_to_list(?MODULE),
+%                     Bin}}}}.
+% 
+% 
+
+rrd_exec(String) ->
     case tlogger_rrd:exec(String) of
         ok -> ok;
         error ->
-            ?LOG({logger_rrd_error, String})
+            ?LOG({logger_rrd_error, String}),
+            ok
     end.
-
-dump(#probe_server_state{
-        loggers_state   = LState,
-        target          = #target{id    = TId},
-        probe           = #probe{name   = PId}
-    }) ->
-    File    = get_file(LState),
-    Bin     = tlogger_rrd:dump(File),
-    Pdu     = pdu('probeDump', {TId, PId, Bin}),
-    Pdu.
-
-pdu('probeDump', {TId, PId, Bin}) ->
-    {modTrackerPDU,
-        {fromServer,
-            {probeDump,
-                {'ProbeDump',
-                    atom_to_list(TId),
-                    atom_to_list(PId),
-                    atom_to_list(?MODULE),
-                    Bin}}}}.
-
 
 generate_filename(Dir, Name) ->
     FileName    = io_lib:format("~s.rrd", [Name]),
@@ -123,13 +156,8 @@ generate_update_string(Kv, String, [{Key, Re} | Binds]) ->
             ),
             generate_update_string(Kv, NewString, Binds)
     end.
-
+ 
 to_string(Term) when is_float(Term) ->
     float_to_list(Term, [{decimals, 0}, compact]);
 to_string(Term) when is_integer(Term) ->
     integer_to_list(Term).
-
-get_file(LState) ->
-    {?MODULE, Conf} = lists:keyfind(?MODULE, 1, LState),
-    {file,    File} = lists:keyfind(file, 1, Conf),
-    File.
