@@ -23,16 +23,13 @@ rrds in small parts.
 - logger_events           HIGH          0%
 Target events of interest. Will be represented as time plots on the
 client. Include work on future traps_mod and syslog_mod.
+--------> RELEASE B1.0
+
 - probe_snmp_v3           HIGH          0%
 - snmp traps handling     HIGH          0%
 With logger_events
-- config file               HIGH        0%
-Human readable configuration file.yaml or sh source. Generate erlang terms 
-with m4 or awk or sh or perl. Use of templates.
 - kill -HUP server        HIGH          0%
 should reload the conf without stoping the server
---------> RELEASE B1.0
-
 - inspector_rrd_warn      HIGH          0%
 Alerts on rrdfetch and probe status events.
 Alert on value returned by rrdfetch. Compare with an AVERAGE expected
