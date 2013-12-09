@@ -41,6 +41,12 @@ target, probeId, status, originalReply, timestamp, keysVals}).
 -record('ProbeModuleInfo',{
 name, info}).
 
+-record('RrdFileDump',{
+fileId, bin}).
+
+-record('RrdProbeDump',{
+target, probeName, probeModule, files}).
+
 -record('ProbeDump',{
 target, probeName, probeModule, binaryData}).
 

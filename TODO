@@ -17,7 +17,7 @@ understood by the client.
 Using Qt
 ---------> RELEASE 0.9
 
-- rrd_database second     HIGH          0%
+- rrd_database second     HIGH          100%
 To handle in one probe a large number of DS rrd_logger must break the
 rrds in small parts.
 - logger_events           HIGH          0%

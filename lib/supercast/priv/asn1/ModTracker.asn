@@ -136,6 +136,18 @@ ProbeModuleInfo ::= SEQUENCE {
     info        PrintableString
 }
 
+RrdFileDump ::= SEQUENCE {
+    fileId  PrintableString,
+    bin     FileData
+}
+
+RrdProbeDump    ::= SEQUENCE {
+    target      TargetId,
+    probeName   PrintableString,
+    probeModule PrintableString,
+    files       SEQUENCE OF RrdFileDump
+}
+
 ProbeDump   ::= SEQUENCE {
     target      TargetId,
     probeName   PrintableString,
@@ -213,7 +225,8 @@ TrackerPDU ::= CHOICE {
         cmdResp         [5] CommandResponce,
         probeModInfo    [6] ProbeModuleInfo,
         probeActivity   [7] ProbeActivity,
-        probeReturn     [8] ProbeReturn
+        probeReturn     [8] ProbeReturn,
+        rrdProbeDump    [9] RrdProbeDump
     },
     fromClient  [1] CHOICE {
         createTarget    [1] TargetCreate,

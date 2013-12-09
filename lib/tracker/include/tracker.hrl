@@ -96,5 +96,6 @@
     update  = ""                :: string(),
     graphs  = []                :: [string()],
     binds   = []                :: [{string(), string()}], % {replacement, macro}
-    update_regexps = none       :: [any()]                 % {key, re}
+    update_regexps = none       :: [any()],                % {key, re}
+    file_path = none            :: string()
 }).
