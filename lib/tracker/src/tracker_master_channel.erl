@@ -353,6 +353,7 @@ gen_rrd_configs([H|T], Ret) ->
         H#rrd_config.file,
         H#rrd_config.create,
         H#rrd_config.update,
+        H#rrd_config.graphs,
         [{'Bind', Repl, Macro} || {Repl, Macro} <- H#rrd_config.binds]
     },
     gen_rrd_configs(T, [Conf | Ret]).

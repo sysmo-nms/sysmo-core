@@ -62,6 +62,7 @@ RrdConfig   ::= SEQUENCE {
     file    PrintableString,
     create  PrintableString,
     update  PrintableString,
+    graphs  SEQUENCE OF Graph,
     binds   SEQUENCE OF Bind
 }
 

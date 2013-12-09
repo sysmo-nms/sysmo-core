@@ -235,7 +235,13 @@ log(#probe_server_state{probe = Probe} = PSState, Msg) ->
 log_dump(#probe_server_state{probe = Probe} = PSState) ->
     L = [Mod:dump(PSState) || 
             #logger{module = Mod} <- Probe#probe.loggers],
-    L.
+    L2 = lists:filter(fun(Element) ->
+        case Element of
+            ignore  -> false;
+            _       -> true
+        end
+    end, L),
+    L2.
 
 % INSPECTORS
 % TODO keystore conf here
