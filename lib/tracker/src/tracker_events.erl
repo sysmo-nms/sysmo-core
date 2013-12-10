@@ -36,7 +36,7 @@ init(_Arg) ->
     {ok, state}.
 
 handle_event(
-        {probe_move, ProbeName, _OldState, _NewState, _ProbeReturn}, State) ->
+        {probe_move, _ProbeName, _OldState, _NewState, _ProbeReturn}, State) ->
     io:format("probe_move event received ~n"),
     {ok, State};
 
