@@ -140,7 +140,7 @@ handle_cast({next_pass,
     }, OldState) ->
 
     tracker_events_manager:notify(
-        {probe_move, OldState, NewState, ProbeReturn}),
+        {probe_move, Probe#probe.name, OldState, NewState, ProbeReturn}),
 
     tracker_target_channel:update(
         Target#target.id,
