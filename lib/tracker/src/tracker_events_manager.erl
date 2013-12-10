@@ -18,25 +18,37 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
-% @private
--module(tracker_app).
--behaviour(application).
+-module(tracker_events_manager).
+-include("../include/tracker.hrl").
 
 -export([
-    start/2,
-    start_phase/3,
-    stop/1]).
+    start_link/0,
+    add_handler/2,
+    notify/1,
+    call/2,
+    call/3,
+    delete_handler/2,
+    which_handlers/0
+]).
 
-start(_Type, _Args) ->
-    {ok, ProbeModules}      = application:get_env(tracker, probe_modules),
-    tracker_sup:start_link(ProbeModules).
 
-start_phase(initialize_event_manager, normal, []) ->
-    tracker_events_manager:add_handler(tracker_events, []);
+start_link() ->
+    gen_event:start_link({local, ?MODULE}).
 
-start_phase(cold_start, normal, []) ->
-    {ok, ConfFile}          = application:get_env(tracker, config_file),
-    ok = tracker_target_channel_sup:cold_start(ConfFile).
+add_handler(Module, Args) ->
+    gen_event:add_handler(?MODULE, Module, Args).
 
-stop(_State) ->
-    ok.
+notify(Event) ->
+    gen_event:notify(?MODULE, Event).
+
+call(Handler, Request) ->
+    gen_event:call(?MODULE, Handler, Request).
+
+call(Handler, Request, Timeout) ->
+    gen_event:call(?MODULE, Handler, Request, Timeout).
+
+delete_handler(Handler, Args) ->
+    gen_event:delete_handler(?MODULE, Handler, Args).
+
+which_handlers() ->
+    gen_event:which_handlers(?MODULE).

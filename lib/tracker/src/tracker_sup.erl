@@ -65,6 +65,14 @@ init([ProbeModules]) ->
                     2000,
                     worker,
                     [tracker_misc]
+                },
+                {
+                    tracker_events_manager,
+                    {tracker_events_manager, start_link, []},
+                    permanent,
+                    2000,
+                    worker,
+                    [tracker_events_manager]
                 }
             ]
         }

@@ -130,26 +130,31 @@ handle_cast({next_pass,                 S    , PR},
     timer:apply_after(After, ?MODULE, probe_pass, [S]),
     {noreply, S};
 
-% else update target_channel
+% else update the event handler and target_channel
 handle_cast({next_pass, 
         #probe_server_state{
             probe   = Probe,
             target  = Target
-        } = NewS,
-        PR
-    }, #probe_server_state{probe = _OldProbe} = _OldState) ->
+        } = NewState,
+        ProbeReturn
+    }, OldState) ->
+
+    tracker_events_manager:notify(
+        {probe_move, OldState, NewState, ProbeReturn}),
+
     tracker_target_channel:update(
         Target#target.id,
         Probe#probe.id,
-        {Probe, PR}
+        {Probe, ProbeReturn}
     ),
     supercast_mpd:multicast_msg(Probe#probe.name, {
             Probe#probe.permissions,
-            pdu(probeReturn, {PR, Target#target.id, Probe#probe.name})}),
-    log(NewS, PR),
+            pdu(probeReturn, 
+                {ProbeReturn, Target#target.id, Probe#probe.name})}),
+    log(NewState, ProbeReturn),
     After = Probe#probe.step * 1000,
-    timer:apply_after(After, ?MODULE, probe_pass, [NewS]),
-    {noreply, NewS};
+    timer:apply_after(After, ?MODULE, probe_pass, [NewState]),
+    {noreply, NewState};
 
 handle_cast(_R, S) ->
     io:format("Unknown message ~p ~p ~p ~p~n", [?MODULE, ?LINE, _R, S]),

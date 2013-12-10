@@ -18,25 +18,41 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
-% @private
--module(tracker_app).
--behaviour(application).
+-module(tracker_events).
+-behaviour(gen_event).
+-include("../include/tracker.hrl").
 
 -export([
-    start/2,
-    start_phase/3,
-    stop/1]).
+    init/1,
+    handle_event/2,
+    handle_call/2,
+    handle_info/2,
+    terminate/2,
+    code_change/3
+]).
 
-start(_Type, _Args) ->
-    {ok, ProbeModules}      = application:get_env(tracker, probe_modules),
-    tracker_sup:start_link(ProbeModules).
 
-start_phase(initialize_event_manager, normal, []) ->
-    tracker_events_manager:add_handler(tracker_events, []);
+init(_Arg) ->
+    {ok, state}.
 
-start_phase(cold_start, normal, []) ->
-    {ok, ConfFile}          = application:get_env(tracker, config_file),
-    ok = tracker_target_channel_sup:cold_start(ConfFile).
+handle_event({probe_move, _OldState, _NewState, _ProbeReturn}, State) ->
+    io:format("probe_move event received ~n"),
+    {ok, State};
 
-stop(_State) ->
+handle_event(Msg, State) ->
+    io:format("event received ~p~n", [Msg]),
+    {ok, State}.
+
+handle_call(Request, State) ->
+    io:format("call received ~p~n", [Request]),
+    {ok, received, State}.
+
+handle_info(Info, State) ->
+    io:format("info received ~p~n",[Info]),
+    {ok, State}.
+
+terminate(_Arg, _State) ->
     ok.
+
+code_change(_OldVsn, State, _Extra) ->
+    {ok, State}.
