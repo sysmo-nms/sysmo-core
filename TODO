@@ -23,7 +23,8 @@ rrds in small parts.
 - logger_events           HIGH          0%
 Target events of interest. Will be represented as time plots on the
 client. Include work on future traps_mod and syslog_mod.
-- update client                         0%
+Include concept of documented Acknoledgement.
+- update client (logger_events)         0%
 Work on UI designs.
 --------> RELEASE B1.0
 
@@ -31,7 +32,7 @@ Work on UI designs.
 - snmp traps handling     HIGH          0%
 With logger_events
 - kill -HUP server        HIGH          0%
-should reload the conf without stoping the server
+Startup script. should reload the conf without stoping the server
 - inspector_rrd_warn      HIGH          0%
 Alerts on rrdfetch and probe status events.
 Alert on value returned by rrdfetch. Compare with an AVERAGE expected
@@ -40,6 +41,10 @@ Will need to use a gen_event somewhere in tlogger_rrd to put a fun which will
 wait for the current probe_return to be writed to the file.rrd and then query
 the rrd. A delayed inspector in some way because inspectors are launch before
 loggers.
+- rrd_intelligent_behaviour_detection   0%
+ Automatic alert on suspect behaviour (counter average 10 times bigger that
+ normal counter for the time of the day). Will for example detect broadcast 
+ storms and occasionnal high traffic.
 - inspector_inertie       HIGH          0%
 False positive detection.
 - documentation           HIGH          0%
