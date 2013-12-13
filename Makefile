@@ -18,7 +18,7 @@ doc:
 var-clean:
 	rm -rf var/tracker/*/
 	rm -f var/snmp/snmpm_config_db
-	rm -f var/sasl/sasl.log
+	rm -f var/log/*.log
 	rm -f var/mnesia/*.LOG
 	rm -f var/mnesia/*.DAT
 
