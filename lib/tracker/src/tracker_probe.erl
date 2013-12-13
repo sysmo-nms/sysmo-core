@@ -117,7 +117,7 @@ handle_call(_R, _F, S) ->
 % HANDLE_CAST
 %%-------------------------------------------------------------
 
-% PsState are equal, notify only tracker_target_channel
+% PsState are equal, probe event.
 handle_cast({next_pass,                 S    , PR}, 
             #probe_server_state{
                 target  = Target,
@@ -130,17 +130,14 @@ handle_cast({next_pass,                 S    , PR},
     timer:apply_after(After, ?MODULE, probe_pass, [S]),
     {noreply, S};
 
-% else update the event handler and target_channel
+% else update the event handler, target_channel (broad event)
 handle_cast({next_pass, 
         #probe_server_state{
             probe   = Probe,
             target  = Target
         } = NewState,
         ProbeReturn
-    }, OldState) ->
-
-    tracker_events_manager:notify(
-        {probe_move, Probe#probe.name, OldState, NewState, ProbeReturn}),
+    }, _OldState) ->
 
     tracker_target_channel:update(
         Target#target.id,
@@ -151,7 +148,7 @@ handle_cast({next_pass,
             Probe#probe.permissions,
             pdu(probeReturn, 
                 {ProbeReturn, Target#target.id, Probe#probe.name})}),
-    log(NewState, ProbeReturn),
+    log(NewState, ProbeReturn#probe_return{is_event = true}),
     After = Probe#probe.step * 1000,
     timer:apply_after(After, ?MODULE, probe_pass, [NewState]),
     {noreply, NewState};

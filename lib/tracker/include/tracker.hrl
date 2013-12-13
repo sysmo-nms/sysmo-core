@@ -24,7 +24,8 @@
     status          = 'UNKNOWN' :: 'OK' | 'UNKNOWN' | 'WARNING' | 'CRITICAL',
     original_reply  = undefined :: string(),
     timestamp       = undefined :: integer(),
-    key_vals        = []        :: [{string(), any()}]
+    key_vals        = []        :: [{string(), any()}],
+    is_event        = false     :: true | false
 }).
 
 -record(probe, {

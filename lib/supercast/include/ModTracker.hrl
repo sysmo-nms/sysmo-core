@@ -26,6 +26,9 @@ module, config}).
 -record('LoggerText',{
 module, conf}).
 
+-record('LoggerEvents',{
+module, conf}).
+
 -record('ProbeConf',{
 name, type}).
 

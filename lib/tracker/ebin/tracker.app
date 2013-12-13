@@ -47,7 +47,15 @@
                 tracker_target_channel_sup
             ]},
         {applications, 
-            [kernel, stdlib, supercast, tlogger_rrd, tlogger_text, snmp]
+            [   
+                kernel,
+                stdlib,
+                supercast,
+                tlogger_rrd,
+                tlogger_text,
+                snmp,
+                tracker_events
+            ]
         },
         {start_phases, 
             [
