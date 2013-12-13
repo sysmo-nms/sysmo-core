@@ -5,6 +5,7 @@
         {kernel, "2.16.3"},
         {stdlib, "1.19.3"},
         {sasl, "2.3.3"},
+        {mnesia, "4.10"},
         {crypto, "3.1"},
         {asn1, "2.0.3"},
         {public_key, "0.20"},
