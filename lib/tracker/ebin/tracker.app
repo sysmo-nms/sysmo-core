@@ -59,7 +59,6 @@
         },
         {start_phases, 
             [
-                {initialize_event_manager, []},
                 {cold_start, []}
             ]
         },
