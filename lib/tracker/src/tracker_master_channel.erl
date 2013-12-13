@@ -344,12 +344,12 @@ gen_logger_pdu({logger, btracker_logger_rrd, Cfg}) ->
 gen_logger_pdu({logger, btracker_logger_text, Cfg}) ->
     {loggerText, 
         {'LoggerText', 
-            atom_to_list(btracke_logger_text), 
+            atom_to_list(btracker_logger_text), 
             to_string(Cfg)}};
 gen_logger_pdu({logger, tracker_events, Cfg}) ->
     {loggerEvents, 
         {'LoggerEvents', 
-            atom_to_list(btracke_logger_text), 
+            atom_to_list(tracker_events), 
             to_string(Cfg)}}.
 
 gen_rrd_configs(Cfg) ->
