@@ -21,6 +21,7 @@
 % @private
 -module(tracker_app).
 -behaviour(application).
+-include("include/tracker.hrl").
 
 -export([
     start/2,
@@ -30,6 +31,13 @@
 start(_Type, _Args) ->
     {ok, ProbeModules}      = application:get_env(tracker, probe_modules),
     tracker_sup:start_link(ProbeModules).
+
+start_phase(init_mnesia, normal, []) ->
+    % TODO embed mnesia with "included applications"
+    application:stop(mnesia),
+    mnesia:create_schema([node()]),
+    application:start(mnesia),
+    io:format("starting mnesia");
 
 start_phase(cold_start, normal, []) ->
     {ok, ConfFile}          = application:get_env(tracker, config_file),

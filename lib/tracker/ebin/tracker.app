@@ -50,6 +50,7 @@
             [   
                 kernel,
                 stdlib,
+                mnesia,
                 supercast,
                 tlogger_rrd,
                 tlogger_text,
@@ -59,6 +60,7 @@
         },
         {start_phases, 
             [
+                {init_mnesia, []},
                 {cold_start, []}
             ]
         },

@@ -19,12 +19,14 @@ var-clean:
 	rm -rf var/tracker/*/
 	rm -f var/snmp/snmpm_config_db
 	rm -f var/sasl/sasl.log
+	rm -f var/mnesia/*.LOG
+	rm -f var/mnesia/*.DAT
 
 rel-clean:
 	rm -f $(REL_NAME).script
 	rm -f $(REL_NAME).boot
 
-clean: var-clean
+clean: var-clean 
 	rm -f erl_crash.dump
 	rm -f $(REL_NAME).script
 	rm -f $(REL_NAME).boot
@@ -70,7 +72,7 @@ tar:
 	@echo "Generating $(REL_NAME).tar.gz"
 	@$(ERL) -noinput $(ERL_NMS_PATH) -eval $(ERL_REL_COMM2)
 
-local-release: compile $(REL_NAME).script 
+local-release: compile $(REL_NAME).script
 
 $(REL_NAME).script: $(MODS_DEF_FILE) $(REL_NAME).rel
 	@echo "Generating $(REL_NAME).script and $(REL_NAME).boot files..."

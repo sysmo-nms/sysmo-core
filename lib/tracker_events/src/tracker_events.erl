@@ -18,6 +18,13 @@
     dump/1
 ]).
 
+%-record(probe_event, {
+    %insert_timestamp,
+    %ack_timestamp,
+    %other
+%}).
+
+
 init(Conf, ProbeServerState) ->
     gen_server:call(?MODULE, {init, Conf, ProbeServerState}).
 
@@ -37,8 +44,19 @@ init([]) ->
 
 
 %  
-handle_call({init, _Conf, ProbeServerState}, _F, S) ->
-    ?LOG("init_tracker_events"),
+handle_call({init, _Conf, 
+        #probe_server_state{probe = _Probe} = ProbeServerState
+    }, _F, S) ->
+    %mnesia:create_table(Probe#probe.name, []),
+        %[
+            %{attributes, record_info(fields, probe_event)},
+            %{disc_only_copies, [node()]}
+        %]
+    %),
+
+    %Rep = mnesia:table_info(Probe#probe.name, all),
+    %Rep = mnesia:info(),
+    ?LOG({"init_tracker_events ---------------------------->"}),
     {reply, {ok, ProbeServerState}, S};
 
 handle_call({dump, _ProbeServerState}, _F, S) ->
