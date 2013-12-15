@@ -10,6 +10,7 @@ www/*.png
 var/tracker/*
 var/mnesia/*.LOG
 var/mnesia/*.DAT
+var/mnesia/*.DCD
 edoc-info
 activity.log
 *.bin

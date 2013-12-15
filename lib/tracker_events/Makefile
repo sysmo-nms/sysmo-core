@@ -2,7 +2,7 @@
 
 ERL         ?= erl
 ERLC        ?= erlc -Werror
-EPATH       += -pa ebin
+EPATH       += -pa ebin -pa ../tracker/ebin
 
 APP         = $(subst ebin/,,$(basename $(wildcard ebin/*.app)))
 INCLUDE     = $(wildcard ../include/*.hrl)

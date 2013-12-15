@@ -100,3 +100,13 @@
     update_regexps = none       :: [any()],                % {key, re}
     file_path = none            :: string()
 }).
+
+% tracker_events
+-record(probe_event, {
+    id,
+    insert_ts,
+    acknowledged_ts,
+    status,
+    textual,
+    ack_needed
+}).
