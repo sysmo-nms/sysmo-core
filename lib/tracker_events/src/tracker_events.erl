@@ -36,6 +36,11 @@ dump(ProbeServerState) ->
 
 
 init([]) ->
+    % TODO a single channel for the server status and events
+    Rep = mnesia:table_info(schema, tables),
+    lists:foreach(fun(X) ->
+        insert_cold_start(X)
+    end, Rep),
     % read config, some event will not require acknowledgements or/and
     % send notifications.
     {ok, []}.
@@ -76,6 +81,9 @@ terminate(_,_) ->
 code_change(_,S,_) ->
     {ok, S}.
 
+%
+% @private
+% 
 create_table(TableName) ->
     Rep = lists:member(TableName, mnesia:table_info(schema, tables)),
     create_table(TableName, Rep).
@@ -99,7 +107,7 @@ insert_record(TableName,#probe_return{status = Status, original_reply = String,
             #probe_event{
                 id          = Id,
                 insert_ts   = Ts,
-                acknowledged_ts = none,
+                ack_ts      = none,
                 status      = Status,
                 textual     = String,
                 ack_needed  = true
@@ -107,3 +115,42 @@ insert_record(TableName,#probe_return{status = Status, original_reply = String,
         )
     end,
     mnesia:transaction(F).
+
+insert_raw_record(
+        TableName, 
+        #probe_return{status=Status, original_reply=String, timestamp=Ts},
+        AckNeeded
+    ) ->
+    F = fun() ->
+        Id = mnesia:table_info(TableName, size),
+        mnesia:write(TableName, 
+            #probe_event{
+                id          = Id,
+                insert_ts   = Ts,
+                ack_ts      = none,
+                status      = Status,
+                textual     = String,
+                ack_needed  = AckNeeded
+            }, write
+        )
+    end,
+    mnesia:transaction(F).
+
+insert_cold_start(TableName) ->
+    Record = mnesia:table_info(TableName, record_name),
+    insert_cold_start(TableName, Record).
+insert_cold_start(TableName,    probe_event) ->
+    {_, MicroSec} = sys_timestamp(),
+    insert_raw_record(TableName, 
+        #probe_return{
+            status          = 'UNKNOWN', 
+            original_reply  = "Server cold start",
+            timestamp       = MicroSec}, false);
+insert_cold_start(_TableName,   _Record) ->
+    ok.
+
+sys_timestamp() ->
+    {Meg, Sec, Micro} = os:timestamp(),
+    Seconds      = Meg * 1000000 + Sec,
+    Microseconds = Seconds * 1000000 + Micro,
+    {Seconds, Microseconds}.

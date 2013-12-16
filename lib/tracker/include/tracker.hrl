@@ -105,8 +105,10 @@
 -record(probe_event, {
     id,
     insert_ts,
-    acknowledged_ts,
+    ack_ts,
     status,
     textual,
-    ack_needed
+    ack_needed,
+    group_owner,
+    user_owner
 }).
