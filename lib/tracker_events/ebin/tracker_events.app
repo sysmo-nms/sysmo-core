@@ -23,10 +23,17 @@
         {description, "events alerting and acknowledgement for tracker"},
         {vsn, "0.1.0"},
         {modules, [
+                tracker_events,
+                tracker_events_app,
+                tracker_events_sup
             ]
         },
-        {registered, [
-            ]},
+        {registered, 
+            [
+                tracker_events_sup,
+                tracker_events
+            ]
+        },
         {applications, 
             [kernel, stdlib]
         },

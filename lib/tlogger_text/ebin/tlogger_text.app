@@ -19,18 +19,25 @@
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 {application, tlogger_text,
-	[
-		{description, "btracker_logger_text utils"},
-		{vsn, "0.1.0"},
-		{modules, [
+    [
+        {description, "btracker_logger_text utils"},
+        {vsn, "0.1.0"},
+        {modules, 
+            [
+                tlogger_text_app,
+                tlogger_text_sup,
+                tlogger_text
             ]
         },
-		{registered, [
-            ]},
-		{applications, 
+        {registered, 
+            [
+                tlogger_text_sup
+            ]
+        },
+        {applications, 
             [kernel, stdlib]
         },
         {start_phases, []},
-		{mod, {tlogger_text_app, []}}
-	]
+        {mod, {tlogger_text_app, []}}
+    ]
 }.

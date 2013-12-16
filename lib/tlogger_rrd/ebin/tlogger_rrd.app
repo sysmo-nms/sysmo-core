@@ -22,11 +22,19 @@
     [
         {description, "btracker_logger_rrd utils"},
         {vsn, "0.1.0"},
-        {modules, [
+        {modules, 
+            [
+                tlogger_rrd_app,
+                tlogger_rrd_sup,
+                tlogger_rrd
             ]
         },
-        {registered, [
-            ]},
+        {registered, 
+            [
+                tlogger_rrd_sup,
+                tlogger_rrd
+            ]
+        },
         {applications, 
             [kernel, stdlib]
         },

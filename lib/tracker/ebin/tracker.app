@@ -36,27 +36,20 @@
                 btracker_inspector_status_set,
                 btracker_logger_rrd,
                 btracker_logger_text,
+                btracker_logger_events,
                 btracker_probe_nagios,
                 btracker_probe_snmp
             ]},
         {registered, [
+                tracker_sup,
                 'target-MasterChan',
                 tracker_misc,
                 tracker_probe_sup,
-                tracker_sup,
                 tracker_target_channel_sup
             ]},
         {applications, 
-            [   
-                kernel,
-                stdlib,
-                mnesia,
-                supercast,
-                tlogger_rrd,
-                tlogger_text,
-                snmp,
-                tracker_events
-            ]
+            [kernel, stdlib, mnesia, supercast, tlogger_rrd,
+                tlogger_text, snmp, tracker_events]
         },
         {start_phases, 
             [
