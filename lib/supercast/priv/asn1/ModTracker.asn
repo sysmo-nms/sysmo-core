@@ -252,7 +252,8 @@ TrackerPDU ::= CHOICE {
         probeActivity   [7] ProbeActivity,
         probeReturn     [8] ProbeReturn,
         rrdProbeDump    [9] RrdProbeDump,
-        eventProbeDump  [10] EventProbeDump
+        eventProbeDump  [10] EventProbeDump,
+        probeEventMsg   [11] ProbeEvent
     },
     fromClient  [1] CHOICE {
         createTarget    [1] TargetCreate,

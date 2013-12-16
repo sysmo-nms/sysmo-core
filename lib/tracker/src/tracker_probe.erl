@@ -36,7 +36,8 @@
 -export([
     start_link/1,
     cold_start/1,
-    probe_pass/1
+    probe_pass/1,
+    external_event/2
 ]).
 
 
@@ -57,6 +58,14 @@ start_link({Target, #probe{name = Name} = Probe}) ->
 % @end
 cold_start(Pid) ->
     gen_server:call(Pid, initial_pass).
+
+-spec external_event(pid(), any()) -> ok.
+% @doc
+% Handle messages comming from the system and wich should be forwarded to the
+% subscribers of the channel.
+% @end
+external_event(ProbeName, Pdu) ->
+    gen_server:cast(ProbeName, {external_event, Pdu}).
 
 %%-------------------------------------------------------------
 %%-------------------------------------------------------------
@@ -152,6 +161,10 @@ handle_cast({next_pass,
     After = Probe#probe.step * 1000,
     timer:apply_after(After, ?MODULE, probe_pass, [NewState]),
     {noreply, NewState};
+
+handle_cast({external_event, Pdu}, #probe_server_state{probe = P} = S) ->
+    supercast_mpd:multicast_msg(P#probe.name, {P#probe.permissions, Pdu}),
+    {noreply, S};
 
 handle_cast(_R, S) ->
     io:format("Unknown message ~p ~p ~p ~p~n", [?MODULE, ?LINE, _R, S]),

@@ -66,9 +66,11 @@ handle_call(_R, _F, S) ->
     {noreply, S}.
 
 % 
-handle_cast({log, #probe_server_state{probe = #probe{name = TableName}}, 
+handle_cast({log, #probe_server_state{probe = #probe{name = ProbeName}}, 
         ProbeReturn}, S) ->
-    insert_record(TableName, ProbeReturn),
+    {atomic, ProbeEvent} = insert_record(ProbeName, ProbeReturn),
+    Pdu = pdu('probeEventMsg', ProbeEvent),
+    tracker_probe:external_event(ProbeName, Pdu),
     {noreply, S};
 
 handle_cast(_,S) ->
@@ -108,15 +110,15 @@ insert_record(TableName,#probe_return{status = Status, original_reply = String,
             timestamp = Ts}) ->
     F = fun() ->
         Id = mnesia:table_info(TableName, size),
-        mnesia:write(TableName, 
-            #probe_event{
-                id          = Id,
-                insert_ts   = Ts,
-                status      = Status,
-                textual     = String,
-                ack_needed  = true
-            }, write
-        )
+        ProbeEvent = #probe_event{
+            id          = Id,
+            insert_ts   = Ts,
+            status      = Status,
+            textual     = String,
+            ack_needed  = true
+        },
+        mnesia:write(TableName, ProbeEvent, write),
+        ProbeEvent
     end,
     mnesia:transaction(F).
 
@@ -179,7 +181,33 @@ pdu('eventProbeDump', {TargetId, ProbeName}) ->
                     atom_to_list(TargetId),
                     atom_to_list(ProbeName),
                     atom_to_list(?MODULE),
-                    ProbeEvents}}}}.
+                    ProbeEvents}}}};
+
+pdu('probeEventMsg', #probe_event{
+        id          = EventId,
+        insert_ts   = InsertTs,
+        ack_ts      = AckTs,
+        status      = Status,
+        textual     = Textual,
+        ack_needed  = AckNeeded,
+        ack_value   = AckValue,
+        group_owner = GroupOwner,
+        user_owner  = UserOwner
+    }) ->
+    {modTrackerPDU,
+        {fromServer,
+            {probeEventMsg,
+                {'ProbeEvent',
+                    EventId,
+                    InsertTs,
+                    AckTs,
+                    atom_to_list(Status),
+                    Textual,
+                    AckNeeded,
+                    AckValue,
+                    GroupOwner,
+                    UserOwner}}}}.
+
 
 sys_timestamp() ->
     {Meg, Sec, Micro} = os:timestamp(),
