@@ -33,6 +33,7 @@ clean: var-clean
 	rm -f $(REL_NAME).script
 	rm -f $(REL_NAME).boot
 	rm -f $(REL_NAME).tar.gz
+	rm -f MnesiaCore.*
 	@cd lib; make clean
 
     
