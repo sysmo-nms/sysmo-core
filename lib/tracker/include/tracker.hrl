@@ -103,12 +103,13 @@
 
 % tracker_events
 -record(probe_event, {
-    id,
-    insert_ts,
-    ack_ts,
-    status,
-    textual,
-    ack_needed,
-    group_owner,
-    user_owner
+    id          = 0                 :: integer(),
+    insert_ts   = 0                 :: integer(),
+    ack_ts      = 0                 :: integer(),
+    status      = "undefined"       :: string(),
+    textual     = "undefined"       :: string(),
+    ack_needed  = true              :: true | false,
+    ack_value   = "undefined"       :: string(),
+    group_owner = "undefined"       :: string(),
+    user_owner  = "undefined"       :: string()
 }).

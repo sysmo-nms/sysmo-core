@@ -1,5 +1,6 @@
 -module(tracker_events).
 -include("../tracker/include/tracker.hrl").
+-include_lib("stdlib/include/qlc.hrl").
 -behaviour(gen_server).
 -behaviour(beha_tracker_logger).
 
@@ -22,7 +23,7 @@
 start_link() ->
     gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
-% 
+%
 init(Conf, ProbeServerState) ->
     gen_server:call(?MODULE, {init, Conf, ProbeServerState}).
 
@@ -53,9 +54,13 @@ handle_call({init, _Conf,
     create_table(Probe#probe.name),
     {reply, {ok, ProbeServerState}, S};
 
-handle_call({dump, _ProbeServerState}, _F, S) ->
-    ?LOG("dump_tracker_events"),
-    {reply, ignore, S};
+handle_call({dump, 
+    #probe_server_state{
+        target = #target{id = TargetId},
+        probe  = #probe{name = ProbeName}
+    }}, _F, S) ->
+    Pdu = pdu('eventProbeDump', {TargetId, ProbeName}),
+    {reply, Pdu, S};
 
 handle_call(_R, _F, S) ->
     {noreply, S}.
@@ -107,7 +112,6 @@ insert_record(TableName,#probe_return{status = Status, original_reply = String,
             #probe_event{
                 id          = Id,
                 insert_ts   = Ts,
-                ack_ts      = none,
                 status      = Status,
                 textual     = String,
                 ack_needed  = true
@@ -127,7 +131,7 @@ insert_raw_record(
             #probe_event{
                 id          = Id,
                 insert_ts   = Ts,
-                ack_ts      = none,
+                ack_ts      = 0,
                 status      = Status,
                 textual     = String,
                 ack_needed  = AckNeeded
@@ -148,6 +152,34 @@ insert_cold_start(TableName,    probe_event) ->
             timestamp       = MicroSec}, false);
 insert_cold_start(_TableName,   _Record) ->
     ok.
+
+pdu('eventProbeDump', {TargetId, ProbeName}) ->
+    F = fun() ->
+        Q = qlc:q([E || E <- mnesia:table(ProbeName)]),
+        qlc:e(Q)
+    end,
+    {atomic, Reply} = mnesia:transaction(F),
+    ProbeEvents = [
+        {'ProbeEvent',EventId,InsertTs,AckTs,atom_to_list(Status),Textual,
+            AckNeeded,AckValue,GroupOwner,UserOwner}
+        || #probe_event{
+            id          = EventId,
+            insert_ts   = InsertTs,
+            ack_ts      = AckTs,
+            status      = Status,
+            textual     = Textual,
+            ack_needed  = AckNeeded,
+            ack_value   = AckValue,
+            group_owner = GroupOwner,
+            user_owner  = UserOwner}    <- Reply],
+    {modTrackerPDU,
+        {fromServer,
+            {eventProbeDump,
+                {'EventProbeDump',
+                    atom_to_list(TargetId),
+                    atom_to_list(ProbeName),
+                    atom_to_list(?MODULE),
+                    ProbeEvents}}}}.
 
 sys_timestamp() ->
     {Meg, Sec, Micro} = os:timestamp(),

@@ -5,6 +5,7 @@ BEGIN
 IpAdd   ::= PrintableString
 ErlangModule    ::= PrintableString
 Second          ::= INTEGER
+MicroSecond     ::= INTEGER
 CommandId       ::= INTEGER
 CommandMsg      ::= PrintableString
 GroupName       ::= PrintableString (SIZE (0..50))
@@ -45,7 +46,10 @@ Inspector   ::= SEQUENCE {
 }
 Inspectors  ::= SEQUENCE OF Inspector
 
--- Loggers --
+---------------------------------------
+-- Loggers ----------------------------
+---------------------------------------
+-- RRD --
 Bind        ::= SEQUENCE {
     replacement PrintableString,
     macro       PrintableString
@@ -63,11 +67,13 @@ LoggerRrd   ::= SEQUENCE {
     config  SEQUENCE OF RrdConfig
 }
 
+-- Text --
 LoggerText  ::= SEQUENCE {
     module  ErlangModule,
     conf    PrintableString
 }
 
+-- Events --
 LoggerEvents ::= SEQUENCE {
     module  ErlangModule,
     conf    PrintableString
@@ -105,11 +111,24 @@ ProbeInfo   ::= SEQUENCE {
     infoType    ProbeInfoType
 }
 
+-- ProbeEvent
+ProbeEvent      ::= SEQUENCE {
+    eventId     INTEGER,
+    insertTs    MicroSecond,
+    ackTs       MicroSecond,
+    status      ProbeStatus,
+    textual     PrintableString,
+    ackNeeded   BOOLEAN,
+    ackValue    PrintableString,
+    groupOwner  PrintableString,
+    userOwner   PrintableString
+}
+
 -- ProbeActivity 
 ProbeActivity ::= SEQUENCE {
     channel     TargetId,
     probeId     ProbeId,
-    timestamp   INTEGER,
+    timestamp   MicroSecond,
     state       PrintableString,
     returnStatus PrintableString,
     textual     PrintableString
@@ -121,7 +140,7 @@ ProbeReturn ::= SEQUENCE {
     probeId         PrintableString,
     status          ProbeStatus,
     originalReply   PrintableString,
-    timestamp       INTEGER,
+    timestamp       MicroSecond,
     keysVals        Properties
 }
 
@@ -129,6 +148,15 @@ ProbeReturn ::= SEQUENCE {
 ProbeModuleInfo ::= SEQUENCE {
     name        PrintableString,
     info        PrintableString
+}
+
+
+-- EventProbeDump --
+EventProbeDump  ::= SEQUENCE {
+    targetId    TargetId,
+    probeName   PrintableString,
+    probeModule PrintableString,
+    events      SEQUENCE OF ProbeEvent
 }
 
 -- RrdProbeDump --
@@ -223,7 +251,8 @@ TrackerPDU ::= CHOICE {
         probeModInfo    [6] ProbeModuleInfo,
         probeActivity   [7] ProbeActivity,
         probeReturn     [8] ProbeReturn,
-        rrdProbeDump    [9] RrdProbeDump
+        rrdProbeDump    [9] RrdProbeDump,
+        eventProbeDump  [10] EventProbeDump
     },
     fromClient  [1] CHOICE {
         createTarget    [1] TargetCreate,
