@@ -21,6 +21,8 @@ var-clean:
 	rm -f var/log/*.log
 	rm -f var/mnesia/*.LOG
 	rm -f var/mnesia/*.DAT
+	rm -f var/mnesia/*.DCD
+	rm -f var/mnesia/*.DCL
 
 rel-clean:
 	rm -f $(REL_NAME).script
