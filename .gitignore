@@ -11,6 +11,7 @@ var/tracker/*
 var/mnesia/*.LOG
 var/mnesia/*.DAT
 var/mnesia/*.DCD
+var/mnesia/*.DCL
 edoc-info
 activity.log
 *.bin
