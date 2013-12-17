@@ -69,7 +69,7 @@ handle_call(_R, _F, S) ->
 handle_cast({log, #probe_server_state{probe = #probe{name = ProbeName}}, 
         ProbeReturn}, S) ->
     {atomic, ProbeEvent} = insert_record(ProbeName, ProbeReturn),
-    Pdu = pdu('probeEventMsg', ProbeEvent),
+    Pdu = pdu('probeEventMsg', {ProbeName, ProbeEvent}),
     tracker_probe:external_event(ProbeName, Pdu),
     {noreply, S};
 
@@ -162,8 +162,9 @@ pdu('eventProbeDump', {TargetId, ProbeName}) ->
     end,
     {atomic, Reply} = mnesia:transaction(F),
     ProbeEvents = [
-        {'ProbeEvent',EventId,InsertTs,AckTs,atom_to_list(Status),Textual,
-            AckNeeded,AckValue,GroupOwner,UserOwner}
+        {'ProbeEvent',atom_to_list(ProbeName),EventId,InsertTs,AckTs,
+            atom_to_list(Status),Textual,AckNeeded,AckValue,
+                GroupOwner,UserOwner}
         || #probe_event{
             id          = EventId,
             insert_ts   = InsertTs,
@@ -183,7 +184,7 @@ pdu('eventProbeDump', {TargetId, ProbeName}) ->
                     atom_to_list(?MODULE),
                     ProbeEvents}}}};
 
-pdu('probeEventMsg', #probe_event{
+pdu('probeEventMsg', {ProbeName, #probe_event{
         id          = EventId,
         insert_ts   = InsertTs,
         ack_ts      = AckTs,
@@ -193,11 +194,12 @@ pdu('probeEventMsg', #probe_event{
         ack_value   = AckValue,
         group_owner = GroupOwner,
         user_owner  = UserOwner
-    }) ->
+    }}) ->
     {modTrackerPDU,
         {fromServer,
             {probeEventMsg,
                 {'ProbeEvent',
+                    atom_to_list(ProbeName),
                     EventId,
                     InsertTs,
                     AckTs,

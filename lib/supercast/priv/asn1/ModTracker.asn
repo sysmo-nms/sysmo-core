@@ -113,6 +113,7 @@ ProbeInfo   ::= SEQUENCE {
 
 -- ProbeEvent
 ProbeEvent      ::= SEQUENCE {
+    probeName   PrintableString,
     eventId     INTEGER,
     insertTs    MicroSecond,
     ackTs       MicroSecond,
