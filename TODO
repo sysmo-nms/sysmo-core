@@ -29,7 +29,8 @@ Include concept of documented Acknoledgement.
 Work on UI designs.
 --------> RELEASE B1.0
 
-- logger_events 2         HIGH          100%
+- parent association      HIGH          0%
+- logger_events 2         HIGH          0%
 Configurable events. Add probe dependency (different from probe parent). Will
 create an event for the dependent probes. Event correlation will be easier.
 - probe_snmp_v3           HIGH          0%
@@ -43,13 +44,11 @@ Will need to use a gen_event somewhere in tlogger_rrd to put a fun which will
 wait for the current probe_return to be writed to the file.rrd and then query
 the rrd. A delayed inspector in some way because inspectors are launch before
 loggers.
-- inspector_inertie       HIGH          0%
-False positive detection.
-- documentation           HIGH          0%
-Supercast, tracker config, client.
 - read/write client with permissions.   HIGH    0%
 need definition of API. The system should be usable without writing the
 configuration file. Targets should be added deleted in live.
+- documentation           HIGH          0%
+Supercast, tracker config, client.
 ---------> RELEASE 1
 
 
