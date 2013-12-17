@@ -23,7 +23,6 @@ rrds in small parts.
 - logger_events 1         HIGH          100%
 Target events of interest. Will be represented as time plots on the
 client. Include work on future traps_mod and syslog_mod.
-Include concept of documented Acknoledgement.
 - startup script          HIGH          0%
 - update client (logger_events)         0%
 Work on UI designs.
@@ -33,6 +32,7 @@ Work on UI designs.
 - logger_events 2         HIGH          0%
 Configurable events. Add probe dependency (different from probe parent). Will
 create an event for the dependent probes. Event correlation will be easier.
+Include concept of documented Acknoledgement.
 - probe_snmp_v3           HIGH          0%
 - snmp traps handling     HIGH          0%
 With logger_events
@@ -57,6 +57,9 @@ Create, save and generate (what format?) maps (manual links between nodes).
 The final map should look like the cacti/weathermap module + visual alerts.
 (http://graphite.wikidot.com/whisper viewable in web browsers???)
 client work (qt).
+- maps show vlan propagation HIGH       0%
+- maps zoom               HIGH          0%
+automaticaly add precise informations when zooming.
 - snmp autodiscovery      HIGH          0%
 - metrologie              HIGH          0%
 pmacct, netflow, sflow, rmon.
