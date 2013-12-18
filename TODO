@@ -29,9 +29,10 @@ Work on UI designs.
 --------> RELEASE B1.0
 
 - parent association      HIGH          0%
-- logger_events 2         HIGH          0%
+- depend association      HIGH          0%
 Configurable events. Add probe dependency (different from probe parent). Will
 create an event for the dependent probes. Event correlation will be easier.
+- logger_events 2         HIGH          0%
 Include concept of documented Acknoledgement.
 - probe_snmp_v3           HIGH          0%
 - snmp traps handling     HIGH          0%
