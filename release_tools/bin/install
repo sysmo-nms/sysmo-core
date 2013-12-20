@@ -1,0 +1,13 @@
+#!/bin/sh
+
+ROOT=`pwd`
+VARDIR=${ROOT}/var
+CFGDIR=${ROOT}/cfg
+
+DIR=./erts-5.10.3/bin
+SYSDIR=./releases/0.2.1
+
+sed s:%FINAL_ROOTDIR%:$ROOT: $DIR/erl.src > $DIR/erl
+
+sed s:%VAR_DIR%:$VARDIR: $SYSDIR/sys.config.src | \
+sed s:%CONFIG_DIR%:$CFGDIR: > $SYSDIR/sys.config

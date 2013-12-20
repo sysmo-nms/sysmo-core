@@ -1,6 +1,7 @@
 # Makefile 
 
 REL_NAME        = enms
+REL_VERSION     = "0.2.1"
 MODS            = supercast tracker tlogger_rrd tlogger_text tracker_events
 
 
@@ -32,7 +33,7 @@ clean: var-clean
 	rm -f erl_crash.dump
 	rm -f $(REL_NAME).script
 	rm -f $(REL_NAME).boot
-	rm -f $(REL_NAME).tar.gz
+	rm -f *.tar.gz
 	rm -f MnesiaCore.*
 	@cd lib; make clean
 
@@ -69,11 +70,25 @@ start: local-release
 
 
 # RELEASES
-release: clean compile tar rel-clean
+release: clean compile tar
 
+TAR= "enms.tar.gz"
+TMP_DIR= "/tmp/nms_tar_dir"
 tar:
-	@echo "Generating $(REL_NAME).tar.gz"
+	@echo "Generating $(REL_NAME)-$(REL_VERSION).tar.gz"
 	@$(ERL) -noinput $(ERL_NMS_PATH) -eval $(ERL_REL_COMM2)
+	@rm -rf $(TMP_DIR)
+	@mkdir $(TMP_DIR)
+	@tar xzf $(REL_NAME).tar.gz -C $(TMP_DIR)
+	@rm -f $(REL_NAME).tar.gz
+	@cp -R var $(TMP_DIR)/
+	@mkdir $(TMP_DIR)/bin
+	@cp release_tools/bin/freenms $(TMP_DIR)/bin/
+	@cp release_tools/bin/install $(TMP_DIR)
+	@cp release_tools/sys.config.src $(TMP_DIR)/releases/$(REL_VERSION)/
+	@mkdir $(TMP_DIR)/cfg
+	@touch $(TMP_DIR)/cfg/tracker.conf
+	@tar -czf $(REL_NAME)-$(REL_VERSION).tar.gz -C $(TMP_DIR) .
 
 local-release: compile $(REL_NAME).script
 

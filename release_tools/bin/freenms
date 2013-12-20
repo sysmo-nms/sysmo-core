@@ -1,0 +1,6 @@
+#!/bin/sh
+./erts-5.10.3/bin/erl \
+    -sname freenms                  \
+    -boot ./releases/0.2.1/start    \
+    -config ./releases/0.2.1/sys    \
+    -detached
