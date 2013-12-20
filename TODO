@@ -25,10 +25,15 @@ Target events of interest. Will be represented as time plots on the
 client. Include work on future traps_mod and syslog_mod.
 - update client (logger_events)         70%
 Work on UI designs.
+- save target state       HIGH          0%
 - startup script          HIGH          0%
 --------> RELEASE B1.0
 
+- mail alerts             HIGH          0%
+With treaded reply to receivers on acknowlegement. Linked to acknownledgement
+system.
 - parent association      HIGH          0%
+With triggered update of parents on a failure.
 - depend association      HIGH          0%
 Configurable events. Add probe dependency (different from probe parent). Will
 create an event for the dependent probes. Event correlation will be easier.
