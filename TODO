@@ -26,7 +26,7 @@ client. Include work on future traps_mod and syslog_mod.
 - update client (logger_events)         70%
 Work on UI designs.
 - save target state       HIGH          0%
-- startup script          HIGH          0%
+- startup script          HIGH          70%
 --------> RELEASE B1.0
 
 - mail alerts             HIGH          0%
