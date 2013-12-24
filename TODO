@@ -53,6 +53,9 @@ loggers.
 - read/write client with permissions.   HIGH    0%
 need definition of API. The system should be usable without writing the
 configuration file. Targets should be added deleted in live.
+- system documentation   HIGH           0%
+a new target create a new wiki page with system permissions. This page will
+be writable by user allowed to, and auto filled by system events.
 - documentation           HIGH          0%
 Supercast, tracker config, client.
 ---------> RELEASE 1
