@@ -6,8 +6,13 @@ CFGDIR=${ROOT}/cfg
 
 DIR=./erts-5.10.3/bin
 SYSDIR=./releases/0.2.1
+RRDTOOL_PATH=/usr/bin/rrdtool
 
 sed s:%FINAL_ROOTDIR%:$ROOT: $DIR/erl.src > $DIR/erl
 
-sed s:%VAR_DIR%:$VARDIR: $SYSDIR/sys.config.src | \
-sed s:%CONFIG_DIR%:$CFGDIR: > $SYSDIR/sys.config
+
+cat $SYSDIR/sys.config.src              |   \
+    sed s:%VAR_DIR%:$VARDIR:            |   \
+    sed s:%CONFIG_DIR%:$CFGDIR:         |   \
+    sed s:%RRDTOOL_PATH%:$RRDTOOL_PATH:     \
+> $SYSDIR/sys.config

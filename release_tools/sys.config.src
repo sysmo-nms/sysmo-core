@@ -63,7 +63,7 @@
     },
     {tlogger_rrd,
         [
-            {command,   "/usr/bin/rrdtool - "}
+            {command,   "%RRDTOOL_PATH% - "}
         ]
     },
     {tlogger_text,
