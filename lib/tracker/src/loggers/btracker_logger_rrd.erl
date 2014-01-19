@@ -123,7 +123,9 @@ rrd_exec(String) ->
     case tlogger_rrd:exec(String) of
         ok -> ok;
         error ->
-            ?LOG({logger_rrd_error, String}),
+            error_logger:info_msg(
+                "logger_rrd_error, ~p, ~p:~p }", [String, ?MODULE, ?LINE]
+            ),
             ok
     end.
 
@@ -146,7 +148,10 @@ generate_update_string(_, String, []) ->
 generate_update_string(Kv, String, [{Key, Re} | Binds]) ->
     case lists:keyfind(Key, 1, Kv) of
         false ->
-            ?LOG({"unable to generate rrd udate, missng value", Key, Kv}),
+            error_logger:info_msg(
+                "Unable to generate rrd udate, missing value ~p, ~p, ~p:~p", 
+                    [Key, Kv, ?MODULE, ?LINE]
+            ),
             [];
         {Key, Val} ->
             NewString = re:replace(
