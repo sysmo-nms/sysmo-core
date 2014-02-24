@@ -15,7 +15,7 @@
         {tlogger_text, "0.1.0"},
         {tlogger_rrd, "0.1.0"},
         {tracker_events, "0.1.0"},
-        {tracker, "0.1.0"}
-
+        {tracker, "0.1.0"},
+        {locator, "0.1.0"}
     ]
 }.

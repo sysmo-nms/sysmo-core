@@ -1,8 +1,8 @@
 # Makefile 
 
-REL_NAME        = enms
-REL_VERSION     = "0.2.1"
-MODS            = supercast tracker tlogger_rrd tlogger_text tracker_events
+export REL_NAME        = enms
+export REL_VERSION     = "0.2.1"
+export MODS = supercast tracker tlogger_rrd tlogger_text tracker_events locator
 
 
 compile:
