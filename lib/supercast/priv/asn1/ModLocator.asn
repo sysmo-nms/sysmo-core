@@ -1,0 +1,13 @@
+ModLocator DEFINITIONS IMPLICIT TAGS ::=
+BEGIN
+
+LocatorPDU ::= CHOICE {
+    fromServer  [0] CHOICE {
+        fromServerTest  [0] PrintableString
+    },
+    fromClient  [1] CHOICE {
+        fromClientTest  [0] PrintableString
+    }
+}
+
+END
