@@ -2,7 +2,7 @@
 
 export REL_NAME        = enms
 export REL_VERSION     = "0.2.1"
-export MODS = supercast tracker tlogger_rrd tlogger_text tracker_events locator
+export MODS = supercast tracker tlogger_rrd tlogger_text tracker_events locator nocto_snmpm
 
 
 compile:

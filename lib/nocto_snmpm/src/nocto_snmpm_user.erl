@@ -1,0 +1,59 @@
+% This file is part of "Enms" (http://sourceforge.net/projects/enms/)
+% Copyright (C) 2012 <Sébastien Serre sserre.bx@gmail.com>
+% 
+% Enms is a Network Management System aimed to manage and monitor SNMP
+% targets, monitor network hosts and services, provide a consistent
+% documentation system and tools to help network professionals
+% to have a wide perspective of the networks they manage.
+% 
+% Enms is free software: you can redistribute it and/or modify
+% it under the terms of the GNU General Public License as published by
+% the Free Software Foundation, either version 3 of the License, or
+% (at your option) any later version.
+% 
+% Enms is distributed in the hope that it will be useful,
+% but WITHOUT ANY WARRANTY; without even the implied warranty of
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+% GNU General Public License for more details.
+% 
+% You should have received a copy of the GNU General Public License
+% along with Enms.  If not, see <http://www.gnu.org/licenses/>.
+-module(nocto_snmpm_user).
+-behaviour(snmpm_user).
+-include_lib("snmp/include/snmp_types.hrl").
+-define(SNMP_USER, "nocto_snmpm_user").
+
+%% snmpm_user exports
+-export([
+    handle_error/3,
+    handle_agent/5,
+    handle_pdu/4,
+    handle_trap/3,
+    handle_inform/3,
+    handle_report/3
+]).
+
+%% snmpm_user behaviour
+handle_error(_ReqId, _Reason, _UserData) ->
+    io:format("handle_error ~p~n", [?MODULE]),
+    ignore.
+
+handle_agent(_Addr, _Port, _Type, _SnmpInfo, _UserData) ->
+    io:format("handle_agent ~p~n", [?MODULE]),
+    ignore.
+
+handle_pdu(_TargetName, _ReqId, SnmpResponse, _UserData) ->
+    io:format("handle_pdu ~p ~p~n", [?MODULE,SnmpResponse]),
+    ignore.
+
+handle_trap(_TargetName, _SnmpTrapInfo, _UserData) ->
+    io:format("handle_trap ~p~n", [?MODULE]),
+    ignore.
+
+handle_inform(_TargetName, _SnmpInform, _UserData) ->
+    io:format("handle_inform ~p~n", [?MODULE]),
+    ignore.
+
+handle_report(_TargetName, _SnmpReport, _UserData) ->
+    io:format("handle_report ~p~n", [?MODULE]),
+    ignore.

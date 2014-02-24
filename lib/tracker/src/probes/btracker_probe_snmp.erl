@@ -20,26 +20,15 @@
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 -module(btracker_probe_snmp).
 -behaviour(beha_tracker_probe).
--behaviour(snmpm_user).
 -include_lib("snmp/include/snmp_types.hrl").
 -include("../../include/tracker.hrl").
--define(SNMP_USER, "tracker_probe_user").
+-define(SNMP_USER, "nocto_snmpm_user").
 
 %% beha_tracker_probe exports
 -export([
     init/1,
     exec/1,
     info/0]).
-
-%% snmpm_user exports
--export([
-    handle_error/3,
-    handle_agent/5,
-    handle_pdu/4,
-    handle_trap/3,
-    handle_inform/3,
-    handle_report/3
-]).
 
 init(#probe_server_state{
         probe  = #probe{tracker_probe_conf = Conf},
@@ -114,33 +103,6 @@ eval_snmp_return({noError, _, VarBinds}, Oids) ->
     }.
 
 info() -> {ok, "snmp get and walk module"}.
-
-
-%% snmpm_user behaviour
-handle_error(_ReqId, _Reason, _UserData) ->
-    io:format("handle_error ~p~n", [?MODULE]),
-    ignore.
-
-handle_agent(_Addr, _Port, _Type, _SnmpInfo, _UserData) ->
-    io:format("handle_agent ~p~n", [?MODULE]),
-    ignore.
-
-handle_pdu(_TargetName, _ReqId, SnmpResponse, _UserData) ->
-    io:format("handle_pdu ~p ~p~n", [?MODULE,SnmpResponse]),
-    ignore.
-
-handle_trap(_TargetName, _SnmpTrapInfo, _UserData) ->
-    io:format("handle_trap ~p~n", [?MODULE]),
-    ignore.
-
-handle_inform(_TargetName, _SnmpInform, _UserData) ->
-    io:format("handle_inform ~p~n", [?MODULE]),
-    ignore.
-
-handle_report(_TargetName, _SnmpReport, _UserData) ->
-    io:format("handle_report ~p~n", [?MODULE]),
-    ignore.
-
 
 to_string(Term) ->
     lists:flatten(io_lib:format("~p~n", [Term])).
