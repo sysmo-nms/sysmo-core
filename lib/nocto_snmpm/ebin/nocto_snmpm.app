@@ -8,7 +8,7 @@
         },
         {registered, []},
         {applications, 
-            [kernel, stdlib, snmp]
+            [kernel, stdlib, snmp, tracker]
         }
     ]
 }.
