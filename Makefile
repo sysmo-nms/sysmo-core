@@ -1,6 +1,6 @@
 # Makefile 
 
-export REL_NAME        = enms
+export REL_NAME        = noctopus
 export REL_VERSION     = "0.2.1"
 export MODS = supercast tracker tlogger_rrd tlogger_text tracker_events locator nocto_snmpm
 
@@ -72,7 +72,7 @@ start: local-release
 # RELEASES
 release: clean compile tar
 
-TAR= "enms.tar.gz"
+TAR= "noctopus.tar.gz"
 TMP_DIR= "/tmp/nms_tar_dir"
 tar:
 	@echo "Generating $(REL_NAME)-$(REL_VERSION).tar.gz"
@@ -83,7 +83,7 @@ tar:
 	@rm -f $(REL_NAME).tar.gz
 	@cp -R var $(TMP_DIR)/
 	@mkdir $(TMP_DIR)/bin
-	@cp release_tools/bin/freenms $(TMP_DIR)/bin/
+	@cp release_tools/bin/noctopus $(TMP_DIR)/bin/
 	@cp release_tools/bin/install $(TMP_DIR)
 	@cp release_tools/sys.config.src $(TMP_DIR)/releases/$(REL_VERSION)/
 	@mkdir $(TMP_DIR)/cfg

@@ -24,7 +24,7 @@ activity.log
 *.db
 *_db
 *.log
-enms.script
-enms.boot
+noctopus.script
+noctopus.boot
 lib/errd/ebin/*
 cfg/tracker.conf
