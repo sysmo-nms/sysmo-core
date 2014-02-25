@@ -27,4 +27,4 @@ activity.log
 enms.script
 enms.boot
 lib/errd/ebin/*
-cfg/tracker.config
+cfg/tracker.conf
