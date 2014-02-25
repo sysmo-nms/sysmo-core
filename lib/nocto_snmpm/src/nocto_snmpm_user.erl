@@ -105,7 +105,12 @@ get_mib2_system(Agent) ->
                 sys_name        = SysName,
                 sys_location    = SysLocation,
                 sys_services    = SysServices
-            }
+            };
+        _   ->
+            error_logger:info_report(
+                "~p ~p: get_mib2_system received: ~p", [?MODULE, ?LINE, Reply]
+            ),
+            []
     end.
 
 get_mib2_interfaces(Agent) ->
@@ -118,6 +123,7 @@ get_mib2_interfaces(Agent) ->
     _IfAdminStatus  = sync_walk_bulk(Agent, ?OID_IF_ADMIN_STATUS),
     _IfOperStatus   = sync_walk_bulk(Agent, ?OID_IF_OPER_STATUS),
     _IfLastChange   = sync_walk_bulk(Agent, ?OID_IF_LAST_CHANGE),
+    ?LOG2(_IfIndexes),
     ok.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -131,6 +137,7 @@ sync_walk_bulk(Agent, StartOID, LastOID, Result) ->
     ),
     case Reply of
         {ok, {noError,_,R}, _} ->
+
             {_,Last,_,_,_} = lists:last(R),
             case still_in_tree(StartOID, Last) of
                 true  -> 
@@ -138,12 +145,21 @@ sync_walk_bulk(Agent, StartOID, LastOID, Result) ->
                         Agent, StartOID, Last, lists:append([Result,R])
                     );
                 false ->    
-                    % TODO remove out of StartOid responces
-                    lists:append([Result, R])
+                    FilteredR = remove_out_of_tree_OIDs(StartOID, R),
+                    lists:append([Result, FilteredR])
             end;
+
         _ ->
+            error_logger:info_report(
+                "~p ~p: sync_walk_bulk received: ~p", [?MODULE, ?LINE, Reply]
+            ),
             []
     end.
+
+remove_out_of_tree_OIDs(Oid, List) ->
+    lists:filter(fun({_,X,_,_,_}) ->
+        still_in_tree(Oid, X)
+    end, List).
 
 still_in_tree(Tree,Oid) when length(Tree) > length(Oid) ->
     false;
