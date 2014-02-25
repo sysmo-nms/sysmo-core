@@ -5,7 +5,7 @@ ERLC        ?= erlc -Werror
 EPATH       += -pa ebin
 
 APP         = $(subst ebin/,,$(basename $(wildcard ebin/*.app)))
-INCLUDE     = $(wildcard ../include/*.hrl)
+INCLUDE     = $(wildcard include/*.hrl)
 
 MAIN        = $(wildcard src/*.erl)
 MAIN_DST    = $(patsubst src/%.erl, ebin/%.beam, $(MAIN))
