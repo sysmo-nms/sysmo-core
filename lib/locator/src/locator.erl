@@ -22,6 +22,7 @@
 ]).
 
 -record(locator_agent, {
+    agent_name,
     sys_infos,
     if_infos
 }).
@@ -37,13 +38,19 @@ init([]) ->
     Agents = nocto_snmpm_user:which_agents(),
     AgentsRecords = [
         #locator_agent{
+            agent_name  = Agent,
             sys_infos   = nocto_snmpm_user:get_mib2_system(Agent),
             if_infos    = nocto_snmpm_user:get_mib2_interfaces(Agent)
         } || Agent <- Agents],
 
-    R = nocto_snmpm_user:sync_walk_bulk(lists:last(Agents),
-        ?OID_TEST_VLAN),
-    ?LOG(R),
+    lists:foreach(fun(X) ->
+        locator_query_sup:launch(X)
+    end, AgentsRecords),
+
+    %R = nocto_snmpm_user:sync_walk_bulk(lists:last(Agents),
+        %?OID_TEST_VLAN),
+    %?LOG(R),
+
     {ok, #state{agents = AgentsRecords}}.
 %  
 handle_call(_R, _F, S) ->

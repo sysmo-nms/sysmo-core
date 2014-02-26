@@ -19,37 +19,34 @@
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 % @private
--module(locator_sup).
+-module(locator_query_sup).
 -behaviour(supervisor).
 
 -export([
-    start_link/0
+    start_link/0,
+    launch/1
 ]).
+
 -export([init/1]).
 
 start_link() ->
     supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
+launch(Agent) ->
+    {ok, _} = supervisor:start_child(?MODULE, [Agent]).
+
 init([]) ->
     {ok, 
         {
-            {one_for_one, 10, 60},
+            {simple_one_for_one, 10, 60},
             [
                 {
-                    locator_query_sup,
-                    {locator_query_sup, start_link, []},
-                    permanent,
-                    2000,
-                    supervisor,
-                    [locator_query_sup]
-                },
-                {
-                    locator,
-                    {locator, start_link, []},
-                    permanent,
+                    locator_query,
+                    {locator_query, start_link, []},
+                    transient,
                     2000,
                     worker,
-                    [locator]
+                    [locator_query]
                 }
             ]
         }
