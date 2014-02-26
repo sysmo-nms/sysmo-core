@@ -3,7 +3,7 @@
 -define(SNMPM_USER,         "nocto_snmpm_user").
 -define(BULK_MAX_REP,       64).
 
-% MIB2 System tree
+% MIB2 'system' tree
 -define(OID_SYS_DESCR,      [1,3,6,1,2,1,1,1,0]).
 -define(OID_SYS_OBJECT_ID,  [1,3,6,1,2,1,1,2,0]).
 -define(OID_SYS_UPTIME,     [1,3,6,1,2,1,1,3,0]).
@@ -22,7 +22,7 @@
     sys_services
 }).
 
-% MIB2 Interface tree
+% MIB2 'interface' tree
 -define(OID_IF_NUMBER,      [1,3,6,1,2,1,2,1]).
 -define(OID_IF_TABLE,       [1,3,6,1,2,1,2,2]).
 -define(OID_IF_INDEX,       [1,3,6,1,2,1,2,2,1,1]).
@@ -46,3 +46,15 @@
     oper_status,
     last_change
 }).
+
+% MIB2 'at' tree (plysical <-> network address)
+-define(OID_AT_TABLE,       [1,3,6,1,2,1,3]).
+
+% MIB2 - Q-BRIDGE-MIB extention
+-define(OID_1Q_MAC_TABLE,   [1,3,6,1,2,1,17,7,1,2]).
+
+% MIB2 - IP-MIB extention
+-define(OID_IP_ARP_TABLE,   [1,3,6,1,2,1,4,22]).
+
+
+
