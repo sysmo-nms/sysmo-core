@@ -125,10 +125,7 @@ get_mib2_interfaces(Agent) ->
     IfLastChange    = sync_walk_bulk(Agent, ?OID_IF_LAST_CHANGE),
     Infos = [IfIndexes,IfDescr,IfType,IfMTU,IfSpeed,IfPhysAdd,IfAdminStatus,
         IfOperStatus, IfLastChange],
-
-    Interfaces = generate_if_records(Infos),
-    ?LOG2(Interfaces),
-    ok.
+    generate_if_records(Infos).
 
 generate_if_records([IfIndexes|Values]) ->
     Indexes = [Index || {varbind,_,_,Index,_} <- IfIndexes],
