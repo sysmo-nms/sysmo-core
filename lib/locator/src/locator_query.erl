@@ -22,12 +22,18 @@
     arp_fetch_step
 }).
 
+
+
+
+% API
 start_link(Cfg) ->
     gen_server:start_link(?MODULE, Cfg, []).
 
-
 exec_switch_table_fetch(Pid) ->
-    gen_server:cast(Pid, exec_arpfetch).
+    gen_server:cast(Pid, exec_switch_table_fetch).
+
+
+
 
 % GEN_SERVER BEHAVIOUR
 init(#locator_agent{
@@ -46,55 +52,75 @@ init(#locator_agent{
             ?LOG("switch")
     end,
 
-    AgingTime       = nocto_snmpm_user:get_dot1q_aging(AgentName),
+    _AgingTime       = nocto_snmpm_user:get_dot1q_aging(AgentName),
     gen_server:cast(self(), initial_switch_table_fetch),
     {ok, 
         #state{
             agent_name      = AgentName,
-            arp_fetch_step  = AgingTime - 10 
+            arp_fetch_step  = 5
+            %arp_fetch_step  = AgingTime - 10 
         }
     }.
 
-%  
-handle_call(_R, _F, S) ->
+
+
+% CALL
+handle_call(R, _F, S) ->
+    error_logger:info_msg(
+        "~p ~p: handle_call received: ~p", [?MODULE, ?LINE, R]),
     {noreply, S}.
 
-% 
+
+
+% CAST
 handle_cast(initial_switch_table_fetch, 
         #state{arp_fetch_step = T} = S) ->
     random:seed(erlang:now()),
-    R = random:uniform(T),
-    timer:apply_after(R * 1000, ?MODULE, exec_switch_table_fetch, [self()]),
+    Rand = random:uniform(T),
+    timer:apply_after(Rand * 1000, ?MODULE, exec_switch_table_fetch, [self()]),
     {noreply, S};
 
 handle_cast(exec_switch_table_fetch, 
         #state{agent_name = A, arp_fetch_step = T} = S) ->
-    ?LOG('exec arpfetch'),
-    _Rep = fetch_switch_table(A),
+    ?LOG(A),
+    Rep = switch_table_fetch(A),
+    locator:update(A, Rep),
     timer:apply_after(T * 1000, ?MODULE, exec_switch_table_fetch, [self()]),
     {noreply, S};
 
-handle_cast(M,S) ->
-    error_logger:info_report(
-        "~p ~p: handle_cast received: ~p", [?MODULE, ?LINE, M]),
+handle_cast(R,S) ->
+    error_logger:info_msg(
+        "~p ~p: handle_cast received: ~p", [?MODULE, ?LINE, R]),
     {noreply, S}.
 
-%
-handle_info(M, S) ->
-    error_logger:info_report(
-        "~p ~p: handle_info received: ~p", [?MODULE, ?LINE, M]),
+
+
+% INFO
+handle_info(R, S) ->
+    error_logger:info_msg(
+        "~p ~p: handle_info received: ~p", [?MODULE, ?LINE, R]),
     {noreply, S}.
 
-%
-terminate(M,_) ->
-    error_logger:info_report(
-        "~p ~p: terminate: ~p", [?MODULE, ?LINE, M]),
+
+
+% TERMINATE
+terminate(R,_) ->
+    error_logger:info_msg(
+        "~p ~p: terminate: ~p", [?MODULE, ?LINE, R]),
     ok.
 
-%
+
+
+% CHANGE
 code_change(_,S,_) ->
     {ok, S}.
 
+
+
 % PRIVATE
-fetch_switch_table(Agent) ->
-    nocto_snmpm_user:get_dot1q_tpfdb_table(Agent).
+switch_table_fetch(Agent) ->
+    % TODO format datas.
+    ?LOG('table fetch'),
+    [H|Rep] = nocto_snmpm_user:get_dot1q_tpfdb_table(Agent),
+    ?LOG(H),
+    Rep.

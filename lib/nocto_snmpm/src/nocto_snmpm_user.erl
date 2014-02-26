@@ -83,7 +83,7 @@ get_dot1q_aging(Agent) ->
             {varbind,_,_,AgingSeconds,_} = Rep,
             AgingSeconds;
         _   ->
-            error_logger:info_report(
+            error_logger:info_msg(
                 "~p ~p: get_dot1q_aging received: ~p", [?MODULE, ?LINE, Reply]
             ),
             300
@@ -127,7 +127,7 @@ get_mib2_system(Agent) ->
                 sys_services    = decode_services(SysServices)
             };
         _   ->
-            error_logger:info_report(
+            error_logger:info_msg(
                 "~p ~p: get_mib2_system received: ~p", [?MODULE, ?LINE, Reply]
             ),
             []
@@ -226,7 +226,7 @@ sync_walk_bulk(Agent, StartOID, LastOID, Result) ->
             end;
 
         _ ->
-            error_logger:info_report(
+            error_logger:info_msg(
                 "~p ~p: sync_walk_bulk received: ~p", [?MODULE, ?LINE, Reply]
             ),
             []

@@ -18,16 +18,24 @@
 ]).
 
 -export([
-    start_link/0
+    start_link/0,
+    update/2
 ]).
 
 -record(state, {
     agents
 }).
 
+% API
+update(Agent, Values) ->
+    gen_server:cast(?MODULE, {update, Agent, Values}).
+
 start_link() ->
     gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
+
+
+% GEN_SERVER
 init([]) ->
     Agents = nocto_snmpm_user:which_agents(),
     AgentsRecords = [
@@ -37,31 +45,46 @@ init([]) ->
             if_infos    = nocto_snmpm_user:get_mib2_interfaces(Agent)
         } || Agent <- Agents],
 
-    lists:foreach(fun(X) ->
-        locator_query_sup:launch(X)
-    end, AgentsRecords),
-
-    %R = nocto_snmpm_user:sync_walk_bulk(lists:last(Agents),
-        %?OID_TEST_VLAN),
-    %?LOG(R),
-
+    ok = initialize_queries(AgentsRecords),
     {ok, #state{agents = AgentsRecords}}.
-%  
+
+
+
+% CALL 
 handle_call(_R, _F, S) ->
     {noreply, S}.
 
-% 
+
+
+% CAST
+handle_cast({update, _Agent, _Values},S) ->
+    % TODO update datas (in memory mnesia)
+    ?LOG('update!'),
+    {noreply, S};
+
 handle_cast(_,S) ->
     {noreply, S}.
 
-%
+
+
+% INFO
 handle_info(_, S) ->
     {noreply, S}.
 
-%
+
+
+% TERMINATE
 terminate(_,_) ->
     ok.
 
-%
+
+% CHANGE
 code_change(_,S,_) ->
     {ok, S}.
+
+
+% private
+initialize_queries(Agents) ->
+    lists:foreach(fun(X) ->
+        locator_query_sup:launch(X)
+    end, Agents).
