@@ -47,14 +47,11 @@
     last_change
 }).
 
-% MIB2 'at' tree (plysical <-> network address)
--define(OID_AT_TABLE,       [1,3,6,1,2,1,3]).
+% MIB2 - 'dot1dBridge' tree (Q-BRIDGE-MIB extention)
+-define(OID_DOT1Q_FORWARDING_TABLE,   [1,3,6,1,2,1,17,4,3]).
+% same as above but include the vlan number (?)
+-define(OID_TEST_VLAN, [1,3,6,1,2,1,17,7,1,2,2,1]). 
 
-% MIB2 - Q-BRIDGE-MIB extention
--define(OID_1Q_MAC_TABLE,   [1,3,6,1,2,1,17,7,1,2]).
-
-% MIB2 - IP-MIB extention
+% MIB2 - 'ip' tree          (IP-MIB extention)
+-define(OID_IP_INET_TO_MEDIA_TABLE,   [1,3,6,1,2,1,4,22,1,2]).
 -define(OID_IP_ARP_TABLE,   [1,3,6,1,2,1,4,22]).
-
-
-

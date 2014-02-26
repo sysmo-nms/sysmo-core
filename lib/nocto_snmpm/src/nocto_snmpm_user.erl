@@ -36,6 +36,7 @@
 %% API exports
 -export([
     which_agents/0,
+    sync_walk_bulk/2,
     get_mib2_system/1,
     get_mib2_interfaces/1
 ]).
@@ -182,7 +183,6 @@ generate_if_records([Index|OtherIndexes], Values, Accum) ->
     },
     generate_if_records(OtherIndexes,Values,[Record|Accum]).
     
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % SNMP BULK WALK IMPLEMENTATION
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
