@@ -34,3 +34,15 @@
 -define(OID_IF_ADMIN_STATUS,[1,3,6,1,2,1,2,2,1,7]).
 -define(OID_IF_OPER_STATUS ,[1,3,6,1,2,1,2,2,1,8]).
 -define(OID_IF_LAST_CHANGE ,[1,3,6,1,2,1,2,2,1,9]).
+
+-record(mib2_interface, {
+    index,
+    descr,
+    type,
+    mtu,
+    speed,
+    phys_add,
+    admin_status,
+    oper_status,
+    last_change
+}).

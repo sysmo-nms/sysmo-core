@@ -114,17 +114,77 @@ get_mib2_system(Agent) ->
     end.
 
 get_mib2_interfaces(Agent) ->
-    _IfIndexes      = sync_walk_bulk(Agent, ?OID_IF_INDEX),
-    _IfDescr        = sync_walk_bulk(Agent, ?OID_IF_DESCR),
-    _IfType         = sync_walk_bulk(Agent, ?OID_IF_TYPE),
-    _IfMTU          = sync_walk_bulk(Agent, ?OID_IF_MTU),
-    _IfSpeed        = sync_walk_bulk(Agent, ?OID_IF_SPEED),
-    _IfPhysAdd      = sync_walk_bulk(Agent, ?OID_IF_PHYS_ADDRESS),
-    _IfAdminStatus  = sync_walk_bulk(Agent, ?OID_IF_ADMIN_STATUS),
-    _IfOperStatus   = sync_walk_bulk(Agent, ?OID_IF_OPER_STATUS),
-    _IfLastChange   = sync_walk_bulk(Agent, ?OID_IF_LAST_CHANGE),
-    ?LOG2(_IfIndexes),
+    IfIndexes       = sync_walk_bulk(Agent, ?OID_IF_INDEX),
+    IfDescr         = sync_walk_bulk(Agent, ?OID_IF_DESCR),
+    IfType          = sync_walk_bulk(Agent, ?OID_IF_TYPE),
+    IfMTU           = sync_walk_bulk(Agent, ?OID_IF_MTU),
+    IfSpeed         = sync_walk_bulk(Agent, ?OID_IF_SPEED),
+    IfPhysAdd       = sync_walk_bulk(Agent, ?OID_IF_PHYS_ADDRESS),
+    IfAdminStatus   = sync_walk_bulk(Agent, ?OID_IF_ADMIN_STATUS),
+    IfOperStatus    = sync_walk_bulk(Agent, ?OID_IF_OPER_STATUS),
+    IfLastChange    = sync_walk_bulk(Agent, ?OID_IF_LAST_CHANGE),
+    Infos = [IfIndexes,IfDescr,IfType,IfMTU,IfSpeed,IfPhysAdd,IfAdminStatus,
+        IfOperStatus, IfLastChange],
+
+    Interfaces = generate_if_records(Infos),
+    ?LOG2(Interfaces),
     ok.
+
+generate_if_records([IfIndexes|Values]) ->
+    Indexes = [Index || {varbind,_,_,Index,_} <- IfIndexes],
+    generate_if_records(Indexes, Values, []).
+
+generate_if_records([],_,Accum) -> Accum;
+generate_if_records([Index|OtherIndexes], Values, Accum) ->
+
+    [IfDescr,IfType,IfMTU,IfSpeed,IfPhysAdd,
+        IfAdminStatus,IfOperStatus,IfLastChange] = Values,
+
+    MatchIfDescr    = lists:append(?OID_IF_DESCR, [Index]),
+    IfDescrTuple    = lists:keyfind(MatchIfDescr, 2, IfDescr),
+    {_,_,_,Descr,_} = IfDescrTuple,
+
+    MatchIfType     = lists:append(?OID_IF_TYPE, [Index]),
+    IfTypeTuple     = lists:keyfind(MatchIfType, 2, IfType),
+    {_,_,_,Type,_}  = IfTypeTuple,
+
+    MatchIfMTU      = lists:append(?OID_IF_MTU, [Index]),
+    IfMTUTuple      = lists:keyfind(MatchIfMTU, 2, IfMTU),
+    {_,_,_,MTU,_}   = IfMTUTuple,
+
+    MatchIfSpeed    = lists:append(?OID_IF_SPEED, [Index]),
+    IfSpeedTuple    = lists:keyfind(MatchIfSpeed, 2, IfSpeed),
+    {_,_,_,Speed,_} = IfSpeedTuple,
+
+    MatchIfPhysAdd      = lists:append(?OID_IF_PHYS_ADDRESS, [Index]),
+    IfPhysAddTuple      = lists:keyfind(MatchIfPhysAdd, 2, IfPhysAdd),
+    {_,_,_,PhysAdd,_}   = IfPhysAddTuple,
+    
+    MatchIfAdminStatus  = lists:append(?OID_IF_ADMIN_STATUS, [Index]),
+    IfAdminStatusTuple  = lists:keyfind(MatchIfAdminStatus, 2, IfAdminStatus),
+    {_,_,_,AdminStatus,_}   = IfAdminStatusTuple,
+
+    MatchIfOperStatus   = lists:append(?OID_IF_OPER_STATUS, [Index]),
+    IfOperStatusTuple   = lists:keyfind(MatchIfOperStatus, 2, IfOperStatus),
+    {_,_,_,OperStatus,_}   = IfOperStatusTuple,
+
+    MatchIfLastChange   = lists:append(?OID_IF_LAST_CHANGE, [Index]),
+    IfLastChangeTuple   = lists:keyfind(MatchIfLastChange, 2, IfLastChange),
+    {_,_,_,LastChange,_}   = IfLastChangeTuple,
+
+    Record = #mib2_interface{
+        index           = Index,
+        descr           = Descr,
+        type            = Type,
+        mtu             = MTU,
+        speed           = Speed,
+        phys_add        = PhysAdd,
+        admin_status    = AdminStatus,
+        oper_status     = OperStatus,
+        last_change     = LastChange
+    },
+    generate_if_records(OtherIndexes,Values,[Record|Accum]).
+    
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % SNMP BULK WALK IMPLEMENTATION
