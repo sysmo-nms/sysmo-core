@@ -19,8 +19,19 @@
 start_link(Cfg) ->
     gen_server:start_link(?MODULE, Cfg, []).
 
-init(Conf) ->
-    ?LOG({started, Conf}),
+init(#locator_agent{
+        sys_infos = #mib2_system{
+            sys_services = SysServices
+        }
+    } = _Agent) ->
+    case SysServices of
+        #services{internet = true, datalink = true} ->
+            ?LOG("switch and router");
+        #services{internet = true} ->
+            ?LOG("router");
+        #services{datalink = true} ->
+            ?LOG("switch")
+    end,
     {ok, []}.
 
 %  

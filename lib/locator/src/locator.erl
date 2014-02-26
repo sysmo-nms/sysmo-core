@@ -21,12 +21,6 @@
     start_link/0
 ]).
 
--record(locator_agent, {
-    agent_name,
-    sys_infos,
-    if_infos
-}).
-
 -record(state, {
     agents
 }).

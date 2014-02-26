@@ -12,6 +12,14 @@
 -define(OID_SYS_LOCATION,   [1,3,6,1,2,1,1,6,0]).
 -define(OID_SYS_SERVICES,   [1,3,6,1,2,1,1,7,0]).
 
+-record(services, {
+    physical,
+    datalink,
+    internet,
+    end_to_end,
+    application
+}).
+
 -record(mib2_system, {
     sys_descr,
     sys_object_id,

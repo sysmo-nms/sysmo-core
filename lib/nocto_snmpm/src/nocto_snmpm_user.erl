@@ -105,7 +105,7 @@ get_mib2_system(Agent) ->
                 sys_contact     = SysContact,
                 sys_name        = SysName,
                 sys_location    = SysLocation,
-                sys_services    = SysServices
+                sys_services    = decode_services(SysServices)
             };
         _   ->
             error_logger:info_report(
@@ -227,3 +227,55 @@ still_in_tree([TH|TreeOid] , [OH|Oid]) when TH == OH ->
 still_in_tree(_,_) ->
     false.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% PRIVATE
+decode_services(S1) ->
+    case S1 >= 64 of
+        true  ->
+            Application = true,
+            S2 = S1 - 64;
+        false ->
+            Application = false,
+            S2 = S1
+    end,
+
+    case S2 >= 8 of
+        true ->
+            EndToEnd = true,
+            S3 = S2 - 8;
+        false ->
+            EndToEnd = false,
+            S3 = S2
+    end,
+
+    case S3 >= 4 of
+        true ->
+            Internet = true,
+            S4 = S2 - 4;
+        false ->
+            Internet = false,
+            S4 = S3
+    end,
+
+    case S4 >= 2 of
+        true ->
+            Datalink = true,
+            S5 = S3 - 2;
+        false ->
+            Datalink = false,
+            S5 = S4
+    end,
+
+    case S5 == 1 of
+        true ->
+            Physical = true;
+        false ->
+            Physical = false
+    end,
+    #services{
+        physical    = Physical,
+        datalink    = Datalink,
+        internet    = Internet,
+        end_to_end  = EndToEnd,
+        application = Application
+    }.
