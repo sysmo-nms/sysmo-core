@@ -38,7 +38,9 @@
     which_agents/0,
     sync_walk_bulk/2,
     get_mib2_system/1,
-    get_mib2_interfaces/1
+    get_mib2_interfaces/1,
+    get_dot1q_aging/1,
+    get_dot1q_tpfdb_table/1
 ]).
 
 %% BEHAVIOUR snmpm_user
@@ -69,6 +71,23 @@ handle_report(_TargetName, _SnmpReport, _UserData) ->
 %% API
 which_agents() ->
     snmpm:which_agents(?SNMPM_USER).
+
+get_dot1q_tpfdb_table(Agent) ->
+    Response = sync_walk_bulk(Agent, ?OID_DOT1Q_TPFDB_TABLE),
+    Response.
+
+get_dot1q_aging(Agent) ->
+    Reply = snmpm:sync_get(?SNMPM_USER, Agent, [?OID_DOT1Q_AGING_TIME]),
+    case Reply of
+        {ok, {noError, 0, [Rep]}, _} ->
+            {varbind,_,_,AgingSeconds,_} = Rep,
+            AgingSeconds;
+        _   ->
+            error_logger:info_report(
+                "~p ~p: get_dot1q_aging received: ~p", [?MODULE, ?LINE, Reply]
+            ),
+            300
+    end.
 
 get_mib2_system(Agent) ->
     Reply = snmpm:sync_get(?SNMPM_USER, Agent, [

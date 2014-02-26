@@ -56,9 +56,10 @@
 }).
 
 % MIB2 - 'dot1dBridge' tree (Q-BRIDGE-MIB extention)
--define(OID_DOT1Q_FORWARDING_TABLE,   [1,3,6,1,2,1,17,4,3]).
+-define(OID_DOT1Q_AGING_TIME,       [1,3,6,1,2,1,17,4,2,0]).
+-define(OID_DOT1Q_FORWARDING_TABLE, [1,3,6,1,2,1,17,4,3]).
 % same as above but include the vlan number (?)
--define(OID_TEST_VLAN, [1,3,6,1,2,1,17,7,1,2,2,1]). 
+-define(OID_DOT1Q_TPFDB_TABLE,      [1,3,6,1,2,1,17,7,1,2,2]). 
 
 % MIB2 - 'ip' tree          (IP-MIB extention)
 -define(OID_IP_INET_TO_MEDIA_TABLE,   [1,3,6,1,2,1,4,22,1,2]).
