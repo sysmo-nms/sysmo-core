@@ -119,8 +119,31 @@ code_change(_,S,_) ->
 
 % PRIVATE
 switch_table_fetch(Agent) ->
-    % TODO format datas.
-    ?LOG('table fetch'),
-    [H|Rep] = nocto_snmpm_user:get_dot1q_tpfdb_table(Agent),
-    ?LOG(H),
-    Rep.
+    Rep         = nocto_snmpm_user:get_dot1q_tpfdb_table(Agent),
+    Formated    = format(Rep),
+    ?LOG(Formated),
+    Formated.
+
+format(Responce) ->
+    {A,B,C} = filter(Responce),
+    ?LOG({length(Responce), length(A) + length(C)}),
+    ?LOG(lists:last(A)),
+    ?LOG(B),
+    ?LOG(lists:last(C)).
+
+filter(Responce) ->
+    filter({[],[],[]}, Responce).
+filter({Add, Port, Status}, []) ->
+    {Add,Port,Status};
+filter({Add, Port, Status}, 
+        [{varbind, [1,3,6,1,2,1,17,7,1,2,2,1,1|_],_,_,_} = R | Responce]) ->
+    filter({[R|Add],Port,Status}, Responce);
+filter({Add, Port, Status}, 
+        [{varbind, [1,3,6,1,2,1,17,7,1,2,2,1,2|_],_,_,_} = R | Responce]) ->
+    filter({[R|Add],Port,Status}, Responce);
+filter({Add, Port, Status}, 
+        [{varbind, [1,3,6,1,2,1,17,7,1,2,2,1,3|_],_,_,_} = R | Responce]) ->
+    filter({Add,Port,[R|Status]}, Responce);
+filter(_, [ Other | _]) ->
+    ?LOG({'other', Other}),
+    {[a],[b],[c]}.
