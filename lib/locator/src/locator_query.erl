@@ -19,10 +19,16 @@
 
 -record(state, {
     agent_name,
-    arp_fetch_step
+    switch_fetch_step,
+    router_fetch_step
 }).
 
 
+
+% @doc
+% Exported functions are only here for timer:apply function. These fuctions
+% should not be called manualy.
+% @end
 
 
 % API
@@ -32,6 +38,8 @@ start_link(Cfg) ->
 exec_switch_table_fetch(Pid) ->
     gen_server:cast(Pid, exec_switch_table_fetch).
 
+random_switch_table_fetch(Pid) ->
+    gen_server:cast(Pid, random_switch_table_fetch).
 
 
 
@@ -45,20 +53,25 @@ init(#locator_agent{
 
     case SysServices of
         #services{internet = true, datalink = true} ->
-            ?LOG("switch and router");
+            ?LOG("switch and router"),
+            %random_router_table_fetch(self()),
+            random_switch_table_fetch(self());
         #services{internet = true} ->
+            %random_router_table_fetch(self()),
             ?LOG("router");
         #services{datalink = true} ->
-            ?LOG("switch")
+            ?LOG("switch"),
+            random_switch_table_fetch(self())
     end,
 
-    _AgingTime       = nocto_snmpm_user:get_dot1q_aging(AgentName),
-    gen_server:cast(self(), initial_switch_table_fetch),
+    _AgingTime = nocto_snmpm_user:get_dot1q_aging(AgentName),
+
+
     {ok, 
         #state{
-            agent_name      = AgentName,
-            arp_fetch_step  = 5
-            %arp_fetch_step  = AgingTime - 10 
+            agent_name          = AgentName,
+            switch_fetch_step   = 5
+            %switch_fetch_step  = AgingTime - 10 
         }
     }.
 
@@ -73,20 +86,25 @@ handle_call(R, _F, S) ->
 
 
 % CAST
-handle_cast(initial_switch_table_fetch, 
-        #state{arp_fetch_step = T} = S) ->
+handle_cast(random_switch_table_fetch, 
+        #state{switch_fetch_step = T} = S) ->
+ 
     random:seed(erlang:now()),
     Rand = random:uniform(T),
+
     timer:apply_after(Rand * 1000, ?MODULE, exec_switch_table_fetch, [self()]),
     {noreply, S};
 
 handle_cast(exec_switch_table_fetch, 
-        #state{agent_name = A, arp_fetch_step = T} = S) ->
-    ?LOG(A),
-    Rep = switch_table_fetch(A),
-    locator:update(A, Rep),
+        #state{agent_name = AgentName, switch_fetch_step = T} = S) ->
+
+    Reply = switch_table_fetch(AgentName),
+    locator:update(AgentName, Reply),
+
     timer:apply_after(T * 1000, ?MODULE, exec_switch_table_fetch, [self()]),
     {noreply, S};
+
+
 
 handle_cast(R,S) ->
     error_logger:info_msg(
@@ -118,32 +136,36 @@ code_change(_,S,_) ->
 
 
 % PRIVATE
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% SWITCH FORWARD TABLE FETCH %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% get dot1qTpFdbTable
 switch_table_fetch(Agent) ->
-    Rep         = nocto_snmpm_user:get_dot1q_tpfdb_table(Agent),
-    Formated    = format(Rep),
-    ?LOG(Formated),
-    Formated.
+    Reply = nocto_snmpm_user:get_dot1q_tpfdb_table(Agent),
+    format(Reply).
 
-format(Responce) ->
-    {A,B,C} = filter(Responce),
-    ?LOG({length(Responce), length(A) + length(C)}),
-    ?LOG(lists:last(A)),
-    ?LOG(B),
-    ?LOG(lists:last(C)).
+% dot1qTpFdbTable to [#dot1q_tpfdb_entry{}]
+format(Reply) ->
+    format(Reply, []).
 
-filter(Responce) ->
-    filter({[],[],[]}, Responce).
-filter({Add, Port, Status}, []) ->
-    {Add,Port,Status};
-filter({Add, Port, Status}, 
-        [{varbind, [1,3,6,1,2,1,17,7,1,2,2,1,1|_],_,_,_} = R | Responce]) ->
-    filter({[R|Add],Port,Status}, Responce);
-filter({Add, Port, Status}, 
-        [{varbind, [1,3,6,1,2,1,17,7,1,2,2,1,2|_],_,_,_} = R | Responce]) ->
-    filter({[R|Add],Port,Status}, Responce);
-filter({Add, Port, Status}, 
-        [{varbind, [1,3,6,1,2,1,17,7,1,2,2,1,3|_],_,_,_} = R | Responce]) ->
-    filter({Add,Port,[R|Status]}, Responce);
-filter(_, [ Other | _]) ->
-    ?LOG({'other', Other}),
-    {[a],[b],[c]}.
+format([], MacPorts) ->
+    MacPorts;
+
+format(
+        [{_,[1,3,6,1,2,1,17,7,1,2,2,1,2 | Rest],_,IfIndex,_} | Reply], 
+        MacPorts
+    ) ->
+    [Vlan | Mac] = Rest,
+    Entry = #dot1q_tpfdb_entry{
+        if_index = IfIndex,
+        vlan = Vlan,
+        mac_address = Mac
+    },
+    format(Reply, [Entry | MacPorts]).
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% ROUTER ARP TABLE FETCH %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%router_table_fetch(Agent) ->

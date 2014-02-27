@@ -45,6 +45,7 @@ init([]) ->
             if_infos    = nocto_snmpm_user:get_mib2_interfaces(Agent)
         } || Agent <- Agents],
 
+    ?LOG(AgentsRecords),
     ok = initialize_queries(AgentsRecords),
     {ok, #state{agents = AgentsRecords}}.
 
