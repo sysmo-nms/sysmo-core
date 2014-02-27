@@ -59,7 +59,7 @@
 -define(OID_DOT1Q_VLAN,             [1,3,6,1,2,1,17,7,1,4]).
 -define(OID_DOT1Q_AGING_TIME,       [1,3,6,1,2,1,17,4,2,0]).
 
--define(OID_DOT1Q_FORWARDING_TABLE, [1,3,6,1,2,1,17,4,3]).
+%-define(OID_DOT1Q_FORWARDING_TABLE, [1,3,6,1,2,1,17,4,3]).
 % same as above but include the vlan number (?)
 -define(OID_DOT1Q_TPFDB_TABLE,      [1,3,6,1,2,1,17,7,1,2,2,1,2]). 
 -record(dot1q_tpfdb_entry, {
@@ -70,5 +70,14 @@
 
 
 % MIB2 - 'ip' tree          (IP-MIB extention)
--define(OID_IP_INET_TO_MEDIA_TABLE,   [1,3,6,1,2,1,4,22,1,2]).
--define(OID_IP_ARP_TABLE,   [1,3,6,1,2,1,4,22]).
+% ip informations bind to ifIndexes
+-define(OID_IP_ADDRESS_TABLE,           [1,3,6,1,2,1,4,20]).
+%-define(OID_IP_INET_TO_MEDIA_TABLE,     [1,3,6,1,2,1,4,22]).
+% same as above but include last updated time ?
+-define(OID_IP_INET_TO_PHYSICAL_TABLE,  [1,3,6,1,2,1,4,35]).
+-record(inet_to_physical_entry, {
+    inet,
+    mac,
+    if_index,
+    last_updated
+}).
