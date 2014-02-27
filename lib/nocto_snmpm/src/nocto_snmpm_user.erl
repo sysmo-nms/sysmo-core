@@ -41,7 +41,8 @@
     get_mib2_interfaces/1,
     get_dot1q_aging/1,
     get_dot1q_tpfdb_table/1,
-    get_ipNetToPhysical_table/1
+    get_ipNetToPhysical_table/1,
+    get_ipNetToMedia_table/1
 ]).
 
 %% BEHAVIOUR snmpm_user
@@ -73,6 +74,11 @@ handle_report(_TargetName, _SnmpReport, _UserData) ->
 which_agents() ->
     snmpm:which_agents(?SNMPM_USER).
 
+get_ipNetToMedia_table(Agent) ->
+    Reply = sync_walk_bulk(Agent, ?OID_IP_INET_TO_MEDIA_TABLE),
+    Reply.
+
+% NOT SUPPORTED BY ALCATEL AND ALLIED AT LEAST
 get_ipNetToPhysical_table(Agent) ->
     Reply = sync_walk_bulk(Agent, ?OID_IP_INET_TO_PHYSICAL_TABLE),
     Reply.

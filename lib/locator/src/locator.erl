@@ -19,7 +19,8 @@
 
 -export([
     start_link/0,
-    update/2
+    update_arp_infos/2,
+    update_forward_infos/2
 ]).
 
 -record(state, {
@@ -27,8 +28,11 @@
 }).
 
 % API
-update(Agent, Values) ->
-    gen_server:cast(?MODULE, {update, Agent, Values}).
+update_arp_infos(Agent, Values) ->
+    gen_server:cast(?MODULE, {update_arp_infos, Agent, Values}).
+
+update_forward_infos(Agent, Values) ->
+    gen_server:cast(?MODULE, {update_forward_infos, Agent, Values}).
 
 start_link() ->
     gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
@@ -58,9 +62,14 @@ handle_call(_R, _F, S) ->
 
 
 % CAST
-handle_cast({update, _Agent, _Values},S) ->
+handle_cast({update_forward_infos, _Agent, _Values},S) ->
     % TODO update datas (in memory mnesia)
-    ?LOG('update!'),
+    ?LOG('update switch infos!'),
+    {noreply, S};
+
+handle_cast({update_arp_infos, _Agent, _Values},S) ->
+    % TODO update datas (in memory mnesia)
+    ?LOG('update router infos!'),
     {noreply, S};
 
 handle_cast(_,S) ->

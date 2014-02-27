@@ -72,7 +72,12 @@
 % MIB2 - 'ip' tree          (IP-MIB extention)
 % ip informations bind to ifIndexes
 -define(OID_IP_ADDRESS_TABLE,           [1,3,6,1,2,1,4,20]).
-%-define(OID_IP_INET_TO_MEDIA_TABLE,     [1,3,6,1,2,1,4,22]).
+-define(OID_IP_INET_TO_MEDIA_TABLE,     [1,3,6,1,2,1,4,22]).
+-record(inet_to_media_entry, {
+    inet,
+    mac,
+    if_index
+}).
 % same as above but include last updated time ?
 % XXX do it with MediaTable, Alcatel and Allied did not implement
 % the PhysicalTable.

@@ -113,7 +113,7 @@ handle_cast(exec_switch_table_fetch,
         #state{agent_name = AgentName, switch_fetch_step = T} = S) ->
 
     Reply = switch_table_fetch(AgentName),
-    locator:update(AgentName, Reply),
+    locator:update_forward_infos(AgentName, Reply),
 
     timer:apply_after(T * 1000, ?MODULE, exec_switch_table_fetch, [self()]),
     {noreply, S};
@@ -132,7 +132,7 @@ handle_cast(exec_router_table_fetch,
         #state{agent_name = AgentName, router_fetch_step = T} = S) ->
 
     Reply = router_table_fetch(AgentName),
-    locator:update(AgentName, Reply),
+    locator:update_arp_infos(AgentName, Reply),
 
     timer:apply_after(T * 1000, ?MODULE, exec_router_table_fetch, [self()]),
     {noreply, S};
@@ -201,43 +201,92 @@ sw_format(
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% ROUTER ARP TABLE FETCH %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% get ipNetToPhysicalTable
+% get ipNetToMediaTable
 router_table_fetch(Agent) ->
-    Reply = nocto_snmpm_user:get_ipNetToPhysical_table(Agent),
+    Reply = nocto_snmpm_user:get_ipNetToMedia_table(Agent),
     rt_format(Reply).
 
-% ipNetToPhysicalTable to [#inet_to_physical_entry{}]
 rt_format(Reply) ->
     R   = rt_filter(Reply),
-    Rep = rt_format(R, []),
-    ?LOG(Rep).
+    rt_format([], R).
 
-rt_format({[], _}, Result) ->
-    Result;
-rt_format({[Amac|Tail], Tt}, Result) ->
-    {_,Oid,_,Mac,_} = Amac,
-    [1,3,6,1,2,1,4,35,1,4 | Infos] = Oid,
-    {value, Found, Tt2} = lists:keytake([1,3,6,1,2,1,4,35,1,5 | Infos], 2, Tt),
-    ?LOG({Found, Mac}),
-    rt_format({Tail, Tt2}, Result).
+rt_format(Records, {[],_,_}) ->
+    Records;
+rt_format(Records, {[If|Ifs], Phys, Net}) ->
+    {_, [1,3,6,1,2,1,4,22,1,1 | Rest], _, IfIndex, _} = If,
 
+    PhysOid = [1,3,6,1,2,1,4,22,1,2 | Rest],
+    NetOid  = [1,3,6,1,2,1,4,22,1,3 | Rest],
 
+    {value, PhysFound, Phys2} = lists:keytake(PhysOid, 2, Phys),
+    {value, NetFound, Net2}   = lists:keytake(NetOid,  2, Net),
 
+    {_,_,_, PhysicalAddress,_}  = PhysFound,
+    {_,_,_, NetworkAddress, _}  = NetFound,
 
+    Record = #inet_to_media_entry{
+        inet        = NetworkAddress,
+        mac         = PhysicalAddress,
+        if_index    = IfIndex
+    },
+    rt_format([Record | Records], {Ifs, Phys2, Net2}).
+
+    
 
 rt_filter(Reply) ->
-    rt_filter({[], []}, Reply).
+    rt_filter({[],[],[]}, Reply).
+rt_filter(Result, []) ->
+    Result;
+rt_filter({IfIndex, PhysAdd, NetAdd}, [R|Reply]) ->
+    {_,Oid,_,_,_} = R,
+    case Oid of
+        [1,3,6,1,2,1,4,22,1,1|_] ->
+            rt_filter({[R|IfIndex], PhysAdd, NetAdd}, Reply);
+        [1,3,6,1,2,1,4,22,1,2|_] ->
+            rt_filter({IfIndex, [R|PhysAdd], NetAdd}, Reply);
+        [1,3,6,1,2,1,4,22,1,3|_] ->
+            rt_filter({IfIndex, PhysAdd, [R|NetAdd]}, Reply);
+        _ ->
+            rt_filter({IfIndex, PhysAdd, NetAdd}, Reply)
+    end.
 
-rt_filter(Filtered, []) ->
-    Filtered;
-rt_filter(
-        {Mac, TimeTicks}, 
-        [{_,[1,3,6,1,2,1,4,35,1,4|_],_,_,_} = Mc | Reply] ) ->
-    rt_filter({[Mc|Mac], TimeTicks}, Reply);
-rt_filter(
-        {Mac, TimeTicks}, 
-        [{_,[1,3,6,1,2,1,4,35,1,5|_],_,_,_} = Tt | Reply] ) ->
-    rt_filter({Mac, [Tt|TimeTicks]}, Reply);
-rt_filter(Filtered, [_|Reply]) ->
-    rt_filter(Filtered,Reply).
-
+% get ipNetToPhysicalTable NOT SUPPORTED BY ALCATEL AND ALLIED AT LEAST
+% router_table_fetch(Agent) ->
+%     Reply = nocto_snmpm_user:get_ipNetToPhysical_table(Agent),
+%     rt_format(Reply).
+% 
+% % ipNetToPhysicalTable to [#inet_to_physical_entry{}]
+% rt_format(Reply) ->
+%     R   = rt_filter(Reply),
+%     Rep = rt_format(R, []),
+%     ?LOG(Rep).
+% 
+% rt_format({[], _}, Result) ->
+%     Result;
+% rt_format({[Amac|Tail], Tt}, Result) ->
+%     {_,Oid,_,Mac,_} = Amac,
+%     [1,3,6,1,2,1,4,35,1,4 | Infos] = Oid,
+%     {value, Found, Tt2} = lists:keytake([1,3,6,1,2,1,4,35,1,5 | Infos], 2, Tt),
+%     ?LOG({Found, Mac}),
+%     rt_format({Tail, Tt2}, Result).
+% 
+% 
+% 
+% 
+% 
+% rt_filter(Reply) ->
+%     rt_filter({[], []}, Reply).
+% 
+% rt_filter(Filtered, []) ->
+%     Filtered;
+% rt_filter(
+%         {Mac, TimeTicks}, 
+%         [{_,[1,3,6,1,2,1,4,35,1,4|_],_,_,_} = Mc | Reply] ) ->
+%     rt_filter({[Mc|Mac], TimeTicks}, Reply);
+% rt_filter(
+%         {Mac, TimeTicks}, 
+%         [{_,[1,3,6,1,2,1,4,35,1,5|_],_,_,_} = Tt | Reply] ) ->
+%     rt_filter({Mac, [Tt|TimeTicks]}, Reply);
+% rt_filter(Filtered, [_|Reply]) ->
+%     rt_filter(Filtered,Reply).
+% 
