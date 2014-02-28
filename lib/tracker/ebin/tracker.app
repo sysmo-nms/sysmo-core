@@ -38,7 +38,8 @@
                 btracker_logger_text,
                 btracker_logger_events,
                 btracker_probe_nagios,
-                btracker_probe_snmp
+                btracker_probe_snmp,
+                btracker_probe_standard_snmp
             ]},
         {registered, [
                 tracker_sup,

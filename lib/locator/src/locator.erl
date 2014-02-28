@@ -42,12 +42,16 @@ start_link() ->
 % GEN_SERVER
 init([]) ->
     Agents = snmp_manager:which_agents(),
+    % XXX should call:
+    % btracker_probe_standard_snmp:sys_infos/1 and
+    % btracker_probe_standard_snmp:if_infos/1.
     AgentsRecords = [
         #locator_agent{
             agent_name  = Agent,
             sys_infos   = snmp_manager:get_mib2_system(Agent),
             if_infos    = snmp_manager:get_mib2_interfaces(Agent)
         } || Agent <- Agents],
+    % XXX END
 
     ?LOG(AgentsRecords),
     ok = initialize_queries(AgentsRecords),

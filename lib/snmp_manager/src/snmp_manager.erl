@@ -146,6 +146,8 @@ get_mib2_system(Agent) ->
             []
     end.
 
+% TODO get_mib2_interfaces_perfs(Agent) ->
+
 get_mib2_interfaces(Agent) ->
     IfIndexes       = sync_walk_bulk(Agent, ?OID_IF_INDEX),
     IfDescr         = sync_walk_bulk(Agent, ?OID_IF_DESCR),
