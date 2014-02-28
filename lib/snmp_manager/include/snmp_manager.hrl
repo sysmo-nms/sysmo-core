@@ -61,7 +61,9 @@
 
 %-define(OID_DOT1Q_FORWARDING_TABLE, [1,3,6,1,2,1,17,4,3]).
 % same as above but include the vlan number (?)
+% XXX not supported by allied cheaper switchs.
 -define(OID_DOT1Q_TPFDB_TABLE,      [1,3,6,1,2,1,17,7,1,2,2,1,2]). 
+
 -record(dot1q_tpfdb_entry, {
     if_index,
     vlan,
