@@ -250,6 +250,9 @@ sync_walk_bulk(Agent, StartOID, LastOID, Result) ->
                     lists:append([Result, FilteredR])
             end;
 
+        {ok, {noSuchName,_,_},_} -> 
+            FilteredR = remove_out_of_tree_OIDs(StartOID, Result),
+            FilteredR;
         _ ->
             error_logger:info_msg(
                 "~p ~p: sync_walk_bulk received: ~p", [?MODULE, ?LINE, Reply]
