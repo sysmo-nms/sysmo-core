@@ -22,7 +22,7 @@
 -behaviour(beha_tracker_probe).
 -include_lib("snmp/include/snmp_types.hrl").
 -include("../../include/tracker.hrl").
--define(SNMP_USER, "nocto_snmpm_user").
+-define(SNMP_USER, "noctopus_snmpm_user").
 
 %% beha_tracker_probe exports
 -export([

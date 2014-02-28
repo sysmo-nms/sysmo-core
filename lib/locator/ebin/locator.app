@@ -15,7 +15,7 @@
             ]
         },
         {applications, 
-            [kernel, stdlib, nocto_snmpm]
+            [kernel, stdlib, tracker, snmp_manager]
         },
         {start_phases, []},
         {mod, {locator_app, []}}

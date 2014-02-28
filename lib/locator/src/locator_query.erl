@@ -1,7 +1,7 @@
 -module(locator_query).
 -behaviour(gen_server).
 -include("include/locator.hrl").
--include("../nocto_snmpm/include/nocto_snmpm.hrl").
+-include("../snmp_manager/include/snmp_manager.hrl").
 
 -export([
     init/1,
@@ -76,7 +76,7 @@ init(#locator_agent{
     random_router_table_fetch(self()),
     % END
 
-    _AgingTime = nocto_snmpm_user:get_dot1q_aging(AgentName),
+    _AgingTime = snmp_manager:get_dot1q_aging(AgentName),
 
 
     {ok, 
@@ -175,7 +175,7 @@ code_change(_,S,_) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % get dot1qTpFdbTable
 switch_table_fetch(Agent) ->
-    Reply = nocto_snmpm_user:get_dot1q_tpfdb_table(Agent),
+    Reply = snmp_manager:get_dot1q_tpfdb_table(Agent),
     sw_format(Reply).
 
 % dot1qTpFdbTable to [#dot1q_tpfdb_entry{}]
@@ -203,7 +203,7 @@ sw_format(
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % get ipNetToMediaTable
 router_table_fetch(Agent) ->
-    Reply = nocto_snmpm_user:get_ipNetToMedia_table(Agent),
+    Reply = snmp_manager:get_ipNetToMedia_table(Agent),
     rt_format(Reply).
 
 rt_format(Reply) ->
@@ -252,7 +252,7 @@ rt_filter({IfIndex, PhysAdd, NetAdd}, [R|Reply]) ->
 
 % get ipNetToPhysicalTable NOT SUPPORTED BY ALCATEL AND ALLIED AT LEAST
 % router_table_fetch(Agent) ->
-%     Reply = nocto_snmpm_user:get_ipNetToPhysical_table(Agent),
+%     Reply = snmp_manager:get_ipNetToPhysical_table(Agent),
 %     rt_format(Reply).
 % 
 % % ipNetToPhysicalTable to [#inet_to_physical_entry{}]

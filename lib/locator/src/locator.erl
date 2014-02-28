@@ -1,8 +1,8 @@
 -module(locator).
 -behaviour(gen_server).
 -include("include/locator.hrl").
--include("../nocto_snmpm/include/nocto_snmpm.hrl").
--define(SNMP_USER, "nocto_snmpm_user").
+-include("../snmp_manager/include/snmp_manager.hrl").
+-define(SNMP_USER, "snmp_manager").
 
 -define(SYS_NAME_OID,       [1,3,6,1,2,1,1,5,0]).
 -define(SYS_SERVICES_OID,   [1,3,6,1,2,1,1,7,0]).
@@ -41,12 +41,12 @@ start_link() ->
 
 % GEN_SERVER
 init([]) ->
-    Agents = nocto_snmpm_user:which_agents(),
+    Agents = snmp_manager:which_agents(),
     AgentsRecords = [
         #locator_agent{
             agent_name  = Agent,
-            sys_infos   = nocto_snmpm_user:get_mib2_system(Agent),
-            if_infos    = nocto_snmpm_user:get_mib2_interfaces(Agent)
+            sys_infos   = snmp_manager:get_mib2_system(Agent),
+            if_infos    = snmp_manager:get_mib2_interfaces(Agent)
         } || Agent <- Agents],
 
     ?LOG(AgentsRecords),

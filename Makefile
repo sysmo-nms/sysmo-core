@@ -2,7 +2,7 @@
 
 export REL_NAME        = noctopus
 export REL_VERSION     = "0.2.1"
-export MODS = supercast tracker tlogger_rrd tlogger_text tracker_events locator nocto_snmpm
+export MODS = supercast tracker tlogger_rrd tlogger_text tracker_events locator snmp_manager
 
 
 compile:

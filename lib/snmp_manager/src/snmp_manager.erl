@@ -18,10 +18,10 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
--module(nocto_snmpm_user).
+-module(snmp_manager).
 -behaviour(snmpm_user).
 -include_lib("snmp/include/snmp_types.hrl").
--include("include/nocto_snmpm.hrl").
+-include("include/snmp_manager.hrl").
 
 %% BEHAVIOUR snmpm_user exports
 -export([
@@ -88,6 +88,7 @@ get_dot1q_tpfdb_table(Agent) ->
     Reply.
 
 get_dot1q_aging(Agent) ->
+    % TODO Handle loss of PDUs: implement a retry count on timeout.
     Reply = snmpm:sync_get(?SNMPM_USER, Agent, [?OID_DOT1Q_AGING_TIME]),
     case Reply of
         {ok, {noError, 0, [Rep]}, _} ->
@@ -101,6 +102,7 @@ get_dot1q_aging(Agent) ->
     end.
 
 get_mib2_system(Agent) ->
+    % TODO Handle loss of PDUs: implement a retry count on timeout.
     Reply = snmpm:sync_get(?SNMPM_USER, Agent, [
         ?OID_SYS_DESCR,
         ?OID_SYS_OBJECT_ID,
@@ -217,6 +219,8 @@ generate_if_records([Index|OtherIndexes], Values, Accum) ->
 % SNMP BULK WALK IMPLEMENTATION
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 sync_walk_bulk(Agent, Oid) ->
+    % TODO Handle loss of PDUs: implement a retry count on timeout.
+    % sync_walk_bulk(Agent, Oid, Retry) ->
     sync_walk_bulk(Agent, Oid, Oid, []).
 sync_walk_bulk(Agent, StartOID, LastOID, Result) ->
     Reply = snmpm:sync_get_bulk(
@@ -260,6 +264,7 @@ still_in_tree(_,_) ->
 
 % PRIVATE
 decode_services(S1) ->
+    % TODO use bit-syntax
     case S1 >= 64 of
         true  ->
             Application = true,

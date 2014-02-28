@@ -1,9 +1,9 @@
-{application, nocto_snmpm,
+{application, snmp_manager,
     [
         {description, "library implementing the snmpm_user behaviour"},
         {vsn, "0.1.0"},
         {modules, [
-                nocto_snmpm_user
+                snmp_manager
             ]
         },
         {registered, []},
