@@ -2,7 +2,6 @@
 -behaviour(gen_server).
 -include("include/locator.hrl").
 -include("../snmp_manager/include/snmp_manager.hrl").
--define(SNMP_USER, "snmp_manager").
 
 -define(SYS_NAME_OID,       [1,3,6,1,2,1,1,5,0]).
 -define(SYS_SERVICES_OID,   [1,3,6,1,2,1,1,7,0]).
@@ -33,6 +32,7 @@ update_arp_infos(Agent, Values) ->
 
 update_forward_infos(Agent, Values) ->
     gen_server:cast(?MODULE, {update_forward_infos, Agent, Values}).
+
 
 start_link() ->
     gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
