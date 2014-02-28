@@ -41,22 +41,30 @@ start_link() ->
 
 % GEN_SERVER
 init([]) ->
-    %Agents = snmp_manager:which_agents(),
+    Agents = snmp_manager:which_agents(),
     % XXX should call:
     % btracker_probe_standard_snmp:sys_infos/1 and
-    % btracker_probe_standard_snmp:if_infos/1.
-%     AgentsRecords = [
-%         #ipman_agent{
-%             agent_name  = Agent,
-%             sys_infos   = snmp_manager:get_mib2_system(Agent),
-%             if_infos    = snmp_manager:get_mib2_interfaces(Agent)
-%         } || Agent <- Agents],
+    AgentsRecords = [
+        #ipman_agent{
+            agent_name  = Agent,
+            sys_infos   = snmp_manager:get_mib2_system(Agent),
+            net_infos   = format_ipAddrTable(
+                snmp_manager:get_ipAddrTable(Agent)
+            )
+        } || Agent <- Agents],
     % XXX END
 
-    %{ok, AgentsRecords}.
-    {ok, state}.
+    % filter non router agents:
+%     RoutersRecords = lists:filter(
+%     fun(#ipman_agent{sys_infos = #mib2_system{sys_services = Services}}) ->
+%         case Services of
+%             #services{internet = true}  -> true;
+%             #services{internet = false} -> false
+%     end, AgentsRecords),
 
-
+    % TODO subscribe to tracker events triggered by 
+    % btracker_probe_standard_snmp module
+    {ok, AgentsRecords}.
 
 % CALL 
 handle_call(_R, _F, S) ->
@@ -82,3 +90,48 @@ terminate(_,_) ->
 % CHANGE
 code_change(_,S,_) ->
     {ok, S}.
+
+% PRIVATE
+format_ipAddrTable(Table) ->
+    Process = filter_ipAddrTable(Table),
+    Result = format_ipAddrTable([], Process),
+    ?LOG(Result).
+format_ipAddrTable(Records, {[],_,_}) ->
+    Records;
+format_ipAddrTable(Records, {[Add|Adds],Masks,IfIndexes}) ->
+    {_, [1,3,6,1,2,1,4,20,1,1|Rest],_, Address,_} = Add,
+
+    IfOid   = [1,3,6,1,2,1,4,20,1,2 | Rest],
+    MaskOid = [1,3,6,1,2,1,4,20,1,3 | Rest],
+
+    {value, MaskFound, Mask2}       = lists:keytake(MaskOid, 2, Masks),
+    {value, IfFound, IfIndexes2}    = lists:keytake(IfOid, 2, IfIndexes),
+
+    {_,_,_, Mask,_} = MaskFound,
+    {_,_,_, If,  _} = IfFound,
+
+    Record = #ip_addr_entry{
+        ip          = Address,
+        mask        = Mask,
+        if_index    = If
+    },
+
+    format_ipAddrTable([Record|Records], {Adds, Mask2, IfIndexes2}).
+
+
+filter_ipAddrTable(Table) ->
+    filter_ipAddrTable({[],[],[]}, Table).
+filter_ipAddrTable(Process, []) ->
+    Process;
+filter_ipAddrTable({Addr, Mask, IfIndex}, [H|Tail]) ->
+    {_,Oid,_,_,_} = H,
+    case Oid of
+        [1,3,6,1,2,1,4,20,1,1|_] ->
+            filter_ipAddrTable({[H|Addr],Mask,IfIndex}, Tail);
+        [1,3,6,1,2,1,4,20,1,2|_] ->
+            filter_ipAddrTable({Addr,Mask,[H|IfIndex]}, Tail);
+        [1,3,6,1,2,1,4,20,1,3|_] ->
+            filter_ipAddrTable({Addr,[H|Mask],IfIndex}, Tail);
+        _ ->
+            filter_ipAddrTable({Addr,Mask,IfIndex}, Tail)
+    end.

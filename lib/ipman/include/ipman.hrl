@@ -3,5 +3,11 @@
 -record(ipman_agent, {
     agent_name,
     sys_infos,
-    if_infos
+    net_infos
+}).
+
+-record(ip_addr_entry, {
+    ip,
+    mask,
+    if_index
 }).

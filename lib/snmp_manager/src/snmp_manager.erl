@@ -41,6 +41,7 @@
     get_mib2_interfaces/1,
     get_dot1q_aging/1,
     get_dot1q_tpfdb_table/1,
+    get_ipAddrTable/1,
     get_ipNetToPhysical_table/1,
     get_ipNetToMedia_table/1
 ]).
@@ -70,9 +71,16 @@ handle_report(_TargetName, _SnmpReport, _UserData) ->
     io:format("handle_report ~p~n", [?MODULE]),
     ignore.
 
+
+
+
 %% API
 which_agents() ->
     snmpm:which_agents(?SNMPM_USER).
+
+get_ipAddrTable(Agent) ->
+    Reply = sync_walk_bulk(Agent, ?OID_IP_ADDRESS_TABLE),
+    Reply.
 
 get_ipNetToMedia_table(Agent) ->
     Reply = sync_walk_bulk(Agent, ?OID_IP_INET_TO_MEDIA_TABLE),
