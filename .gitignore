@@ -28,3 +28,6 @@ noctopus.script
 noctopus.boot
 lib/errd/ebin/*
 cfg/tracker.conf
+*.win32
+lib/supercast/include/ModSupercast.hrl
+lib/supercast/include/ModTracker.hrl
