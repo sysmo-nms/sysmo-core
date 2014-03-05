@@ -85,9 +85,9 @@ tar:
 	@rm -f $(REL_NAME).tar.gz
 	@cp -R var $(TMP_DIR)/
 	@mkdir $(TMP_DIR)/bin
-	@cp release_tools/bin_win32/noctopus.bat $(TMP_DIR)/bin/
-	@cp release_tools/bin_win32/install.bat $(TMP_DIR)
-	@cp release_tools/sys.config.src.win $(TMP_DIR)/releases/$(REL_VERSION)/
+	@cp release_tools/win32/noctopus.bat $(TMP_DIR)/bin/
+	@cp release_tools/win32/install.bat $(TMP_DIR)
+	@cp release_tools/win32/sys.config.src.win $(TMP_DIR)/releases/$(REL_VERSION)/
 	@mkdir $(TMP_DIR)/cfg
 	@touch $(TMP_DIR)/cfg/tracker.conf
 	@tar -czf $(REL_NAME)-$(REL_VERSION).tar.gz -C $(TMP_DIR) .
