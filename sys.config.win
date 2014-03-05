@@ -65,7 +65,7 @@
     },
     {tlogger_rrd,
         [
-            {command,   "C:\Program Files\RRDtoll\rrdtool - "}
+            {command,   "C:\Program Files\RRDtool\rrdtool - "}
         ]
     },
     {tlogger_text,
