@@ -4,12 +4,14 @@
         {vsn, "0.1.0"},
         {modules, [
                 ipman,
+                ipman_sup,
                 ipman_app
             ]
         },
         {registered, 
             [
-                ipman
+                ipman,
+                ipman_sup
             ]
         },
         {applications, 
