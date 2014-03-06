@@ -31,3 +31,4 @@ cfg/tracker.conf
 *.win32
 lib/supercast/include/ModSupercast.hrl
 lib/supercast/include/ModTracker.hrl
+!var/httpd/docroot/wiki_base.html
