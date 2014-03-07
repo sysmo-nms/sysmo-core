@@ -72,7 +72,7 @@ start: local-release
 
 
 # RELEASES
-release: clean compile tar
+release: var-clean rel-clean compile tar
 
 TAR= "noctopus.tar.gz"
 TMP_DIR= "/tmp/nms_tar_dir"
