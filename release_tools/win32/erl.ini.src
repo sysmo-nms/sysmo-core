@@ -1,0 +1,4 @@
+[erlang]
+Bindir=%INSTALLDIR%\\noctopus-server\\erts-5.10.4\\bin
+Progname=erl
+Rootdir=%INSTALLDIR%\\noctopus-server
