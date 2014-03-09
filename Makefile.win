@@ -2,7 +2,7 @@
 # Used winthin cygwin
 
 export REL_NAME        = noctopus
-export REL_VERSION     = "0.2.1"
+export REL_VERSION     = 0.2.1
 export MODS = supercast snmp_manager tracker tlogger_rrd tlogger_text \
                 tracker_events locator ipman
 
@@ -30,6 +30,7 @@ var-clean:
 rel-clean:
 	rm -f $(REL_NAME).script
 	rm -f $(REL_NAME).boot
+	rm -rf $(REL_NAME)-$(REL_VERSION).win32
 
 clean: var-clean 
 	rm -f erl_crash.dump
@@ -80,16 +81,15 @@ tar:
 	@echo "Generating $(REL_NAME)-$(REL_VERSION).win32 directory"
 	@$(ERL) -noinput $(ERL_NMS_PATH) -eval $(ERL_REL_COMM2)
 	@rm -rf $(TMP_DIR)
-	@mkdir $(TMP_DIR)
+	@mkdir  $(TMP_DIR)
 	@tar xzf $(REL_NAME).tar.gz -C $(TMP_DIR)
-	@rm -f $(REL_NAME).tar.gz
+	@rm -f   $(REL_NAME).tar.gz
 	@cp -R var $(TMP_DIR)/
 	@mkdir $(TMP_DIR)/bin
 	@cp release_tools/win32/noctopus.bat.src $(TMP_DIR)/bin/
 	@cp release_tools/win32/sys.config.src   $(TMP_DIR)/releases/$(REL_VERSION)/
 	@mkdir $(TMP_DIR)/cfg
 	@touch $(TMP_DIR)/cfg/tracker.conf
-	@tar -czf $(REL_NAME)-$(REL_VERSION).tar.gz -C $(TMP_DIR) .
 	@cp -r $(TMP_DIR) $(REL_NAME)-$(REL_VERSION).win32
 
 local-release: compile $(REL_NAME).script
