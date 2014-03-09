@@ -9,7 +9,8 @@
             {pdu_dispatch,
                 [
                     % {supercast_module_behaviour, asn_key}
-                    {tracker_api, modTrackerPDU}
+                    {tracker_api, modTrackerPDU},
+                    {locator_api, modLocatorPDU}
                 ]
             },
 
@@ -21,7 +22,8 @@
             % module.
             {main_channels,
                 [
-                    'target-MasterChan'
+                    'target-MasterChan',
+                    'locator-MasterChan'
                 ]
             },
 
@@ -37,9 +39,9 @@
                 [
                     {enabled, true},
                     {ssl_conf, [
-                        {certificate,   "%CONFIG_DIR%\ssl\certificate.pem"},
-                        {caCertificate, "%CONFIG_DIR%\ssl\request.pem"},
-                        {key,           "%CONFIG_DIR%\ssl\key.pem"}
+                        {certificate,   "%INSTALL_DIR%\cfg\ssl\certificate.pem"},
+                        {caCertificate, "%INSTALL_DIR%\cfg\ssl\request.pem"},
+                        {key,           "%INSTALL_DIR%\cfg\ssl\key.pem"}
                     ]},
                     {port, 4443},
                     {maxconn, 50},
@@ -50,8 +52,8 @@
     },
     {tracker,
         [
-            {config_file,           "%CONFIG_DIR%\tracker.conf"},
-            {targets_data_dir,      "%VAR_DIR%\tracker"},
+            {config_file,           "%INSTALL_DIR%\cfg\tracker.conf"},
+            {targets_data_dir,      "%INSTALL_DIR%\var\tracker"},
             {master_chan_read_perm, ["admin"]},
             {probe_modules,
                 [
@@ -63,7 +65,7 @@
     },
     {tlogger_rrd,
         [
-            {command,   "%RRDTOOL_PATH% - "}
+            {command,   "%RRDTOOL_EXE% - "}
         ]
     },
     {tlogger_text,
@@ -75,13 +77,13 @@
         [
             {start_dist_ac, false},
             {inet_dist_listen_min, 9000},
-            {inet_dist_listen_max, 9000},
-            {error_logger, {file, "%VAR_DIR%\log\error_logger.log"}}
+            {inet_dist_listen_max, 9005}
+            %{error_logger, {file, "%INSTALL_DIR%\var\log\error_logger.log"}}
         ]
     },
     {sasl,
         [
-            {sasl_error_logger, {file, "%VAR_DIR%\log\sasl_error_logger.log"}}
+            {sasl_error_logger, {file, "%INSTALL_DIR%\var\log\sasl_error_logger.log"}}
         ]
     },
     {snmp,
@@ -92,8 +94,8 @@
                     {versions, [v2,v3]},
                     {config,
                         [
-                            {dir,       "%VAR_DIR%\snmp"},
-                            {db_dir,    "%VAR_DIR%\snmp"},
+                            {dir,       "var/snmp"},
+                            {db_dir,    "var/snmp"},
                             {verbosity, info},
                             {repair,    true},
                             {auto_save, 5000}
@@ -116,8 +118,26 @@
     },
     {mnesia,
         [
-            {dir,       "%VAR_DIR%\mnesia"},
+            {dir,       "%INSTALL_DIR\var\mnesia"},
             {debug,     none}
+        ]
+    },
+    {locator,
+        []
+    },
+    {inets,
+        [
+            {services,
+                [
+                    {httpd,
+                        [
+            {proplist_file, "%INSTALL_DIR\var\httpd\8080_props.conf"},
+            {debug,         disable},
+            {accept_timeout, 3000}
+                        ]
+                    }
+                ]
+            }
         ]
     }
 ].
