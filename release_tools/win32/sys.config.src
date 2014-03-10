@@ -65,7 +65,7 @@
     },
     {tlogger_rrd,
         [
-            {command,   "%RRDTOOL_EXE% - "}
+            {command,   "rrdtool - "}
         ]
     },
     {tlogger_text,
