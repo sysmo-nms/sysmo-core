@@ -1,0 +1,137 @@
+# Makefile 
+
+UNAME = $(shell uname)
+CYGW  = $(findstring CYGWIN, $(UNAME))
+ifeq ($(CYGW), CYGWIN)
+    RELEASE        = windows-release
+    LOCAL_RELEASE  = windows-local-release
+    export ERL     = /cygdrive/c/Program\ Files/erl5.10.4/bin/erl
+    export ERLC    = /cygdrive/c/Program\ Files/erl5.10.4/bin/erlc -Werror
+    export ASNC    = /cygdrive/c/Program\ Files/erl5.10.4/bin/erlc -Werror -bber
+else
+    RELEASE        = unix-release
+    LOCAL_RELEASE  = unix-local-release
+    export ERL     = /opt/erlang_otp_R16B03/bin/erl
+    export ERLC    = /opt/erlang_otp_R16B03/bin/erlc -Werror
+    export ASNC    = /opt/erlang_otp_R16B03/bin/erlc -Werror -bber
+endif
+
+export MAKE        = /usr/bin/make
+export REL_NAME    = noctopus
+export REL_VERSION = 0.2.1
+export MODS        = supercast snmp_manager tracker tlogger_rrd \
+                         tlogger_text tracker_events locator ipman
+MODS_EBIN_DIR      = $(addprefix ./lib/, $(addsuffix /ebin, $(MODS)))
+MODS_DEF_FILE      = $(foreach app, $(MODS_EBIN_DIR), $(wildcard $(app)/*.app))
+ERL_NMS_PATH       = $(addprefix -pa ,$(MODS_EBIN_DIR))
+ERL_REL_COMM       = '\
+    systools:make_script("$(REL_NAME)", [local]),\
+    init:stop()\
+'
+ERL_REL_COMM2   = '\
+    systools:make_script("$(REL_NAME)", []), \
+    systools:make_tar("$(REL_NAME)", [{erts, code:root_dir()}]),\
+    init:stop()\
+'
+compile:
+	@cd lib; $(MAKE)
+
+test:
+	@cd lib; $(MAKE) test
+
+doc:
+	@cd lib; $(MAKE) doc
+
+clean: var-clean rel-clean
+	rm -f erl_crash.dump
+	rm -f MnesiaCore.*
+	@cd lib; $(MAKE) clean
+
+var-clean:
+	rm -rf var/tracker/*/
+	rm -f var/snmp/snmpm_config_db
+	rm -f var/log/*.log
+	rm -f var/mnesia/*.LOG
+	rm -f var/mnesia/*.DAT
+	rm -f var/mnesia/*.DCD
+	rm -f var/mnesia/*.DCL
+
+rel-clean:
+	rm -f $(REL_NAME).script
+	rm -f $(REL_NAME).boot
+	rm -f sys.config
+	rm -f var/httpd/8080_props.conf
+	rm -f $(REL_NAME)-$(REL_VERSION).tar.gz
+	rm -rf $(REL_NAME)-$(REL_VERSION).win32
+
+start: rel-clean $(LOCAL_RELEASE)
+	@$(ERL) -sname server -boot ./$(REL_NAME) -config ./sys
+
+release: $(RELEASE)
+
+$(REL_NAME).script: $(MODS_DEF_FILE) $(REL_NAME).rel
+	@echo "Generating $(REL_NAME).script and $(REL_NAME).boot files..."
+	@$(ERL) -noinput $(ERL_NMS_PATH) -eval $(ERL_REL_COMM)
+
+
+##########################
+# WINDOWS RELEASES BEGIN #
+##########################
+windows-local-release: compile $(REL_NAME).script
+	@cp release_tools/local/sys.config.win ./sys.config
+	@cp release_tools/local/8080_props.conf.win var/httpd/8080_props.conf
+
+windows-release: var-clean rel-clean compile
+	@echo "Generating $(REL_NAME)-$(REL_VERSION).win32 directory"
+	@$(ERL) -noinput $(ERL_NMS_PATH) -eval $(ERL_REL_COMM2)
+	@rm -rf $(TMP_DIR)
+	@mkdir  $(TMP_DIR)
+	@tar xzf $(REL_NAME).tar.gz -C $(TMP_DIR)
+	@rm -f   $(REL_NAME).tar.gz
+	@cp -R var $(TMP_DIR)/
+	@mkdir $(TMP_DIR)/bin
+	@cp release_tools/win32/noctopus.bat.src $(TMP_DIR)/bin/noctopus.bat
+	@cp release_tools/win32/sys.config.src   $(TMP_DIR)/releases/$(REL_VERSION)/sys.config.src
+	@cp release_tools/win32/erl.ini.src      $(TMP_DIR)/erts-5.10.4/bin/erl.ini.src
+	@cp -f release_tools/win32/8080_props.conf.src  $(TMP_DIR)/var/httpd/
+	@mkdir $(TMP_DIR)/cfg
+	@touch $(TMP_DIR)/cfg/tracker.conf
+	@cp -r $(TMP_DIR) $(REL_NAME)-$(REL_VERSION).win32
+########################
+# WINDOWS RELEASES END #
+########################
+
+
+
+
+
+
+
+#######################
+# UNIX RELEASES BEGIN #
+#######################
+unix-local-release: compile $(REL_NAME).script
+	cp release_tools/local/sys.config.unix ./sys.config
+	cp release_tools/local/8080_props.conf.unix var/httpd/8080_props.conf
+
+TAR         = "noctopus.tar.gz"
+TMP_DIR     = "/tmp/nms_tar_dir"
+unix-release: var-clean rel-clean compile
+	@echo "Generating $(REL_NAME)-$(REL_VERSION).tar.gz"
+	@$(ERL) -noinput $(ERL_NMS_PATH) -eval $(ERL_REL_COMM2)
+	@rm -rf $(TMP_DIR)
+	@mkdir $(TMP_DIR)
+	@tar xzf $(REL_NAME).tar.gz -C $(TMP_DIR)
+	@rm -f $(REL_NAME).tar.gz
+	@cp -R var $(TMP_DIR)/
+	@mkdir $(TMP_DIR)/bin
+	@cp release_tools/unix/noctopus $(TMP_DIR)/bin/
+	@cp release_tools/unix/install $(TMP_DIR)
+	@cp release_tools/unix/sys.config.src $(TMP_DIR)/releases/$(REL_VERSION)/
+	@cp release_tools/unix/8080_props.conf $(TMP_DIR)/var/httpd/
+	@mkdir $(TMP_DIR)/cfg
+	@touch $(TMP_DIR)/cfg/tracker.conf
+	@tar -czf $(REL_NAME)-$(REL_VERSION).tar.gz -C $(TMP_DIR) .
+#####################
+# UNIX RELEASES END #
+#####################
