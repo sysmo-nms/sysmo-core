@@ -36,7 +36,6 @@ init([]) ->
 handle_call({exec, Command}, _F, P) ->
     erlang:port_command(P, Command),
     Rep = get_response(P),
-    io:format("responce is ~p~n", [Rep]),
     {reply, Rep, P};
 
 handle_call({dump, File}, _F, P) ->
@@ -56,29 +55,19 @@ code_change(_,S,_) ->
     {ok, S}.
 
 get_response(Port) ->
-    get_response(Port, "").
+    get_response(Port, []).
 get_response(Port, Reply) ->
     receive
-        {Port, {data, {eol, "ERROR"} = Line}} ->
-            io:format("~p~n", [Line]),
-            ok;
-        {Port, {data, {eol, "ERROR: " ++ _} = Line }} ->
-            %io:format("ERROR: ~p ~p~n", [?MODULE, ?LINE]),
-            io:format("~p~n", [Line]),
-            %{error, lists:append(Reply, "ERROR: " ++ Line)};
-            error;
-        {Port, {data, {eol, "OK"} = Line}} ->
-            io:format("~p~n", [Line]),
-            ok;
+        {Port, {data, {eol, "ERROR" = Line}}} ->
+            {error, lists:append([Reply, Line])};
+        {Port, {data, {eol, "ERROR: " ++ _ = Line}}} ->
+            {error, lists:append([Reply, Line])};
+        {Port, {data, {eol, "OK" = Line}}} ->
+            {ok, lists:append([Reply, Line])};
         {Port, {data, {eol, "OK " ++ _} = Line}} ->
-            io:format("~p~n", [Line]),
-            %{ok, lists:append(Reply, "OK: " ++ Line)};
-            ok;
+            {ok, lists:append([Reply, Line])};
         {Port, {data, Line}} ->
-            io:format("~p~n", [Line]),
-            %get_response(Port, lists:append([Reply, Line]))
-            get_response(Port, Reply)
-    after 5000 -> 
+            get_response(Port, lists:append([Reply, Line]))
+    after 500 -> 
             timeout
     end.
-
