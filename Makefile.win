@@ -6,17 +6,18 @@ export REL_VERSION     = 0.2.1
 export MODS = supercast snmp_manager tracker tlogger_rrd tlogger_text \
                 tracker_events locator ipman
 
+export MAKE = /usr/bin/make
 
 compile:
-	@cd lib; make
+	@cd lib; $(MAKE)
 
 all: compile pdu_lib test local-release doc
 
 test:
-	@cd lib; make test
+	@cd lib; $(MAKE) test
 
 doc:
-	@cd lib; make doc
+	@cd lib; $(MAKE) doc
 
 var-clean:
 	rm -rf var/tracker/*/
@@ -40,7 +41,7 @@ clean: var-clean
 	rm -f $(REL_NAME).boot
 	rm -rf *.win32
 	rm -f MnesiaCore.*
-	@cd lib; make clean
+	@cd lib; $(MAKE) clean
 
     
 
