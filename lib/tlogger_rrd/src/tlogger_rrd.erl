@@ -36,6 +36,7 @@ init([]) ->
 handle_call({exec, Command}, _F, P) ->
     erlang:port_command(P, Command),
     Rep = get_response(P),
+    io:format("responce is ~p~n", [Rep]),
     {reply, Rep, P};
 
 handle_call({dump, File}, _F, P) ->
@@ -55,14 +56,22 @@ code_change(_,S,_) ->
     {ok, S}.
 
 get_response(Port) ->
+    get_response(Port, "").
+get_response(Port, Reply) ->
     receive
-        {Port, {data, {eol, "ERROR: " ++ _}}} ->
-            io:format("ERROR: ~p ~p~n", [?MODULE, ?LINE]),
+        {Port, {data, {eol, "ERROR: " ++ _} = Line }} ->
+            %io:format("ERROR: ~p ~p~n", [?MODULE, ?LINE]),
+            io:format("~p~n", [Line]),
+            %{error, lists:append(Reply, "ERROR: " ++ Line)};
             error;
-        {Port, {data, {eol, "OK " ++ _}}} ->
+        {Port, {data, {eol, "OK " ++ _} = Line}} ->
+            io:format("~p~n", [Line]),
+            %{ok, lists:append(Reply, "OK: " ++ Line)};
             ok;
-        {Port, {data, _}} ->
-            get_response(Port)
+        {Port, {data, Line}} ->
+            io:format("~p~n", [Line]),
+            %get_response(Port, lists:append([Reply, Line]))
+            get_response(Port, Reply)
     after 5000 -> 
             timeout
     end.
