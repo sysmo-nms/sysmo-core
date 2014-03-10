@@ -1,48 +1,25 @@
-#MODULE/OTHER           #PRIORITY   #COMPLETED
-- supercast               HIGH          100% Module events and client
-                                                communication/auth
-- tracker                 HIGH          100%
-Live list of targets, associate tags inform they produce and own the
-mermisions associated. 
-- probe_snmp_v2           HIGH          100%
-SNMP utility and monitoring + Live list of snmp targets
-- probe nagios compatible HIGH          100%
-Add the possibility to not interpret perf values. It should not be encouraged
-since these values are not standardized.
-- probe logging text      HIGH          100%
-- probe logging rrd       HIGH          100%
-Generate data for RRD or flat file for example. These files must be
-understood by the client.
-- create read only client               100%
-Using Qt
----------> RELEASE 0.9
+##################
+# MODULE MONITOR #
+##################
+### HIGH
+- SNMP Elements autogen snmpwalks/rrdtool with MIB2 interface tree,
+(packets, discard, %discard, error, %error)
+- Simple API add snmp element with perms
+- save target state
 
-- rrd_database second     HIGH          100%
-To handle in one probe a large number of DS rrd_logger must break the
-rrds in small parts.
-- logger_events 1         HIGH          100%
-Target events of interest. Will be represented as time plots on the
-client. Include work on future traps_mod and syslog_mod.
-- update client (logger_events)         70%
-Work on UI designs.
-- save target state       HIGH          0%
-- startup script          HIGH          70%
---------> RELEASE B1.0
-
-- mail alerts             HIGH          0%
+### MEDIUM
+- mail alerts
 With treaded reply to receivers on acknowlegement. Linked to acknownledgement
 system.
-- parent association      HIGH          0%
+- parent association
 With triggered update of parents on a failure.
-- depend association      HIGH          0%
+- depend association
 Configurable events. Add probe dependency (different from probe parent). Will
 create an event for the dependent probes. Event correlation will be easier.
-- logger_events 2         HIGH          0%
+- logger_events 2 
 Include concept of documented Acknoledgement.
-- probe_snmp_v3           HIGH          0%
-- snmp traps handling     HIGH          0%
-With logger_events
-- inspector_rrd_warn      HIGH          0%
+- probe_snmp_v3 
+- inspector_rrd_warn
 Alerts on rrdfetch and probe status events.
 Alert on value returned by rrdfetch. Compare with an AVERAGE expected
 value. Apply an algorithm. Send an alert if needed.
@@ -50,101 +27,116 @@ Will need to use a gen_event somewhere in tlogger_rrd to put a fun which will
 wait for the current probe_return to be writed to the file.rrd and then query
 the rrd. A delayed inspector in some way because inspectors are launch before
 loggers.
-- read/write client with permissions.   HIGH    0%
-need definition of API. The system should be usable without writing the
-configuration file. Targets should be added deleted in live.
-- system documentation   HIGH           0%
-a new target create a new wiki page with system permissions. This page will
-be writable by user allowed to, and auto filled by system events.
-- documentation           HIGH          0%
-Supercast, tracker config, client.
----------> RELEASE 1
 
-
-- wmaps                   HIGH          0%
-Create, save and generate (what format?) maps (manual links between nodes).
-The final map should look like the cacti/weathermap module + visual alerts.
-(http://graphite.wikidot.com/whisper viewable in web browsers???)
-client work (qt).
-- maps zoom               HIGH          0%
-automaticaly add precise informations when zooming.
-- snmp autodiscovery      HIGH          0%
----------> RELEASE 2.0
-
-
-- telnet_api                            MEDIUM  0%
-- trace_route tool                      MDEIUM  0%
----------> RELEASE 3.0
-
-
-
-##################################
-## will be devolopend on demand ##
-##################################
-- rrd_intelligent_behaviour_detection   0%
+### LOW
+- snmp autodiscovery
+- rrd_intelligent_behaviour_detection 
  Automatic alert on suspect behaviour (counter average 10 times bigger that
  normal counter for the time of the day). Will for example detect broadcast 
  storms and occasionnal high traffic.
-- maps show vlan propagation HIGH       0%
-- mod_switching           MEDIUM      0%
+
+##################
+# MODULE LOCATOR #
+##################
+### HIGH
 V4-ARP V6-CDP traffic monitoring: 
     Where is/was this IP/Mac address
     Address conflict detection
     MAC address traking
     VLAN tracking
-- mod_rmon                MEDIUM      0%
-Collect RMON data and produce graphs with rrd (or D3)for
-mac address/ip address traffic (protocol port ...)
-- metrologie              HIGH          0%
-pmacct, netflow, sflow, rmon.
----------> RELEASE XXX
+
+################
+# MODULE IPMAN #
+################
+### HIGH
+- IP configuration view
+- net mask calculator
 
 
-- mod_syslog              ONE DAY     0%
-Collect syslog data. Can be used to feed logger_events
----------> RELEASE XXX
-
-- mod_snmp_disco          MEDIUM      0%
-Autodiscover snmp nodes. Later, auto discover neighborchip and auto
-generate maps.
-- mod_sysdoc              OPT         0%
-Documentation system
-- mod_support             OPT         0%
-Ticket gestion linked to mod_sysdoc
-- mod_repport             OPT         0%
-Generate various report using sysdoc, support or other monitors
----------> RELEASE XXX
 
 
-- mod_routing             MAYBE       0%
-Routing protocols monitoring/maps
-- mod_multiman            MAYBE       0%
-Manage multiple devices with identic configuration
----------> RELEASE XXX
 
 
-OTHER:
-- telnet_access           HIGH        50%
-Provide access to managed devices using telnet/ssh, or provide enougth
-information to the client to connect to the device with his own lib.
+##############################################################################
+#                   ITIL PACK BEGIN                                          #
+##############################################################################
+####################
+# MODULE KNOWLEDGE #
+####################
+### HIGH
+- system documentation: a new target create a new wiki page with system 
+permissions. This page will be writable by user allowed to, and auto filled 
+by system events.
+- mod_repport: Generate various report using sysdoc, support or other monitors
+
+### MAYBE
+ITIL pack with linked modules. Every movement in the SI is tracked and logged
+in the Knowledge Wiki:
+-> wiki/knowledge -> http:tickets -> todo list -> planification (shedulle)
+
+###################
+# MODULE SCHEDULE #
+###################
+## HIGH
+Shedule everithing that need it:
+- backup commands,
+- sheduled alerts,
+- every sys admin commands.
+
+### MAYBE
+- TODO tasks schedule
+
+##################
+# MODULE TICKETS #
+##################
+- Ticket gestion linked to mod_sysdoc
+
+################
+# MODULE TASKS #
+################
+- TODO list
+##############################################################################
+#                   ITIL PACK END                                            #
+##############################################################################
 
 
-TODO UB2:
-- mod_shell,
-- mod_switching,
-- mod_snmp_disco,
-- command line,
-- wmap
 
-TODO performance:
+
+
+
+#################
+# MODULE EVENTS #
+#################
+- snmp traps handling, With logger_events
+- mod_syslog Collect syslog data. Can be used to feed logger_events
+
+#####################
+# MODULE METROLOGIE #
+#####################
+- metrologie pmacct, netflow, sflow, rmon.
+
+
+
+
+##################
+# MODULE VLANMAN #
+##################
+- maps show vlan propagation HIGH       0%
+
+###################
+# MODULE MULTIMAN #
+###################
+- mod_multiman: Manage multiple devices with identic configuration
+
+
+##################
+# MODULE ROUTING #
+##################
+- mod_routing: Routing protocols monitoring/maps
+
+PERFORMANCES:
 btracker_probe_nagios:eval_nagios_output/1 might use re:run instead 
 of string:token
-
-TODO mib2 counters:
-packets, discard, %discard, error, %error
-
-TODO design:
-add max channel subscribe limit to supercast
 
 TODO maybe:
 smokeping probe compatibility
