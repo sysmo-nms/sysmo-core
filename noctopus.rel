@@ -10,6 +10,7 @@
         {asn1,          "2.0.4"},
         {public_key,    "0.21"},
         {ssl,           "5.3.2"},
+	{inets,		"5.9.7"},
         {snmp_manager,  "0.1.0"},
         {snmp,          "4.25"},
         {supercast,     "2.0.0"},

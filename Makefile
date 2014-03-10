@@ -87,6 +87,7 @@ tar:
 	@cp release_tools/bin/noctopus $(TMP_DIR)/bin/
 	@cp release_tools/bin/install $(TMP_DIR)
 	@cp release_tools/sys.config.src $(TMP_DIR)/releases/$(REL_VERSION)/
+	@cp release_tools/unix/8080_props.conf $(TMP_DIR)/var/httpd/
 	@mkdir $(TMP_DIR)/cfg
 	@touch $(TMP_DIR)/cfg/tracker.conf
 	@tar -czf $(REL_NAME)-$(REL_VERSION).tar.gz -C $(TMP_DIR) .

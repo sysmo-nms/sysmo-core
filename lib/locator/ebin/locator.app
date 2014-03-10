@@ -5,12 +5,15 @@
         {modules, [
                 locator,
                 locator_app,
+		locator_query,
+		locator_query_sup,
                 locator_sup
             ]
         },
         {registered, 
             [
                 locator_sup,
+		locator_query_sup,
                 locator
             ]
         },
