@@ -64,6 +64,9 @@ get_response(Port, Reply) ->
             io:format("~p~n", [Line]),
             %{error, lists:append(Reply, "ERROR: " ++ Line)};
             error;
+        {Port, {data, {eol, "OK "} = Line}} ->
+            io:format("~p~n", [Line]),
+            ok;
         {Port, {data, {eol, "OK " ++ _} = Line}} ->
             io:format("~p~n", [Line]),
             %{ok, lists:append(Reply, "OK: " ++ Line)};
