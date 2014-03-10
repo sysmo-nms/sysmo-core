@@ -1,0 +1,6 @@
+[
+    {port,          8080},
+    {server_name,   "localhost"},
+    {server_root,   "var\\httpd"},
+    {document_root, "var\\httpd\\docroot"}
+].

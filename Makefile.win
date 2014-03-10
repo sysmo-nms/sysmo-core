@@ -27,9 +27,13 @@ var-clean:
 	rm -f var/mnesia/*.DCD
 	rm -f var/mnesia/*.DCL
 
+clean-local-release:
+
 rel-clean:
 	rm -f $(REL_NAME).script
 	rm -f $(REL_NAME).boot
+	rm -f sys.config
+	rm -f var/httpd/8080_props.conf
 	rm -rf $(REL_NAME)-$(REL_VERSION).win32
 
 clean: var-clean 
@@ -68,12 +72,13 @@ systools:make_tar("$(REL_NAME)", [{erts, code:root_dir()}]),\
 init:stop()\
 '
 
-start: local-release
+start: rel-clean local-release
 	@$(ERL) -sname server -boot ./$(REL_NAME) -config ./sys
 
 
 # RELEASES
 release: var-clean rel-clean compile tar
+
 
 TAR= "noctopus.tar.gz"
 TMP_DIR= "/tmp/nms_tar_dir"
@@ -94,7 +99,11 @@ tar:
 	@touch $(TMP_DIR)/cfg/tracker.conf
 	@cp -r $(TMP_DIR) $(REL_NAME)-$(REL_VERSION).win32
 
-local-release: compile $(REL_NAME).script
+local-release: compile local-conf $(REL_NAME).script
+
+local-conf:
+	@cp release_tools/local/sys.config.win ./sys.config
+	@cp release_tools/local/8080_props.conf.win var/httpd/8080_props.conf
 
 $(REL_NAME).script: $(MODS_DEF_FILE) $(REL_NAME).rel
 	@echo "Generating $(REL_NAME).script and $(REL_NAME).boot files..."

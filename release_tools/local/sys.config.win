@@ -39,9 +39,9 @@
                 [
                     {enabled, true},
                     {ssl_conf, [
-                        {certificate,   "%ROOTPATH%\cfg\ssl\certificate.pem"},
-                        {caCertificate, "%ROOTPATH%\cfg\ssl\request.pem"},
-                        {key,           "%ROOTPATH%\cfg\ssl\key.pem"}
+                        {certificate,   "cfg\\ssl\\certificate.pem"},
+                        {caCertificate, "cfg\\ssl\\request.pem"},
+                        {key,           "cfg\\ssl\\key.pem"}
                     ]},
                     {port, 4443},
                     {maxconn, 50},
@@ -52,8 +52,8 @@
     },
     {tracker,
         [
-            {config_file,           "%ROOTPATH%\cfg\tracker.conf"},
-            {targets_data_dir,      "%ROOTPATH%\var\tracker"},
+            {config_file,           "cfg\\tracker.conf"},
+            {targets_data_dir,      "var\\tracker"},
             {master_chan_read_perm, ["admin"]},
             {probe_modules,
                 [
@@ -65,7 +65,7 @@
     },
     {tlogger_rrd,
         [
-            {command,   "C:\Program Files\RRDtool\rrdtool - "}
+            {command,   "rrdtool - "}
         ]
     },
     {tlogger_text,
@@ -78,12 +78,12 @@
             {start_dist_ac, false},
             {inet_dist_listen_min, 9000},
             {inet_dist_listen_max, 9005}
-            %{error_logger, {file, "%ROOTPATH%\var\log\error_logger.log"}}
+            %{error_logger, {file, "var\\log\\error_logger.log"}}
         ]
     },
     {sasl,
         [
-            {sasl_error_logger, {file, "%ROOTPATH%\var\log\sasl_error_logger.log"}}
+            {sasl_error_logger, {file, "var\\log\\sasl_error_logger.log"}}
         ]
     },
     {snmp,
@@ -94,8 +94,8 @@
                     {versions, [v2,v3]},
                     {config,
                         [
-                            {dir,       "%ROOTPATH%\var\snmp"},
-                            {db_dir,    "%ROOTPATH%\var\snmp"},
+                            {dir,       "var\\snmp"},
+                            {db_dir,    "var\\snmp"},
                             {verbosity, info},
                             {repair,    true},
                             {auto_save, 5000}
@@ -118,7 +118,7 @@
     },
     {mnesia,
         [
-            {dir,       "%ROOTPATH%\var\mnesia"},
+            {dir,       "var\\mnesia"},
             {debug,     none}
         ]
     },
