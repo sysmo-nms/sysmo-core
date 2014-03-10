@@ -78,8 +78,8 @@ $(REL_NAME).script: $(MODS_DEF_FILE) $(REL_NAME).rel
 # WINDOWS RELEASES BEGIN #
 ##########################
 windows-local-release: compile $(REL_NAME).script
-	@cp release_tools/local/sys.config.win ./sys.config
-	@cp release_tools/local/8080_props.conf.win var/httpd/8080_props.conf
+	@ln -s release_tools/local/sys.config.win sys.config
+	@ln -s ../../release_tools/local/8080_props.conf.win var/httpd/8080_props.conf
 
 windows-release: var-clean rel-clean compile
 	@echo "Generating $(REL_NAME)-$(REL_VERSION).win32 directory"
@@ -111,8 +111,8 @@ windows-release: var-clean rel-clean compile
 # UNIX RELEASES BEGIN #
 #######################
 unix-local-release: compile $(REL_NAME).script
-	cp release_tools/local/sys.config.unix ./sys.config
-	cp release_tools/local/8080_props.conf.unix var/httpd/8080_props.conf
+	ln -s release_tools/local/sys.config.unix sys.config
+	ln -s ../../release_tools/local/8080_props.conf.unix var/httpd/8080_props.conf
 
 TAR         = "noctopus.tar.gz"
 TMP_DIR     = "/tmp/nms_tar_dir"
