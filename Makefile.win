@@ -27,8 +27,6 @@ var-clean:
 	rm -f var/mnesia/*.DCD
 	rm -f var/mnesia/*.DCL
 
-clean-local-release:
-
 rel-clean:
 	rm -f $(REL_NAME).script
 	rm -f $(REL_NAME).boot
