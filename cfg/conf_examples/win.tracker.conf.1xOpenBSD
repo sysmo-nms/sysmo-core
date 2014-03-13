@@ -1,3 +1,4 @@
+% win 1xOpenBSD
 {target,
     'secondTestHost-1',
     {perm_conf,     ["admin"], ["admin"]},
@@ -62,10 +63,10 @@
                 none,
                 none,
                 [
-                    {"sis0-in",     [1,3,6,1,2,1,2,2,1,10,1,0]},
-                    {"sis0-out",    [1,3,6,1,2,1,2,2,1,16,1,0]},
-                    {"sis1-in",     [1,3,6,1,2,1,2,2,1,10,2,0]},
-                    {"sis1-out",    [1,3,6,1,2,1,2,2,1,16,2,0]}
+                    {"sis0in",     [1,3,6,1,2,1,2,2,1,10,1,0]},
+                    {"sis0out",    [1,3,6,1,2,1,2,2,1,16,1,0]},
+                    {"sis1in",     [1,3,6,1,2,1,2,2,1,10,2,0]},
+                    {"sis1out",    [1,3,6,1,2,1,2,2,1,16,2,0]}
                 ]
             },
             'UNKNOWN',
@@ -82,28 +83,28 @@
                     btracker_logger_rrd, [
                         {rrd_config,
                             "secondTestHost-1_rrd1",
-                            "create <FILE> --step 5 DS:sis0-in:COUNTER:10:U:U DS:sis0-out:COUNTER:10:U:U RRA:AVERAGE:0.5:1:600 RRA:AVERAGE:0.5:6:700 RRA:AVERAGE:0.5:24:775 RRA:AVERAGE:0.5:288:797",
-                            "update <FILE> --template sis0-in:sis0-out N:<SIS0-IN>:<SIS0-OUT>",
+                            "create <FILE> --step 5 DS:sis0in:COUNTER:10:U:U DS:sis0out:COUNTER:10:U:U RRA:AVERAGE:0.5:1:600 RRA:AVERAGE:0.5:6:700 RRA:AVERAGE:0.5:24:775 RRA:AVERAGE:0.5:288:797",
+                            "update <FILE> --template sis0in:sis0out N:<SIS0-IN>:<SIS0-OUT>",
                             [
-                                "DEF:s0in=<FILE>:sis0-in:AVERAGE DEF:s0out=<FILE>:sis0-out:AVERAGE LINE1:s0in#3465A4 LINE2:s0out#CC0000"
+                                "DEF:s0in=<FILE>:sis0in:AVERAGE DEF:s0out=<FILE>:sis0out:AVERAGE LINE1:s0in#3465A4 LINE2:s0out#CC0000"
                             ],
                             [
-                                {"sis0-in",  "<SIS0-IN>"},
-                                {"sis0-out", "<SIS0-OUT>"}
+                                {"sis0in",  "<SIS0-IN>"},
+                                {"sis0out", "<SIS0-OUT>"}
                             ],
                             none,
                             none
                         },
                         {rrd_config,
                             "secondTestHost-1_rrd2",
-                            "create <FILE> --step 5 DS:sis1-in:COUNTER:10:U:U DS:sis1-out:COUNTER:10:U:U RRA:AVERAGE:0.5:1:600 RRA:AVERAGE:0.5:6:700 RRA:AVERAGE:0.5:24:775 RRA:AVERAGE:0.5:288:797",
-                            "update <FILE> --template sis1-in:sis1-out N:<SIS1-IN>:<SIS1-OUT>",
+                            "create <FILE> --step 5 DS:sis1in:COUNTER:10:U:U DS:sis1out:COUNTER:10:U:U RRA:AVERAGE:0.5:1:600 RRA:AVERAGE:0.5:6:700 RRA:AVERAGE:0.5:24:775 RRA:AVERAGE:0.5:288:797",
+                            "update <FILE> --template sis1in:sis1out N:<SIS1-IN>:<SIS1-OUT>",
                             [
-                                "DEF:s1in=<FILE>:sis1-in:AVERAGE DEF:s1out=<FILE>:sis1-out:AVERAGE LINE3:s1in#4E9A06 LINE4:s1out#EDD400"
+                                "DEF:s1in=<FILE>:sis1in:AVERAGE DEF:s1out=<FILE>:sis1out:AVERAGE LINE3:s1in#4E9A06 LINE4:s1out#EDD400"
                             ],
                             [
-                                {"sis1-in",  "<SIS1-IN>"},
-                                {"sis1-out", "<SIS1-OUT>"}
+                                {"sis1in",  "<SIS1-IN>"},
+                                {"sis1out", "<SIS1-OUT>"}
                             ],
                             none,
                             none
