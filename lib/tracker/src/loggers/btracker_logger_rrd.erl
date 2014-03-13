@@ -121,10 +121,10 @@ pdu('rrdProbeDump', {TargetId, ProbeId, RrdConfigs}) ->
     
 rrd_exec(String) ->
     case tlogger_rrd:exec(String) of
-        ok -> ok;
-        error ->
+        {ok, _} -> ok;
+        {error, Reply} ->
             error_logger:info_msg(
-                "logger_rrd_error, ~p, ~p:~p }", [String, ?MODULE, ?LINE]
+                "logger_rrd_error, ~p, ~p, ~p:~p }", [Reply, String, ?MODULE, ?LINE]
             ),
             ok
     end.
