@@ -34,6 +34,7 @@ loggers.
  Automatic alert on suspect behaviour (counter average 10 times bigger that
  normal counter for the time of the day). Will for example detect broadcast 
  storms and occasionnal high traffic.
+- OCS-inventory-NG agent compatibility module.
 
 ##################
 # MODULE LOCATOR #
