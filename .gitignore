@@ -34,3 +34,4 @@ lib/supercast/include/ModTracker.hrl
 !var/httpd/docroot/wiki_base.html
 sys.config
 var/httpd/8080_props.conf
+noctopus.tar
