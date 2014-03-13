@@ -86,20 +86,20 @@ windows-local-release: compile $(REL_NAME).script
 
 windows-release: var-clean rel-clean compile
 	@echo "Generating $(REL_NAME)-$(REL_VERSION).win32 directory"
-	@$(ERL) -noinput $(ERL_NMS_PATH) -eval $(ERL_REL_COMM2)
-	@rm -rf $(TMP_DIR)
-	@mkdir  $(TMP_DIR)
-	@tar xzf $(REL_NAME).tar.gz -C $(TMP_DIR)
-	@rm -f   $(REL_NAME).tar.gz
-	@cp -R var $(TMP_DIR)/
-	@mkdir $(TMP_DIR)/bin
-	@cp release_tools/win32/noctopus.bat.src $(TMP_DIR)/bin/noctopus.bat
-	@cp release_tools/win32/sys.config.src   $(TMP_DIR)/releases/$(REL_VERSION)/sys.config.src
-	@cp release_tools/win32/erl.ini.src      $(TMP_DIR)/erts-5.10.4/bin/erl.ini.src
-	@cp -f release_tools/win32/8080_props.conf.src  $(TMP_DIR)/var/httpd/
-	@mkdir $(TMP_DIR)/cfg
-	@touch $(TMP_DIR)/cfg/tracker.conf
-	@cp -r $(TMP_DIR) $(REL_NAME)-$(REL_VERSION).win32
+	$(ERL) -noinput $(ERL_NMS_PATH) -eval $(ERL_REL_COMM2)
+	rm -rf $(TMP_DIR)
+	mkdir  $(TMP_DIR)
+	tar xzf $(REL_NAME).tar.gz -C $(TMP_DIR)
+	#rm -f   $(REL_NAME).tar.gz
+	cp -R var $(TMP_DIR)/
+	mkdir $(TMP_DIR)/bin
+	cp release_tools/win32/noctopus.bat.src $(TMP_DIR)/bin/noctopus.bat
+	cp release_tools/win32/sys.config.src   $(TMP_DIR)/releases/$(REL_VERSION)/sys.config.src
+	cp release_tools/win32/erl.ini.src      $(TMP_DIR)/erts-5.10.4/bin/erl.ini.src
+	cp -f release_tools/win32/8080_props.conf.src  $(TMP_DIR)/var/httpd/
+	mkdir $(TMP_DIR)/cfg
+	touch $(TMP_DIR)/cfg/tracker.conf
+	cp -r $(TMP_DIR) $(REL_NAME)-$(REL_VERSION).win32
 ########################
 # WINDOWS RELEASES END #
 ########################
