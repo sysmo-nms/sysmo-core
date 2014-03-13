@@ -47,7 +47,7 @@ init(Cfg, #probe_server_state{
                 ok;
             {error, enoent} ->
                 CreateString = RrdConf#rrd_config.create,
-                FileString   = RrdConf#rrd_config.file_path,
+                FileString   = if_win(RrdConf#rrd_config.file_path),
                 RrdCommand = re:replace(CreateString, "<FILE>", FileString,
                     [{return, list}]),
                 tlogger_rrd:exec(RrdCommand)
@@ -57,8 +57,10 @@ init(Cfg, #probe_server_state{
     % update #rrd_config.update with the filePath name
     Cfg2 = [
         RrdRec#rrd_config{
-            update = re:replace(Update, "<FILE>", File, [{return, list}])
-        } || #rrd_config{update = Update, file_path = File} = RrdRec <- Cfg1
+            update = re:replace(Update, "<FILE>", if_win(File), [{return, list}])
+        } || #rrd_config{
+            update = Update, file_path = File
+            } = RrdRec <- Cfg1
     ],
 
     % update #rrd_config.update_regexp with the compiled regexp
@@ -164,3 +166,13 @@ to_string(Term) when is_float(Term) ->
     float_to_list(Term, [{decimals, 0}, compact]);
 to_string(Term) when is_integer(Term) ->
     integer_to_list(Term).
+
+if_win(FileName) ->
+    case os:type() of
+        {unix, _} ->
+            FileName;
+        {win32, _} ->
+            F1 = string:concat("\"", FileName),
+            F2 = string:concat(F1, "\""),
+            F2
+    end.
