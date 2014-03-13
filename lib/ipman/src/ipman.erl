@@ -94,8 +94,8 @@ code_change(_,S,_) ->
 % PRIVATE
 format_ipAddrTable(Table) ->
     Process = filter_ipAddrTable(Table),
-    Result = format_ipAddrTable([], Process),
-    ?LOG(Result).
+    _Result = format_ipAddrTable([], Process).
+    %?LOG(Result).
 format_ipAddrTable(Records, {[],_,_}) ->
     Records;
 format_ipAddrTable(Records, {[Add|Adds],Masks,IfIndexes}) ->

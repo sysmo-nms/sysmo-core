@@ -53,7 +53,7 @@ init([]) ->
         } || Agent <- Agents],
     % XXX END
 
-    ?LOG(AgentsRecords),
+    %?LOG(AgentsRecords),
     ok = initialize_queries(AgentsRecords),
     {ok, #state{agents = AgentsRecords}}.
 
@@ -68,12 +68,12 @@ handle_call(_R, _F, S) ->
 % CAST
 handle_cast({update_forward_infos, _Agent, _Values},S) ->
     % TODO update datas (in memory mnesia)
-    ?LOG('update switch infos!'),
+    %?LOG('update switch infos!'),
     {noreply, S};
 
 handle_cast({update_arp_infos, _Agent, _Values},S) ->
     % TODO update datas (in memory mnesia)
-    ?LOG('update router infos!'),
+    %?LOG('update router infos!'),
     {noreply, S};
 
 handle_cast(_,S) ->
