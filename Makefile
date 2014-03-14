@@ -105,6 +105,7 @@ windows-release: var-clean rel-clean compile
 	@cp -R var $(TMP_DIR)/
 	@mkdir $(TMP_DIR)/bin
 	@cp release_tools/win32/noctopus.bat.src $(TMP_DIR)/bin/noctopus.bat
+	@cp release_tools/win32/register_noctopus_nt-service.bat.src $(TMP_DIR)/bin/register_noctopus_nt-service.bat
 	@cp release_tools/win32/sys.config.src   $(TMP_DIR)/releases/$(REL_VERSION)/sys.config.src
 	@cp release_tools/win32/erl.ini.src      $(TMP_DIR)/erts-5.10.4/bin/erl.ini.src
 	@cp -f release_tools/win32/8080_props.conf.src  $(TMP_DIR)/var/httpd/
