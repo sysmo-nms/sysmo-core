@@ -1,6 +1,0 @@
-[
-    {port,          8080},
-    {server_name,   "localhost"},
-    {server_root,   "%INSTALL_DIR%\noctopus-server\var\httpd"},
-    {document_root, "%INSTALL_DIR%\noctopus-server\var\httpd\docroot"}
-].

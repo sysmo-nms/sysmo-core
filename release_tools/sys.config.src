@@ -39,9 +39,9 @@
                 [
                     {enabled, true},
                     {ssl_conf, [
-                        {certificate,   "%INSTALL_DIR%\noctopus-server\cfg\ssl\certificate.pem"},
-                        {caCertificate, "%INSTALL_DIR%\noctopus-server\cfg\ssl\request.pem"},
-                        {key,           "%INSTALL_DIR%\noctopus-server\cfg\ssl\key.pem"}
+                        {certificate,   "%INSTALL_DIR%/noctopus-server/cfg/ssl/certificate.pem"},
+                        {caCertificate, "%INSTALL_DIR%/noctopus-server/cfg/ssl/request.pem"},
+                        {key,           "%INSTALL_DIR%/noctopus-server/cfg/ssl/key.pem"}
                     ]},
                     {port, 4443},
                     {maxconn, 50},
@@ -52,8 +52,8 @@
     },
     {tracker,
         [
-            {config_file,           "%INSTALL_DIR%\noctopus-server\cfg\tracker.conf"},
-            {targets_data_dir,      "%INSTALL_DIR%\noctopus-server\var\tracker"},
+            {config_file,           "%INSTALL_DIR%/noctopus-server/cfg/tracker.conf"},
+            {targets_data_dir,      "%INSTALL_DIR%/noctopus-server/var/tracker"},
             {master_chan_read_perm, ["admin"]},
             {probe_modules,
                 [
@@ -78,12 +78,12 @@
             {start_dist_ac, false},
             {inet_dist_listen_min, 9000},
             {inet_dist_listen_max, 9005}
-            %{error_logger, {file, "%INSTALL_DIR%\noctopus-server\var\log\error_logger.log"}}
+            %{error_logger, {file, "%INSTALL_DIR%/noctopus-server/var/log/error_logger.log"}}
         ]
     },
     {sasl,
         [
-            {sasl_error_logger, {file, "%INSTALL_DIR%\noctopus-server\var\log\sasl_error_logger.log"}}
+            {sasl_error_logger, {file, "%INSTALL_DIR%/noctopus-server/var/log/sasl_error_logger.log"}}
         ]
     },
     {snmp,
@@ -94,8 +94,8 @@
                     {versions, [v2,v3]},
                     {config,
                         [
-                            {dir,       "%INSTALL_DIR%\noctopus-server\var\snmp"},
-                            {db_dir,    "%INSTALL_DIR%\noctopus-server\var\snmp"},
+                            {dir,       "%INSTALL_DIR%/noctopus-server/var/snmp"},
+                            {db_dir,    "%INSTALL_DIR%/noctopus-server/var/snmp"},
                             {verbosity, info},
                             {repair,    true},
                             {auto_save, 5000}
@@ -118,7 +118,7 @@
     },
     {mnesia,
         [
-            {dir,       "%INSTALL_DIR%\noctopus-server\var\mnesia"},
+            {dir,       "%INSTALL_DIR%/noctopus-server/var/mnesia"},
             {debug,     none}
         ]
     },
@@ -131,7 +131,7 @@
                 [
                     {httpd,
                         [
-            {proplist_file, "%INSTALL_DIR%\noctopus-server\var\httpd\8080_props.conf"},
+            {proplist_file, "%INSTALL_DIR%/noctopus-server/var/httpd/8080_props.conf"},
             {debug,         disable},
             {accept_timeout, 3000}
                         ]

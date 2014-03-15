@@ -88,8 +88,8 @@ ERL_UNTAR   = '\
 # WINDOWS RELEASES BEGIN #
 ##########################
 windows-local-release: compile $(REL_NAME).script
-	cp release_tools/local/sys.config.win sys.config
-	cp release_tools/local/8080_props.conf.win var/httpd/8080_props.conf
+	cp release_tools/local/sys.config ./sys.config
+	cp release_tools/local/8080_props.conf ./var/httpd/8080_props.conf
 	chmod -w sys.config
 	chmod -w var/httpd/8080_props.conf
 
@@ -106,9 +106,9 @@ windows-release: var-clean rel-clean compile
 	@mkdir $(TMP_DIR)/bin
 	@cp release_tools/win32/noctopus.bat.src $(TMP_DIR)/bin/noctopus.bat
 	@cp release_tools/win32/register_noctopus_nt-service.bat.src $(TMP_DIR)/bin/register_noctopus_nt-service.bat
-	@cp release_tools/win32/sys.config.src   $(TMP_DIR)/releases/$(REL_VERSION)/sys.config.src
 	@cp release_tools/win32/erl.ini.src      $(TMP_DIR)/erts-5.10.4/bin/erl.ini.src
-	@cp -f release_tools/win32/8080_props.conf.src  $(TMP_DIR)/var/httpd/
+	@cp release_tools/sys.config.src   $(TMP_DIR)/releases/$(REL_VERSION)/sys.config
+	@cp release_tools/8080_props.conf.src  $(TMP_DIR)/var/httpd/8080_props.conf
 	@mkdir $(TMP_DIR)/cfg
 	@touch $(TMP_DIR)/cfg/tracker.conf
 	@cp -r $(TMP_DIR) $(REL_NAME)-$(REL_VERSION).win32
@@ -126,8 +126,8 @@ windows-release: var-clean rel-clean compile
 # UNIX RELEASES BEGIN #
 #######################
 unix-local-release: compile $(REL_NAME).script
-	cp release_tools/local/sys.config.unix sys.config
-	cp release_tools/local/8080_props.conf.unix var/httpd/8080_props.conf
+	cp release_tools/local/sys.config sys.config
+	cp release_tools/local/8080_props.conf var/httpd/8080_props.conf
 	chmod -w sys.config
 	chmod -w var/httpd/8080_props.conf
 
@@ -142,8 +142,8 @@ unix-release: var-clean rel-clean compile
 	@mkdir $(TMP_DIR)/bin
 	@cp release_tools/unix/noctopus $(TMP_DIR)/bin/
 	@cp release_tools/unix/install $(TMP_DIR)
-	@cp release_tools/unix/sys.config.src $(TMP_DIR)/releases/$(REL_VERSION)/
-	@cp release_tools/unix/8080_props.conf $(TMP_DIR)/var/httpd/
+	@cp release_tools/sys.config.src $(TMP_DIR)/releases/$(REL_VERSION)/
+	@cp release_tools/8080_props.conf.src $(TMP_DIR)/var/httpd/
 	@mkdir $(TMP_DIR)/cfg
 	@touch $(TMP_DIR)/cfg/tracker.conf
 	@tar -czf $(REL_NAME)-$(REL_VERSION).tar.gz -C $(TMP_DIR) .
