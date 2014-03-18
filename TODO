@@ -11,6 +11,7 @@ With triggered update of parents on a failure.
 - depend association
 Configurable events. Add probe dependency (different from probe parent). Will
 create an event for the dependent probes. Event correlation will be easier.
+- service virtual check
 
 ### MEDIUM
 - mail alerts
