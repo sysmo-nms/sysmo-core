@@ -6,16 +6,16 @@
 (packets, discard, %discard, error, %error)
 - Simple API add snmp element with perms
 - save target state
-
-### MEDIUM
-- mail alerts
-With treaded reply to receivers on acknowlegement. Linked to acknownledgement
-system.
 - parent association
 With triggered update of parents on a failure.
 - depend association
 Configurable events. Add probe dependency (different from probe parent). Will
 create an event for the dependent probes. Event correlation will be easier.
+
+### MEDIUM
+- mail alerts
+With treaded reply to receivers on acknowlegement. Linked to acknownledgement
+system.
 - logger_events 2 
 Include concept of documented Acknoledgement.
 - probe_snmp_v3 
