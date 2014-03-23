@@ -12,6 +12,16 @@ With triggered update of parents on a failure.
 Configurable events. Add probe dependency (different from probe parent). Will
 create an event for the dependent probes. Event correlation will be easier.
 - service virtual check
+- interface de configuration de serveur (Qt):
+    . activer tcp (activé par défaut, n'accepte que 127.0.0.1)
+    . activer ssl,
+        - choix authentification par clé
+            - générer clé (créé une archive à importer depuis le noctopus-client
+                à authentifier),
+            - ajouter clé publique,
+            - assigner à groupes,
+    . ajouter utilisateur (auth local), ajouter a groupes,
+    . choix de méthode d'authentification (local, ldap, AD, /etc/passwd)
 
 ### MEDIUM
 - mail alerts
