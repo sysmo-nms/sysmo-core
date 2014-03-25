@@ -39,6 +39,39 @@ ChanInfo    ::= SEQUENCE {
     type    ChanInfoType
 }
 
+-- SUBSCRIBE AND UNSUBSCRIBE
+-- from client
+Subscribe   ::= SEQUENCE {
+    queryId INTEGER,
+    chan    Chan
+}
+
+Unsubscribe ::= SEQUENCE {
+    queryId INTEGER,
+    chan    Chan
+}
+
+--from server
+SubscribeOk   ::= SEQUENCE {
+    queryId INTEGER,
+    chan    Chan
+}
+
+SubscribeError   ::= SEQUENCE {
+    queryId INTEGER,
+    chan    Chan
+}
+
+UnsubscribeOk ::= SEQUENCE {
+    queryId INTEGER,
+    chan    Chan
+}
+
+UnsubscribeError ::= SEQUENCE {
+    queryId INTEGER,
+    chan    Chan
+}
+
 SupercastPDU ::= CHOICE {
     fromServer [0] CHOICE {
         chanInfo        [1] ChanInfo,
