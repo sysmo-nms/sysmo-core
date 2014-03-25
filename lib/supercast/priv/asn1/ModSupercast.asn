@@ -57,7 +57,7 @@ SubscribeOk   ::= SEQUENCE {
     chan    Chan
 }
 
-SubscribeError   ::= SEQUENCE {
+SubscribeErr   ::= SEQUENCE {
     queryId INTEGER,
     chan    Chan
 }
@@ -67,7 +67,7 @@ UnsubscribeOk ::= SEQUENCE {
     chan    Chan
 }
 
-UnsubscribeError ::= SEQUENCE {
+UnsubscribeErr ::= SEQUENCE {
     queryId INTEGER,
     chan    Chan
 }
@@ -78,15 +78,15 @@ SupercastPDU ::= CHOICE {
         authReq         [2] AuthProto,
         authAck         [3] AuthAck,
         authError       [4] AuthError,
-        subscribeOk     [5] Chan,
-        subscribeErr    [6] Chan,
-        unsubscribeOk   [7] Chan,
-        unsubscribeErr  [8] Chan,
+        subscribeOk     [5] SubscribeOk,
+        subscribeErr    [6] SubscribeErr,
+        unsubscribeOk   [7] UnsubscribeOk,
+        unsubscribeErr  [8] UnsubscribeErr,
         ...
     },
     fromClient  [1] CHOICE {
-        subscribe       [0] Chan,
-        unsubscribe     [1] Chan,
+        subscribe       [0] Subscribe,
+        unsubscribe     [1] Unsubscribe,
         authResp        [4] AuthResp,
         ...
     }
