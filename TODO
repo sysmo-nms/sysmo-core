@@ -22,6 +22,11 @@ create an event for the dependent probes. Event correlation will be easier.
             - assigner à groupes,
     . ajouter utilisateur (auth local), ajouter a groupes,
     . choix de méthode d'authentification (local, ldap, AD, /etc/passwd)
+- add "Create web view" wizard using erlang/httpd CGI, with running templates
+examples for Python , PHP, Ruby. Create an server API accessible by the 
+CGI binaries. Will be used by the wiki opus. Will allow an administrator
+to create views for techs, collaborators or end users wich will not require
+all the noctoupus-client functionnalities.
 
 ### MEDIUM
 - mail alerts
