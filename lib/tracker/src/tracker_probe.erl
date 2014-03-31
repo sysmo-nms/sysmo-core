@@ -35,7 +35,6 @@
 
 -export([
     start_link/1,
-    cold_start/1,
     probe_pass/1,
     external_event/2
 ]).
@@ -49,15 +48,6 @@
 
 start_link({Target, #probe{name = Name} = Probe}) ->
     gen_server:start_link({local, Name}, ?MODULE, [Target, Probe], []).
-
--spec cold_start(pid()) -> ok.
-% @doc
-% Once the server is started, it need to be initialized so he can then enter
-% in an infinite loop. This function is called from his parent 
-% tracker_target_channel() module.
-% @end
-cold_start(Pid) ->
-    gen_server:call(Pid, initial_pass).
 
 -spec external_event(pid(), any()) -> ok.
 % @doc
@@ -83,6 +73,7 @@ init([Target, Probe]) ->
         loggers_state       = [],
         inspectors_state    = []
     },
+    gen_server:cast(self(), initial_pass),
     {ok, S2}    = init_loggers(S1),
     {ok, S3}    = init_inspectors(S2),
     {ok, SF}    = init_probe(S3),
@@ -93,12 +84,6 @@ init([Target, Probe]) ->
 %% HANDLE_CALL
 %%-------------------------------------------------------------
 
-% launch a probe for the first time.
-handle_call(initial_pass, _, #probe_server_state{probe = Probe} = S) ->
-    Step            = Probe#probe.step, 
-    InitialLaunch   = tracker_misc:random(Step * 1000),
-    timer:apply_after(InitialLaunch, ?MODULE, probe_pass, [S]),
-    {reply, ok, S};
 
 
 % gen_channel calls
@@ -125,12 +110,20 @@ handle_call(_R, _F, S) ->
 %%-------------------------------------------------------------
 % HANDLE_CAST
 %%-------------------------------------------------------------
+% launch a probe for the first time.
+handle_cast(initial_pass, #probe_server_state{probe = Probe} = S) ->
+    ?LOG("initial pass.........\n"),
+    Step            = Probe#probe.step, 
+    InitialLaunch   = tracker_misc:random(Step * 1000),
+    timer:apply_after(InitialLaunch, ?MODULE, probe_pass, [S]),
+    {noreply, S};
 
 % PsState are equal, probe event.
 handle_cast({next_pass,                 S    , PR}, 
             #probe_server_state{
                 target  = Target,
                 probe   = Probe} =      S   ) ->
+    ?LOG("next pass.........\n"),
     supercast_mpd:multicast_msg(Probe#probe.name, {
             Probe#probe.permissions,
             pdu(probeReturn, {PR, Target#target.id, Probe#probe.name})}),
@@ -147,6 +140,7 @@ handle_cast({next_pass,
         } = NewState,
         ProbeReturn
     }, _OldState) ->
+    ?LOG("next pass.........\n"),
 
     tracker_target_channel:update(
         Target#target.id,

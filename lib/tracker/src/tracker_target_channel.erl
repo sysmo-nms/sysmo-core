@@ -54,7 +54,6 @@
 % API
 -export([
     start_link/1,
-    cold_start/1,
     update/3,
     dump/1
 ]).
@@ -73,14 +72,6 @@
 %%----------------------------------------------------------------------------
 start_link(#target{id = Id} = Target) ->
     gen_server:start_link({local, Id}, ?MODULE, [Target], []).
-
--spec cold_start(pid()) -> ok | {error, any()}.
-% @doc
-% Once the server running, call him to start his probes. This is done
-% by the "cold_start" phase of the traget_app module.
-% @end
-cold_start(Pid) ->
-    gen_server:call(Pid, cold_start).
 
 -spec update(Self::pid(), integer(), Msg::tuple()) -> ok.
 % @doc
@@ -115,9 +106,7 @@ dump(Id) ->
 init([Target]) ->
     ok = init_dir(Target),
     {ok, TargetA}   = init_probes(Target),
-
     ok = tracker_master_channel:chan_add(TargetA),
-
     {ok, 
         #state{
             chan_id             = TargetA#target.id,     % shortcut
@@ -136,11 +125,6 @@ init([Target]) ->
 %%----------------------------------------------------------------------------
 %% SELF API CALLS 
 %%----------------------------------------------------------------------------
-handle_call(cold_start, _F, #state{target = Target} = S) ->
-    lists:foreach(fun(#probe{pid = Pid}) ->
-        tracker_probe:cold_start(Pid)
-    end, Target#target.probes),
-    {reply, ok, S};
 
 
 %%----------------------------------------------------------------------------

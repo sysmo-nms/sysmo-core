@@ -52,10 +52,9 @@
             [kernel, stdlib, mnesia, supercast, tlogger_rrd,
                 tlogger_text, snmp, tracker_events]
         },
-        {start_phases, 
+        {start_phases,
             [
-                {init_mnesia, []},
-                {cold_start, []}
+                {create_targets, []}
             ]
         },
         {mod, {tracker_app, []}}

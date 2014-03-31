@@ -29,19 +29,15 @@
     stop/1]).
 
 start(_Type, _Args) ->
+    ?LOG("start\n"),
+    application:stop(mnesia),
+    mnesia:create_schema([node()]),
+    application:start(mnesia),
     {ok, ProbeModules} = application:get_env(tracker, probe_modules),
     tracker_sup:start_link(ProbeModules).
 
-start_phase(init_mnesia, normal, []) ->
-    % TODO embed mnesia with "included applications"
-    application:stop(mnesia),
-    mnesia:create_schema([node()]),
-    application:start(mnesia);
-    % on windows inets is allready running at this time?
-    %inets:start();
-
-start_phase(cold_start, normal, []) ->
-    {ok, ConfFile}          = application:get_env(tracker, config_file),
+start_phase(create_targets, normal, []) ->
+    {ok, ConfFile} = application:get_env(tracker, config_file),
     ok = tracker_target_channel_sup:cold_start(ConfFile).
 
 stop(_State) ->
