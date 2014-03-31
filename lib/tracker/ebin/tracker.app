@@ -34,6 +34,7 @@
                 tracker_sup,
                 btracker_inspector_property_set,
                 btracker_inspector_status_set,
+                btracker_inspector_parent,
                 btracker_logger_rrd,
                 btracker_logger_text,
                 btracker_logger_events,

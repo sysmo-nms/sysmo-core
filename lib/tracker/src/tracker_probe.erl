@@ -33,6 +33,13 @@
     code_change/3
 ]).
 
+% for debug only
+-export([
+    handle_probe_return/3,
+    handle_probe_return/4,
+    handle_probe_return/5
+]).
+
 -export([
     start_link/1,
     probe_pass/1,
@@ -115,8 +122,8 @@ handle_cast(initial_pass, #probe_server_state{probe = Probe} = S) ->
     ?LOG("initial pass.........\n"),
     Step            = Probe#probe.step, 
     InitialLaunch   = tracker_misc:random(Step * 1000),
-    timer:apply_after(InitialLaunch, ?MODULE, probe_pass, [S]),
-    {noreply, S};
+    {ok, TRef} = timer:apply_after(InitialLaunch, ?MODULE, probe_pass, [S]),
+    {noreply, S#probe_server_state{tref = TRef}};
 
 % PsState are equal, probe event.
 handle_cast({next_pass,                 S    , PR}, 
@@ -129,8 +136,8 @@ handle_cast({next_pass,                 S    , PR},
             pdu(probeReturn, {PR, Target#target.id, Probe#probe.name})}),
     log(S, PR),
     After = Probe#probe.step * 1000,
-    timer:apply_after(After, ?MODULE, probe_pass, [S]),
-    {noreply, S};
+    {ok, TRef} = timer:apply_after(After, ?MODULE, probe_pass, [S]),
+    {noreply, S#probe_server_state{tref = TRef}};
 
 % else update the event handler, target_channel (broad event)
 handle_cast({next_pass, 
@@ -153,12 +160,59 @@ handle_cast({next_pass,
                 {ProbeReturn, Target#target.id, Probe#probe.name})}),
     log(NewState, ProbeReturn#probe_return{is_event = true}),
     After = Probe#probe.step * 1000,
-    timer:apply_after(After, ?MODULE, probe_pass, [NewState]),
-    {noreply, NewState};
+    {ok, TRef} =  timer:apply_after(After, ?MODULE, probe_pass, [NewState]),
+    {noreply, NewState#probe_server_state{tref = TRef}};
 
 handle_cast({external_event, Pdu}, #probe_server_state{probe = P} = S) ->
     supercast_mpd:multicast_msg(P#probe.name, {P#probe.permissions, Pdu}),
     {noreply, S};
+
+% PARENT CHILD ASSOCIATION
+% a child allready triggered the child_status_request.
+handle_cast({child_status_request, Caller},
+        #probe_server_state{pending_child_request = true} = S) ->
+    #probe_server_state{pending_callers = Callers} = S,
+    {noreply, S#probe_server_state{
+            pending_callers = lists:append([Caller], [Callers])}};
+
+handle_cast({child_status_request, Caller},
+        #probe_server_state{pending_child_request = false}  = S) ->
+    #probe_server_state{probe = #probe{status = Status}}    = S,
+    #probe_server_state{probe = #probe{name = Name}}        = S,
+    #probe_server_state{tref = TRef}                        = S,
+    #probe_server_state{pending_callers = Callers}          = S,
+    case Status of
+        'CRITICAL' -> 
+            % do nothing, child_status_request has been done by this probe
+            tracker_probe:child_info(Caller, Name, Status),
+            {noreply, S};
+        'UNKNOWN' -> 
+            % do nothing, child_status_request has been done by this probe
+            tracker_probe:child_info(Caller, Name, Status),
+            {noreply, S};
+        _ -> % We must check.
+            % try to STOP the current timer,
+            case timer:cancel(TRef) of
+                {ok, _}  -> % the fun has not been launched start now.
+                    ?LOG("job canceled~n"),
+                    {ok, NewTRef} = timer:apply_after(0, ?MODULE, probe_pass, [S]),
+                    % fill pending_callers, and request to true
+                    % pending_child_request will be catched by handle_cast/next_pass
+                    {noreply, S#probe_server_state{
+                        tref                    = NewTRef,
+                        pending_child_request   = true,
+                        pending_callers         = lists:append([Caller], [Callers] )}
+                    };
+                {error, _} -> % The return is in the gen_server queu do nothing
+                    ?LOG("job return in queu~n"),
+                    % fill pending_callers, and request to true
+                    % pending_child_request will be catched by handle_cast/next_pass
+                    {noreply, S#probe_server_state{
+                        pending_child_request   = true,
+                        pending_callers         = lists:append([Caller], [Callers] )}
+                    }
+            end
+    end;
 
 handle_cast(_R, S) ->
     io:format("Unknown message ~p ~p ~p ~p~n", [?MODULE, ?LINE, _R, S]),
@@ -307,3 +361,88 @@ make_key_values([{K,V} | T], S) when is_float(V) ->
     make_key_values(T, [{'Property', K, float_to_list(V, [{decimals, 10}])} | S]);
 make_key_values([{K,V} | T], S) when is_atom(V) ->
     make_key_values(T, [{'Property', K, atom_to_list(V)} | S]).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+%
+handle_probe_return(State, ProbeReturn, NewState) ->
+    #probe_server_state{pending_child_request = Request}    = State,
+    #probe_server_state{probe = Probe1}                     = State,
+    #probe_server_state{probe = Probe2}                     = NewState,
+    case Probe1 of
+        Probe2 ->
+            StatusMove = false;
+        _ ->
+            StatusMove = true
+    end,
+    case Request of
+        true ->
+            PendingRequest = true;
+        false ->
+            PendingRequest = false
+    end,
+    handle_probe_return(
+        StatusMove,
+        PendingRequest,
+        State,
+        NewState,
+        ProbeReturn).
+
+handle_probe_return(StatusMove, _PendingRequest = false, S, NS, PR) ->
+    handle_probe_return(StatusMove, S, NS, PR);
+
+handle_probe_return(StatusMove, _PendingRequest = true, S, NS, PR) ->
+    % do something then
+    handle_probe_return(StatusMove, S, NS, PR).
+
+handle_probe_return(_StatusMove = false, S, _NS, PR) ->
+    #probe_server_state{probe  = Probe}     = S,
+    #probe_server_state{target = Target}    = S,
+    supercast_mpd:multicast_msg(
+        Probe#probe.name, {
+            Probe#probe.permissions,
+            pdu(probeReturn, {PR, Target#target.id, Probe#probe.name})
+        }
+    ),
+    log(S, PR),
+    After = Probe#probe.step * 1000,
+    {ok, TRef} = timer:apply_after(After, ?MODULE, probe_pass, [S]),
+    S#probe_server_state{tref = TRef};
+
+handle_probe_return(_StatusMove = true, _S, NS, PR) ->
+    #probe_server_state{probe  = Probe}     = NS,
+    #probe_server_state{target = Target}    = NS,
+    tracker_target_channel:update(
+        Target#target.id,
+        Probe#probe.id,
+        {Probe, PR}
+    ),
+    supercast_mpd:multicast_msg(
+        Probe#probe.name, {
+            Probe#probe.permissions,
+            pdu(probeReturn, {
+                PR,
+                Target#target.id, Probe#probe.name
+            })
+        }
+    ),
+    log(NS, PR#probe_return{is_event = true}),
+    After       = Probe#probe.step * 1000,
+    {ok, TRef}  =  timer:apply_after(After, ?MODULE, probe_pass, [NS]),
+    NS#probe_server_state{tref = TRef}.

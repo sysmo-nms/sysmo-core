@@ -25,13 +25,13 @@
     original_reply  = undefined :: string(),
     timestamp       = undefined :: integer(),
     key_vals        = []        :: [{string(), any()}],
-    is_event        = false     :: true | false
+    is_event        = false     :: true | false % used by tracker_events app
 }).
 
 -record(probe, {
     id                  = undefined     :: integer(), % unique in a target
     pid                 = undefined     :: undefined | pid(),
-    name                = undefined     :: string(),
+    name                = undefined     :: atom(),
     permissions         = #perm_conf{}  :: #perm_conf{},
     tracker_probe_mod   = undefined     :: undefined | module(),
     tracker_probe_conf  = undefined     :: [any()],
@@ -40,8 +40,6 @@
     step                = 60            :: integer(),
     inspectors          = []            :: [#inspector{}],
     loggers             = []            :: [#logger{}],
-    parent              = []            :: [atom()], % status is unknown if parent is fail
-    depend              = []            :: [atom()], % add status information to timeline
     properties          = []            :: [{string(), any()}],
     active              = true          :: true | false
 }).
@@ -65,6 +63,9 @@
 -record(probe_server_state, {
     target,
     probe,
+    tref,
+    pending_child_request = false,
+    pending_callers     = [],
     inspectors_state    = [],
     loggers_state       = [],
     probes_state        = []
