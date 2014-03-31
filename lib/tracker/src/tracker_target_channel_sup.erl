@@ -44,14 +44,7 @@ cold_start(ConfFile) ->
     {ok, Targets} = file:consult(ConfFile),
     ok = lists:foreach(fun(Target) ->
         ?MODULE:new(Target)
-    end, Targets),
-
-    % launch the channel probes.
-    % Channels = supervisor:which_children(?MODULE),
-    % ok = lists:foreach(fun({_,ChanPid,_,_}) ->
-    %    tracker_target_channel:cold_start(ChanPid)
-    %end, Channels),
-    ok.
+    end, Targets).
 
 init([]) ->
     {ok, 
