@@ -40,12 +40,12 @@ init([]) ->
             {simple_one_for_one, 1, 60},
             [
                 {
-                    tracker_probe,
-                    {tracker_probe, start_link, []},
+                    tracker_probe_fsm,
+                    {tracker_probe_fsm, start_link, []},
                     transient,
                     2000,
                     worker,
-                    [tracker_probe]
+                    [tracker_probe_fsm]
                }
             ]
         }
