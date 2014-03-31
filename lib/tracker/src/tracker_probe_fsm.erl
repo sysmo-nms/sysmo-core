@@ -34,7 +34,8 @@
 ]).
 
 -export([
-    'INITIAL'/2
+    'RUNNING'/2,
+    'CHILD-WAITING'/2
 ]).
 
 -export([
@@ -50,18 +51,40 @@ init([Target, Probe]) ->
     S1 = #probe_server_state{
         target              = Target,
         probe               = Probe#probe{pid = self()},
+        step                = Probe#probe.step * 1000,
+        timeout             = Probe#probe.timeout * 1000,
         loggers_state       = [],
         inspectors_state    = []
     },
-    gen_fsm:send_event(self(), start),
     {ok, S2}    = init_loggers(S1),
     {ok, S3}    = init_inspectors(S2),
     {ok, SF}    = init_probe(S3),
-    {ok, 'INITIAL', SF}.
+    {ok, 'RUNNING', SF, SF#probe_server_state.step}.
         
-'INITIAL'(start, SData) ->
-    ?LOG("initial event"),
-    {next_state, 'INITIAL', SData}.
+'RUNNING'(timeout, SData) ->
+    ?LOG("initial launch"),
+    % launch probe will send_event({reply, Val})
+    {next_state, 'RUNNING', SData};
+
+'RUNNING'({reply, _}, SData) ->
+    % do something with reply then trigger a late timeout
+    {next_state, 'RUNNING', SData, SData#probe_server_state.step};
+
+'RUNNING'(child_query, SData) ->
+    % query parent to be sure
+    % launch probe now
+    {next_state, 'CHILD-WAITING', SData}.
+
+'CHILD-WAITING'({child_query, _}, SData) ->
+    % child query allready triggered do nothing but add it to the
+    % list of childs to reply
+    {next_state, 'CHILD-WAITING', SData};
+
+'CHILD-WAITING'({reply, _}, SData) ->
+    % notify child of my state and trigger late timeout
+    % negociation end here.
+    {next_state, 'RUNNING', SData, SData#probe_server_state.step}.
+
 
 handle_event(_Event, SName, SData) ->
     {next_state, SName, SData}.

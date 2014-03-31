@@ -63,6 +63,8 @@
 -record(probe_server_state, {
     target,
     probe,
+    step,
+    timeout,
     tref,
     pending_child_request = false,
     pending_callers     = [],
