@@ -88,8 +88,8 @@ ERL_UNTAR   = '\
 # WINDOWS RELEASES BEGIN #
 ##########################
 windows-local-release: compile $(REL_NAME).script
-	cp release_tools/local/sys.config ./sys.config
-	cp release_tools/local/8080_props.conf ./var/httpd/8080_props.conf
+	cp release_tools/local/sys.config.dev ./sys.config
+	cp release_tools/local/8080_props.conf.dev ./var/httpd/8080_props.conf
 	chmod -w sys.config
 	chmod -w var/httpd/8080_props.conf
 
@@ -126,8 +126,8 @@ windows-release: var-clean rel-clean compile
 # UNIX RELEASES BEGIN #
 #######################
 unix-local-release: compile $(REL_NAME).script
-	cp release_tools/local/sys.config sys.config
-	cp release_tools/local/8080_props.conf var/httpd/8080_props.conf
+	cp release_tools/local/sys.config.dev sys.config
+	cp release_tools/local/8080_props.conf.dev var/httpd/8080_props.conf
 	chmod -w sys.config
 	chmod -w var/httpd/8080_props.conf
 
