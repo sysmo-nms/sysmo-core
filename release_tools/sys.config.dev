@@ -1,0 +1,146 @@
+[
+    {supercast,
+        [
+            {auth_module,   bsupercast_auth_local},
+            {acctrl_module, bsupercast_acctrl_rbac},
+
+            % if a PDU come from client with asn_key, switch it to the module
+            % implementing the supercast_module_behaviour.
+            {pdu_dispatch,
+                [
+                    % {supercast_module_behaviour, asn_key}
+                    {tracker_api, modTrackerPDU},
+                    {locator_api, modLocatorPDU}
+                ]
+            },
+
+            % this is the initial list of channels for the client. It must be
+            % the entry point for all other channels. For example, once
+            % the client subscribe to the tracker channel, this one will
+            % tell the client wich chan he knows about, and wich chans
+            % disapear. This module can also be a simple "beha_supercast_channel"
+            % module.
+            {main_channels,
+                [
+                    'target-MasterChan',
+                    'locator-MasterChan'
+                ]
+            },
+
+            {tcp_client,
+                [
+                    {enabled, true},
+                    {port, 8888},
+                    {maxconn, 50},
+                    {encoder, bsupercast_encoder_asn}
+                ]
+            },
+            {ssl_client,
+                [
+                    {enabled, true},
+                    {ssl_conf, [
+                        {certificate,   "cfg/ssl/certificate.pem"},
+                        {caCertificate, "cfg/ssl/request.pem"},
+                        {key,           "cfg/ssl/key.pem"}
+                    ]},
+                    {port, 4443},
+                    {maxconn, 50},
+                    {encoder, bsupercast_encoder_asn}
+                ]
+            }
+        ]
+    },
+    {tracker,
+        [
+            {config_file,           "cfg/tracker.conf"},
+            {targets_data_dir,      "var/tracker"},
+            {master_chan_read_perm, ["admin"]},
+            {probe_modules,
+                [
+                    btracker_probe_nagios,
+                    btracker_probe_snmp
+                ]
+            }
+        ]
+    },
+    {tlogger_rrd,
+        [
+            {command,   "rrdtool - "}
+        ]
+    },
+    {tlogger_text,
+        [
+            {dump_size,             30000}
+        ]
+    },
+    {kernel,
+        [
+            {start_dist_ac, false},
+            {inet_dist_listen_min, 9000},
+            {inet_dist_listen_max, 9005}
+            %{error_logger, {file, "var/log/error_logger.log"}}
+        ]
+    },
+    {sasl,
+        [
+            {sasl_error_logger, {file, "var/log/sasl_error_logger.log"}}
+        ]
+    },
+    {snmp,
+        [
+            {manager,
+                [
+                    {priority, normal},
+                    {versions, [v2,v3]},
+                    {config,
+                        [
+                            {dir,       "var/snmp"},
+                            {db_dir,    "var/snmp"},
+                            {verbosity, info},
+                            {repair,    true},
+                            {auto_save, 5000}
+                        ]
+                    },
+                    {inform_request_behaviour, auto},
+                    {server, [{timeout, 30000}, {verbosity, info}]},
+                    {note_store, [{timeout, 30000}, {verbosity, info}]},
+                    {def_user_module,   btracker_probe_snmp},
+                    {net_if,
+                        [
+                            {module,    snmpm_net_if},
+                            {verbosity, info},
+                            {options,   [{bind_to, false}, {no_reuse, false}]}
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    {mnesia,
+        [
+            {dir,       "var/mnesia"},
+            {debug,     none}
+        ]
+    },
+    {locator,
+        []
+    },
+    {inets,
+        [
+            {services,
+                [
+                    {httpd,
+                        [
+            {proplist_file, "var/httpd/8080_props.conf"},
+            {debug,         disable},
+            {accept_timeout, 3000}
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+].
+
+
+
