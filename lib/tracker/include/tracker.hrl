@@ -40,6 +40,8 @@
     step                = 60            :: integer(),
     inspectors          = []            :: [#inspector{}],
     loggers             = []            :: [#logger{}],
+    parent              = []            :: [atom()], % status is unknown if parent is fail
+    depend              = []            :: [atom()], % add status information to timeline
     properties          = []            :: [{string(), any()}],
     active              = true          :: true | false
 }).

@@ -45,6 +45,8 @@
                     ]
                 }
             ],
+            [],
+            [],
             [
                 {"propertyX", "propertyXValue"},
                 {"propertyY", "propertyYValue"}
@@ -86,6 +88,8 @@
                 {logger, tracker_events, []},
                 {logger, btracker_logger_text, []}
             ],
+            [],
+            [],
             [
                 {"propertyX", "propertyXValue"},
                 {"propertyY", "propertyYValue"}
@@ -142,6 +146,8 @@
                     ]
                 }
             ],
+            [],
+            [],
             [
                 {"propertyX", "propertyXValue"},
                 {"propertyY", "propertyYValue"}
@@ -183,6 +189,8 @@
                 {logger, tracker_events, []},
                 {logger, btracker_logger_text, []}
             ],
+            [],
+            [],
             [
                 {"propertyX", "propertyXValue"},
                 {"propertyY", "propertyYValue"}
