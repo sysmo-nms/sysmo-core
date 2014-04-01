@@ -39,7 +39,6 @@
 % @end
 -module(tracker_target_channel).
 -behaviour(gen_server).
--behaviour(gen_channel).
 -include("../include/tracker.hrl").
 
 % GEN_SERVER CALLBACKS

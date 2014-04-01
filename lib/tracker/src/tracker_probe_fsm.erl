@@ -68,15 +68,15 @@ init([Target, Probe]) ->
 %% 'RUNNING' state, in normal running operations
 %%
 'SLEEPING'(timeout, SData) ->
-    ?LOG("timeout triggered sleeping"),
+    %?LOG("timeout triggered sleeping"),
     % launch probe will send_event({reply, Val})
     erlang:spawn(?MODULE, launch_probe, [SData]),
     {next_state, 'WAITING-PROBE-REPLY', SData}.
 
 'WAITING-PROBE-REPLY'({probe_reply, NewSData, PReturn}, SData) ->
     % do something with reply then trigger a late timeout
-    ?LOG("handle reply"),
-    ?LOG(erlang:process_info(self())),
+    %?LOG("handle reply"),
+    %?LOG(erlang:process_info(self())),
     handle_probe_reply(SData, NewSData, PReturn),
     {next_state, 'SLEEPING', NewSData, NewSData#ps_state.step}.
 
