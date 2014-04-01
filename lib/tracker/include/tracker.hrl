@@ -40,6 +40,7 @@
     step                = 60            :: integer(),
     inspectors          = []            :: [#inspector{}],
     loggers             = []            :: [#logger{}],
+    parents             = []            :: [atom()],
     properties          = []            :: [{string(), any()}],
     active              = true          :: true | false
 }).
@@ -66,8 +67,8 @@
     step,
     timeout,
     tref,
-    pending_child_request = false,
-    pending_callers     = [],
+    parents,
+    childs_waiting,
     inspectors_state    = [],
     loggers_state       = [],
     probes_state        = []

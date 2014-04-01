@@ -8,6 +8,7 @@ With triggered update of parents on a failure.
 - depend association
 Configurable events. Add probe dependency (different from probe parent). Will
 create an event for the dependent probes. Event correlation will be easier.
+
 ### HIGH
 - SNMP Elements autogen snmpwalks/rrdtool with MIB2 interface tree,
 (packets, discard, %discard, error, %error)
@@ -38,7 +39,7 @@ all the noctoupus-client functionnalities.
 ### MEDIUM
 - mail alerts
 With treaded reply to receivers on acknowlegement. Linked to acknownledgement
-system.
+system. Include childs dependencies of the check failure.
 - logger_events 2 
 Include concept of documented Acknoledgement.
 - probe_snmp_v3 

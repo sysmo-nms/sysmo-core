@@ -33,25 +33,17 @@
     info/0
 ]).
 
--record(state, {
-    config,
-    last_status
-}).
-
 info() ->
     [].
 
-init(Conf, PS1) ->
-    io:format("~p init ~p~n", [?MODULE, Conf]),
-    PS2 = store_state(#state{config = Conf}, PS1),
-    {ok, PS2}.
+init(_, PS) ->
+    {ok, PS}.
 
 % @end
 inspect(_InitPSState, ModifiedPSState, _ProbeReturn) ->
-    #ps_state{probe = Probe}  = ModifiedPSState,
-    #probe{status = Status}             = Probe,
-    #state{config = Conf} = get_state(ModifiedPSState),
-    io:format("~p run ~p ~n", [?MODULE, Conf]),
+    #ps_state{probe = Probe}    = ModifiedPSState,
+    #probe{name     = Name}     = Probe,  
+    #probe{status   = Status}   = Probe,
 
     case Status of
         'OK' ->         % nothing to do
@@ -61,22 +53,26 @@ inspect(_InitPSState, ModifiedPSState, _ProbeReturn) ->
             io:format("is unknown~n"),
             {ok, ModifiedPSState};
         'WARNING' ->    % nothing to do
-            io:format("is warning~n"),
-            {ok, ModifiedPSState};
+            tracker_probe_fsm:if_parent_is_ok(Name, 'WARNING'),
+            TmpProbe = Probe#probe{status = 'UNKNOWN'},
+            TmpState = ModifiedPSState#ps_state{probe = TmpProbe},
+            {ok, TmpState};
         'CRITICAL' ->   % must test something
-            io:format("is critical~n"),
-            {ok, ModifiedPSState}
+            tracker_probe_fsm:if_parent_is_ok(Name, 'CRITICAL'),
+            TmpProbe = Probe#probe{status = 'UNKNOWN'},
+            TmpState = ModifiedPSState#ps_state{probe = TmpProbe},
+            {ok, TmpState}
     end.
 
 
 % UTILS btracker_inspector_parent
 
 % UTILS beha_tracker_probe
-store_state(Value, 
-        #ps_state{inspectors_state = IState} = ProbeServerState) ->
-    IConf = lists:keystore(?MODULE, 1, IState, {?MODULE, Value}),
-    ProbeServerState#ps_state{inspectors_state = IConf}.
-
-get_state(#ps_state{inspectors_state = IS}) ->
-    {?MODULE, Value} = lists:keyfind(?MODULE, 1, IS),
-    Value.
+% store_state(Value, 
+%         #ps_state{inspectors_state = IState} = ProbeServerState) ->
+%     IConf = lists:keystore(?MODULE, 1, IState, {?MODULE, Value}),
+%     ProbeServerState#ps_state{inspectors_state = IConf}.
+% 
+% get_state(#ps_state{inspectors_state = IS}) ->
+%     {?MODULE, Value} = lists:keyfind(?MODULE, 1, IS),
+%     Value.

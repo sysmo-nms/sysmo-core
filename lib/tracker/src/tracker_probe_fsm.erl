@@ -38,13 +38,21 @@
 % gen_fsm states
 -export([
     'SLEEPING'/2,
-    'WAITING-PROBE-REPLY'/2
+    'WAITING-REPLY'/2,
+    'NEGOCIATE-WAITING-REPLY'/2,
+    'NEGOCIATE-SLEEPING'/2
 ]).
 
 % local api
 -export([
     start_link/1,
     launch_probe/1
+]).
+
+% btracker_inspector_parent api
+-export([
+    if_parent_is_ok/2,
+    child_query/2
 ]).
 
 % gen_channel
@@ -63,12 +71,20 @@ get_perms(PidName) ->
 sync_request(PidName, CState) ->
     gen_fsm:send_all_state_event(PidName, {sync_request, CState}).
 
+if_parent_is_ok(PidName, Status) ->
+    gen_fsm:send_all_state_event(PidName, {if_parent_is_ok, Status}).
+
+child_query(PidName, Child) ->
+    gen_fsm:send_all_state_event(PidName, {child_query, Child}).
+
 init([Target, Probe]) ->
     S1 = #ps_state{
         target              = Target,
         probe               = Probe#probe{pid = self()},
         step                = Probe#probe.step * 1000,
         timeout             = Probe#probe.timeout * 1000,
+        parents             = Probe#probe.parents,
+        childs_waiting      = [],
         loggers_state       = [],
         inspectors_state    = []
     },
@@ -79,21 +95,60 @@ init([Target, Probe]) ->
     {ok, 'SLEEPING', SF, RandomStart}.
         
 %%
-%% 'SLEEPING' and 'WAITING-PROBE-REPLY'  state, in normal running operations
+%% 'SLEEPING' and 'WAITING-REPLY'  state, in normal running operations
 %%
+%% ALL STATES
 'SLEEPING'(timeout, SData) ->
-    %?LOG("timeout triggered sleeping"),
+    ?LOG("timeout triggered sleeping"),
     % launch probe will send_event({reply, Val})
     erlang:spawn(?MODULE, launch_probe, [SData]),
-    {next_state, 'WAITING-PROBE-REPLY', SData}.
+    {next_state, 'WAITING-REPLY', SData}.
 
-'WAITING-PROBE-REPLY'({probe_reply, NewSData, PReturn}, SData) ->
+'WAITING-REPLY'({probe_reply, NewSData, PReturn}, SData) ->
     % do something with reply then trigger a late timeout
     %?LOG("handle reply"),
     %?LOG(erlang:process_info(self())),
     handle_probe_reply(SData, NewSData, PReturn),
     {next_state, 'SLEEPING', NewSData, NewSData#ps_state.step}.
 
+%% CHILD STATES
+'NEGOCIATE-WAITING-REPLY'({probe_reply, NewSData, PReturn}, SData) ->
+    % handle probe reply normaly, but stop check and wait for parent reply
+    handle_probe_reply(SData, NewSData, PReturn),
+    {next_state, 'SLEEPING', NewSData, NewSData#ps_state.step}.
+
+'NEGOCIATE-SLEEPING'({parent_reply, _}, SData) ->
+    % handle parent replies then continue check.
+    % if all parent have responded go 'SLEEPING' else stay 'NEGOCIATE-SLEEPING'
+    {next_state, 'SLEEPING', SData, SData#ps_state.step}.
+
+
+handle_event({if_parent_is_ok, Status}, _SName, SData) ->
+    io:format("if parent_is_ok, ~p~n", [Status]),
+    #ps_state{parents   = Parents}  = SData,
+    #ps_state{probe     = Probe}    = SData,
+    #probe{name         = Name}     = Probe,
+    send_child_query(Name, Parents),
+    % triggered just before probe_reply comme. Query the parents here.
+    {next_state, 'NEGOCIATE-WAITING-REPLY', SData};
+
+handle_event({child_query, Child}, SName, SData) ->
+    io:format("child query, ~p~n", [Child]),
+    #ps_state{childs_waiting    = Childs}   = SData,
+    #ps_state{parents           = Parents}  = SData,
+    #ps_state{probe             = Probe}    = SData,
+    #probe{name                 = Name}     = Probe,
+    send_child_query(Name, Parents),
+    NChilds = lists:append([Child], [Childs]),
+    NSData  = SData#ps_state{childs_waiting = NChilds},
+    case SName of
+        'WAITING-REPLY' -> 
+            {next_state, 'NEGOCIATE-WAITING-REPLY', NSData};
+        'SLEEPING' ->
+            {next_state, 'NEGOCIATE-SLEEPING', NSData};
+        _ ->
+            {next_state, SName, NSData}
+    end;
 
 handle_event({sync_request, CState}, SName, SData) ->
     #ps_state{probe     = Probe}    = SData,
@@ -237,3 +292,8 @@ emit_wide(NSData, PR) ->
 send_unicast(CState, Pdus) ->
     #client_state{module = Mod} = CState,
     lists:foreach(fun(Pdu) -> Mod:send(Pdu) end, Pdus).
+
+send_child_query(_, [])       -> ok;
+send_child_query(Name, [H|T]) ->
+    tracker_probe_fsm:child_query(H, {child_query, Name}),
+    send_child_query(Name, T).
