@@ -99,25 +99,24 @@ init([Target, Probe]) ->
 %%
 %% ALL STATES
 'SLEEPING'(timeout, SData) ->
-    ?LOG("timeout triggered sleeping"),
-    % launch probe will send_event({reply, Val})
+    ?LOG("SLEEPING"),
     erlang:spawn(?MODULE, launch_probe, [SData]),
     {next_state, 'WAITING-REPLY', SData}.
 
 'WAITING-REPLY'({probe_reply, NewSData, PReturn}, SData) ->
-    % do something with reply then trigger a late timeout
-    %?LOG("handle reply"),
-    %?LOG(erlang:process_info(self())),
+    ?LOG("WAITING-REPLY"),
     handle_probe_reply(SData, NewSData, PReturn),
     {next_state, 'SLEEPING', NewSData, NewSData#ps_state.step}.
 
 %% CHILD STATES
 'NEGOCIATE-WAITING-REPLY'({probe_reply, NewSData, PReturn}, SData) ->
+    ?LOG("NEGOCIATE-WAITING-REPLY"),
     % handle probe reply normaly, but stop check and wait for parent reply
     handle_probe_reply(SData, NewSData, PReturn),
     {next_state, 'SLEEPING', NewSData, NewSData#ps_state.step}.
 
 'NEGOCIATE-SLEEPING'({parent_reply, _}, SData) ->
+    ?LOG("NEGOCIATE-SLEEPING"),
     % handle parent replies then continue check.
     % if all parent have responded go 'SLEEPING' else stay 'NEGOCIATE-SLEEPING'
     {next_state, 'SLEEPING', SData, SData#ps_state.step}.
@@ -266,7 +265,7 @@ handle_probe_reply(SData, NSData, PR) ->
             emit_wide(NSData, PR)
     end.
 
-% Status is identical notify all the subscribers of the probe
+% Notify all the subscribers of the probe (probeReturn)
 emit_local(SData, PR) ->
     #ps_state{probe     = Probe}    = SData,
     #ps_state{target    = Target}   = SData,
@@ -274,10 +273,10 @@ emit_local(SData, PR) ->
     #probe{permissions  = Perms}    = Probe,
     #target{id          = TargetId} = Target,
     Pdu = tracker_pdu:probe_return({PR, TargetId, Name}),
-    supercast_mpd:multicast_msg(Name, {Perms, Pdu}),
+    gen_channel:emit(Name, {Perms, Pdu}),
     log(SData, PR).
 
-% Status is différent notify all the subscribers of the master channel
+% Notify all the subscribers of the master channel (probeInfo)
 emit_wide(NSData, PR) ->
     #ps_state{probe     = Probe}    = NSData,
     #ps_state{target    = Target}   = NSData,

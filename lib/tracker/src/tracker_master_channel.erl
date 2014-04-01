@@ -154,7 +154,7 @@ handle_call({probe_update,
         #probe{permissions = Perm}  = NewProbe
     }, _F, #state{chans = Chans} = S) ->
     NewChans = lists:keyreplace(TargetId, 2, Chans, NewTarget),
-    supercast_mpd:multicast_msg(?MASTER_CHAN, {Perm, 
+    gen_channel:emit(?MASTER_CHAN, {Perm, 
         pdu(probeInfo, {update, TargetId, NewProbe})}),
     {reply, ok, S#state{chans = NewChans}};
 
@@ -162,14 +162,14 @@ handle_call({chan_update, #target{id = Id, global_perm = Perm} = Target}, _F,
         #state{chans = C} = S) ->
     case lists:keyfind(Id, 2, C) of
         false ->    % did not exist insert
-            supercast_mpd:multicast_msg(?MASTER_CHAN, {Perm,
+            gen_channel:emit(?MASTER_CHAN, {Perm,
                 pdu(targetInfo, Target)}),
             {reply, ok, S#state{
                     chans = [Target | C]
                 }
             };
         _ -> % exist update
-            supercast_mpd:multicast_msg(?MASTER_CHAN, {Perm,
+            gen_channel:emit(?MASTER_CHAN, {Perm,
                 pdu(targetInfo, Target)}),
             {reply, ok, 
                 S#state{
@@ -180,7 +180,7 @@ handle_call({chan_update, #target{id = Id, global_perm = Perm} = Target}, _F,
 
 handle_call({chan_del, #target{id = Id, global_perm = Perm}}, _F, 
         #state{chans = C} = S) ->
-    supercast_mpd:multicast_msg(?MASTER_CHAN, {Perm, pdu(targetDelete, Id)}),
+    gen_channel:emit(?MASTER_CHAN, {Perm, pdu(targetDelete, Id)}),
     {reply, ok, S#state{chans = lists:keydelete(Id, 2, C)}};
 
 %%----------------------------------------------------------------------------

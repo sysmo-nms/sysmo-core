@@ -26,7 +26,8 @@
     behaviour_info/1,
     get_chan_perms/1,
     synchronize/2,
-    subscribe/2
+    subscribe/2,
+    emit/2
 ]).
 
 % BEHAVIOUR FOR DOCUMENTATION ONLY
@@ -97,6 +98,10 @@ synchronize(PidName, CState) ->
 -spec subscribe(atom(), #client_state{}) -> ok.
 subscribe(PidName, CState) ->
     supercast_mpd:subscribe_stage3(PidName, CState).
+
+-spec emit(atom(), {#perm_conf{}, tuple()}) -> ok.
+emit(PName, {Perms, Pdu}) ->
+    supercast_mpd:multicast_msg(PName, {Perms, Pdu}).
 
 
 module_from_pid(PidName) ->
