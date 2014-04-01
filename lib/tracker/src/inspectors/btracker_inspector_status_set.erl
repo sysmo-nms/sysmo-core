@@ -41,11 +41,11 @@ init(_Conf, ProbeServerState) ->
 
 % @end
 inspect(_InitS,
-            #probe_server_state{
+            #ps_state{
                 probe = Probe
             } = ProbeServerState,
             #probe_return{
                 status = Status
             }) ->
     NewProbe = Probe#probe{status = Status},
-    {ok, ProbeServerState#probe_server_state{probe = NewProbe}}.
+    {ok, ProbeServerState#ps_state{probe = NewProbe}}.

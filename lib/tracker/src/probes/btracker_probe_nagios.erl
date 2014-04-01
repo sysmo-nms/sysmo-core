@@ -29,15 +29,15 @@
     info/0
 ]).
 
-init(#probe_server_state{
+init(#ps_state{
         probes_state = Ps
     } = S) ->
     Conf = lists:keystore(nag_re, 1, [], {nag_re, compile_nagios_re()}),
-    S#probe_server_state{
+    S#ps_state{
         probes_state = lists:keystore(?MODULE, 1, Ps, {?MODULE, Conf})
     }.
 
-exec({#probe_server_state{
+exec({#ps_state{
         probes_state = Conf
     }, #probe{
             tracker_probe_conf  = #nagios_plugin_conf{

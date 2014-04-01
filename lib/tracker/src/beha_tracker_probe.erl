@@ -60,7 +60,7 @@ behaviour_info(callbacks) ->
 behaviour_info(_) ->
     undefined.
 
--spec init(#probe_server_state{}) -> #probe_server_state{}.
+-spec init(#ps_state{}) -> #ps_state{}.
 init(S) ->
     S.
 

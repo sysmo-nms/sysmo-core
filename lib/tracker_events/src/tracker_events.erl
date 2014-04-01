@@ -49,13 +49,13 @@ init([]) ->
 
 %  
 handle_call({init, _Conf, 
-        #probe_server_state{probe = Probe} = ProbeServerState
+        #ps_state{probe = Probe} = ProbeServerState
     }, _F, S) ->
     create_table(Probe#probe.name),
     {reply, {ok, ProbeServerState}, S};
 
 handle_call({dump, 
-    #probe_server_state{
+    #ps_state{
         target = #target{id = TargetId},
         probe  = #probe{name = ProbeName}
     }}, _F, S) ->
@@ -66,7 +66,7 @@ handle_call(_R, _F, S) ->
     {noreply, S}.
 
 % 
-handle_cast({log, #probe_server_state{probe = #probe{name = ProbeName}}, 
+handle_cast({log, #ps_state{probe = #probe{name = ProbeName}}, 
         ProbeReturn}, S) ->
     {atomic, ProbeEvent} = insert_record(ProbeName, ProbeReturn),
     Pdu = pdu('probeEventMsg', {ProbeName, ProbeEvent}),

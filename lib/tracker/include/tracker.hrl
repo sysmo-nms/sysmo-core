@@ -60,9 +60,11 @@
     directory   = ""
 }).
 
--record(probe_server_state, {
+-record(ps_state, {
     target,
     probe,
+    step,
+    timeout,
     tref,
     pending_child_request = false,
     pending_callers     = [],

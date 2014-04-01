@@ -23,6 +23,7 @@
 -behaviour(gen_channel).
 -include("../include/tracker.hrl").
 
+% GEN_SERVER
 -export([
     init/1,
     handle_call/3, 
@@ -32,6 +33,13 @@
     code_change/3
 ]).
 
+% GEN_CHANNEL
+-export([
+    get_perms/1,
+    sync_request/2
+]).
+
+% API
 -export([
     start_link/1,
     chan_add/1,
@@ -49,6 +57,13 @@
 
 -define(MASTER_CHAN, 'target-MasterChan').
 
+
+%% GEN_CHANNEL
+get_perms(PidName) ->
+    gen_server:call(PidName, get_perms).
+
+sync_request(PidName, CState) ->
+    gen_server:call(PidName, {sync_request, CState}).
 
 %%----------------------------------------------------------------------------
 %%----------------------------------------------------------------------------
@@ -179,10 +194,10 @@ handle_call({chan_del, #target{id = Id, global_perm = Perm}}, _F,
 handle_call(get_perms, _F, #state{perm = P} = S) ->
     {reply, P, S};
 
-handle_call({synchronize, #client_state{module = CMod} = CState}, 
+handle_call({sync_request, #client_state{module = CMod} = CState}, 
         _F, #state{chans = Chans, probe_modules = PMods} = State) ->
-    % subscribe the client to mpd,
-    supercast_mpd:subscribe_stage3(?MASTER_CHAN, CState),
+    % I want this client to receive my messages,
+    gen_channel:subscribe(?MASTER_CHAN, CState),
     PMList  = [pdu(probeModInfo, Probe) || Probe <- PMods],
     % gen_dump_pdus will filter based on CState permissions
     PDUs    = gen_dump_pdus(CState, Chans),
