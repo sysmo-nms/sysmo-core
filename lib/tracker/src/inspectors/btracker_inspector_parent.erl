@@ -48,7 +48,7 @@ init(Conf, PS1) ->
 
 % @end
 inspect(_InitPSState, ModifiedPSState, _ProbeReturn) ->
-    #probe_server_state{probe = Probe}  = ModifiedPSState,
+    #ps_state{probe = Probe}  = ModifiedPSState,
     #probe{status = Status}             = Probe,
     #state{config = Conf} = get_state(ModifiedPSState),
     io:format("~p run ~p ~n", [?MODULE, Conf]),
@@ -73,10 +73,10 @@ inspect(_InitPSState, ModifiedPSState, _ProbeReturn) ->
 
 % UTILS beha_tracker_probe
 store_state(Value, 
-        #probe_server_state{inspectors_state = IState} = ProbeServerState) ->
+        #ps_state{inspectors_state = IState} = ProbeServerState) ->
     IConf = lists:keystore(?MODULE, 1, IState, {?MODULE, Value}),
-    ProbeServerState#probe_server_state{inspectors_state = IConf}.
+    ProbeServerState#ps_state{inspectors_state = IConf}.
 
-get_state(#probe_server_state{inspectors_state = IS}) ->
+get_state(#ps_state{inspectors_state = IS}) ->
     {?MODULE, Value} = lists:keyfind(?MODULE, 1, IS),
     Value.

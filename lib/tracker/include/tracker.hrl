@@ -60,7 +60,7 @@
     directory   = ""
 }).
 
--record(probe_server_state, {
+-record(ps_state, {
     target,
     probe,
     step,

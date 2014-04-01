@@ -41,7 +41,7 @@
     exec/1,
     info/0]).
 
-init(#probe_server_state{
+init(#ps_state{
         probe  = #probe{tracker_probe_conf = Conf},
         target = #target{id = Name}
     } = S) ->

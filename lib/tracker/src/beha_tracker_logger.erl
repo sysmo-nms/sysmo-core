@@ -45,8 +45,8 @@ behaviour_info(callbacks) ->
 behaviour_info(_) ->
     undefined.
 
--spec init(Conf::[any()], #probe_server_state{}) 
-        -> {ok, #probe_server_state{}}.
+-spec init(Conf::[any()], #ps_state{}) 
+        -> {ok, #ps_state{}}.
 % @doc
 % Called at the target_target_channel probe initialisation.
 % @end
@@ -54,7 +54,7 @@ init(_Conf, ProbeServerState) ->
     {ok, ProbeServerState}.
 
 
--spec log(ProbeServerState::#probe_server_state{}, Msg::any()) 
+-spec log(ProbeServerState::#ps_state{}, Msg::any()) 
         -> ok.
 % @doc
 % Called each time a message responce from the probe fun is received.
@@ -67,7 +67,7 @@ init(_Conf, ProbeServerState) ->
 log(_ProbeServerState, _Msg) ->
     ok.
 
--spec dump(ProbeServerState::#probe_server_state{}) -> 
+-spec dump(ProbeServerState::#ps_state{}) -> 
     {ok, binary()} | ignore | timeout.
 % @doc
 % Called by a tracker_target_channel on a subscribe request by a client. Must

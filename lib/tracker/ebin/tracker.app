@@ -24,6 +24,7 @@
         {vsn, "0.1.0"},
         {modules, [
                 tracker_app,
+                tracker_pdu,
                 tracker_api,
                 tracker_master_channel,
                 tracker_misc,

@@ -33,7 +33,7 @@
     dump/1
 ]).
 
-init(Cfg, #probe_server_state{
+init(Cfg, #ps_state{
         target          = #target{directory = Dir},
         loggers_state   = LoggersState} = ProbeSrvState) ->
 
@@ -75,8 +75,8 @@ init(Cfg, #probe_server_state{
         {?MODULE, Cfg3}
     ),
 
-    % generate the new probe_server_state
-    NewProbeSrvState = ProbeSrvState#probe_server_state{
+    % generate the new ps_state
+    NewProbeSrvState = ProbeSrvState#ps_state{
         loggers_state = LoggersState2
     },
 
@@ -84,7 +84,7 @@ init(Cfg, #probe_server_state{
     {ok, NewProbeSrvState}.
 
 
-log(#probe_server_state{loggers_state = LoggersState}, 
+log(#ps_state{loggers_state = LoggersState}, 
         #probe_return{key_vals = Kv}) ->
     % Config is a list of rrd_config records.
     % Kv is a list of {bind, value:int()}
@@ -99,7 +99,7 @@ log(#probe_server_state{loggers_state = LoggersState},
     end, Configs),
     ok.
 
-dump(#probe_server_state{
+dump(#ps_state{
         loggers_state   = LoggersState,
         target          = #target{id    = TargetId},
         probe           = #probe{name   = ProbeId}
