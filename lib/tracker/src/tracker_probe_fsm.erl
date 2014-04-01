@@ -22,8 +22,10 @@
 % @end
 -module(tracker_probe_fsm).
 -behaviour(gen_fsm).
+-behaviour(gen_channel).
 -include("../include/tracker.hrl").
 
+% gen_fsm
 -export([
     init/1,
     handle_event/3, 
@@ -33,21 +35,33 @@
     code_change/4
 ]).
 
+% gen_fsm states
 -export([
     'SLEEPING'/2,
     'WAITING-PROBE-REPLY'/2
 ]).
 
+% local api
 -export([
     start_link/1,
     launch_probe/1
-
 ]).
 
+% gen_channel
+-export([
+    get_perms/1,
+    sync_request/2
+]).
 
 
 start_link({Target, #probe{name = Name} = Probe}) ->
     gen_fsm:start_link({local, Name}, ?MODULE, [Target, Probe], []).
+
+get_perms(PidName) ->
+    gen_fsm:sync_send_all_state_event(PidName, get_perms).
+
+sync_request(PidName, CState) ->
+    gen_fsm:send_all_state_event(PidName, {sync_request, CState}).
 
 init([Target, Probe]) ->
     S1 = #ps_state{
@@ -65,7 +79,7 @@ init([Target, Probe]) ->
     {ok, 'SLEEPING', SF, RandomStart}.
         
 %%
-%% 'RUNNING' state, in normal running operations
+%% 'SLEEPING' and 'WAITING-PROBE-REPLY'  state, in normal running operations
 %%
 'SLEEPING'(timeout, SData) ->
     %?LOG("timeout triggered sleeping"),
@@ -80,11 +94,19 @@ init([Target, Probe]) ->
     handle_probe_reply(SData, NewSData, PReturn),
     {next_state, 'SLEEPING', NewSData, NewSData#ps_state.step}.
 
-handle_event(_Event, SName, SData) ->
+
+handle_event({sync_request, CState}, SName, SData) ->
+    #ps_state{probe     = Probe}    = SData,
+    #probe{name         = Name}     = Probe,
+    Pdus    = log_dump(SData),
+    ok      = send_unicast(CState, Pdus),
+    ok      = gen_channel:subscribe(Name, CState),
     {next_state, SName, SData}.
 
-handle_sync_event(_Event, _From, SName, SData) ->
-    {reply, ok, SName, SData}.
+handle_sync_event(get_perms, _From, SName, SData) ->
+    #ps_state{probe     = Probe}        = SData,
+    #probe{permissions  = Permissions}  = Probe,
+    {reply, Permissions, SName, SData}.
 
 handle_info(_Info, SName, SData) ->
     {next_state, SName, SData}.
@@ -95,31 +117,10 @@ terminate(_Reason, _SName, _SData) ->
 code_change(_OldVsn, SName, SData, _Extra) ->
     {ok, SName, SData}.
 
-     
-     
-% %%-------------------------------------------------------------
-% %% HANDLE_CALL
-% %%-------------------------------------------------------------
-% 
-% 
-% 
-% % gen_channel calls
-% handle_call(get_perms, _F, #ps_state{probe = Probe} = S) ->
-%     {reply, Probe#probe.permissions, S};
-% 
-% handle_call({synchronize, #client_state{module = CMod} = CState},
-%         _F, #ps_state{probe = Probe} = S) ->
-%     supercast_mpd:subscribe_stage3(Probe#probe.name, CState),
-%     Pdus = log_dump(S),
-%     Pdus2 = [{CState, Pdu} || Pdu <- Pdus],
-%     % no need to filter witch acctrl because the stage1 synchronize have
-%     % allready do it.
-%     lists:foreach(fun({C_State, Pdu}) ->
-%         CMod:send(C_State, Pdu)
-%     end, Pdus2),
-%     {reply, ok, S};
- 
- 
+
+%%
+%% UTILS
+%%
 -spec launch_probe(#ps_state{}) -> ok.
 % @doc
 % It is the spawned proc who call the "gen_probe" module defined in the 
@@ -160,17 +161,17 @@ log(#ps_state{probe = Probe} = PSState, Msg) ->
     end, Probe#probe.loggers),
     ok.
 
-% -spec log_dump(#ps_state{}) -> any().
-% log_dump(#ps_state{probe = Probe} = PSState) ->
-%     L = [Mod:dump(PSState) || 
-%             #logger{module = Mod} <- Probe#probe.loggers],
-%     L2 = lists:filter(fun(Element) ->
-%         case Element of
-%             ignore  -> false;
-%             _       -> true
-%         end
-%     end, L),
-%     L2.
+-spec log_dump(#ps_state{}) -> any().
+log_dump(#ps_state{probe = Probe} = PSState) ->
+    L = [Mod:dump(PSState) || 
+            #logger{module = Mod} <- Probe#probe.loggers],
+    L2 = lists:filter(fun(Element) ->
+        case Element of
+            ignore  -> false;
+            _       -> true
+        end
+    end, L),
+    L2.
 
 % INSPECTORS
 % TODO keystore conf here
@@ -195,6 +196,9 @@ inspect(#ps_state{probe = Probe} = State, Msg) ->
     NewState.
 
 
+%%
+%% HANDLE PROBE REPLY
+%%
 handle_probe_reply(SData, NSData, PR) ->
     #ps_state{probe = ProbeS1}  = SData,
     #ps_state{probe = ProbeS2}  = NSData,
@@ -225,3 +229,11 @@ emit_wide(NSData, PR) ->
     #target{id          = TargetId} = Target,
     #probe{id           = ProbeId}  = Probe,
     tracker_target_channel:update(TargetId, ProbeId, {Probe, PR}).
+%%
+%%
+%%
+
+% send to a #client_state{}
+send_unicast(CState, Pdus) ->
+    #client_state{module = Mod} = CState,
+    lists:foreach(fun(Pdu) -> Mod:send(Pdu) end, Pdus).

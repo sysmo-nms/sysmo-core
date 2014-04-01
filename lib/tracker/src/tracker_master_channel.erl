@@ -202,10 +202,7 @@ handle_call({sync_request, #client_state{module = CMod} = CState},
     % gen_dump_pdus will filter based on CState permissions
     PDUs    = gen_dump_pdus(CState, Chans),
     PTotal  = lists:append(PMList, PDUs),
-    PSend   = [{CState, Pdu} || Pdu <- PTotal],
-    lists:foreach(fun({C_State, Pdu}) ->
-        CMod:send(C_State, Pdu)
-    end, PSend),
+    lists:foreach(fun(Pdu) -> CMod:send(CState, Pdu) end, PTotal),
     {reply, ok, State};
 
 handle_call(dump, _F, State) ->
