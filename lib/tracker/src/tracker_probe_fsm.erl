@@ -152,7 +152,11 @@ init([Target, Probe]) ->
 'INITIALIZE'(launch, SData) ->
     ?LOG({'launch'}),
     RandomStep = tracker_misc:random(SData#ps_state.step),
-    {next_state, 'SLEEPING-STEP', SData, RandomStep}.
+    {next_state, 'SLEEPING-STEP', SData, RandomStep};
+
+'INITIALIZE'(Any, SData) ->
+    ?LOG({"INITIALIZE guard receive", Any}),
+    {next_state, 'INITIALIZE', SData}.
 
 'INITIALIZE'(register_to_parents, _From, SData) ->
     ?LOG({'register to parent'}),
@@ -160,11 +164,8 @@ init([Target, Probe]) ->
     #ps_state{probe         = Probe}    = SData,
     #probe{name             = Name}     = Probe,
     register_to_parents(Name, Parents),
-    {reply, ok, 'INITIALIZE', SData};
+    {reply, ok, 'INITIALIZE', SData}.
 
-'INITIALIZE'(Any, SData) ->
-    ?LOG({"INITIALIZE guard receive", Any}),
-    {next_state, 'INITIALIZE', SData}.
 
 
 
