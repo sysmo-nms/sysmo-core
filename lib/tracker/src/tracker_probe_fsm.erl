@@ -160,7 +160,11 @@ init([Target, Probe]) ->
     #ps_state{probe         = Probe}    = SData,
     #probe{name             = Name}     = Probe,
     register_to_parents(Name, Parents),
-    {reply, ok, 'INITIALIZE', SData}.
+    {reply, ok, 'INITIALIZE', SData};
+
+'INITIALIZE'(Any, SData) ->
+    ?LOG({"INITIALIZE guard receive", Any}),
+    {next_state, 'INITIALIZE', SData}.
 
 
 
@@ -175,8 +179,11 @@ init([Target, Probe]) ->
 
 'INITIALIZE-WAITING-REPLY'(launch, SData) ->
     RandomStep = tracker_misc:random(SData#ps_state.step),
-    {next_state, 'WAITING-REPLY', SData, RandomStep}.
+    {next_state, 'WAITING-REPLY', SData, RandomStep};
 
+'INITIALIZE-WAITING-REPLY'(Any, SData) ->
+    ?LOG({"INITIALIZE-WAITING-REPLY guard receive", Any}),
+    {next_state, 'INITIALIZE', SData}.
 
 'INITIALIZE-WAITING-REPLY'(register_to_parents, _From, SData) ->
     #ps_state{fsm_parents   = Parents}  = SData,

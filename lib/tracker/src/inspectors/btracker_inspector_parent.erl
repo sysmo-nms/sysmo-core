@@ -53,10 +53,7 @@ inspect(_InitPSState, ModifiedPSState, _ProbeReturn) ->
             io:format("is unknown~n"),
             {ok, ModifiedPSState};
         'WARNING' ->    % nothing to do
-            tracker_probe_fsm:if_parent_is_ok(Name, 'WARNING'),
-            TmpProbe = Probe#probe{status = 'UNKNOWN'},
-            TmpState = ModifiedPSState#ps_state{probe = TmpProbe},
-            {ok, TmpState};
+            {ok, ModifiedPSState};
         'CRITICAL' ->   % must test something
             tracker_probe_fsm:if_parent_is_ok(Name, 'CRITICAL'),
             TmpProbe = Probe#probe{status = 'UNKNOWN'},
