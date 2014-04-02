@@ -67,9 +67,10 @@
     step,
     timeout,
     tref,
-    fsm_parents         = [],   %from config
+    fsm_parents         = [] :: {atom(), atom()},   % {pidName, status}
     fsm_childs          = [],   %dynamicaly added
-    fsm_parents_ok      = true,
+    fsm_stop_parents    = [] :: {atom(), atom()},   % {pidName, status}
+    fsm_pending_crit_reply = none,
     inspectors_state    = [],
     loggers_state       = [],
     probes_state        = []
