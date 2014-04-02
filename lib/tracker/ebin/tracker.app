@@ -56,7 +56,8 @@
         },
         {start_phases,
             [
-                {create_targets, []}
+                {create_targets, []},
+                {launch_probes,  []}
             ]
         },
         {mod, {tracker_app, []}}

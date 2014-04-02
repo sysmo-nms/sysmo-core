@@ -67,8 +67,9 @@
     step,
     timeout,
     tref,
-    parents,
-    childs_waiting,
+    fsm_parents         = [],   %from config
+    fsm_childs          = [],   %dynamicaly added
+    fsm_parents_ok      = true,
     inspectors_state    = [],
     loggers_state       = [],
     probes_state        = []

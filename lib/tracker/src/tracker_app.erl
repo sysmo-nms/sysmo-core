@@ -38,7 +38,10 @@ start(_Type, _Args) ->
 
 start_phase(create_targets, normal, []) ->
     {ok, ConfFile} = application:get_env(tracker, config_file),
-    ok = tracker_target_channel_sup:cold_start(ConfFile).
+    ok = tracker_target_channel_sup:cold_start(ConfFile);
+
+start_phase(launch_probes, normal, []) ->
+    tracker_probe_sup:launch().
 
 stop(_State) ->
     ok.

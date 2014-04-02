@@ -24,7 +24,8 @@
 
 -export([
     start_link/0,
-    new/1
+    new/1,
+    launch/0
 ]).
 -export([init/1]).
 
@@ -33,6 +34,32 @@ start_link() ->
 
 new({Target, Probe}) ->
     supervisor:start_child(?MODULE, [{Target, Probe}]).
+
+launch() ->
+    io:format("~p", [supervisor:which_children(?MODULE)]),
+    Childs  = supervisor:which_children(?MODULE),
+    PIds    = [Pid || {_,Pid,_,_} <- Childs],
+    initialize_probes(PIds).
+
+initialize_probes(Pids) ->
+    freeze_probes(  Pids),
+    sync_probes(    Pids),
+    launch_probes(  Pids).
+
+freeze_probes([])       -> ok;
+freeze_probes([H|T])    ->
+    tracker_probe_fsm:freeze(H),
+    freeze_probes(T).
+
+sync_probes([])     -> ok; 
+sync_probes([H|T])  ->
+    tracker_probe_fsm:synchronize_parents(H),
+    sync_probes(T).
+
+launch_probes([])       -> ok;
+launch_probes([H|T])    ->
+    tracker_probe_fsm:launch(H),
+    launch_probes(T).
 
 init([]) ->
     {ok, 
@@ -50,3 +77,4 @@ init([]) ->
             ]
         }
     }.
+
