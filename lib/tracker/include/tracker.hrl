@@ -67,9 +67,13 @@
     step,
     timeout,
     tref,
+    last_check,
+    probe_state         = sleeping | running,
+    force_check,
     fsm_parents         = [] :: {atom(), atom()},   % {pidName, status}
     fsm_childs          = [],   %dynamicaly added
-    fsm_stop_parents    = [] :: {atom(), atom()},   % {pidName, status}
+    nego_parents        = [],
+    nego_return,
     fsm_pending_crit_reply = none,
     inspectors_state    = [],
     loggers_state       = [],

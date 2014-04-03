@@ -55,7 +55,7 @@ inspect(_InitPSState, ModifiedPSState, _ProbeReturn) ->
         'WARNING' ->    % nothing to do
             {ok, ModifiedPSState};
         'CRITICAL' ->   % must test something
-            tracker_probe_fsm:if_parent_is_ok(Name, 'CRITICAL'),
+            tracker_probe_fsm:critical_return(Name),
             TmpProbe = Probe#probe{status = 'UNKNOWN'},
             TmpState = ModifiedPSState#ps_state{probe = TmpProbe},
             {ok, TmpState}

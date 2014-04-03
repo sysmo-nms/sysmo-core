@@ -50,18 +50,19 @@
 -export([
     'INITIALIZE'/2,
     'INITIALIZE'/3,
-    'INITIALIZE-WAITING-REPLY'/2,
-    'INITIALIZE-WAITING-REPLY'/3,
-    'SLEEPING-STEP'/2,
-    'WAITING-REPLY'/2,
-    'WAITING-CRITICAL-REPLY'/2,
+
+    'OK'/2,
+    'WARNING'/2,
+    'CRITICAL'/2,
+    'UNKNOWN'/2,
+
     'STOP-REACHABLE'/2,
     'STOP-UNREACHABLE'/2
 ]).
 
 % local api
 -export([
-    if_parent_is_ok/2,  % from btracker_inspector_parent:inspect
+    critical_return/1,  % from btracker_inspector_parent:inspect
     register_child/2,   % from tracker_probe_fsm:'INITIALIZE'
     freeze/1,           % from tracker_probe_sup:parents_sync/0
     synchronize_parents/1,  % from tracker_probe_sup:parents_sync/0
@@ -74,7 +75,7 @@
 
 % fsm behaviour
 start_link({Target, #probe{name = Name} = Probe}) ->
-    ?LOG({api_call, Name, start_link}),
+    %?LOG({api_call, Name, start_link}),
     gen_fsm:start_link({local, Name}, ?MODULE, [Target, Probe], []).
 
 % gen_channel behaviour
@@ -86,16 +87,16 @@ sync_request(PidName, CState) ->
 
 % FSM funs
 % from inspector_parent
--spec if_parent_is_ok(atom(), atom()) -> ok.
+-spec critical_return(atom()) -> ok.
 % @doc
 % Triggered by btracker_inspector_parent:inspect/2 that the probe must
 % check his parents to determinate the real status of the probe (
 % 'CRITICAL' if parent is 'OK' or 'UNKNOWN' if the parent is 'CRITICAL'
 % or 'UNKNOWN'.
 % @end
-if_parent_is_ok(PidName, Status) ->
-    ?LOG({api_call, PidName, if_parent_is_ok, Status}),
-    gen_fsm:send_all_state_event(PidName, {if_parent_is_ok, Status}).
+critical_return(PidName) ->
+    %?LOG({api_call, PidName, critical_return}),
+    gen_fsm:send_all_state_event(PidName, critical_return).
 
 % from tracker_probe_fsm:'INITIALIZE'/2
 -spec freeze(pid()) -> ok.
@@ -106,7 +107,7 @@ if_parent_is_ok(PidName, Status) ->
 % 'INITIALIZE-WAITING-REPLY' state.
 % @end
 freeze(PidName) ->
-    ?LOG({api_call, freeze, PidName}),
+    %?LOG({api_call, freeze, PidName}),
     gen_fsm:sync_send_all_state_event(PidName, freeze).
 
 -spec synchronize_parents(pid()) -> ok.
@@ -115,7 +116,7 @@ freeze(PidName) ->
 % Called by tracker_probe_sup after freeze/1.
 % @end
 synchronize_parents(PidName) ->
-    ?LOG({api_call, PidName, synchronize_parents}),
+    %?LOG({api_call, PidName, synchronize_parents}),
     gen_fsm:sync_send_event(PidName, register_to_parents).
 
 -spec launch(pid()) -> ok.
@@ -125,28 +126,28 @@ synchronize_parents(PidName) ->
 % start from 0 to #probe.step.
 % @end
 launch(PidName) ->
-    ?LOG({api_call, PidName, launch}),
+    %?LOG({api_call, PidName, launch}),
     gen_fsm:send_event(PidName, launch).
 
--spec emit_parent_move(atom(), atom(), atom()) -> ok.
+-spec emit_parent_move(atom(), any(), atom(), atom()) -> ok.
 % @doc
 % When a probe move occur, the probe execute this function to all childs
 % he knows about.
 % @end
-emit_parent_move(PidName, Parent, Status) ->
-    ?LOG({api_call, PidName, emit_parent_move, Parent, Status}),
-    gen_fsm:send_all_state_event(PidName, {parent_move, Parent, Status}).
+emit_parent_move(PidName, Ts, Parent, Status) ->
+    %?LOG({api_call, PidName, emit_parent_move, Parent, Status}),
+    gen_fsm:send_all_state_event(PidName, {parent_move, Parent, Status, Ts}).
 
 force_check(PidName) ->
-    ?LOG({api_call, PidName, force_check}),
+    %?LOG({api_call, PidName, force_check}),
     gen_fsm:send_all_state_event(PidName, force_check).
 
 register_child(PidName, Child) ->
-    ?LOG({api_call, PidName, register_child, Child}),
+    %?LOG({api_call, PidName, register_child, Child}),
     gen_fsm:send_event(PidName, {register_child, Child}).
 
 init([Target, Probe]) ->
-    ?LOG({gen_fsm_init, Probe#probe.name, init}),
+    %?LOG({gen_fsm_init, Probe#probe.name, init}),
     #probe{parents = Parents} = Probe,
     ProbeParents = [{Parent, undefined} || Parent <- Parents],
     S1 = #ps_state{
@@ -167,210 +168,216 @@ init([Target, Probe]) ->
 %%
 %% 'SLEEPING' and 'WAITING-REPLY'  state, in normal running operations
 %%
-%% ALL STATES
-'INITIALIZE'({register_child, Child}, SData) ->
-    ?LOG({gen_fsm_event, SData#ps_state.probe#probe.name, {'INITIALIZE', 'register child'}, Child}),
-    #ps_state{fsm_childs = Childs} = SData,
-    NewChilds   = [Child | Childs],
-    NewSData    = SData#ps_state{fsm_childs = NewChilds},
-    {next_state, 'INITIALIZE', NewSData};
-
-'INITIALIZE'(launch, SData) ->
-    ?LOG({gen_fsm_event, SData#ps_state.probe#probe.name, {'INITIALIZE', launch}}),
-    RandomStep = tracker_misc:random(SData#ps_state.step),
-    {next_state, 'SLEEPING-STEP', SData, RandomStep};
-
-'INITIALIZE'(Any, SData) ->
-    ?LOG({gen_fsm_event, SData#ps_state.probe#probe.name, {'INITIALIZE', guard, Any}}),
-    {next_state, 'INITIALIZE', SData}.
+register_to_parents(_, []) -> ok;
+register_to_parents(Child, [{Parent, _}|Tail]) ->
+    tracker_probe_fsm:register_child(Parent, Child),
+    register_to_parents(Child, Tail).
 
 'INITIALIZE'(register_to_parents, _From, SData) ->
-    ?LOG({gen_fsm_sync_event, SData#ps_state.probe#probe.name, {'INITIALIZE', register_to_parents}}),
     #ps_state{fsm_parents   = Parents}  = SData,
     #ps_state{probe         = Probe}    = SData,
     #probe{name             = Name}     = Probe,
     register_to_parents(Name, Parents),
     {reply, ok, 'INITIALIZE', SData}.
 
-
-
-
-'INITIALIZE-WAITING-REPLY'({register_child, Child}, SData) ->
-    ?LOG({gen_fsm_event, SData#ps_state.probe#probe.name, {'INITIALIZE-WAITING-REPLY', register_child}}),
+'INITIALIZE'({register_child, Child}, SData) ->
     #ps_state{fsm_childs = Childs} = SData,
     NewChilds   = [Child | Childs],
     NewSData    = SData#ps_state{fsm_childs = NewChilds},
-    {next_state, 'INITIALIZE-WAITING-REPLY', NewSData};
+    %?LOG({childs_are, NewChilds}),
+    {next_state, 'INITIALIZE', NewSData};
 
-'INITIALIZE-WAITING-REPLY'({probe_reply, _NewSData, _PReturn}, SData) ->
-    ?LOG({gen_fsm_event, SData#ps_state.probe#probe.name, {'INITIALIZE-WAITING-REPLY', probe_reply}}),
-    {next_state, 'INITIALIZE', SData};
-
-'INITIALIZE-WAITING-REPLY'(launch, SData) ->
-    ?LOG({gen_fsm_event, SData#ps_state.probe#probe.name, {'INITIALIZE-WAITING-REPLY', launch}}),
-    RandomStep = tracker_misc:random(SData#ps_state.step),
-    {next_state, 'WAITING-REPLY', SData, RandomStep};
-
-'INITIALIZE-WAITING-REPLY'(Any, SData) ->
-    ?LOG({gen_fsm_event, SData#ps_state.probe#probe.name, {'INITIALIZE-WAITING-REPLY', guard, Any}}),
-    {next_state, 'INITIALIZE', SData}.
-
-'INITIALIZE-WAITING-REPLY'(register_to_parents, _From, SData) ->
-    ?LOG({gen_fsm_sync_event, SData#ps_state.probe#probe.name, {'INITIALIZE-WAITING-REPLY', register_to_parents}}),
-    #ps_state{fsm_parents   = Parents}  = SData,
-    #ps_state{probe         = Probe}    = SData,
-    #probe{name             = Name}     = Probe,
-    register_to_parents(Name, Parents),
-    {reply, ok, 'INITIALIZE-WAITING-REPLY', SData}.
-
-register_to_parents(_, []) -> ok;
-register_to_parents(Child, [Parent|Tail]) ->
-    tracker_probe_fsm:register_child(Parent, Child),
-    register_to_parents(Child, Tail).
-
+'INITIALIZE'(launch, SData) ->
+    #ps_state{probe = Probe}    = SData,
+    #probe{status   = Status}   = SData,
+    RandomStep  = tracker_misc:random(SData#ps_state.step),
+    TRef        = launch_probe(SData, RandomStep),
+    NewSData    = SData#ps_state{tref = TRef}
+    NewSData2   = NewSData#ps_state{check_state = sleeping},
+    {next_state, Status, SData};
 
 
 
 %%
-'SLEEPING-STEP'(timeout, SData) ->
-    ?LOG({gen_fsm_event, SData#ps_state.probe#probe.name, {'SLEEPINT-STEP', timeout}}),
-    erlang:spawn(?MODULE, launch_probe, [SData]),
-    {next_state, 'WAITING-REPLY', SData}.
+'OK'(parent_move, SData) ->
+    {next_state, 'OK', SData}.
 
-'WAITING-REPLY'({probe_reply, NewSData, PReturn}, SData) ->
-    ?LOG({gen_fsm_event, SData#ps_state.probe#probe.name, {'WAITING-REPLY', probe_reply}}),
-    handle_probe_reply(SData, NewSData, PReturn),
-    {next_state, 'SLEEPING-STEP', NewSData, NewSData#ps_state.step}.
+'WARNING'(parent_move, SData) ->
+    {next_state, 'WARNING', SData}.
 
+'CRITICAL'(parent_move, SData) ->
+    {next_state, 'CRITICAL', SData}.
 
+'UNKNOWN'(parent_move, SData) ->
+    {next_state, 'UNKNOWN', SData}.
 
-request_parent_update(SData) when is_tuple(SData) ->
-    #ps_state{fsm_parents = Parents} = SData,
-    request_parent_update(Parents);
-request_parent_update([]) -> ok;
-request_parent_update([Parent|T]) ->
-    tracker_probe_fsm:force_check(Parent),
-    request_parent_update(T).
-
-
-'WAITING-CRITICAL-REPLY'({probe_reply, NewSData, PReturn}, SData) ->
-    ?LOG({gen_fsm_event, SData#ps_state.probe#probe.name, {'WAITING-CRITICAL-REPLY', probe_reply}}),
-    #ps_state{fsm_parents   = Parents}  = SData,
-    case parents_alive(Parents) of
-        true    ->
-            % do something to update parent to be sure
-            request_parent_update(SData),
-            StopParents = [{Parent, stop_reachable} || {Parent, _} <- Parents],
-            NewSData1   = SData#ps_state{fsm_stop_parents = StopParents},
-            NewSData2   = NewSData1#ps_state{
-                fsm_pending_crit_reply = {NewSData, PReturn}
-            },
-            {next_state, 'STOP-REACHABLE', NewSData2};
-        false   ->
-            % i am not recheable. keep the 'UNKNOWN' probe status set by the
-            % btracker_inspector_parent module and 'STOP'.
-            handle_probe_reply(SData, NewSData, PReturn),
-            % Initialize the fsm_stop_parents to nothing and let 'STOP'
-            % update it to reach a state which permit to continue.
-            {next_state, 'STOP-UNREACHABLE', NewSData}
-    end.
-
-'STOP-UNREACHABLE'({parent_move, _, _}, SData) ->
-    ?LOG({gen_fsm_event, SData#ps_state.probe#probe.name, {'STOP-UNREACHABLE', parent_move}}),
-    #ps_state{fsm_parents       = Parents}      = SData,
-    case parents_alive(Parents) of
-        true    ->
-            {next_state, 'SLEEPING',  SData, 100};
-        false   ->
-            {next_state, 'STOP-UNREACHABLE',      SData}
-    end.
-
-'STOP-REACHABLE'({parent_move, Parent, Status}, SData) ->
-    ?LOG({gen_fsm_event, SData#ps_state.probe#probe.name, {'STOP-REACHABLE', parent_move}}),
-    #ps_state{fsm_stop_parents  = Parents}      = SData,
-    NewParents  = lists:keystore(Parent, 1, Parents, {Parent, Status}),
-    NewSData    = SData#ps_state{fsm_stop_parents = NewParents},
-    case check_complete(NewParents) of
+'NEGOCIATE'({parent_move, Parent, Ts, Status}, SData) ->
+    #ps_state{nego_parents  = NegoParents}  = SData,
+    #ps_state{nego_return  = NegoReturn}    = SData,
+    #ps_state{last_return  = Last}          = SData,
+    case timer:now_diff(Ts, Last) < 0 of
         true ->
-            case parents_alive(NewParents) of
-                true ->
-                    % go critical
-                    #ps_state{fsm_pending_crit_reply = Reply} = SData,
-                    {CritSData, PReturn} = Reply,
-                    #ps_state{probe = CritProbe} = CritSData,
-                    NewCritProbe = CritProbe#probe{status = 'CRITICAL'},
-                    NewCritSData = CritSData#ps_state{probe = NewCritProbe},
-                    handle_probe_reply(SData, NewCritSData, PReturn),
-                    Step = CritSData#ps_state.step,
-                    {next_state, 'SLEEPING-STEP', CritSData, Step};
-                false ->
-                    #ps_state{fsm_pending_crit_reply = Reply} = SData,
-                    {CritSData, PReturn} = Reply,
-                    handle_probe_reply(SData, CritSData, PReturn),
-                    {next_state, 'STOP-UNREACHABLE', CritSData}
-            end;
+            NegoParents2 = lists:keystore(Parent, 1, NegoParents, {Parent, Status});
         false ->
-            {next_state, 'STOP-REACHABLE', NewSData}
+            NegoParents2 = NegoParents
+    end,
+
+    case nego_complete(NegoParents2) of
+        true  ->
+            case parents_alive(NegoParents2) of
+                true    ->
+                    {_, NewSData, PR} = NegoReturn,
+                    handle_probe_reply(SData, NewSData, PReturn),
+                    launch_probe(NewSData, Step),
+                    {next_state, 'CRITICAL', NewSData}
+                false   ->
+                    {_, NewSData, PR}           = NegoReturn,
+                    #ps_state{probe = NewProbe} = NewSData,
+                    NewProbe2 = NewProbe#probe{status = 'UNKNOWN'}, % TODO change status to HALT
+                    NewSData2 = NewSData#ps_state{probe = NewProbe2},
+                    handle_probe_reply(SData, NewSData2, PReturn),
+                    {next_state, 'HALT', NewSData2}
+                end;
+
+        false ->
+            NewSData = SData#ps_state{nego_parents = NegoParents2},
+            {next_state, 'NEGOCIATE', NewSData}
+    end.
+        
+% wait for parents to come up
+'HALT'(parent_move, SData) ->
+    #ps_state{parents   = Parents}  = SData,
+    #ps_state{step      = Step}     = SData,
+
+    case parents_alive(Parents) of
+        true ->
+            launch_probe(SData, Step),
+            {next_state, 'TAKE-OVER', SData};
+        false ->
+            {next_state, 'HALT', SData}
     end.
 
-check_complete([]) -> true;
-check_complete([{_, stop_reachable} | _]) -> false;
-check_complete([_|T]) -> check_complete(T).
-
-parents_alive([]) -> false;
-parents_alive([{_,Status}|H]) ->
-    case Status of
-        'CRITICAL'      -> parents_alive(H);
-        'UNKNOWN'       -> parents_alive(H);
-        stop_reachable  -> parents_alive(H);
-        _               -> true
+% in 'TAKE-OVER' state, return in HALT state if parent come down again.
+'TAKE-OVER'(parent_move, SData) ->
+    #ps_state{parents   = Parents}  = SData,
+    case parents_alive(Parents) of
+        true ->
+            {next_state, 'TAKE-OVER', SData};
+        false ->
+            {next_state, 'HALT', SData}
     end.
-    
+            
 
+handle_event({probe_return, NewSData, PR}, SName, SData) ->
+    #ps_state{force_check = Force}     = SData
+    #ps_state{parents   = Parents}     = SData,
+    #ps_state{probe     = OldProbe}    = SData,
+    #ps_state{probe     = NewProbe}    = NewSData,
+    #probe{status       = OldStatus}   = OldProbe,
+    #probe{status       = NewStatus}   = NewProbe,
 
-handle_event({if_parent_is_ok, Status}, 'WAITING-REPLY', SData) ->
-    ?LOG({gen_fsm_all_events, SData#ps_state.probe#probe.name, {if_parent_is_ok}, {current, 'WAITING-REPLY'}}),
-    io:format("if parent_is_ok, ~p~n", [Status]),
-    #ps_state{fsm_parents   = Parents}  = SData,
-    #ps_state{probe         = Probe}    = SData,
-    #probe{name             = Name}     = Probe,
-    ?LOG({Parents, Name}),
-    {next_state, 'WAITING-CRITICAL-REPLY', SData};
+    #ps_state{step      = NormalStep}  = SData,
+    case Force of
+        true ->
+            Step = 1;
+        false ->
+            Step = NormalStep
+    end;
 
-handle_event({parent_move, Parent, Status}, SName, SData) ->
-    ?LOG({gen_fsm_all_events, SData#ps_state.probe#probe.name, {parent_move}, {current, SName}}),
-    #ps_state{fsm_parents   = Parents}  = SData,
-    NewParents  = lists:keystore(Parent, 1, Parents, {Parent, Status}),
-    NewSData    = SData#ps_state{fsm_parents = NewParents},
-    case SName of
-        'STOP-UNREACHABLE' ->
-            gen_fsm:send_event(self(), parent_move),
-            {next_state, SName, NewSData};
-        'STOP-REACHABLE' ->
-            gen_fsm:send_event(self(), parent_move),
-            {next_state, SName, NewSData};
-        _ ->
-            {next_state, SName, NewSData}
+    case NewStatus of
+        'OK' ->
+            handle_probe_reply(SData, NewSData, PReturn),
+            TRef        = launch_probe(NewSData, Step),
+            NewSData1   = NewSData#ps_state{tref = TRef}
+            NewSData2   = NewSData1#ps_state{check_state = sleeping},
+            {next_state, 'OK', NewSData};
+        'WARNING' ->
+            handle_probe_reply(SData, NewSData, PReturn),
+            TRef        = launch_probe(NewSData, Step),
+            NewSData1   = NewSData#ps_state{tref = TRef}
+            NewSData2   = NewSData1#ps_state{check_state = sleeping},
+            {next_state, 'WARNING', NewSData};
+        'UNKNOWN' ->
+            handle_probe_reply(SData, NewSData, PReturn),
+            TRef        = launch_probe(NewSData, Step),
+            NewSData1   = NewSData#ps_state{tref = TRef}
+            NewSData2   = NewSData1#ps_state{check_state = sleeping},
+            {next_state, 'UNKNOWN', NewSData};
+        'CRITICAL' ->
+            case OldStatus of
+                'CRITICAL' -> % NEGOCIATE allready done
+                    case parents_alive(Parents) of
+                        true ->
+                            handle_probe_reply(SData, NewSData, PReturn),
+                            launch_probe(NewSData, Step),
+                            TRef        = launch_probe(NewSData, Step),
+                            NewSData1   = NewSData#ps_state{tref = TRef}
+                            NewSData2   = NewSData1#ps_state{check_state = sleeping},
+                            {next_state, 'CRITICAL', NewSData2};
+                        false ->
+                            NewProbe2 = NewProbe#probe{status = 'UNKNOWN'}, % TODO change status to HALT
+                            NewSData2 = NewSData#ps_state{probe = NewProbe2},
+                            handle_probe_reply(SData, NewSData2, PReturn),
+                            {next_state, 'HALT', NewSData2}
+                    end;
+                _ ->
+                    NegoReturn = {probe_return, NewSData, PR},
+                    NegoList   = [{Parent, unknown} || {Parent, _} <- Parents],
+                    NewSData2  = NewSData#ps_state{nego_return   = NegoReturn},
+                    NewSData3  = NewSData2#ps_state{nego_parents = NegoList},
+                    request_parent_update(NewSData3),
+                    {next_state, 'NEGOCIATE', NewSData3}
+            end
     end;
 
 handle_event(force_check, SName, SData) ->
-    ?LOG({gen_fsm_all_events, SData#ps_state.probe#probe.name, {force_check}, {current, SName}}),
-    #ps_state{fsm_childs = Childs}  = SData,
-    #ps_state{probe      = Probe}   = SData,
-    #probe{name          = Name}    = Probe,
-    #probe{status        = Status}  = Probe,
-    case SName of
-        'STOP-UNREACHABLE' ->
-            emit_status(Status, Name, Childs),
-            {next_state, SName, SData};
-        'STOP-REACHABLE' ->
-            emit_status(Status, Name, Childs),
-            {next_state, SName, SData};
-        'SLEEPING-STEP' ->
-            {next_state, SName, SData, 500};
-        _ ->
-            {next_state, SName, SData}
+    #ps_state{tref = TRef}           = SData,
+    case State of
+        sleeping ->
+            timer:cancel(TRef),
+            TRef        = launch_probe(SData, 1),
+            NewSData    = SData#ps_state{tref = TRef}
+            NewSData2   = NewSData#ps_state{check_state = sleeping},
+            {next_state, SName, NewSData2};
+        running  ->
+            {next_state, SName, SData#ps_state{force_check = true}
+    end.
+
+
+
+% GEN_CHANNEL event
+
+% prevent 2 probes to be launched in paralel. Possible in a race condition
+% with force_check. Stop the late check is sufficient.
+handle_sync_event(check_start, _From, SName, SData) ->
+    #ps_state{probe_state = State} = SData,
+    case State of
+        sleeping ->
+            {reply, true, SName, SData#ps_state{probe_state = running}}.
+        running  ->
+            {reply, false, SName, SData}
     end;
+
+% tracker_probe_sup event
+handle_sync_event(freeze, _From, SName, SData) ->
+    %?LOG({gen_fsm_sync_all_events, SData#ps_state.probe#probe.name, {freeze}, {current, SName}}),
+    case SName of
+        'WAITING-REPLY' ->
+            {reply, ok, 'INITIALIZE-WAITING-REPLY', SData};
+        _ ->
+            {reply, ok, 'INITIALIZE', SData}
+    end;
+
+    
+handle_sync_event(get_perms, _From, SName, SData) ->
+    #ps_state{probe     = Probe}        = SData,
+    #probe{permissions  = Permissions}  = Probe,
+    {reply, Permissions, SName, SData}.
+
+
+
+
+
 
 
 % GEN_CHANNEL event
@@ -382,26 +389,33 @@ handle_event({sync_request, CState}, SName, SData) ->
     ok      = gen_channel:subscribe(Name, CState),
     {next_state, SName, SData}.
 
+request_parent_update(SData) when is_tuple(SData) ->
+    #ps_state{fsm_parents = Parents} = SData,
+    %?LOG({request_parent_update, Parents}),
+    request_parent_update(Parents);
+request_parent_update([]) -> ok;
+request_parent_update([Parent|T]) ->
+    tracker_probe_fsm:force_check(Parent),
+    request_parent_update(T).
+
+nego_complete([]) -> true;
+nego_complete([{_, stop_reachable} | _]) -> false;
+nego_complete([_|T]) -> nego_complete(T).
+
+parents_alive([]) -> false;
+parents_alive([{_,Status}|H]) ->
+    case Status of
+        'CRITICAL'      -> parents_alive(H);
+        'UNKNOWN'       -> parents_alive(H);
+        check_reachable -> parents_alive(H);
+        _               -> true
+    end.
+
 emit_status(_,         _, []) -> ok;
 emit_status(Status, Name, [Child|T]) ->
     tracker_probe_fsm:emit_parent_move(Child, Name, Status),
     emit_status(Status, Name, T).
 
-% GEN_CHANNEL event
-handle_sync_event(get_perms, _From, SName, SData) ->
-    #ps_state{probe     = Probe}        = SData,
-    #probe{permissions  = Permissions}  = Probe,
-    {reply, Permissions, SName, SData};
-
-% tracker_probe_sup event
-handle_sync_event(freeze, _From, SName, SData) ->
-    ?LOG({gen_fsm_sync_all_events, SData#ps_state.probe#probe.name, {freeze}, {current, SName}}),
-    case SName of
-        'WAITING-REPLY' ->
-            {reply, ok, 'INITIALIZE-WAITING-REPLY', SData};
-        _ ->
-            {reply, ok, 'INITIALIZE', SData}
-    end.
 
 handle_info(_Info, SName, SData) ->
     {next_state, SName, SData}.
@@ -416,16 +430,29 @@ code_change(_OldVsn, SName, SData, _Extra) ->
 %%
 %% UTILS
 %%
--spec launch_probe(#ps_state{}) -> ok.
+-spec launch_probe(#ps_state{}, int()) -> ok.
 % @doc
 % It is the spawned proc who call the "gen_probe" module defined in the 
 % #probe{} record. Called from "initial_pass" and "next_pass" modules.
 % @end
-launch_probe(#ps_state{probe  = Probe } = S) ->
-    Mod         = Probe#probe.tracker_probe_mod,
-    ProbeReturn = Mod:exec({S, Probe}),
-    NewSData    = inspect(S, ProbeReturn),
-    gen_fsm:send_event(Probe#probe.pid, {probe_reply, NewSData, ProbeReturn}).
+launch_probe(SData, Step) ->
+    #ps_state{probe = Probe}        = SData,
+    #probe{tracker_probe_mod = Mod} = Probe,
+    {ok, TRef} = timer:apply_after(Step, ?MODULE, launch_probe, [Mod, SData, Probe]),
+    TRef.
+launch_probe(Mod, S, Probe) ->
+    Pid = Probe#probe.pid,
+    Ret = gen_fsm:sync_send_all_state_event(Pid, check_start).
+    case Ret of
+        true ->
+            ProbeReturn = Mod:exec({S, Probe}),
+            NewSData    = inspect(S, ProbeReturn),
+            NewSData2   = NewSData#ps_state{tref = undefined},
+            NewSData3   = NewsData2#ps_state{last_check = erlang:now()},
+            gen_fsm:send_all_state_event(Pid, {probe_reply, NewSData3, ProbeReturn}).
+        false ->
+            ok
+    end.
 
   
 % INIT PROBE
@@ -531,14 +558,16 @@ emit_wide(NSData, PR) ->
 emit_childs(NSData) ->
     #ps_state{probe      = Probe}   = NSData,
     #ps_state{fsm_childs = Childs}  = NSData,
+    #ps_state{last_check = Ts}      = NSData,
     #probe{status        = Status}  = Probe,
     #probe{name          = Name}    = Probe,
-    emit_childs(Status, Name, Childs).
+    %?LOG({api_call, Name, emit_childs, Status, Childs}),
+    emit_childs(Status, Ts, Name, Childs).
 
-emit_childs(_, _, []) -> ok;
-emit_childs(Status, Name, [Child|Tail]) ->
-    tracker_probe_fsm:emit_parent_move(Child, Name, Status),
-    emit_childs(Status, Name, Tail).
+emit_childs(_, _, _, []) -> ok;
+emit_childs(Status, Ts, Name, [Child|Tail]) ->
+    tracker_probe_fsm:emit_parent_move(Child, Ts, Name, Status),
+    emit_childs(Status, Ts, Name, Tail).
 
 %%
 %%
