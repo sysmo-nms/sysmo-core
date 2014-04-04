@@ -39,7 +39,6 @@
 % @end
 -module(tracker_target_channel).
 -behaviour(gen_server).
--behaviour(gen_channel).
 -include("../include/tracker.hrl").
 
 % GEN_SERVER CALLBACKS
@@ -54,17 +53,9 @@
 % API
 -export([
     start_link/1,
-    cold_start/1,
     update/3,
     dump/1
 ]).
-
--record(state, {
-    chan_id,
-    subscriber_count,
-    target
-}).
-
 
 %%----------------------------------------------------------------------------
 %%----------------------------------------------------------------------------
@@ -73,14 +64,6 @@
 %%----------------------------------------------------------------------------
 start_link(#target{id = Id} = Target) ->
     gen_server:start_link({local, Id}, ?MODULE, [Target], []).
-
--spec cold_start(pid()) -> ok | {error, any()}.
-% @doc
-% Once the server running, call him to start his probes. This is done
-% by the "cold_start" phase of the traget_app module.
-% @end
-cold_start(Pid) ->
-    gen_server:call(Pid, cold_start).
 
 -spec update(Self::pid(), integer(), Msg::tuple()) -> ok.
 % @doc
@@ -115,16 +98,8 @@ dump(Id) ->
 init([Target]) ->
     ok = init_dir(Target),
     {ok, TargetA}   = init_probes(Target),
-
     ok = tracker_master_channel:chan_add(TargetA),
-
-    {ok, 
-        #state{
-            chan_id             = TargetA#target.id,     % shortcut
-            subscriber_count    = 0,   
-            target              = TargetA
-        }
-    }.
+    {ok, TargetA}.
 
 %%----------------------------------------------------------------------------
 %%----------------------------------------------------------------------------
@@ -136,11 +111,6 @@ init([Target]) ->
 %%----------------------------------------------------------------------------
 %% SELF API CALLS 
 %%----------------------------------------------------------------------------
-handle_call(cold_start, _F, #state{target = Target} = S) ->
-    lists:foreach(fun(#probe{pid = Pid}) ->
-        tracker_probe:cold_start(Pid)
-    end, Target#target.probes),
-    {reply, ok, S};
 
 
 %%----------------------------------------------------------------------------
@@ -161,16 +131,13 @@ handle_call(_R, _F, S) ->
 % update (status or property), will be forwarded to the subscribers of
 % 'target-MasterChannel'.
 handle_cast({update, ProbeId, {NewProbe, _ProbeReturn}},
-        #state{
-            target = #target{
+            #target{
                 probes = Probes
-            } = Target
-        } = S) ->
+            } = S) ->
     NProbes     = lists:keyreplace(ProbeId, 2, Probes, NewProbe),
-    NewTarget   = Target#target{probes = NProbes},
-    NewS        = S#state{target = NewTarget},
+    NewTarget   = S#target{probes = NProbes},
     tracker_master_channel:probe_update(NewTarget, NewProbe),
-    {noreply, NewS};
+    {noreply, NewTarget};
 
 handle_cast(_R, S) ->
     io:format("unknown cast ~p~n", [_R]),
@@ -189,8 +156,8 @@ handle_info(_I, S) ->
 %% TERMINATE  
 %%----------------------------------------------------------------------------
 %%----------------------------------------------------------------------------
-terminate(R, #state{target = Target} = _S) ->
-    ok = tracker_master_channel:chan_del(Target),
+terminate(R, State) ->
+    ok = tracker_master_channel:chan_del(State),
     R.
 
 %%----------------------------------------------------------------------------

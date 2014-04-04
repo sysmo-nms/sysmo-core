@@ -1,17 +1,19 @@
 ##################
 # MODULE MONITOR #
 ##################
+### NOW
+- parent association
+With triggered update of parents on a failure.
+- service virtual check
+- depend association
+Configurable events. Add probe dependency (different from probe parent). Will
+create an event for the dependent probes. Event correlation will be easier.
+
 ### HIGH
 - SNMP Elements autogen snmpwalks/rrdtool with MIB2 interface tree,
 (packets, discard, %discard, error, %error)
 - Simple API add snmp element with perms
 - save target state
-- parent association
-With triggered update of parents on a failure.
-- depend association
-Configurable events. Add probe dependency (different from probe parent). Will
-create an event for the dependent probes. Event correlation will be easier.
-- service virtual check
 - add "Create web view" wizard using erlang/httpd CGI, with running templates
 examples for Python , PHP, Ruby. Create an server API accessible by the 
 CGI binaries. Will be used by the wiki opus. Will allow an administrator
@@ -37,7 +39,7 @@ all the noctoupus-client functionnalities.
 ### MEDIUM
 - mail alerts
 With treaded reply to receivers on acknowlegement. Linked to acknownledgement
-system.
+system. Include childs dependencies of the check failure.
 - logger_events 2 
 Include concept of documented Acknoledgement.
 - probe_snmp_v3 

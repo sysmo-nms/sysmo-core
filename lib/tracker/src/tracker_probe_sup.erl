@@ -24,7 +24,8 @@
 
 -export([
     start_link/0,
-    new/1
+    new/1,
+    launch/0
 ]).
 -export([init/1]).
 
@@ -34,19 +35,58 @@ start_link() ->
 new({Target, Probe}) ->
     supervisor:start_child(?MODULE, [{Target, Probe}]).
 
+launch() ->
+    io:format("~p", [supervisor:which_children(?MODULE)]),
+    Childs  = supervisor:which_children(?MODULE),
+    PIds    = [Pid || {_,Pid,_,_} <- Childs],
+    initialize_probes(PIds).
+
+initialize_probes(Pids) ->
+    freeze_probes(  Pids),
+    reset_family(   Pids),
+    sync_parents(   Pids),
+    sync_childs(    Pids),
+    launch_probes(  Pids).
+
+freeze_probes([])       -> ok;
+freeze_probes([H|T])    ->
+    tracker_probe_fsm:freeze(H),
+    freeze_probes(T).
+
+reset_family([]) -> ok;
+reset_family([H|T]) ->
+    tracker_probe_fsm:reset_family(H),
+    reset_family(T).
+
+sync_parents([])     -> ok; 
+sync_parents([H|T])  ->
+    tracker_probe_fsm:synchronize_parents(H),
+    sync_parents(T).
+
+sync_childs([])     -> ok;
+sync_childs([H|T]) ->
+    tracker_probe_fsm:synchronize_childs(H),
+    sync_childs(T).
+
+launch_probes([])       -> ok;
+launch_probes([H|T])    ->
+    tracker_probe_fsm:launch(H),
+    launch_probes(T).
+
 init([]) ->
     {ok, 
         {
             {simple_one_for_one, 1, 60},
             [
                 {
-                    tracker_probe,
-                    {tracker_probe, start_link, []},
+                    tracker_probe_fsm,
+                    {tracker_probe_fsm, start_link, []},
                     transient,
                     2000,
                     worker,
-                    [tracker_probe]
+                    [tracker_probe_fsm]
                }
             ]
         }
     }.
+

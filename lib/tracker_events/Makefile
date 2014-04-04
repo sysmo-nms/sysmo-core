@@ -13,7 +13,7 @@ MAIN_DST    = $(patsubst src/%.erl, ebin/%.beam, $(MAIN))
 compile: $(MAIN_DST)
 
 
-ebin/%.beam: src/%.erl $(INCLUDE)
+ebin/%.beam: src/%.erl $(INCLUDE) ../tracker/include/tracker.hrl
 	$(ERLC) $(EPATH) -o ebin/ src/$*.erl
 
 clean:

@@ -83,15 +83,15 @@ main_chans() ->
 % @end
 subscribe_stage1(Channel, CState) ->
     % Does the channel exist?
-    try gen_channel:call(Channel, get_perms, ?CHAN_TIMEOUT) of
-        Perm ->
-            % The client permissions are ok?
-            gen_server:call(?MODULE, {subscribe_stage1, Channel, CState, Perm})
-        catch
-            _:_ ->
-                error
+    io:format("subscribe statge1, ~p~n", [Channel]),
+    Rep = gen_channel:get_chan_perms(Channel),
+    io:format("subscribe statge1, rep, ~p~n", [Rep]),
+    case Rep of
+        #perm_conf{} = Perm ->
+            gen_server:call(?MODULE, {subscribe_stage1, Channel, CState, Perm});
+        _ ->
+            error
     end.
-
 
 -spec subscribe_stage2(atom(), #client_state{}) -> ok.
 % @doc
@@ -104,7 +104,7 @@ subscribe_stage2(Channel, CState) ->
             %client allready registered do nothing
             ok;
         false   ->
-            try gen_channel:call(Channel, {synchronize, CState}) of
+            try gen_channel:synchronize(Channel, CState) of
                 ok ->
                     ok
                 catch

@@ -2,7 +2,7 @@
 -include_lib("kernel/include/file.hrl").
 -include("../supercast/include/supercast.hrl").
 
--define(LOG(X), io:format("{~p, ~p}: DEBUG: ~p~n", [?MODULE, ?LINE, X])).
+-define(LOG(X), io:format("{~w, ~w}: DEBUG: ~w~n", [?MODULE, ?LINE, X])).
 
 -record(inspector, {
     module,
@@ -25,13 +25,13 @@
     original_reply  = undefined :: string(),
     timestamp       = undefined :: integer(),
     key_vals        = []        :: [{string(), any()}],
-    is_event        = false     :: true | false
+    is_event        = false     :: true | false % used by tracker_events app
 }).
 
 -record(probe, {
     id                  = undefined     :: integer(), % unique in a target
     pid                 = undefined     :: undefined | pid(),
-    name                = undefined     :: string(),
+    name                = undefined     :: atom(),
     permissions         = #perm_conf{}  :: #perm_conf{},
     tracker_probe_mod   = undefined     :: undefined | module(),
     tracker_probe_conf  = undefined     :: [any()],
@@ -40,6 +40,7 @@
     step                = 60            :: integer(),
     inspectors          = []            :: [#inspector{}],
     loggers             = []            :: [#logger{}],
+    parents             = []            :: [atom()],
     properties          = []            :: [{string(), any()}],
     active              = true          :: true | false
 }).
@@ -60,9 +61,20 @@
     directory   = ""
 }).
 
--record(probe_server_state, {
+-record(ps_state, {
     target,
+    name,
     probe,
+    step,
+    timeout,
+    tref,
+    last_check,
+    check_state         = stopped   :: ready | running | stopped,
+    check_flag          = normal    :: normal | force | random,
+    nego_parents        = [],
+    nego_return,
+    parents             = [] :: {atom(), atom()},   % {pidName, status}
+    childs              = [],   %dynamicaly added
     inspectors_state    = [],
     loggers_state       = [],
     probes_state        = []

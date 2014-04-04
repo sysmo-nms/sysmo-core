@@ -22,7 +22,7 @@
 % The most simple and mandatory inspector. It set re return status of the
 % ProbeServer to the return status of the probe return.
 % @end
--module(btracker_inspector_status_set).
+-module(btracker_inspector_parent).
 -behaviour(beha_tracker_inspector).
 -include("../../include/tracker.hrl").
 
@@ -36,16 +36,40 @@
 info() ->
     [].
 
-init(_Conf, ProbeServerState) ->
-    {ok, ProbeServerState}.
+init(_, PS) ->
+    {ok, PS}.
 
 % @end
-inspect(_InitS,
-            #ps_state{
-                probe = Probe
-            } = ProbeServerState,
-            #probe_return{
-                status = Status
-            }) ->
-    NewProbe = Probe#probe{status = Status},
-    {ok, ProbeServerState#ps_state{probe = NewProbe}}.
+inspect(_InitPSState, ModifiedPSState, _ProbeReturn) ->
+    #ps_state{probe = Probe}    = ModifiedPSState,
+    #probe{name     = Name}     = Probe,  
+    #probe{status   = Status}   = Probe,
+
+    case Status of
+        'OK' ->         % nothing to do
+            io:format("is ok~n"),
+            {ok, ModifiedPSState};
+        'UNKNOWN' ->    % nothing to do
+            io:format("is unknown~n"),
+            {ok, ModifiedPSState};
+        'WARNING' ->    % nothing to do
+            {ok, ModifiedPSState};
+        'CRITICAL' ->   % must test something
+            tracker_probe_fsm:critical_return(Name),
+            TmpProbe = Probe#probe{status = 'UNKNOWN'},
+            TmpState = ModifiedPSState#ps_state{probe = TmpProbe},
+            {ok, TmpState}
+    end.
+
+
+% UTILS btracker_inspector_parent
+
+% UTILS beha_tracker_probe
+% store_state(Value, 
+%         #ps_state{inspectors_state = IState} = ProbeServerState) ->
+%     IConf = lists:keystore(?MODULE, 1, IState, {?MODULE, Value}),
+%     ProbeServerState#ps_state{inspectors_state = IConf}.
+% 
+% get_state(#ps_state{inspectors_state = IS}) ->
+%     {?MODULE, Value} = lists:keyfind(?MODULE, 1, IS),
+%     Value.

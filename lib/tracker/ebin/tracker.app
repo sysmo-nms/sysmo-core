@@ -24,6 +24,7 @@
         {vsn, "0.1.0"},
         {modules, [
                 tracker_app,
+                tracker_pdu,
                 tracker_api,
                 tracker_master_channel,
                 tracker_misc,
@@ -34,6 +35,7 @@
                 tracker_sup,
                 btracker_inspector_property_set,
                 btracker_inspector_status_set,
+                btracker_inspector_parent,
                 btracker_logger_rrd,
                 btracker_logger_text,
                 btracker_logger_events,
@@ -52,10 +54,10 @@
             [kernel, stdlib, mnesia, supercast, tlogger_rrd,
                 tlogger_text, snmp, tracker_events]
         },
-        {start_phases, 
+        {start_phases,
             [
-                {init_mnesia, []},
-                {cold_start, []}
+                {create_targets, []},
+                {launch_probes,  []}
             ]
         },
         {mod, {tracker_app, []}}

@@ -32,7 +32,7 @@
     dump/1
 ]).
 
-init(_Conf, #probe_server_state{
+init(_Conf, #ps_state{
         target          = Target,
         probe           = Probe,
         loggers_state   = LoggersState} = ProbeServerState) -> 
@@ -42,13 +42,13 @@ init(_Conf, #probe_server_state{
     NewLoggersState =  lists:keystore(?MODULE, 1, 
             LoggersState, {?MODULE, [{file_name, LogFile}, {log_srv, Pid}] }),
     {ok, 
-        ProbeServerState#probe_server_state{
+        ProbeServerState#ps_state{
             loggers_state = NewLoggersState
         }
     }.
 
 log(
-        #probe_server_state{loggers_state = LState}, 
+        #ps_state{loggers_state = LState}, 
         #probe_return{original_reply = Msg, timestamp = T}
     ) ->
     LogSrv      = get_key(log_srv, LState),
@@ -56,7 +56,7 @@ log(
     tlogger_text:log(LogSrv, EncodedMsg),
     ok.
 
-dump(#probe_server_state{
+dump(#ps_state{
         loggers_state   = LState,
         target          = #target{id = TId},
         probe           = #probe{name = PId}

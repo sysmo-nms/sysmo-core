@@ -22,7 +22,7 @@ start_link() ->
     gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
 exec(Command) ->
-    io:format("will exec: ~p~n",[Command]),
+    %error_logger:info_msg("~p will exec: ~p~n",[?MODULE, Command]),
     gen_server:call(?MODULE, {exec, string:concat(Command, "\n")}).
 
 dump(File) ->
@@ -60,16 +60,16 @@ get_response(Port) ->
 get_response(Port, Reply) ->
     receive
         {Port, {data, {eol, "ERROR" = Line}}} ->
-            io:format("~n---------------------- ~p", [Reply]),
+            %io:format("~n---------------------- ~p", [Reply]),
             {error, lists:append([Reply, Line])};
         {Port, {data, {eol, "ERROR" ++ _ = Line}}} ->
-            io:format("~n---------------------- ~p", [Reply]),
+            %io:format("~n---------------------- ~p", [Reply]),
             {error, lists:append([Reply, Line])};
         {Port, {data, {eol, "OK" = Line}}} ->
-            io:format("~nlaaa---------------------- ~p", [Reply]),
+            %io:format("~nlaaa---------------------- ~p", [Reply]),
             {ok, lists:append([Reply, Line])};
         {Port, {data, {eol, "OK" ++ _ = Line}}} ->
-            io:format("~n---------------------- ~p", [Reply]),
+            %io:format("~n---------------------- ~p", [Reply]),
             {ok, lists:append([Reply, Line])};
         {Port, {data, {eol, Line}}} ->
             get_response(Port, lists:append([Reply, Line]))
