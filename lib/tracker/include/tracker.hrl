@@ -68,8 +68,8 @@
     timeout,
     tref,
     last_check,
-    probe_state         = sleeping | running,
-    force_check,
+    probe_state         = stoped    :: sleeping | running | stoped,
+    force_check         = false     :: false | true,
     fsm_parents         = [] :: {atom(), atom()},   % {pidName, status}
     fsm_childs          = [],   %dynamicaly added
     nego_parents        = [],
