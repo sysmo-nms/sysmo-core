@@ -63,18 +63,18 @@
 
 -record(ps_state, {
     target,
+    name,
     probe,
     step,
     timeout,
     tref,
     last_check,
-    probe_state         = stoped    :: sleeping | running | stoped,
-    force_check         = false     :: false | true,
-    fsm_parents         = [] :: {atom(), atom()},   % {pidName, status}
-    fsm_childs          = [],   %dynamicaly added
+    check_state         = stopped   :: ready | running | stopped,
+    check_flag          = normal    :: normal | force | random,
     nego_parents        = [],
     nego_return,
-    fsm_pending_crit_reply = none,
+    parents             = [] :: {atom(), atom()},   % {pidName, status}
+    childs              = [],   %dynamicaly added
     inspectors_state    = [],
     loggers_state       = [],
     probes_state        = []

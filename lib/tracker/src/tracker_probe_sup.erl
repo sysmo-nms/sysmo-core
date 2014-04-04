@@ -43,7 +43,9 @@ launch() ->
 
 initialize_probes(Pids) ->
     freeze_probes(  Pids),
-    sync_probes(    Pids),
+    reset_family(   Pids),
+    sync_parents(   Pids),
+    sync_childs(    Pids),
     launch_probes(  Pids).
 
 freeze_probes([])       -> ok;
@@ -51,10 +53,20 @@ freeze_probes([H|T])    ->
     tracker_probe_fsm:freeze(H),
     freeze_probes(T).
 
-sync_probes([])     -> ok; 
-sync_probes([H|T])  ->
+reset_family([]) -> ok;
+reset_family([H|T]) ->
+    tracker_probe_fsm:reset_family(H),
+    reset_family(T).
+
+sync_parents([])     -> ok; 
+sync_parents([H|T])  ->
     tracker_probe_fsm:synchronize_parents(H),
-    sync_probes(T).
+    sync_parents(T).
+
+sync_childs([])     -> ok;
+sync_childs([H|T]) ->
+    tracker_probe_fsm:synchronize_childs(H),
+    sync_childs(T).
 
 launch_probes([])       -> ok;
 launch_probes([H|T])    ->
