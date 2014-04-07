@@ -20,8 +20,11 @@
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 % @private
 -module(tracker_api).
--include("../include/tracker.hrl").
--compile(export_all).
+-behaviour(gen_commander).
+-include("include/tracker.hrl").
+-export([
+    handle_command/2
+]).
 
 handle_command({fromClient, {createProbe, Msg}}, 
         #client_state{module = _CMod} = _CState) ->

@@ -36,7 +36,6 @@ new({Target, Probe}) ->
     supervisor:start_child(?MODULE, [{Target, Probe}]).
 
 launch() ->
-    io:format("~p", [supervisor:which_children(?MODULE)]),
     Childs  = supervisor:which_children(?MODULE),
     PIds    = [Pid || {_,Pid,_,_} <- Childs],
     initialize_probes(PIds).

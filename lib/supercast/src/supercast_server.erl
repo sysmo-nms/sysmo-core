@@ -74,6 +74,7 @@ dump() ->
 %%-------------------------------------------------------------
 % @private
 init({AuthModule, PduDispatch}) ->
+    ?LOGS({"pdu_dispatch", PduDispatch}),
     {ok, #state{
         auth_mod = AuthModule,
         dispatch = PduDispatch
@@ -194,8 +195,8 @@ handle_client_msg(
 handle_client_msg(
                 {message,
                     {Mod,
-                        Msg
-                }   }, CState) ->
+                        _
+                } = Msg  }, CState) ->
    handle_client_command(Mod, Msg, CState). 
 
 % server PDUs
