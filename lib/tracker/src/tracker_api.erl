@@ -23,10 +23,14 @@
 -behaviour(gen_commander).
 -include("include/tracker.hrl").
 -export([
-    handle_command/2,
-    send/2,
-    pdu/2
+    handle_command/2
 ]).
+
+% TODO put it in a gen_server loop and use cast to free supercast_server
+% and correctly handle random targetIds (random:uniform(10000000000) * 99999).
+%handle_command({modTrackerPDU, {fromClient, {createTarget, Msg}}}, CState) ->
+    %{Status, Info} = create_target(Msg),
+    %send(CState, pdu(trackerReply, {QueryId, true, "hello from server!!!!"}));
 
 handle_command({modTrackerPDU, {fromClient, Msg}}, CState) ->
     {_, {_, _, _, QueryId}} = Msg,
@@ -44,6 +48,7 @@ pdu(trackerReply, {QueryId, Status, Info}) ->
                     QueryId,
                     Status,
                     Info }}}}.
+
 % handle_command({fromClient, {createProbe, Msg}}, 
 %         #client_state{module = _CMod} = _CState) ->
 %     io:format("createProbe ~p~n",[Msg]);
@@ -109,12 +114,3 @@ pdu(trackerReply, {QueryId, Status, Info}) ->
 %             Rep = lists:append("ERROR: ", atom_to_list(Other)),
 %             CMod:send(CState, pdu(comResp, {CmdId, Rep}))
 %     end.
-% 
-% pdu(comResp, {CmdId, CmdMsg}) ->
-%     {modTrackerPDU,
-%         {fromServer,
-%             {cmdResp,
-%                 {'CommandResponce',
-%                     CmdId,
-%                     CmdMsg
-%     }   }   }   }.
