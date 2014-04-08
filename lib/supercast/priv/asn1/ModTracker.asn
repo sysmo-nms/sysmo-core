@@ -203,35 +203,33 @@ CommandResponce ::= SEQUENCE {
 ---------------------------------------
 -- FROM CLIENT
 ---------------------------------------
-TargetCreate    ::= SEQUENCE {
-    ipAdd       IpAdd,
-    hostname    TargetHostname,
-    sysName     TargetSysname,
+CreateTarget    ::= SEQUENCE {
+    ipAdd       PrintableString,
     permConf    PermConf,
-    cmdId       CommandId
+    queryId     INTEGER
 }
 
-ProbeCreate     ::= SEQUENCE {
+CreateProbe     ::= SEQUENCE {
     target      TargetId,
     probeConf   ProbeConf
 }
 
 -- TODO server API
-TargetUpdate    ::= SEQUENCE {
+UpdateTarget    ::= SEQUENCE {
     target      TargetId
 }
 
-TargetDelete    ::= SEQUENCE {
+DeleteTarget    ::= SEQUENCE {
     target      TargetId
 }
 
 
-ProbeUpdate     ::= SEQUENCE {
+UpdateProbe     ::= SEQUENCE {
     target      TargetId,
     probe       ProbeId
 }
 
-ProbeDelete     ::= SEQUENCE {
+DeleteProbe     ::= SEQUENCE {
     target      TargetId,
     probe       ProbeId
 }
@@ -241,7 +239,6 @@ ProbeDelete     ::= SEQUENCE {
 ---------------------------------------
 -- FULL PDU
 ---------------------------------------
-
 TrackerPDU ::= CHOICE {
     fromServer  [0] CHOICE {
         targetInfo      [1] TargetInfo,
@@ -257,12 +254,12 @@ TrackerPDU ::= CHOICE {
         probeEventMsg   [11] ProbeEvent
     },
     fromClient  [1] CHOICE {
-        createTarget    [1] TargetCreate,
-        updateTarget    [2] TargetUpdate,
-        deleteTarget    [3] TargetDelete,
-        createProbe     [4] ProbeCreate,
-        updateProbe     [5] ProbeUpdate,
-        deleteProbe     [6] ProbeDelete
+        createTarget    [1] CreateTarget,
+        updateTarget    [2] UpdateTarget,
+        deleteTarget    [3] DeleteTarget,
+        createProbe     [4] CreateProbe,
+        updateProbe     [5] UpdateProbe,
+        deleteProbe     [6] DeleteProbe
     }
 }
 
