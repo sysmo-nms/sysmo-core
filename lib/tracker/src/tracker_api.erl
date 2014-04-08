@@ -23,80 +23,98 @@
 -behaviour(gen_commander).
 -include("include/tracker.hrl").
 -export([
-    handle_command/2
+    handle_command/2,
+    send/2,
+    pdu/2
 ]).
 
-handle_command({fromClient, {createProbe, Msg}}, 
-        #client_state{module = _CMod} = _CState) ->
-    io:format("createProbe ~p~n",[Msg]);
+handle_command({modTrackerPDU, {fromClient, Msg}}, CState) ->
+    {_, {_, _, _, QueryId}} = Msg,
+    send(CState, pdu(trackerReply, {QueryId, true, "hello from server!!!!"})),
+    io:format("received ~p~n", [Msg]).
 
-handle_command({fromClient, {createTarget, Msg}}, 
-        #client_state{module = CMod} = CState) ->
-    {'TargetCreate', 
-        Ip, Hostname, 
-        Sysname, 
-        {'PermConf', Read, Write},
-        CmdId
-    } = Msg,
-    ReadPerm = case Read of
-        [] ->
-            ["admin"];
-        _  ->
-            ["admin"| Read]
-    end,
-    WritePerm = case Write of
-        [] ->
-            ["admin"];
-        _ ->
-            ["admin"| Write]
-    end,
-    case inet_parse:address(Ip) of
-        {ok, EIp}   ->
-            launch_target(#target{
-                id          = tracker_misc:generate_id(),
-                properties = [
-                    {ip             , EIp},
-                    {hostname       , Hostname},
-                    {sysname        , Sysname},
-                    {global_perm    , 
-                        #perm_conf{
-                            read    = ReadPerm,
-                            write   = WritePerm
-                        }
-                    }  
+send(#client_state{module = CMod} = CState, Msg) ->
+    CMod:send(CState, Msg).
 
-                ]
-            }, CState, CmdId);
-        {error, _}  ->
-            CMod:send(CState, pdu(comResp, {CmdId, "ERROR: Bad ip format"}))
-    end;
-
-
-handle_command({fromClient, Other}, _) ->
-    io:format("Unknown command ~p~n", [Other]).
-
-
-
-% UTILS
-launch_target(Target, #client_state{module = CMod} = CState, CmdId) ->
-    case tracker_target_channel_sup:new(Target) of
-        {ok, Pid} ->
-            Info = erlang:process_info(Pid),
-            {registered_name, RegName} = 
-                lists:keyfind(registered_name, 1, Info),
-            Rep = lists:append("OK: ", atom_to_list(RegName)),
-            io:format("rep is ~p~n", [Rep]),
-            CMod:send(CState, pdu(comResp, {CmdId, Rep}));
-        Other ->
-            Rep = lists:append("ERROR: ", atom_to_list(Other)),
-            CMod:send(CState, pdu(comResp, {CmdId, Rep}))
-    end.
-
-pdu(comResp, {CmdId, CmdMsg}) ->
+pdu(trackerReply, {QueryId, Status, Info}) ->
     {modTrackerPDU,
         {fromServer,
-            {cmdResp,
-                {'CommandResponce',
-                    CmdId,
-                    CmdMsg
-    }   }   }   }.
+            {trackerReply,
+                {'TrackerReply',
+                    QueryId,
+                    Status,
+                    Info }}}}.
+% handle_command({fromClient, {createProbe, Msg}}, 
+%         #client_state{module = _CMod} = _CState) ->
+%     io:format("createProbe ~p~n",[Msg]);
+% 
+% handle_command({fromClient, {createTarget, Msg}}, 
+%         #client_state{module = CMod} = CState) ->
+%     {'TargetCreate', 
+%         Ip, Hostname, 
+%         Sysname, 
+%         {'PermConf', Read, Write},
+%         CmdId
+%     } = Msg,
+%     ReadPerm = case Read of
+%         [] ->
+%             ["admin"];
+%         _  ->
+%             ["admin"| Read]
+%     end,
+%     WritePerm = case Write of
+%         [] ->
+%             ["admin"];
+%         _ ->
+%             ["admin"| Write]
+%     end,
+%     case inet_parse:address(Ip) of
+%         {ok, EIp}   ->
+%             launch_target(#target{
+%                 id          = tracker_misc:generate_id(),
+%                 properties = [
+%                     {ip             , EIp},
+%                     {hostname       , Hostname},
+%                     {sysname        , Sysname},
+%                     {global_perm    , 
+%                         #perm_conf{
+%                             read    = ReadPerm,
+%                             write   = WritePerm
+%                         }
+%                     }  
+% 
+%                 ]
+%             }, CState, CmdId);
+%         {error, _}  ->
+%             CMod:send(CState, pdu(comResp, {CmdId, "ERROR: Bad ip format"}))
+%     end;
+% 
+% 
+% handle_command({fromClient, Other}, _) ->
+%     io:format("Unknown command ~p~n", [Other]).
+% 
+% 
+% 
+% % UTILS
+% launch_target(Target, #client_state{module = CMod} = CState, CmdId) ->
+%     case tracker_target_channel_sup:new(Target) of
+%         {ok, Pid} ->
+%             Info = erlang:process_info(Pid),
+%             {registered_name, RegName} = 
+%                 lists:keyfind(registered_name, 1, Info),
+%             Rep = lists:append("OK: ", atom_to_list(RegName)),
+%             io:format("rep is ~p~n", [Rep]),
+%             CMod:send(CState, pdu(comResp, {CmdId, Rep}));
+%         Other ->
+%             Rep = lists:append("ERROR: ", atom_to_list(Other)),
+%             CMod:send(CState, pdu(comResp, {CmdId, Rep}))
+%     end.
+% 
+% pdu(comResp, {CmdId, CmdMsg}) ->
+%     {modTrackerPDU,
+%         {fromServer,
+%             {cmdResp,
+%                 {'CommandResponce',
+%                     CmdId,
+%                     CmdMsg
+%     }   }   }   }.

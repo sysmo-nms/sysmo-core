@@ -234,7 +234,11 @@ DeleteProbe     ::= SEQUENCE {
     probe       ProbeId
 }
 
-
+TrackerReply    ::= SEQUENCE {
+    queryId     INTEGER,
+    status      BOOLEAN,
+    info        PrintableString
+}
 
 ---------------------------------------
 -- FULL PDU
@@ -251,7 +255,8 @@ TrackerPDU ::= CHOICE {
         probeReturn     [8] ProbeReturn,
         rrdProbeDump    [9] RrdProbeDump,
         eventProbeDump  [10] EventProbeDump,
-        probeEventMsg   [11] ProbeEvent
+        probeEventMsg   [11] ProbeEvent,
+        trackerReply    [12] TrackerReply
     },
     fromClient  [1] CHOICE {
         createTarget    [1] CreateTarget,
