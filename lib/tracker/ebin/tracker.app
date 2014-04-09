@@ -27,7 +27,6 @@
                 tracker_pdu,
                 tracker_commander,
                 tracker_master_channel,
-                tracker_misc,
                 tracker_probe_sup,
                 tracker_probe,
                 tracker_target_channel,
@@ -46,9 +45,8 @@
         {registered, [
                 tracker_sup,
                 'target-MasterChan',
-                tracker_misc,
-                tracker_probe_sup,
                 tracker_commander,
+                tracker_probe_sup,
                 tracker_target_channel_sup
             ]},
         {applications, 

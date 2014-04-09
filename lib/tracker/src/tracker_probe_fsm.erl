@@ -384,7 +384,7 @@ launch_probe_normal(SData) ->
 launch_probe_random(SData) ->
     #ps_state{check_state = CheckState} = SData,
     #ps_state{step        = TmpStep}    = SData,
-    Step = tracker_misc:random(TmpStep),
+    Step = random:uniform(TmpStep),
     case CheckState of
         sleeping -> SData;
         running  -> SData;

@@ -37,9 +37,9 @@
     code_change/3
 ]).
 
-% 1 000 000 000 possible values
--define(RAND_RANGE, 1000000000).
-% but must be a minimum of 99999
+% 1 000 000 possible values
+-define(RAND_RANGE, 1000000).
+% but must be a minimum of 100000
 -define(RAND_MIN,   99999).
 
 start_link() ->
@@ -112,8 +112,8 @@ code_change(_O, S, _E) ->
 %%----------------------------------------------------------------------------
 %%----------------------------------------------------------------------------
 generate_id(Head) ->
-    {Int, _}    = random:uniform_s(?RAND_RANGE, erlang:now()),
-    RandId      = Int * ?RAND_MIN,
+    Int         = random:uniform(?RAND_RANGE),
+    RandId      = Int + ?RAND_MIN,
     RandIdL     = io_lib:format("~p", [RandId]),
     RandIdS     = lists:flatten(RandIdL),
     RandIdF     = lists:concat([Head, RandIdS]),
