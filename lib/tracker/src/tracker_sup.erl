@@ -59,6 +59,14 @@ init([ProbeModules]) ->
                     [tracker_probe_sup]
                 },
                 {
+                    tracker_commander,
+                    {tracker_commander, start_link, []},
+                    permanent,
+                    2000,
+                    worker,
+                    [tracker_commander]
+                },
+                {
                     tracker_misc,
                     {tracker_misc, start_link, []},
                     permanent,

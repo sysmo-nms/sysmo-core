@@ -21,21 +21,103 @@
 % @private
 -module(tracker_commander).
 -behaviour(supercast_commander).
+-behaviour(gen_server).
 -include("include/tracker.hrl").
 -export([
+    start_link/0,
     handle_command/2
 ]).
 
-% TODO put it in a gen_server loop and use cast to free supercast_server
-% and correctly handle random targetIds (random:uniform(10000000000) * 99999).
-%handle_command({modTrackerPDU, {fromClient, {createTarget, Msg}}}, CState) ->
-    %{Status, Info} = create_target(Msg),
-    %send(CState, pdu(trackerReply, {QueryId, true, "hello from server!!!!"}));
+-export([
+    init/1, 
+    handle_call/3, 
+    handle_cast/2, 
+    handle_info/2, 
+    terminate/2, 
+    code_change/3
+]).
 
-handle_command({modTrackerPDU, {fromClient, Msg}}, CState) ->
-    {_, {_, _, _, QueryId}} = Msg,
-    send(CState, pdu(trackerReply, {QueryId, true, "hello from server!!!!"})),
-    io:format("received ~p~n", [Msg]).
+% 1 000 000 000 possible values
+-define(RAND_RANGE, 1000000000).
+% but must be a minimum of 99999
+-define(RAND_MIN,   99999).
+
+start_link() ->
+    gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
+
+handle_command(Command, CState) ->
+    gen_server:cast(?MODULE, {command, Command, CState}).
+
+%%----------------------------------------------------------------------------
+%%----------------------------------------------------------------------------
+%% INIT
+%%----------------------------------------------------------------------------
+%%----------------------------------------------------------------------------
+init([]) -> 
+    {ok, no_commander_state}.
+
+%%----------------------------------------------------------------------------
+%%----------------------------------------------------------------------------
+%% HANDLE_CALL 
+%%----------------------------------------------------------------------------
+%%----------------------------------------------------------------------------
+handle_call(_R, _F, S) ->
+    {noreply, S}.
+
+%%----------------------------------------------------------------------------
+%%----------------------------------------------------------------------------
+%% HANDLE_CAST
+%%----------------------------------------------------------------------------
+%%----------------------------------------------------------------------------
+handle_cast({command, {modTrackerPDU, {fromClient, Command}}, CState}, S) ->
+    {_, {_,_,_,QueryId}} = Command,
+    {ok, Info}           = generate_id("target-"),
+    Pdu                  = pdu(trackerReply, {QueryId, true, Info}),
+    send(CState, Pdu),
+    {noreply, S};
+handle_cast(_R, S) ->
+    io:format("unknown cast ~p~n", [_R]),
+    {noreply, S}.
+
+%%----------------------------------------------------------------------------
+%%----------------------------------------------------------------------------
+%% HANDLE_INFO
+%%----------------------------------------------------------------------------
+%%----------------------------------------------------------------------------
+handle_info(_I, S) ->
+    {noreply, S}.
+
+%%----------------------------------------------------------------------------
+%%----------------------------------------------------------------------------
+%% TERMINATE  
+%%----------------------------------------------------------------------------
+%%----------------------------------------------------------------------------
+terminate(R, State) ->
+    ok = tracker_master_channel:chan_del(State),
+    R.
+
+%%----------------------------------------------------------------------------
+%%----------------------------------------------------------------------------
+%% CODE_CHANGE
+%%----------------------------------------------------------------------------
+%%----------------------------------------------------------------------------
+code_change(_O, S, _E) ->
+    {ok, S}.
+
+
+
+%%----------------------------------------------------------------------------
+%%----------------------------------------------------------------------------
+%% UTILS
+%%----------------------------------------------------------------------------
+%%----------------------------------------------------------------------------
+generate_id(Head) ->
+    {Int, _}    = random:uniform_s(?RAND_RANGE, erlang:now()),
+    RandId      = Int * ?RAND_MIN,
+    RandIdL     = io_lib:format("~p", [RandId]),
+    RandIdS     = lists:flatten(RandIdL),
+    RandIdF     = lists:concat([Head, RandIdS]),
+    {ok, RandIdF}.
 
 send(#client_state{module = CMod} = CState, Msg) ->
     CMod:send(CState, Msg).
@@ -49,6 +131,12 @@ pdu(trackerReply, {QueryId, Status, Info}) ->
                     Status,
                     Info }}}}.
 
+
+
+
+
+
+%%----------------------------------------------------------------------------
 % handle_command({fromClient, {createProbe, Msg}}, 
 %         #client_state{module = _CMod} = _CState) ->
 %     io:format("createProbe ~p~n",[Msg]);
@@ -114,3 +202,4 @@ pdu(trackerReply, {QueryId, Status, Info}) ->
 %             Rep = lists:append("ERROR: ", atom_to_list(Other)),
 %             CMod:send(CState, pdu(comResp, {CmdId, Rep}))
 %     end.
+
