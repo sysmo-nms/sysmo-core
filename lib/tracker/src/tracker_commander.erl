@@ -19,8 +19,8 @@
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 % @private
--module(tracker_api).
--behaviour(gen_commander).
+-module(tracker_commander).
+-behaviour(supercast_commander).
 -include("include/tracker.hrl").
 -export([
     handle_command/2

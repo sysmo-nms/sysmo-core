@@ -20,7 +20,7 @@
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 % @doc
 % @end
--module(gen_channel).
+-module(supercast_channel).
 -include("include/supercast.hrl").
 -export([
     behaviour_info/1,
@@ -50,7 +50,7 @@ behaviour_info(_) ->
 % @doc
 % PidName = atom()
 % PermConf = #perm_conf{}
-% The module implementing gen_channel behaviour must return the #perm_conf{}
+% The module implementing supercast_channel behaviour must return the #perm_conf{}
 % defining the authorisation to subscribe to him.
 % Triggered on a client call to sync_request, supercast define if the user
 % is allowed and continue or stop subscription process.
@@ -63,7 +63,7 @@ get_perms(_) ->
 % PidName = atom()
 % ClientState = #client_state{}
 % This call is triggered when a client allowed to subscribe to the channel.
-% - The sync_request must include a gen_channel:subscribe/2 if the channel want
+% - The sync_request must include a supercast_channel:subscribe/2 if the channel want
 % to forward future messages to the client. 
 % - It must also dump the channel state using the 
 % ClientState#client_state.module:send/2

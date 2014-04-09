@@ -22,7 +22,7 @@
 %% @doc
 %% supercast_encoder
 %% @end
--module(beha_supercast_encoder).
+-module(supercast_encoder).
 -export([behaviour_info/1]).
 
 behaviour_info(callbacks) ->

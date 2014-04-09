@@ -20,7 +20,7 @@
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 -module(tracker_master_channel).
 -behaviour(gen_server).
--behaviour(gen_channel).
+-behaviour(supercast_channel).
 -include("../include/tracker.hrl").
 
 % GEN_SERVER
@@ -154,7 +154,7 @@ handle_call({probe_update,
         #probe{permissions = Perm}  = NewProbe
     }, _F, #state{chans = Chans} = S) ->
     NewChans = lists:keyreplace(TargetId, 2, Chans, NewTarget),
-    gen_channel:emit(?MASTER_CHAN, {Perm, 
+    supercast_channel:emit(?MASTER_CHAN, {Perm, 
         pdu(probeInfo, {update, TargetId, NewProbe})}),
     {reply, ok, S#state{chans = NewChans}};
 
@@ -162,14 +162,14 @@ handle_call({chan_update, #target{id = Id, global_perm = Perm} = Target}, _F,
         #state{chans = C} = S) ->
     case lists:keyfind(Id, 2, C) of
         false ->    % did not exist insert
-            gen_channel:emit(?MASTER_CHAN, {Perm,
+            supercast_channel:emit(?MASTER_CHAN, {Perm,
                 pdu(targetInfo, Target)}),
             {reply, ok, S#state{
                     chans = [Target | C]
                 }
             };
         _ -> % exist update
-            gen_channel:emit(?MASTER_CHAN, {Perm,
+            supercast_channel:emit(?MASTER_CHAN, {Perm,
                 pdu(targetInfo, Target)}),
             {reply, ok, 
                 S#state{
@@ -180,7 +180,7 @@ handle_call({chan_update, #target{id = Id, global_perm = Perm} = Target}, _F,
 
 handle_call({chan_del, #target{id = Id, global_perm = Perm}}, _F, 
         #state{chans = C} = S) ->
-    gen_channel:emit(?MASTER_CHAN, {Perm, pdu(targetDelete, Id)}),
+    supercast_channel:emit(?MASTER_CHAN, {Perm, pdu(targetDelete, Id)}),
     {reply, ok, S#state{chans = lists:keydelete(Id, 2, C)}};
 
 %%----------------------------------------------------------------------------
@@ -188,8 +188,8 @@ handle_call({chan_del, #target{id = Id, global_perm = Perm}}, _F,
 %% CALLS VIA GEN_CHANNEL BEHAVIOUR
 %%----------------------------------------------------------------------------
 %%----------------------------------------------------------------------------
-% These calls are used by the gen_channel behaviour module
-% Called by supercast_mpd via gen_channel to allow or not a client to subscribe in 
+% These calls are used by the supercast_channel behaviour module
+% Called by supercast_mpd via supercast_channel to allow or not a client to subscribe in 
 % regard of the result after applying beha_supercast_ctrl:satisfy/3.
 handle_call(get_perms, _F, #state{perm = P} = S) ->
     {reply, P, S};
@@ -197,7 +197,7 @@ handle_call(get_perms, _F, #state{perm = P} = S) ->
 handle_call({sync_request, #client_state{module = CMod} = CState}, 
         _F, #state{chans = Chans, probe_modules = PMods} = State) ->
     % I want this client to receive my messages,
-    gen_channel:subscribe(?MASTER_CHAN, CState),
+    supercast_channel:subscribe(?MASTER_CHAN, CState),
     PMList  = [pdu(probeModInfo, Probe) || Probe <- PMods],
     % gen_dump_pdus will filter based on CState permissions
     PDUs    = gen_dump_pdus(CState, Chans),

@@ -1,15 +1,15 @@
 [
     {supercast,
         [
-            {auth_module,   bsupercast_auth_local},
-            {acctrl_module, bsupercast_acctrl_rbac},
+            {auth_module,   supercast_auth_local},
+            {acctrl_module, supercast_acctrl_rbac},
 
             % if a PDU come from client with asn_key, switch it to the module
             % implementing the supercast_module_behaviour.
             {pdu_dispatch,
                 [
                     % {supercast_module_behaviour, asn_key}
-                    {tracker_api, modTrackerPDU},
+                    {tracker_commander, modTrackerPDU},
                     {locator_api, modLocatorPDU}
                 ]
             },
@@ -32,7 +32,7 @@
                     {enabled, true},
                     {port, 8888},
                     {maxconn, 50},
-                    {encoder, bsupercast_encoder_asn}
+                    {encoder, supercast_encoder_asn}
                 ]
             },
             {ssl_client,
@@ -45,7 +45,7 @@
                     ]},
                     {port, 4443},
                     {maxconn, 50},
-                    {encoder, bsupercast_encoder_asn}
+                    {encoder, supercast_encoder_asn}
                 ]
             }
         ]

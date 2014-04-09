@@ -18,22 +18,29 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
-% @private
--module(bsupercast_auth_local).
--behaviour(beha_supercast_auth).
--export([authenticate/2]).
+%% @doc
+%% A module using this behaviour can be used by <em>supercast</em> to
+%% authenticate clients. The return will be used by the beha_supercast_acctrl
+%% module used by the application
+%% 
+%% == authenticate/2 ==
+%%
+%% The only function to be exported is <em>authenticate/2</em>.
+%%
+%% <code>
+%% authenticate(Uname, UPass) -> Any::term() | fail
+%% 
+%% <p>
+%% Note that the returned term() can be anything but must be understandable 
+%% by the beha_supercast_acctrl module used by the application.
+%% </p>
+%% </code>
+%% @end
+-module(supercast_auth).
+-export([behaviour_info/1]).
 
-%% --------------------------------------------------------------
-%% USER API
-%% --------------------------------------------------------------
-authenticate(UName, UPass) ->
-    case {UName, UPass} of
-        {"admuser", "passwd"} ->
-            Roles = ["admin"],
-            {ok, Roles};
-        {"simpleuser", "passwd"} ->
-            Roles = ["wheel"],
-            {ok, Roles};
-        _ ->
-            fail
-    end.
+behaviour_info(callbacks) ->
+    [{authenticate, 2}];
+
+behaviour_info(_) ->
+    undefined.

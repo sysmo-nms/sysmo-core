@@ -22,7 +22,7 @@
 % @end
 -module(tracker_probe_fsm).
 -behaviour(gen_fsm).
--behaviour(gen_channel).
+-behaviour(supercast_channel).
 -include("../include/tracker.hrl").
 
 % start
@@ -30,7 +30,7 @@
     start_link/1
 ]).
 
-% gen_channel
+% supercast_channel
 -export([
     get_perms/1,
     sync_request/2
@@ -85,7 +85,7 @@
 start_link({Target, #probe{name = Name} = Probe}) ->
     gen_fsm:start_link({local, Name}, ?MODULE, [Target, Probe], []).
 
-% gen_channel behaviour
+% supercast_channel behaviour
 get_perms(PidName) ->
     gen_fsm:sync_send_all_state_event(PidName, get_perms).
 
@@ -344,7 +344,7 @@ handle_event({sync_request, CState}, SName, SData) ->
     #probe{name         = Name}     = Probe,
     Pdus    = log_dump(SData),
     ok      = send_unicast(CState, Pdus),
-    ok      = gen_channel:subscribe(Name, CState),
+    ok      = supercast_channel:subscribe(Name, CState),
     {next_state, SName, SData};
 
 handle_event(_, SName, SData) ->
@@ -463,7 +463,7 @@ emit_local(SData, PR) ->
     #probe{permissions  = Perms}    = Probe,
     #target{id          = TargetId} = Target,
     Pdu = tracker_pdu:probe_return({PR, TargetId, Name}),
-    gen_channel:emit(Name, {Perms, Pdu}),
+    supercast_channel:emit(Name, {Perms, Pdu}),
     log(SData, PR).
 
 % Notify all the subscribers of the master channel (probeInfo)

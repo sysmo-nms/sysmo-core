@@ -19,8 +19,8 @@
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 % @private
--module(bsupercast_acctrl_rbac).
--behaviour(beha_supercast_acctrl).
+-module(supercast_acctrl_rbac).
+-behaviour(supercast_acctrl).
 
 -include("../../include/supercast.hrl").
 -include_lib("eunit/include/eunit.hrl").

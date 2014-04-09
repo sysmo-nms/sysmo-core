@@ -66,7 +66,7 @@ start_link(MpdConf) ->
 % Called at the initial connexion of a client. Give him the main (static) 
 % channels. If dynamic channels exist in the application, this is the role
 % of one of these channels to inform the client. Note that depending on the
-% gen_channel module perm/0 function return, a client might not be able to
+% supercast_channel module perm/0 function return, a client might not be able to
 % subscribe to a channel apearing here. It is checked at the 
 % subscribe_stage1/1 call.
 % @end
@@ -84,7 +84,7 @@ main_chans() ->
 subscribe_stage1(Channel, CState) ->
     % Does the channel exist?
     io:format("subscribe statge1, ~p~n", [Channel]),
-    Rep = gen_channel:get_chan_perms(Channel),
+    Rep = supercast_channel:get_chan_perms(Channel),
     io:format("subscribe statge1, rep, ~p~n", [Rep]),
     case Rep of
         #perm_conf{} = Perm ->
@@ -104,7 +104,7 @@ subscribe_stage2(Channel, CState) ->
             %client allready registered do nothing
             ok;
         false   ->
-            try gen_channel:synchronize(Channel, CState) of
+            try supercast_channel:synchronize(Channel, CState) of
                 ok ->
                     ok
                 catch
@@ -122,7 +122,7 @@ subscribe_stage3(Channel, CState) ->
 
 -spec multicast_msg(atom(), {#perm_conf{}, tuple()}) -> ok.
 % @doc
-% Called by a gen_channel module with a message that can be of interest for
+% Called by a supercast_channel module with a message that can be of interest for
 % clients that have subscribed to the channel.
 % Will be send depending of the right of the user.
 % @end
@@ -131,11 +131,11 @@ multicast_msg(Chan, {Perm, Pdu}) ->
 
 -spec unicast_msg(#client_state{}, tuple()) -> ok.
 % @doc
-% Called by a gen_channel module with a message for a single client. Message
+% Called by a supercast_channel module with a message for a single client. Message
 % will or will not be sent to the client depending on the permissions.
 % Note that the channel is not checked. Thus a client wich is not subscriber
 % of any channels can receive these messages.
-% Typicaly used when the gen_channel need to synchronize the client using his
+% Typicaly used when the supercast_channel need to synchronize the client using his
 % handle_cast({synchronize, CState}, State) function.
 % @end
 unicast_msg(CState, {Perm, Pdu}) ->

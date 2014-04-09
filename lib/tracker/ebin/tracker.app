@@ -25,7 +25,7 @@
         {modules, [
                 tracker_app,
                 tracker_pdu,
-                tracker_api,
+                tracker_commander,
                 tracker_master_channel,
                 tracker_misc,
                 tracker_probe_sup,
@@ -48,6 +48,7 @@
                 'target-MasterChan',
                 tracker_misc,
                 tracker_probe_sup,
+                tracker_commander,
                 tracker_target_channel_sup
             ]},
         {applications, 

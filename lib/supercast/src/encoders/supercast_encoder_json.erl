@@ -37,7 +37,8 @@
 %%          </li>
 %%      </ul>
 
--module(bsupercast_encoder_json).
+-module(supercast_encoder_json).
+-behaviour(supercast_encoder).
 -author('bob@mochimedia.com').
 -export([encoder/1, encode_mochi/1]).
 -export([decoder/1, decode_mochi/1, decode_mochi/2]).
