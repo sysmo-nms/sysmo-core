@@ -3,6 +3,11 @@
 ERL         ?= erl
 ERLC        ?= erlc -Werror
 ASNC        ?= erlc -Werror -bber
+
+DIALYZER    ?= dialyzer
+ERLC_DIAL   ?= erlc -Werror +debug_info
+ASNC_DIAL   ?= erlc -Werror +debug_info -bber
+
 EPATH       += -pa ebin
 
 APP         = $(subst ebin/,,$(basename $(wildcard ebin/*.app)))
@@ -77,6 +82,12 @@ $(ASN_DEST): ebin/%.beam: priv/asn1/%.asn
 test: compile
 	@$(ERL) -noinput -pa ebin -eval \
         'eunit:test(bsupercast_acctrl_rbac, [verbose]), init:stop()'
+
+dialize: ERLC = $(ERLC_DIAL)
+dialize: ASNC = $(ASNC_DIAL)
+dialize: clean compile
+	$(DIALYZER) --build_plt --output_plt supercast.plt -pa ebin --apps erts kernel stdlib crypto public_key ssl ebin/
+	$(DIALYZER) --plts supercast.plt -- ebin/
 
 # DOCUMENTATION
 doc: doc/index.html
