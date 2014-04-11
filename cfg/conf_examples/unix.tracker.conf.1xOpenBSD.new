@@ -1,4 +1,4 @@
-% win 1xOpenBSD
+% unix 1xOpenBSD
 {target,
     'secondTestHost-1',
     {perm_conf,     ["admin"], ["admin"]},

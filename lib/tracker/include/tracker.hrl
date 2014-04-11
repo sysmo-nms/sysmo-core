@@ -32,6 +32,8 @@
     id                  = undefined     :: integer(), % unique in a target
     pid                 = undefined     :: undefined | pid(),
     name                = undefined     :: atom(),
+    description         = undefined     :: string(),
+    info                = undefined     :: string(),
     permissions         = #perm_conf{}  :: #perm_conf{},
     tracker_probe_mod   = undefined     :: undefined | module(),
     tracker_probe_conf  = undefined     :: [any()],
@@ -59,6 +61,13 @@
     ]        :: [{any(), any()}],
     probes      = [] :: [#probe{}],
     directory   = ""
+}).
+
+-record(probe_set, {
+    name,
+    perm  = undefined   :: #perm_conf{},    % who is allowed to generate this
+                                            % set.
+    probe = []          :: [#probe{}]
 }).
 
 -record(ps_state, {
