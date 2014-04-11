@@ -34,8 +34,7 @@
 
 -export([
     start_link/1,
-    client_msg/2,
-    dump/0
+    client_msg/2
 ]).
 
 -record(state, {
@@ -64,11 +63,6 @@ client_msg(Msg, ClientState) ->
 handle_client_command(Mod, Msg, CState) ->
     gen_server:call(?MODULE, {client_command, Mod, Msg, CState}).
 
-% DEBUG
-% @private
-dump() ->
-    gen_server:call(?MODULE, dump).
-
 %%-------------------------------------------------------------
 %% GEN_SERVER CALLBACKS
 %%-------------------------------------------------------------
@@ -83,7 +77,7 @@ init({AuthModule, PduDispatch}) ->
 
 % @private
 handle_call(dump, _F, S) ->
-    {reply, S, S};
+    {reply, {ok, S}, S};
 
 handle_call({client_command, Key, Msg, CState}, _F, 
         #state{dispatch = Dispatch} = S) ->

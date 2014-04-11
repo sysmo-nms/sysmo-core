@@ -29,6 +29,7 @@
 
 -spec satisfy(read | write, [#client_state{}], #perm_conf{}) -> 
         {ok, [#client_state{}]}.
+% @private
 % @doc
 % Givent a list of client and a perm conf, return a list of allowed
 % clients or an empty list.

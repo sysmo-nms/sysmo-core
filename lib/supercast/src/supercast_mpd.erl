@@ -18,6 +18,7 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
+% @private
 -module(supercast_mpd).
 -behaviour(gen_server).
 -include("../include/supercast.hrl").
@@ -40,9 +41,7 @@
     subscribe_stage3/2,
     unsubscribe/2,
     main_chans/0,
-    client_disconnect/1,
-    filter_things/2,
-    dump/0
+    client_disconnect/1
 ]).
 
 -record(state, {
@@ -156,19 +155,6 @@ client_disconnect(CState) ->
 unsubscribe(Chan, CState) ->
     gen_server:call(?MODULE, {unsubscribe, Chan, CState}).
 
--spec filter_things(#client_state{}, [{#perm_conf{}, any()}]) -> [any()].
-% @doc
-% Called by external modules to filter things. It will return any "things",
-% that the client defined in #client_state{} is allowed to 'read'.
-% XXX This function should be exported to a gen_server filter.
-% @end
-filter_things(CState, Things) ->
-    {ok, Acctrl} = gen_server:call(?MODULE, get_acctrl),
-    filter_things_tool(CState, Things, Acctrl).
-
-% @private
-dump() ->
-    gen_server:call(?MODULE, dump).
 %%-------------------------------------------------------------
 %% GEN_SERVER CALLBACKS
 %%-------------------------------------------------------------
@@ -218,12 +204,10 @@ handle_call({client_disconnect, CState}, _F, S) ->
     {reply, ok, S#state{chans = Chans}};
 
 handle_call(get_acctrl, _F, #state{acctrl = Acctrl} = S) ->
-    % XXX maybe not in the gen_server loop using application:get_env to get the
-    % acctrl.
     {reply, {ok, Acctrl}, S};
 
 handle_call(dump, _F, S) ->
-    {reply, S, S};
+    {reply, {ok, S}, S};
 
 handle_call(_R, _F, S) ->
     io:format("handle_call ~p~p~n", [?MODULE, _R]),
@@ -312,15 +296,3 @@ del_subscriber(CState, Chans) ->
         N = lists:delete(CState, CList),
         [{Id, N} | Acc]
     end, [], Chans).
-
-filter_things_tool(CState, Pdus, Acctrl) ->
-    filter_things_tool(CState, Pdus, Acctrl, []).
-filter_things_tool(_, [], _, R) ->
-    R;
-filter_things_tool(CState, [{Perm, Pdu}|T], Acctrl, R) ->
-    case Acctrl:satisfy(read, [CState], Perm) of
-        {ok, []} ->
-            filter_things_tool(CState, T, Acctrl, R);
-        {ok, [CState]} ->
-            filter_things_tool(CState, T, Acctrl, [Pdu|R])
-    end.

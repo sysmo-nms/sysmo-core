@@ -383,7 +383,7 @@ gen_rrd_configs([H|T], Ret) ->
         %|| {Key,Value} <- Properties].
 
 gen_dump_pdus(CState, Targets) ->
-    FTargets    = supercast_mpd:filter_things(CState, [{Perm, Target} ||
+    FTargets    = supercast:filter(CState, [{Perm, Target} ||
         #target{global_perm = Perm} = Target <- Targets]),
     TargetsPDUs = [pdu(targetInfo, Target) || Target <- FTargets],
     ProbesDefs  = [{TId, Probes} ||
@@ -394,7 +394,7 @@ gen_dump_pdus(_, TargetsPDUs, ProbesPDUs, []) ->
 gen_dump_pdus(CState, TargetsPDUs, ProbesPDUs, [{TId, Probes}|T]) ->
     ProbesThings  = [{Perm, Probe} || 
         #probe{permissions = Perm} = Probe <- Probes],
-    AllowedThings = supercast_mpd:filter_things(CState, ProbesThings),
+    AllowedThings = supercast:filter(CState, ProbesThings),
     Result = [pdu(probeInfo, {create, TId, Probe}) ||
         Probe <- AllowedThings],
     gen_dump_pdus(CState, TargetsPDUs, lists:append(ProbesPDUs, Result), T).

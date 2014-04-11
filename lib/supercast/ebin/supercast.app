@@ -27,6 +27,7 @@
                 supercast_sup,
                 supercast_mpd,
                 supercast_server,
+                supercast,
                 clsupercast,
                 ssl_client,
                 ssl_client_sup,

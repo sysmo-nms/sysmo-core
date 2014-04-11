@@ -81,7 +81,7 @@ test: compile
 # DOCUMENTATION
 doc: doc/index.html
 
-doc/index.html: doc/overview.edoc src/*.erl
+doc/index.html: doc/overview.edoc $(MAIN) $(ENCODERS) $(AUTHS) $(ACCTRL) $(BEHAVIOURS)
 	@echo "Building documentation..."
 	@$(ERL) -noinput -pa ebin -eval \
- 'edoc:application($(APP), ".", []), init:stop()'
+ 'edoc:application($(APP), ".", [{subpackages, true}, {packages, false}]), init:stop()'

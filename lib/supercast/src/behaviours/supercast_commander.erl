@@ -32,6 +32,7 @@
 ]).
 
 % behaviour functions
+% @private
 behaviour_info(callbacks) ->
     [
         {handle_command,     2}
