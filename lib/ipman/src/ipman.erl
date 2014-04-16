@@ -43,7 +43,7 @@ start_link() ->
 init([]) ->
     Agents = snmp_manager:which_agents(),
     % XXX should call:
-    % btracker_probe_standard_snmp:sys_infos/1 and
+    % bmonitor_probe_standard_snmp:sys_infos/1 and
     AgentsRecords = [
         #ipman_agent{
             agent_name  = Agent,
@@ -62,8 +62,8 @@ init([]) ->
 %             #services{internet = false} -> false
 %     end, AgentsRecords),
 
-    % TODO subscribe to tracker events triggered by 
-    % btracker_probe_standard_snmp module
+    % TODO subscribe to monitor events triggered by 
+    % bmonitor_probe_standard_snmp module
     {ok, AgentsRecords}.
 
 % CALL 

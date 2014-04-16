@@ -19,8 +19,8 @@ endif
 export MAKE        = /usr/bin/make
 export REL_NAME    = noctopus
 export REL_VERSION = 0.2.1
-export MODS        = supercast snmp_manager tracker tlogger_rrd \
-                         tlogger_text tracker_events locator ipman
+export MODS        = supercast snmp_manager monitor monitor_logger_rrd \
+                         monitor_logger_text monitor_events locator ipman
 MODS_EBIN_DIR      = $(addprefix ./lib/, $(addsuffix /ebin, $(MODS)))
 MODS_DEF_FILE      = $(foreach app, $(MODS_EBIN_DIR), $(wildcard $(app)/*.app))
 ERL_NMS_PATH       = $(addprefix -pa ,$(MODS_EBIN_DIR))
@@ -49,7 +49,7 @@ clean: var-clean rel-clean
 	@cd lib; $(MAKE) clean
 
 var-clean:
-	rm -rf var/tracker/*/
+	rm -rf var/monitor/*/
 	rm -f var/snmp/snmpm_config_db
 	rm -f var/log/*.log
 	rm -f var/mnesia/*.LOG
@@ -110,7 +110,7 @@ windows-release: var-clean rel-clean compile
 	@cp release_tools/sys.config.src   $(TMP_DIR)/releases/$(REL_VERSION)/sys.config
 	@cp release_tools/8080_props.conf.src  $(TMP_DIR)/var/httpd/8080_props.conf
 	@mkdir $(TMP_DIR)/cfg
-	@touch $(TMP_DIR)/cfg/tracker.conf
+	@touch $(TMP_DIR)/cfg/monitor.conf
 	@cp -r $(TMP_DIR) $(REL_NAME)-$(REL_VERSION).win32
 ########################
 # WINDOWS RELEASES END #
@@ -145,7 +145,7 @@ unix-release: var-clean rel-clean compile
 	@cp release_tools/sys.config.src $(TMP_DIR)/releases/$(REL_VERSION)/
 	@cp release_tools/8080_props.conf.src $(TMP_DIR)/var/httpd/
 	@mkdir $(TMP_DIR)/cfg
-	@touch $(TMP_DIR)/cfg/tracker.conf
+	@touch $(TMP_DIR)/cfg/monitor.conf
 	@tar -czf $(REL_NAME)-$(REL_VERSION).tar.gz -C $(TMP_DIR) .
 #####################
 # UNIX RELEASES END #

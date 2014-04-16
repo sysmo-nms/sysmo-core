@@ -8,7 +8,7 @@
             undefined,
             'snmp-properties-switch-1',
             {perm_conf, ["admin", "other"], ["admin"]},
-            btracker_probe_snmp,
+            bmonitor_probe_snmp,
             {snmp_conf,
                 "switch-1",
                 "172.16.0.10",
@@ -30,13 +30,13 @@
             5,
             4,
             [
-                {inspector, btracker_inspector_status_set,[]},
-                {inspector, btracker_inspector_property_set, 
+                {inspector, bmonitor_inspector_status_set,[]},
+                {inspector, bmonitor_inspector_property_set, 
                     ["status", "sysName", "location"]}
             ],
             [
-                {logger, tracker_events, []},
-                {logger, btracker_logger_text, []}
+                {logger, monitor_events, []},
+                {logger, bmonitor_logger_text, []}
             ],
             [],
             [],
@@ -47,5 +47,5 @@
             true
         }
     ],
-    "var/tracker/switch-1"
+    "var/monitor/switch-1"
 }.

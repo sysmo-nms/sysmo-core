@@ -154,9 +154,5 @@ Shedule everithing that need it:
 ##################
 - mod_routing: Routing protocols monitoring/maps
 
-PERFORMANCES:
-btracker_probe_nagios:eval_nagios_output/1 might use re:run instead 
-of string:token
-
 TODO maybe:
 smokeping probe compatibility

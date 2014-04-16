@@ -5,20 +5,20 @@
         {modules, [
                 locator,
                 locator_app,
-		locator_query,
-		locator_query_sup,
+                locator_query,
+                locator_query_sup,
                 locator_sup
             ]
         },
         {registered, 
             [
                 locator_sup,
-		locator_query_sup,
+                locator_query_sup,
                 locator
             ]
         },
         {applications, 
-            [kernel, stdlib, tracker, snmp_manager]
+            [kernel, stdlib, monitor, snmp_manager]
         },
         {start_phases, []},
         {mod, {locator_app, []}}

@@ -1,0 +1,271 @@
+ModMonitor DEFINITIONS IMPLICIT TAGS ::=
+BEGIN
+
+-- BASIC TYPES --
+IpAdd   ::= PrintableString
+ErlangModule    ::= PrintableString
+Second          ::= INTEGER
+MicroSecond     ::= INTEGER
+CommandId       ::= INTEGER
+CommandMsg      ::= PrintableString
+GroupName       ::= PrintableString (SIZE (0..50))
+TargetId        ::= PrintableString (SIZE (0..50))
+TargetHostname  ::= PrintableString (SIZE (0..50))
+TargetSysname   ::= PrintableString (SIZE (0..50))
+TargetInfoType  ::= ENUMERATED {create(0), delete(1), update(2)}
+ProbeId         ::= INTEGER
+ProbeName       ::= PrintableString (SIZE (0..30))
+ProbeStatus     ::= PrintableString (SIZE (0..15))
+ProbeType       ::= ENUMERATED {fetch(0), status(1)}
+ProbeInfoType   ::= ENUMERATED {create(0), delete(1), update(2)}
+ProbeValue      ::= INTEGER
+ProbeTimeout    ::= INTEGER
+
+-- SEQUENCE TYPES --
+---------------------------------------
+-- FROM SERVER
+---------------------------------------
+
+-- PermConf
+PermConf        ::= SEQUENCE {
+    read        SEQUENCE OF GroupName,
+    write       SEQUENCE OF GroupName
+}
+
+-- Properties --
+Property    ::= SEQUENCE {
+    key     PrintableString,
+    value   PrintableString
+}
+Properties  ::= SEQUENCE OF Property
+
+-- Inspectors --
+Inspector   ::= SEQUENCE {
+    module  ErlangModule,
+    conf    PrintableString
+}
+Inspectors  ::= SEQUENCE OF Inspector
+
+---------------------------------------
+-- Loggers ----------------------------
+---------------------------------------
+-- RRD --
+Bind        ::= SEQUENCE {
+    replacement PrintableString,
+    macro       PrintableString
+}
+Graph       ::= PrintableString
+RrdConfig   ::= SEQUENCE {
+    file    PrintableString,
+    create  PrintableString,
+    update  PrintableString,
+    graphs  SEQUENCE OF Graph,
+    binds   SEQUENCE OF Bind
+}
+LoggerRrd   ::= SEQUENCE {
+    module  ErlangModule,
+    config  SEQUENCE OF RrdConfig
+}
+
+-- Text --
+LoggerText  ::= SEQUENCE {
+    module  ErlangModule,
+    conf    PrintableString
+}
+
+-- Events --
+LoggerEvents ::= SEQUENCE {
+    module  ErlangModule,
+    conf    PrintableString
+}
+
+Logger  ::= CHOICE {
+    loggerRrd       [0] LoggerRrd,
+    loggerText      [1] LoggerText,
+    loggerEvents    [2] LoggerEvents
+}
+Loggers     ::= SEQUENCE OF Logger
+
+-- ProbeInfo
+ProbeConf       ::= SEQUENCE {
+    name        ProbeName,
+    type        ProbeType
+}
+
+FileData        ::= OCTET STRING
+
+ProbeInfo   ::= SEQUENCE {
+    channel     TargetId,
+    probeId     ProbeId,
+    name        ProbeName,
+    permissions PermConf,
+    probeMod    ErlangModule,
+    probeConf   PrintableString,
+    status      ProbeStatus,
+    timeout     Second,
+    step        Second,
+    inspectors  Inspectors,
+    loggers     Loggers,
+    properties  Properties,
+    active      INTEGER,
+    infoType    ProbeInfoType
+}
+
+-- ProbeEvent
+ProbeEvent      ::= SEQUENCE {
+    probeName   PrintableString,
+    eventId     INTEGER,
+    insertTs    MicroSecond,
+    ackTs       MicroSecond,
+    status      ProbeStatus,
+    textual     PrintableString,
+    ackNeeded   BOOLEAN,
+    ackValue    PrintableString,
+    groupOwner  PrintableString,
+    userOwner   PrintableString
+}
+
+-- ProbeActivity 
+ProbeActivity ::= SEQUENCE {
+    channel     TargetId,
+    probeId     ProbeId,
+    timestamp   MicroSecond,
+    state       PrintableString,
+    returnStatus PrintableString,
+    textual     PrintableString
+}
+
+-- ProbeReturn 
+ProbeReturn ::= SEQUENCE {
+    target          TargetId,
+    probeId         PrintableString,
+    status          ProbeStatus,
+    originalReply   PrintableString,
+    timestamp       MicroSecond,
+    keysVals        Properties
+}
+
+-- ProbeModuleInfo 
+ProbeModuleInfo ::= SEQUENCE {
+    name        PrintableString,
+    info        PrintableString
+}
+
+
+-- EventProbeDump --
+EventProbeDump  ::= SEQUENCE {
+    targetId    TargetId,
+    probeName   PrintableString,
+    probeModule PrintableString,
+    events      SEQUENCE OF ProbeEvent
+}
+
+-- RrdProbeDump --
+RrdFileDump ::= SEQUENCE {
+    fileId  PrintableString,
+    bin     FileData
+}
+
+RrdProbeDump    ::= SEQUENCE {
+    target      TargetId,
+    probeName   PrintableString,
+    probeModule PrintableString,
+    files       SEQUENCE OF RrdFileDump
+}
+
+-- ProbeDump --
+ProbeDump   ::= SEQUENCE {
+    target      TargetId,
+    probeName   PrintableString,
+    probeModule PrintableString,
+    binaryData  FileData  
+}
+
+ProbeFetch  ::= SEQUENCE {
+    channel     TargetId,
+    probe       ProbeId,
+    probeType   ProbeType,
+    probeValue  ProbeValue
+}
+
+-- complete avec le monitor.hrl records finaux
+TargetInfo  ::= SEQUENCE {
+    channel     TargetId,
+    properties  Properties,
+    type        TargetInfoType
+}
+
+CommandResponce ::= SEQUENCE {
+    cmdId       CommandId,
+    cmdMsg      CommandMsg
+}
+
+---------------------------------------
+-- FROM CLIENT
+---------------------------------------
+CreateTarget    ::= SEQUENCE {
+    ipAdd       PrintableString,
+    permConf    PermConf,
+    queryId     INTEGER
+}
+
+CreateProbe     ::= SEQUENCE {
+    target      TargetId,
+    probeConf   ProbeConf
+}
+
+-- TODO server API
+UpdateTarget    ::= SEQUENCE {
+    target      TargetId
+}
+
+DeleteTarget    ::= SEQUENCE {
+    target      TargetId
+}
+
+
+UpdateProbe     ::= SEQUENCE {
+    target      TargetId,
+    probe       ProbeId
+}
+
+DeleteProbe     ::= SEQUENCE {
+    target      TargetId,
+    probe       ProbeId
+}
+
+MonitorReply    ::= SEQUENCE {
+    queryId     INTEGER,
+    status      BOOLEAN,
+    info        PrintableString
+}
+
+---------------------------------------
+-- FULL PDU
+---------------------------------------
+MonitorPDU ::= CHOICE {
+    fromServer  [0] CHOICE {
+        targetInfo      [1] TargetInfo,
+        probeInfo       [2] ProbeInfo,
+        probeFetch      [3] ProbeFetch,
+        probeDump       [4] ProbeDump,
+        cmdResp         [5] CommandResponce,
+        probeModInfo    [6] ProbeModuleInfo,
+        probeActivity   [7] ProbeActivity,
+        probeReturn     [8] ProbeReturn,
+        rrdProbeDump    [9] RrdProbeDump,
+        eventProbeDump  [10] EventProbeDump,
+        probeEventMsg   [11] ProbeEvent,
+        monitorReply    [12] MonitorReply
+    },
+    fromClient  [1] CHOICE {
+        createTarget    [1] CreateTarget,
+        updateTarget    [2] UpdateTarget,
+        deleteTarget    [3] DeleteTarget,
+        createProbe     [4] CreateProbe,
+        updateProbe     [5] UpdateProbe,
+        deleteProbe     [6] DeleteProbe
+    }
+}
+
+END

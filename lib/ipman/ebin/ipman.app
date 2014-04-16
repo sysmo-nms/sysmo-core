@@ -15,7 +15,7 @@
             ]
         },
         {applications, 
-            [kernel, stdlib, tracker, snmp_manager]
+            [kernel, stdlib, monitor, snmp_manager]
         },
         {start_phases, []},
         {mod, {ipman_app, []}}
