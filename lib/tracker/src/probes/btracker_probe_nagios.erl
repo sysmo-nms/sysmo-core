@@ -29,18 +29,27 @@
     info/0
 ]).
 
-init(Probe) ->
-    {ok, NagRe} = compile_nagios_re(),
-    {ok, {nag_re, NagRe}}.
+init(#ps_state{
+        probes_state = Ps
+    } = S) ->
+    Conf = lists:keystore(nag_re, 1, [], {nag_re, compile_nagios_re()}),
+    S#ps_state{
+        probes_state = lists:keystore(?MODULE, 1, Ps, {?MODULE, Conf})
+    }.
 
-exec(Probe, State) ->
-    #probe{tracker_probe_conf = NagConf}        = Probe,
-    #nagios_plugin_conf{executable = Exec}      = NagConf,
-    #nagios_plugin_conf{args       = Args}      = NagConf,
-    #nagios_plugin_conf{eval_perfs = Evaluate}  = NagConf,
-    {nag_re, Re}                                = State,
+exec({#ps_state{
+        probes_state = Conf
+    }, #probe{
+            tracker_probe_conf  = #nagios_plugin_conf{
+                executable  = Exec,
+                args        = Args,
+                eval_perfs  = Evaluate
+            }
+        }
+    }) ->
  
     {?MODULE, Cl}   = lists:keyfind(?MODULE, 1, Conf),
+    {nag_re,  Re}   = lists:keyfind(nag_re,  1, Cl),
 
     ArgList = [erlang:tuple_to_list(X) || X <- Args],
 
@@ -217,7 +226,7 @@ compile_nagios_re() ->
         {ok, RE} = re:compile(Re),
         {Unit, RE}
     end, NagUomRe),
-    {ok, NagCompiledRe}.
+    NagCompiledRe.
 
 nag_uom_test(String, []) ->
     {String, no_unit};
