@@ -29,7 +29,7 @@
 
 % exported here for documentation only:
 -export([
-    init/2,
+    init/3,
     log/2,
     dump/1
 ]).
@@ -37,7 +37,7 @@
 % @private
 behaviour_info(callbacks) ->
     [
-        {init, 2},
+        {init, 3},
         {log,  2},
         {dump, 1}
     ];
@@ -45,13 +45,13 @@ behaviour_info(callbacks) ->
 behaviour_info(_) ->
     undefined.
 
--spec init(Conf::[any()], #ps_state{}) 
-        -> {ok, #ps_state{}}.
+-spec init(Conf::[any()], Dir::string(), Probe::#probe{}) 
+        -> {ok, any()}.
 % @doc
 % Called at the target_target_channel probe initialisation.
 % @end
-init(_Conf, ProbeServerState) -> 
-    {ok, ProbeServerState}.
+init(_Conf, _Dir, _Probe) -> 
+    {ok, undefined}.
 
 
 -spec log(ProbeServerState::#ps_state{}, Msg::any()) 

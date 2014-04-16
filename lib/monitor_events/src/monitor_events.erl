@@ -15,7 +15,7 @@
 
 -export([
     start_link/0,
-    init/2,
+    init/3,
     log/2,
     dump/1
 ]).
@@ -24,7 +24,7 @@ start_link() ->
     gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
 %
-init(Conf, ProbeServerState) ->
+init(Conf, _, ProbeServerState) ->
     gen_server:call(?MODULE, {init, Conf, ProbeServerState}).
 
 log(ProbeServerState, #probe_return{is_event = true} = ProbeReturn) ->

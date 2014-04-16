@@ -49,6 +49,7 @@
 
 -record(target, {
     id          = undefined     :: atom(),
+    ip          = undefined     :: string(),
     global_perm = #perm_conf{
         read        =   ["admin"],
         write       =   ["admin"]
@@ -86,12 +87,10 @@
     childs              = [],   %dynamicaly added
     inspectors_state    = [],
     loggers_state       = [],
-    probes_state        = []
+    probe_state        = []
 }).
 
 -record(snmp_conf, {
-    agent_name  = none          :: string(),
-    ip          = none          :: string(),
     port        = 161           :: integer(),
     version     = v2            :: v2 | v3,
     seclevel    = none          :: none | auth | enc,

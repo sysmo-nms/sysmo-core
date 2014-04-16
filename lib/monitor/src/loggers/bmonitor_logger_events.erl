@@ -28,15 +28,15 @@
 -include("../../include/monitor.hrl").
 
 -export([
-    init/2,
+    init/3,
     log/2,
     dump/1
 ]).
 
-init(_Cfg, ProbeSrvState) ->
-    {ok, ProbeSrvState}.
+init(_Cfg, _Dir, _Probe) ->
+    {ok, nothing}.
 
-log(_ProbeServerState, _ProbeReturn) ->
+log(_State, _ProbeReturn) ->
     ok.
 
 dump(_ProbeServerState) ->

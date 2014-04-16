@@ -27,31 +27,25 @@
 -include("../../include/monitor.hrl").
 
 -export([
-    init/2,
+    init/3,
     log/2,
     dump/1
 ]).
 
-init(_Conf, #ps_state{
-        target          = Target,
-        probe           = Probe,
-        loggers_state   = LoggersState} = ProbeServerState) -> 
+-record(state, {
+    file_name,
+    log_srv
+}).
 
-    LogFile     = generate_filename(Target, Probe),
+init(_Conf, Dir, Probe) ->
+    LogFile     = generate_filename(Dir, Probe),
     {ok, Pid}   = monitor_logger_text_sup:start_logger(LogFile),
-    NewLoggersState =  lists:keystore(?MODULE, 1, 
-            LoggersState, {?MODULE, [{file_name, LogFile}, {log_srv, Pid}] }),
-    {ok, 
-        ProbeServerState#ps_state{
-            loggers_state = NewLoggersState
-        }
-    }.
+    {ok, #state{file_name = LogFile, log_srv = Pid}}.
 
-log(
-        #ps_state{loggers_state = LState}, 
-        #probe_return{original_reply = Msg, timestamp = T}
-    ) ->
-    LogSrv      = get_key(log_srv, LState),
+log(State, ProbeReturn) ->
+    LogSrv      = State#state.log_srv,
+    Msg         = ProbeReturn#probe_return.original_reply,
+    T           = ProbeReturn#probe_return.timestamp,
     EncodedMsg  = list_to_binary(io_lib:format("~p>>> ~s", [T, Msg])),
     monitor_logger_text:log(LogSrv, EncodedMsg),
     ok.
@@ -76,8 +70,7 @@ pdu('probeDump', {TargetId, ProbeId, Binary}) ->
                     atom_to_list(?MODULE),
                     Binary}}}}.
 
-generate_filename(Target, Probe) ->
-    TargetDir   = Target#target.directory,
+generate_filename(TargetDir, Probe) ->
     ProbeName   = Probe#probe.name,
     FileName    = io_lib:format("~s.txt", [ProbeName]),
     filename:absname_join(TargetDir, FileName).

@@ -40,8 +40,8 @@ start_phase(create_targets, normal, []) ->
     {ok, ConfFile} = application:get_env(monitor, config_file),
     ok = monitor_target_channel_sup:cold_start(ConfFile);
 
-start_phase(launch_probes, normal, []) ->
-    monitor_probe_sup:launch().
+start_phase(launch_probes, normal, []) -> ok.
+    %monitor_probe_sup:launch().
 
 stop(_State) ->
     ok.

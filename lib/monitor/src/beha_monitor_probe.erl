@@ -45,34 +45,34 @@
 
 % export here for documentation only:
 -export([
-    init/1,
-    exec/1,
+    init/2,
+    exec/2,
     info/0]).
 
 % @private
 behaviour_info(callbacks) ->
     [
-        {init, 1},
-        {exec, 1},
+        {init, 2},
+        {exec, 2},
         {info, 0}
     ];
 
 behaviour_info(_) ->
     undefined.
 
--spec init(#ps_state{}) -> #ps_state{}.
-init(S) ->
-    S.
+-spec init(#target{}, #probe{}) -> #ps_state{}.
+init(_Target, _Probe) ->
+    {ok, state}.
 
--spec exec({TargetRecord::#target{}, ProbeRecord::#probe{}}) -> 
-    {ok, Val::integer()} | {error, Error::any()} | timeout.
+%-spec exec({TargetRecord::#target{}, ProbeRecord::#probe{}}) -> 
+    %{ok, Val::integer()} | {error, Error::any()} | timeout.
 % @doc
 % The return from this function will trigger another probe execution after a
 % delay defined by the #probe.step entry.
 % <em>exec</em> will then be called (#probe.step + (time for exec to return))
 % time.
 % @end
-exec(_) -> {ok, 1}.
+exec(_State, _Probe) -> {ok, 1}.
 
 -spec info() -> {ok, string()}.
 % @doc

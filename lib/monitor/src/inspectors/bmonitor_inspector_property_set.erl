@@ -39,9 +39,8 @@
 info() ->
     [].
 
-init(Conf, #ps_state{inspectors_state=IState} = ProbeServerState) ->
-    IConf = lists:keystore(?MODULE, 1, IState, {?MODULE, Conf}),
-    {ok, ProbeServerState#ps_state{inspectors_state = IConf}}.
+init(Conf, _Probe) ->
+    {ok, Conf}.
 
 % @end
 inspect(_InitialP,

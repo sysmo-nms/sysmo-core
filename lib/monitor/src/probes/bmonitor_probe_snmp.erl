@@ -26,49 +26,65 @@
 
 %% beha_monitor_probe exports
 -export([
-    init/1,
-    exec/1,
+    init/2,
+    exec/2,
     info/0]).
 
-init(#ps_state{
-        probe  = #probe{monitor_probe_conf = Conf},
-        target = #target{id = Name}
-    } = S) ->
-    #snmp_conf{
-        ip          = IpString,
-        port        = Port,
-        version     = Version,
-        community   = Community
-    } = Conf,
-    {ok, Ip} = inet:parse_address(IpString),
-    SnmpConf = [
-        {engine_id, "none"},
-        {address,   Ip},
-        {port  ,    Port},
-        {version,   Version},
-        {community, Community}
-    ],
-    Agent = atom_to_list(Name),
-    case agent_is_registered(Agent) of
-        true -> S;
-        false ->
-            snmpm:register_agent(?SNMP_USER, Agent, SnmpConf),
-            S
-    end.
+-record(state, {
+    agent,
+    oids,
+    request_oids,
+    timeout
+}).
 
-exec({_,#probe{
-            monitor_probe_conf = #snmp_conf{
-                agent_name  =  Agent,
-                oids        =  Oids
-            },
-            timeout = Timeout
+init(Target, Probe) ->
+
+    TargetName  = Target#target.id,
+    AgentName   = atom_to_list(TargetName),
+
+    TargetIp    = Target#target.ip,
+    {ok, Ip}    = inet:parse_address(TargetIp),
+
+    Conf        = Probe#probe.monitor_probe_conf,
+    Port        = Conf#snmp_conf.port,
+    Version     = Conf#snmp_conf.version,
+    Community   = Conf#snmp_conf.community,
+    Oids        = Conf#snmp_conf.oids,
+
+    case agent_is_registered(AgentName) of
+        true  -> ok;
+        false ->
+            SnmpArgs = [
+                {engine_id, "none"},
+                {address,   Ip},
+                {port  ,    Port},
+                {version,   Version},
+                {community, Community}
+            ],
+            snmpm:register_agent(?SNMP_USER, AgentName, SnmpArgs)
+    end,
+
+    {ok, #state{
+            agent           = AgentName,
+            oids            = Oids,
+            request_oids    = [Oid || {_, Oid} <- Oids],
+            timeout         = Probe#probe.timeout
         }
-    }) -> 
-    Request = [Oid || {_, Oid} <- Oids],
-    {_, MicroSec1} = sys_timestamp(),
-    Rep = snmpm:sync_get(?SNMP_USER, Agent, Request, Timeout * 1000),
-    {_, MicroSec2} = sys_timestamp(),
-    case Rep of
+    }.
+
+exec(State, _Probe) ->
+
+    Agent           = State#state.agent,
+    Request         = State#state.request_oids,
+    Oids            = State#state.oids,
+    Timeout         = State#state.timeout,
+
+    {_, MicroSec1}  = sys_timestamp(),
+    % TODO use snmp_manager:bulk_walk
+    Reply           = snmpm:sync_get(?SNMP_USER, Agent, Request, Timeout),
+    {_, MicroSec2}  = sys_timestamp(),
+
+    case Reply of
         {error, _Error} = R ->
             #probe_return{
                 status          = 'CRITICAL',

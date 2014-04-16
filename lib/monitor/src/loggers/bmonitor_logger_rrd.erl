@@ -28,14 +28,14 @@
 -include("../../include/monitor.hrl").
 
 -export([
-    init/2,
+    init/3,
     log/2,
     dump/1
 ]).
 
 init(Cfg, #ps_state{
         target          = #target{directory = Dir},
-        loggers_state   = LoggersState} = ProbeSrvState) ->
+        loggers_state   = LoggersState} = ProbeSrvState, _) ->
 
     % update #rrd_config.filePath and create the file if it does not exist.
     Cfg1 = [RrdRec#rrd_config{file_path = generate_filename(Dir, RrdFile)} || 

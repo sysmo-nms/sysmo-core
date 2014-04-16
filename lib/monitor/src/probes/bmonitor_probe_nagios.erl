@@ -24,36 +24,40 @@
 -include("../../include/monitor.hrl").
 
 -export([
-    init/1,
-    exec/1,
+    init/2,
+    exec/2,
     info/0
 ]).
 
-init(#ps_state{
-        probes_state = Ps
-    } = S) ->
-    Conf = lists:keystore(nag_re, 1, [], {nag_re, compile_nagios_re()}),
-    S#ps_state{
-        probes_state = lists:keystore(?MODULE, 1, Ps, {?MODULE, Conf})
-    }.
+-record(state, {
+    nag_re,
+    exec,
+    args,
+    eval_perfs
+}).
 
-exec({#ps_state{
-        probes_state = Conf
-    }, #probe{
-            monitor_probe_conf  = #nagios_plugin_conf{
-                executable  = Exec,
-                args        = Args,
-                eval_perfs  = Evaluate
-            }
-        }
-    }) ->
- 
-    {?MODULE, Cl}   = lists:keyfind(?MODULE, 1, Conf),
-    {nag_re,  Re}   = lists:keyfind(nag_re,  1, Cl),
-
+init(_Target, Probe) ->
+    Conf = Probe#probe.monitor_probe_conf,
+    Args = Conf#nagios_plugin_conf.args,
     ArgList = [erlang:tuple_to_list(X) || X <- Args],
 
-    {_, MicroSec1} = sys_timestamp(),
+    {ok, NagRe} = compile_nagios_re(),
+    {ok, #state{
+            nag_re      = NagRe,
+            exec        = Conf#nagios_plugin_conf.executable,
+            args        = ArgList,
+            eval_perfs  = Conf#nagios_plugin_conf.eval_perfs
+        }
+    }.
+
+exec(State, _Probe) ->
+    ArgList         = State#state.args,
+    Exec            = State#state.exec,
+    Evaluate        = State#state.eval_perfs,
+    Re              = State#state.nag_re,
+    
+    {_, MicroSec1}  = sys_timestamp(),
+
     erlang:open_port({spawn_executable, Exec}, 
         [exit_status, {args, ArgList}]),
 
@@ -226,7 +230,7 @@ compile_nagios_re() ->
         {ok, RE} = re:compile(Re),
         {Unit, RE}
     end, NagUomRe),
-    NagCompiledRe.
+    {ok, NagCompiledRe}.
 
 nag_uom_test(String, []) ->
     {String, no_unit};

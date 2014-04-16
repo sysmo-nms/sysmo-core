@@ -36,16 +36,11 @@
 info() ->
     [].
 
-init(_Conf, ProbeServerState) ->
-    {ok, ProbeServerState}.
+init(_Conf, _Probe) ->
+    {ok, nothing}.
 
 % @end
-inspect(_InitS,
-            #ps_state{
-                probe = Probe
-            } = ProbeServerState,
-            #probe_return{
-                status = Status
-            }) ->
-    NewProbe = Probe#probe{status = Status},
-    {ok, ProbeServerState#ps_state{probe = NewProbe}}.
+inspect(_InitInspect, Probe, ProbeReturn) ->
+    Status      = ProbeReturn#probe_return.status,
+    NewProbe    = Probe#probe{status = Status},
+    {ok, NewProbe}.
