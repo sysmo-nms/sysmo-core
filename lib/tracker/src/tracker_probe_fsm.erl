@@ -544,13 +544,13 @@ send_unicast(CState, Pdus) ->
 
   
 % INIT PROBE
-% TODO keystore conf here
--spec init_probe(#ps_state{}) -> #ps_state{}.
-init_probe(#ps_state{
-        probe = #probe{tracker_probe_mod = Mod}
-    } = S) ->
-    SF = Mod:init(S),
-    {ok, SF}.
+-spec init_probe(SData::#ps_state{}) -> NSdata::#ps_state{}.
+init_probe(SData) ->
+    #ps_state{probe = Probe}        = SData,
+    #probe{tracker_probe_mod = Mod} = Probe,
+    {ok, InitProbeState}            = Mod:init(Probe),
+
+    {ok, SData#ps_state{probe_state = InitProbeState}}.
 
 % LOGGERS
 % TODO keystore conf here
