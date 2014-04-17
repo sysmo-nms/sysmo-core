@@ -21,63 +21,33 @@
 % @doc
 % A module implementing this behaviour can be used as a probe module.
 % <p>
-% It used from a monitor_probe module and executed every 
-% (#probe.step seconds + process_time).
-% </p>
-% <h1>Probe type</h1>
-% <p>
-% Probes are of 3 general types. One probe can be any or all of them:
-%   - "set", set properties of the target depending of a return,
-%   - "get", retreive some value or generate it (reply latency),
-%   - "status", move the status of a probe,
-% </p>
-% <h1>Special probes</h1>
-% <p>
-% Two spectial probes:
-%   - "nagios", nagios compatible plugins wich is of type "status" and "get",
-%   - "snmp", wich can be of any type "set", "get" and "status".
+% It used from a monitor_probe module and executed to trigger a check.
 % </p>
 % @end
+
 -module(beha_monitor_probe).
--include("../include/monitor.hrl").
+-include("include/monitor.hrl").
 
--export([behaviour_info/1]).
-
-% export here for documentation only:
--export([
-    init/2,
-    exec/2,
-    info/0]).
-
-% @private
-behaviour_info(callbacks) ->
-    [
-        {init, 2},
-        {exec, 2},
-        {info, 0}
-    ];
-
-behaviour_info(_) ->
-    undefined.
-
--spec init(#target{}, #probe{}) -> #ps_state{}.
-init(_Target, _Probe) ->
-    {ok, state}.
-
-%-spec exec({TargetRecord::#target{}, ProbeRecord::#probe{}}) -> 
-    %{ok, Val::integer()} | {error, Error::any()} | timeout.
+-callback init(Target::#target{}, Probe::#probe{}) ->
+    {ok, State::any()}.
 % @doc
-% The return from this function will trigger another probe execution after a
-% delay defined by the #probe.step entry.
-% <em>exec</em> will then be called (#probe.step + (time for exec to return))
-% time.
+% Called at initialization stage. Must return a State value wich
+% will be gived as argument to the exec/2 callback.
 % @end
-exec(_State, _Probe) -> {ok, 1}.
 
--spec info() -> {ok, string()}.
+-callback exec(State::any()) -> 
+    {ok, State::any(), ProbeReturn::#probe_return{}}.
+% @doc
+% Called when a check is needed by the probe server. State is the return value
+% of the init/2 callback. Must return a possibly modified state, and a probe
+% return wich will be evaluated by inspectors and loggers modules.
+% @end
+
+
+-callback info() ->
+    {ok, ProbeInfo::string()}.
 % @doc
 % Called by the monitor_master_channel for presentation of the module to the
 % client. Must include every aspect of the probe and special configuration
 % parameters explanations.
 % @end
-info() -> {ok, ""}.

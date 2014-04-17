@@ -25,7 +25,7 @@
 
 -export([
     init/2,
-    exec/2,
+    exec/1,
     info/0
 ]).
 
@@ -35,6 +35,14 @@
     args,
     eval_perfs
 }).
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% beha_monotor_probe callbacks %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+info() ->
+    {ok, "Nagios plugin compatible probe"}.
 
 init(_Target, Probe) ->
     Conf = Probe#probe.monitor_probe_conf,
@@ -50,7 +58,7 @@ init(_Target, Probe) ->
         }
     }.
 
-exec(State, _Probe) ->
+exec(State) ->
     ArgList         = State#state.args,
     Exec            = State#state.exec,
     Evaluate        = State#state.eval_perfs,
@@ -75,13 +83,19 @@ exec(State, _Probe) ->
             PR = evaluate_nagios_output(Evaluate, Stdout, Re, 'UNKNOWN')
     end,
     {_, MicroSec2} = sys_timestamp(),
-    PR#probe_return{
+    KV  = PR#probe_return.key_vals,
+    KV2 = [{"sys_latency", MicroSec2 - MicroSec1} | KV],
+    PR2 = PR#probe_return{
         timestamp   = MicroSec2,
-        key_vals    = [
-            {"sys_latency", MicroSec2 - MicroSec1} | PR#probe_return.key_vals
-        ]
-    }.
+        key_vals    = KV2
+    },
+    {ok, State, PR2}.
 
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% UTILS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 receive_port_info() ->
     receive_port_info("").
 receive_port_info(StdOut) ->
@@ -93,9 +107,6 @@ receive_port_info(StdOut) ->
         _ ->
             receive_port_info(StdOut)
     end.
-
-info() ->
-    {ok, "Nagios plugin compatible probe"}.
 
 % @private
 evaluate_nagios_output(false, StdOutput, _, Status) ->

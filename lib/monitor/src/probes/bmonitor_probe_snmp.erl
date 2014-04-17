@@ -27,8 +27,9 @@
 %% beha_monitor_probe exports
 -export([
     init/2,
-    exec/2,
-    info/0]).
+    exec/1,
+    info/0
+]).
 
 -record(state, {
     agent,
@@ -36,6 +37,8 @@
     request_oids,
     timeout
 }).
+
+info() -> {ok, "snmp get and walk module"}.
 
 init(Target, Probe) ->
 
@@ -72,7 +75,7 @@ init(Target, Probe) ->
         }
     }.
 
-exec(State, _Probe) ->
+exec(State) ->
 
     Agent           = State#state.agent,
     Request         = State#state.request_oids,
@@ -86,27 +89,33 @@ exec(State, _Probe) ->
 
     case Reply of
         {error, _Error} = R ->
-            #probe_return{
-                status          = 'CRITICAL',
-                original_reply  = to_string(R),
-                key_vals        = [ {"status", 'CRITICAL'}, 
-                                    {"sys_latency", MicroSec2 - MicroSec1}],
-                timestamp       = MicroSec2
-            };
+            KV = [{"status",'CRITICAL'},{"sys_latency",MicroSec2 - MicroSec1}],
+            OR = to_string(R),
+            S  = 'CRITICAL',
+            PR = #probe_return{
+                status          = S,
+                original_reply  = OR,
+                key_vals        = KV,
+                timestamp       = MicroSec2},
+            {ok, State, PR};
         {ok, SnmpReply, _Remaining} ->
-            % from snmpm documentation: snmpm, Common Data Types 
-            % snmp_reply() = {error_status(), error_index(), varbinds()}
-            % {_ErrStatus, _ErrId, VarBinds} = SnmpReply,
-            % lists:foreach(fun(X) ->
-                % io:format("rep is noError ~p~n",[X#varbind.value])
-            % end, VarBinds)
-            #probe_return{key_vals = KV} = PR = eval_snmp_return(SnmpReply, Oids),
-            PR#probe_return{
+            PR      = eval_snmp_return(SnmpReply, Oids),
+            KV      = PR#probe_return.key_vals,
+            KV2     = [{"sys_latency", MicroSec2 - MicroSec1} | KV],
+            PR2     = PR#probe_return{
                 timestamp = MicroSec2,
-                key_vals  = [{"sys_latency", MicroSec2 - MicroSec1} | KV]
-            }
+                key_vals  = KV2},
+            {ok, State, PR2}
     end.
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% UTILS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% @private
+% @doc
+% from snmpm documentation: snmpm, Common Data Types 
+% snmp_reply() = {error_status(), error_index(), varbinds()}
+% @end
 eval_snmp_return({noError, _, VarBinds}, Oids) ->
     KeyVals = [
         {Key, (lists:keyfind(Oid, 2, VarBinds))#varbind.value} || 
@@ -118,7 +127,6 @@ eval_snmp_return({noError, _, VarBinds}, Oids) ->
         key_vals        = [{"status", 'OK'} | KeyVals]
     }.
 
-info() -> {ok, "snmp get and walk module"}.
 
 to_string(Term) ->
     lists:flatten(io_lib:format("~p~n", [Term])).
@@ -128,6 +136,6 @@ agent_is_registered(Agent) ->
 
 sys_timestamp() ->
     {Meg, Sec, Micro} = os:timestamp(),
-    Seconds      = Meg * 1000000 + Sec,
-    Microseconds = Seconds * 1000000 + Micro,
+    Seconds      = Meg      * 1000000 + Sec,
+    Microseconds = Seconds  * 1000000 + Micro,
     {Seconds, Microseconds}.

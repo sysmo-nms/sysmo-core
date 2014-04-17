@@ -156,12 +156,15 @@ init([Target, Probe]) ->
     {next_state, SName, SData}.
 
 % GEN_CHANNEL event
-handle_event({probe_return, PReturn}, SName, SData) ->
+handle_event({probe_return, PState, PReturn}, SName, SData) ->
     ?LOG({probe_return, PReturn}),
-    ProbeState  = SData#ps_state.probe_state,
-    Probe       = SData#ps_state.probe,
+    SData2      = SData#ps_state{probe_state = PState},
+
+    ProbeState  = SData2#ps_state.probe_state,
+    Probe       = SData2#ps_state.probe,
     initiate_start_sequence(ProbeState, Probe),
-    {next_state, SName, SData};
+
+    {next_state, SName, SData2};
 
 handle_event(_, SName, SData) ->
     {next_state, SName, SData}.
@@ -243,6 +246,11 @@ init_probe(Target, Probe) ->
 %     NewState.
 %
 
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% PROBE LAUNCH %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 initiate_start_sequence(ProbeState, Probe, random) ->
     Step    = Probe#probe.step,
     Random  = random(Step),
@@ -254,11 +262,13 @@ initiate_start_sequence(ProbeState, Probe) ->
     Step = Probe#probe.step,
     timer:apply_after(Step, ?MODULE, take_of, [ProbeState, Probe]).
 
-take_of(ProbeState, Probe) ->
+take_of(PState, Probe) ->
     Mod     = Probe#probe.monitor_probe_mod,
     Pid     = Probe#probe.pid,
-    Return  = Mod:exec(ProbeState, Probe),
-    gen_fsm:send_all_state_event(Pid, {probe_return, Return}).
+    {ok, PState2, Return}  = Mod:exec(PState),
+    gen_fsm:send_all_state_event(Pid, {probe_return, PState2, Return}).
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 random(Step) ->
     <<A:32, B:32, C:32>> = crypto:rand_bytes(12),
