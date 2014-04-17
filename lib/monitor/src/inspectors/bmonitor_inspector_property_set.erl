@@ -18,47 +18,56 @@
 %
 % You should have received a copy of the GNU General Public License
 % along with Enms. If not, see <http://www.gnu.org/licenses/>.
-% @doc
-% This simple inspector set the value of defined key in the probe property
-% record. The key must appear in the configuration list, and be returned by
-% the probe in the #probe_return.key_vals list to be set.
-% If the key did not appear in the #probe_return.key_vals list, the inspector
-% do nothing (if key_val exist, it will not be modified).
-% @end
 -module(bmonitor_inspector_property_set).
 -behaviour(beha_monitor_inspector).
 -include("../../include/monitor.hrl").
 
 
 -export([
-    init/2,
-    inspect/3,
+    init/3,
+    inspect/4,
     info/0
 ]).
 
+-record(state, {
+    binds
+}).
+
 info() ->
-    [].
+    Info =
+"This simple inspector set the value of defined key in the probe property
+record. The key must appear in the configuration list, and be returned by
+the probe in the #probe_return.key_vals list to be set.
+If the key did not appear in the #probe_return.key_vals list, the inspector
+do nothing (if key_val exist, it will not be modified).",
+    {ok, Info}.
 
-init(Conf, _Probe) ->
-    {ok, Conf}.
+init(Conf, _Target, _Probe) ->
+    State = #state{binds = Conf},
+    {ok, State}.
 
-% @end
-inspect(_InitialP,
-            #ps_state{
-                probe = #probe{properties = Properties} = Probe,
-                inspectors_state = IConf
-            } = ProbeServerState,
-            #probe_return{
-                key_vals = KeyVals
-            }) ->
-    {?MODULE, Binds} = lists:keyfind(?MODULE, 1, IConf),
-    NewProp = lists:foldl(fun(Key, Acc) ->
-        case lists:keyfind(Key, 1, KeyVals) of
-            false -> 
-                Acc;
-            Value ->
-                lists:keystore(Key, 1, Acc, Value)
-        end
-    end, Properties, Binds),
-    NewProbe = Probe#probe{properties = NewProp},
-    {ok, ProbeServerState#ps_state{probe = NewProbe}}.
+inspect(State, ProbeReturn, _OrigProbe, ModifiedProbe) ->
+    Properties  = ModifiedProbe#probe.properties,
+    ProbeRKV    = ProbeReturn#probe_return.key_vals,
+    Binds       = State#state.binds,
+
+    {ok, NewProperties} = update_properties(Properties, ProbeRKV, Binds),
+
+    NewProbe    = ModifiedProbe#probe{properties = NewProperties},
+    {ok, State, NewProbe}.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% UTILS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% @private
+update_properties(Properties, _, []) ->
+    {ok, Properties};
+update_properties(Properties, ProbeRKV, [B|Binds]) ->
+    case lists:keyfind(B, 1, ProbeRKV) of
+        false ->
+            update_properties(Properties, ProbeRKV, Binds);
+        Value -> 
+            NewProperties = lists:keystore(B, 1, Properties, Value),
+            update_properties(NewProperties, ProbeRKV, Binds)
+    end.

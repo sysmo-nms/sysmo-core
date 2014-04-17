@@ -24,23 +24,27 @@
 % @end
 -module(bmonitor_inspector_status_set).
 -behaviour(beha_monitor_inspector).
--include("../../include/monitor.hrl").
+-include("include/monitor.hrl").
 
 
 -export([
-    init/2,
-    inspect/3,
-    info/0
+    info/0,
+    init/3,
+    inspect/4
 ]).
 
 info() ->
-    [].
+    Info = 
+"This inspector is very basic. It take the ModifiedProbe#probe{} and set the 
+#probe.status value to the value of ProbeReturn#probe_return.status. In other
+words it set the status of the probe from the status of the probe_return
+without further inspection. This inspector should be the first called.",
+    {ok, Info}.
 
-init(_Conf, _Probe) ->
-    {ok, nothing}.
+init(_Conf, _Target, _Probe) ->
+    {ok, no_state}.
 
-% @end
-inspect(_InitInspect, Probe, ProbeReturn) ->
+inspect(State, ProbeReturn, _OrigProbe, ModifiedProbe) ->
     Status      = ProbeReturn#probe_return.status,
-    NewProbe    = Probe#probe{status = Status},
-    {ok, NewProbe}.
+    NewProbe    = ModifiedProbe#probe{status = Status},
+    {ok, State, NewProbe}.

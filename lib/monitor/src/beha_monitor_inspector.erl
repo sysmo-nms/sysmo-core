@@ -19,45 +19,29 @@
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 -module(beha_monitor_inspector).
--include("../include/monitor.hrl").
+-include("include/monitor.hrl").
 
--export([behaviour_info/1]).
-
-% exported here for documentation only:
--export([
-    init/2, 
-    inspect/3
-]).
-
-% @private
-behaviour_info(callbacks) ->
-    [
-        {init, 2},
-        {inspect, 3}
-    ];
-
-behaviour_info(_) ->
-    undefined.
-
--record(state, {
-    target,
-    probe
-}).
-
--spec init(Conf::[any()], Orig::#state{}) -> {ok, New::#state{}}.
+-callback info() -> {ok, Info::string()}.
 % @doc
-% Called at the target_probe:init/1 phase.
+% Must return an Info string, wich explain what does the inspector.
 % @end
-init(_ConfList, ProbeServerState) -> {ok, ProbeServerState}.
-
--spec inspect(
-        Original::#state{}, 
-        PossiblyModified::#state{},
-        Msg::tuple()) -> 
-    {ok, AnotherPossiblyModified::#state{}}.
+-callback init(Conf::[any()], Target::#target{}, Probe::#probe{}) -> 
+    {ok, State::any()}.
 % @doc
-% Called each time a message responce from the probe fun is received.
+% Called at the init stage. Must return a State value wich will be 
+% given as argument to the inspect/4 callback.
 % @end
-inspect(_OrigProbeServerState, ModifiedProbeServerState, _Msg) ->
-    {ok, ModifiedProbeServerState}.
 
+-callback inspect(
+        State           ::any(),
+        ProbeReturn     ::#probe_return{},
+        OrigProbe       ::#probe{},
+        ModifiedProbe   ::#probe{}
+    ) -> {ok, State::any(), NewProbe::#probe{}}.
+% @doc
+% Called each time a probe_return from the probe is received.
+% State is the value returned by init/3. Probe is the original probe record
+% before any inspectors, ModifiedProbe may have been modified by a 
+% preceding inspector.
+% Must return a possibly modified State and a possibly modified #probe{}.
+% @end

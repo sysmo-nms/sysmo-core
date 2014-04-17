@@ -44,7 +44,7 @@
     handle_info/3,
     terminate/3,
     code_change/4,
-    'RUNNING-FREEZED'/3
+    'RUNNING'/3
 ]).
 
 
@@ -132,9 +132,9 @@ init([Target, Probe]) ->
     Parents                 = UProbe#probe.parents,
     _Dir                    = Target#target.directory,
     ProbeParents            = [#parent{name = Parent} || Parent <- Parents],
-    ProbeInitState          = init_probe(Target, UProbe),
+    {ok, ProbeInitState}    = init_probe(Target, UProbe),
+    {ok, InspectInitState}  = init_inspectors(Target, UProbe),
     %{ok, _LoggersInitState}  = init_loggers(Probe, Dir),
-    %{ok, InspectInitState}  = init_inspectors(Probe),
     PSState = #ps_state{
         name                = UProbe#probe.name,
         target              = Target,
@@ -144,27 +144,37 @@ init([Target, Probe]) ->
         parents             = ProbeParents,
         childs              = [],
         probe_state         = ProbeInitState ,
-        %inspectors_state    = InspectInitState,
+        inspectors_state    = InspectInitState,
         %loggers_state       = LoggersInitState,
         loggers_state       = []
         
     },
     initiate_start_sequence(ProbeInitState, UProbe, random),
-    {ok, 'RUNNING-FREEZED', PSState}.
+    {ok, 'RUNNING', PSState}.
 
-'RUNNING-FREEZED'(_Event, SName, SData) ->
+'RUNNING'(_Event, SName, SData) ->
     {next_state, SName, SData}.
 
 % GEN_CHANNEL event
-handle_event({probe_return, PState, PReturn}, SName, SData) ->
-    ?LOG({probe_return, PReturn}),
-    SData2      = SData#ps_state{probe_state = PState},
+handle_event({probe_return, NewProbeState, ProbeReturn}, SName, SData) ->
+    ?LOG({probe_return, ProbeReturn}),
+    Probe        = SData#ps_state.probe,
+    Target       = SData#ps_state.target,
+    InspectState = SData#ps_state.inspectors_state,
 
-    ProbeState  = SData2#ps_state.probe_state,
-    Probe       = SData2#ps_state.probe,
-    initiate_start_sequence(ProbeState, Probe),
+    {ok, NewInspectState, ModifiedProbe} = 
+        inspect(InspectState, Probe, ProbeReturn),
 
-    {next_state, SName, SData2};
+    SData1  = SData#ps_state{probe              = ModifiedProbe},
+    SData2  = SData1#ps_state{inspectors_state  = NewInspectState},
+    SData3  = SData2#ps_state{probe_state       = NewProbeState},
+    ?LOG({probe_inspect, new_probe, ModifiedProbe}),
+    notify(ProbeReturn, Target, Probe, ModifiedProbe),
+
+    %ProbeState  = SData2#ps_state.probe_state,
+    %Probe       = SData2#ps_state.probe,
+    %initiate_start_sequence(ProbeState, Probe),
+    {next_state, SName, SData3};
 
 handle_event(_, SName, SData) ->
     {next_state, SName, SData}.
@@ -183,8 +193,8 @@ code_change(_OldVsn, SName, SData, _Extra) ->
 
 % INIT PROBE
 init_probe(Target, Probe) ->
-    #probe{monitor_probe_mod = Mod} = Probe,
-    {ok, InitState}                 = Mod:init(Target, Probe),
+    Mod         = Probe#probe.monitor_probe_mod,
+    InitState   = Mod:init(Target, Probe),
     InitState.
 
 % INIT LOGGERS
@@ -220,57 +230,124 @@ init_probe(Target, Probe) ->
     %end, L),
     %L2.
 
-% INSPECTORS
-% init_inspectors(Probe) ->
-%     Inspectors = Probe#probe.inspectors,
-%     init_inspectors(Probe, Inspectors, []).
-% init_inspectors(_, [], InspectState) ->
-%     {ok, InspectState};
-% init_inspectors(Probe, [Inspector|Rest], InspectState) ->
-%     Mod                 = Inspector#inspector.module,
-%     Conf                = Inspector#inspector.conf,
-%     {ok, InspReply}     = Mod:init(Conf, Probe),
-%     NewInspectState     = lists:keystore(Mod,1,InspectState,{Mod,InspReply}),
-%     init_inspectors(Probe, Rest, NewInspectState).
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% INSPECTORS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-spec init_inspectors(Target::#target{}, Probe::#probe{}) ->
+    {ok, InspectStates::[{atom(), any()}]}.
+init_inspectors(Target, Probe) ->
+    Inspectors  = Probe#probe.inspectors,
+    States      = [],
+    init_inspectors(Target, Probe, Inspectors, States).
+init_inspectors(_, _, [], InspectStates) ->
+    {ok, InspectStates};
+init_inspectors(Target, Probe, [Inspector|Inspectors], InspectStates) ->
+    Mod                 = Inspector#inspector.module,
+    Conf                = Inspector#inspector.conf,
+    {ok, InspReply}     = Mod:init(Conf, Target, Probe),
+    NewInspectStates    = lists:keystore(Mod,1,InspectStates,{Mod,InspReply}),
+    init_inspectors(Target, Probe, Inspectors, NewInspectStates).
 
-% TODO send conf here
-% -spec inspect(#ps_state{}, Msg::tuple()) -> #ps_state{}.
-% inspect(#ps_state{probe = Probe} = State, Msg) ->
-%     Inspectors = Probe#probe.inspectors,
-%     {State, NewState, Msg} = lists:foldl(
-%         fun(#inspector{module = Mod}, {Orig, Modified, Message}) ->
-%             {ok, New} = Mod:inspect(Orig, Modified, Message),
-%             {Orig, New, Message}
-%         end, {State, State, Msg}, Inspectors),
-%     NewState.
-%
+-spec inspect(
+        InspectStates   :: [{atom(), any()}],
+        Probe           :: #probe{},
+        ProbeReturn     :: #probe_return{}
+    ) -> {ok, NewInspectStates::[{atom(), any()}], NewProbe::#probe{}}.
+inspect(InspectStates, Probe, ProbeReturn) ->
+    OrigProbe           = ModifiedProbe = Probe,
+    NewIStates          = [],
+    inspect(InspectStates, NewIStates, ProbeReturn, OrigProbe, ModifiedProbe).
+inspect([], NewInspectStates, _, _, ModifiedProbe) ->
+    {ok, NewInspectStates, ModifiedProbe};
+inspect([IState|IStates], NIStates, PR, OP, MP) ->
+    {Mod, State} = IState,
+    {ok, NState, MProbe} = Mod:inspect(State, PR, OP, MP),
+    NewNIStates = lists:keystore(Mod, 1, NIStates, {Mod, NState}),
+    inspect(IStates, NewNIStates, PR, OP, MProbe).
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% PROBE LAUNCH %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-spec initiate_start_sequence(
+        ProbeState  ::any(),
+        Probe       ::#probe{},
+        Step        :: normal | random | now | integer()
+    ) -> any().
 initiate_start_sequence(ProbeState, Probe, random) ->
+    Step    = random(Probe#probe.step),
+    initiate_start_sequence(ProbeState, Probe, Step);
+initiate_start_sequence(ProbeState, Probe, normal) ->
     Step    = Probe#probe.step,
-    Random  = random(Step),
-    timer:apply_after(Random, ?MODULE, take_of, [ProbeState, Probe]);
+    initiate_start_sequence(ProbeState, Probe, Step);
+initiate_start_sequence(ProbeState, Probe, now) ->
+    Step    = 0,
+    initiate_start_sequence(ProbeState, Probe, Step);
 initiate_start_sequence(ProbeState, Probe, Step) ->
-    timer:apply_after(Step, ?MODULE, take_of, [ProbeState, Probe]).
+    timer:apply_after(Step,   ?MODULE, take_of, [ProbeState, Probe]).
 
-initiate_start_sequence(ProbeState, Probe) ->
-    Step = Probe#probe.step,
-    timer:apply_after(Step, ?MODULE, take_of, [ProbeState, Probe]).
-
-take_of(PState, Probe) ->
+take_of(ProbeState, Probe) ->
     Mod     = Probe#probe.monitor_probe_mod,
     Pid     = Probe#probe.pid,
-    {ok, PState2, Return}  = Mod:exec(PState),
-    gen_fsm:send_all_state_event(Pid, {probe_return, PState2, Return}).
+    {ok, ProbeState2, Return}  = Mod:exec(ProbeState),
+    gen_fsm:send_all_state_event(Pid, {probe_return, ProbeState2, Return}).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% master_channel and supercast_channel NOTIFY %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+notify(ProbeReturn, Target, OriginalProbe, NewProbe) ->
+    ok = notify_subscribers(ProbeReturn, Target, NewProbe),
+    ok = notify_master(Target, OriginalProbe, NewProbe, ProbeReturn).
+
+notify_subscribers(ProbeReturn, Target, Probe) ->
+    ChanName = ProbeName = Probe#probe.name,
+    Perms       = Probe#probe.permissions,
+    TargetId    = Target#target.id,
+    Pdu         = monitor_pdu:probe_return({ProbeReturn, TargetId, ProbeName}),
+    supercast_channel:emit(ChanName, {Perms, Pdu}).
+
+notify_master(Target, OriginalProbe, Probe, ProbeReturn) ->
+    case notify_master_required(OriginalProbe, Probe) of
+        true ->
+            TargetId = Target#target.id,
+            ProbeId  = Probe#probe.id,
+            monitor_target_channel:update(
+                TargetId, ProbeId, {Probe, ProbeReturn}
+            );
+        false ->
+            ok
+    end.
+
+notify_master_required(Orig, Modified) ->
+    OriState    = Orig#probe.status,
+    ModState    = Modified#probe.status,
+    OriProp     = Orig#probe.properties,
+    ModProp     = Modified#probe.properties,
+
+    case OriState of
+        ModState ->
+            case OriProp of
+                ModProp -> false;
+                _       -> true
+            end;
+        _ ->
+            true
+    end.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% UTILS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 random(Step) ->
     <<A:32, B:32, C:32>> = crypto:rand_bytes(12),
     random:seed({A,B,C}),
     random:uniform(Step).
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
