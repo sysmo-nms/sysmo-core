@@ -21,7 +21,7 @@
 % @private
 -module(bmonitor_probe_nagios).
 -behaviour(beha_monitor_probe).
--include("../../include/monitor.hrl").
+-include("include/monitor.hrl").
 
 -export([
     init/2,

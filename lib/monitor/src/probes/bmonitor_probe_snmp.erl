@@ -21,7 +21,7 @@
 -module(bmonitor_probe_snmp).
 -behaviour(beha_monitor_probe).
 -include_lib("snmp/include/snmp_types.hrl").
--include("../../include/monitor.hrl").
+-include("include/monitor.hrl").
 -define(SNMP_USER, "noctopus_snmpm_user").
 
 %% beha_monitor_probe exports

@@ -23,7 +23,7 @@
 -module(monitor_probe_fsm).
 -behaviour(gen_fsm).
 -behaviour(supercast_channel).
--include("../include/monitor.hrl").
+-include("include/monitor.hrl").
 
 % start
 -export([

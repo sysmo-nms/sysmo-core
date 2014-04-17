@@ -23,7 +23,7 @@
 % to store values returned by the probes.
 % @end
 -module(beha_monitor_logger).
--include("../include/monitor.hrl").
+-include("include/monitor.hrl").
 
 -export([behaviour_info/1]).
 

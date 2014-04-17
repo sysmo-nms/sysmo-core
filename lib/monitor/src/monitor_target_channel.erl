@@ -39,7 +39,7 @@
 % @end
 -module(monitor_target_channel).
 -behaviour(gen_server).
--include("../include/monitor.hrl").
+-include("include/monitor.hrl").
 
 % GEN_SERVER CALLBACKS
 -export([

@@ -25,7 +25,7 @@
 % @end
 -module(bmonitor_logger_events).
 -behaviour(beha_monitor_logger).
--include("../../include/monitor.hrl").
+-include("include/monitor.hrl").
 
 -export([
     init/3,

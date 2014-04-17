@@ -21,7 +21,7 @@
 % @doc
 % @end
 -module(monitor_pdu).
--include("../include/monitor.hrl").
+-include("include/monitor.hrl").
 
 -export([
     probe_return/1

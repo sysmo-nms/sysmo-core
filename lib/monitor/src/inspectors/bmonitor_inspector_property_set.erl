@@ -20,7 +20,7 @@
 % along with Enms. If not, see <http://www.gnu.org/licenses/>.
 -module(bmonitor_inspector_property_set).
 -behaviour(beha_monitor_inspector).
--include("../../include/monitor.hrl").
+-include("include/monitor.hrl").
 
 
 -export([
