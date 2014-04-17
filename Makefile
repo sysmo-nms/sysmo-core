@@ -20,7 +20,7 @@ export MAKE        = /usr/bin/make
 export REL_NAME    = noctopus
 export REL_VERSION = 0.2.1
 export MODS        = supercast snmp_manager monitor monitor_logger_rrd \
-                         monitor_logger_text monitor_events locator ipman
+                         monitor_logger_text monitor_logger_events locator ipman
 MODS_EBIN_DIR      = $(addprefix ./lib/, $(addsuffix /ebin, $(MODS)))
 MODS_DEF_FILE      = $(foreach app, $(MODS_EBIN_DIR), $(wildcard $(app)/*.app))
 ERL_NMS_PATH       = $(addprefix -pa ,$(MODS_EBIN_DIR))

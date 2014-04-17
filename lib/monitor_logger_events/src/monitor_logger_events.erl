@@ -1,8 +1,7 @@
--module(monitor_events).
+-module(monitor_logger_events).
 -include("../monitor/include/monitor.hrl").
 -include_lib("stdlib/include/qlc.hrl").
 -behaviour(gen_server).
--behaviour(beha_monitor_logger).
 
 -export([
     init/1,
@@ -15,17 +14,10 @@
 
 -export([
     start_link/0,
-    init/3,
     log/2,
     dump/1
 ]).
 
-start_link() ->
-    gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
-
-%
-init(Conf, _, ProbeServerState) ->
-    gen_server:call(?MODULE, {init, Conf, ProbeServerState}).
 
 log(ProbeServerState, #probe_return{is_event = true} = ProbeReturn) ->
     gen_server:cast(?MODULE, {log, ProbeServerState, ProbeReturn});
@@ -35,6 +27,9 @@ log(_ProbeServerState, _ProbeReturn) ->
 dump(ProbeServerState) ->
     gen_server:call(?MODULE, {dump, ProbeServerState}).
 
+
+start_link() ->
+    gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
 init([]) ->
     % TODO a single channel for the server status and events
@@ -48,11 +43,10 @@ init([]) ->
 
 
 %  
-handle_call({init, _Conf, 
-        #ps_state{probe = Probe} = ProbeServerState
-    }, _F, S) ->
-    create_table(Probe#probe.name),
-    {reply, {ok, ProbeServerState}, S};
+handle_call({init, TableName}, _From, State) ->
+    ?LOG({"iiiiiiiiiiiiiiiiiiiiiinit", TableName}),
+    create_table(TableName),
+    {reply, ok, State};
 
 handle_call({dump, 
     #ps_state{

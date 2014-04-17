@@ -37,10 +37,16 @@
     log_srv
 }).
 
-init(_Conf, Dir, Probe) ->
-    LogFile     = generate_filename(Dir, Probe),
+init(_Conf, Target, Probe) ->
+    Dir         = Target#target.directory,
+    ProbeName   = Probe#probe.name,
+    LogFile     = generate_filename(Dir, ProbeName),
     {ok, Pid}   = monitor_logger_text_sup:start_logger(LogFile),
-    {ok, #state{file_name = LogFile, log_srv = Pid}}.
+    State       = #state{
+        file_name   = LogFile,
+        log_srv     = Pid
+    },
+    {ok, State}.
 
 log(State, ProbeReturn) ->
     LogSrv      = State#state.log_srv,
@@ -48,7 +54,7 @@ log(State, ProbeReturn) ->
     T           = ProbeReturn#probe_return.timestamp,
     EncodedMsg  = list_to_binary(io_lib:format("~p>>> ~s", [T, Msg])),
     monitor_logger_text:log(LogSrv, EncodedMsg),
-    ok.
+    {ok, State}.
 
 dump(#ps_state{
         loggers_state   = LState,
@@ -70,8 +76,7 @@ pdu('probeDump', {TargetId, ProbeId, Binary}) ->
                     atom_to_list(?MODULE),
                     Binary}}}}.
 
-generate_filename(TargetDir, Probe) ->
-    ProbeName   = Probe#probe.name,
+generate_filename(TargetDir, ProbeName) ->
     FileName    = io_lib:format("~s.txt", [ProbeName]),
     filename:absname_join(TargetDir, FileName).
 

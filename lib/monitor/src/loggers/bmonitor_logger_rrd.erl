@@ -33,55 +33,19 @@
     dump/1
 ]).
 
-init(Cfg, #ps_state{
-        target          = #target{directory = Dir},
-        loggers_state   = LoggersState} = ProbeSrvState, _) ->
+init(Conf, Target, _Probe) ->
+    ?LOG({init_logger_rrd, Conf}),
+    Dir         = Target#target.directory,
+    {ok, Rrds}  = update_rrd_record(Conf, Dir),
+    ok          = create_file_if_needed(Rrds),
+    {ok, Rrds}.
 
-    % update #rrd_config.filePath and create the file if it does not exist.
-    Cfg1 = [RrdRec#rrd_config{file_path = generate_filename(Dir, RrdFile)} || 
-            #rrd_config{file = RrdFile} = RrdRec <- Cfg
-    ],
-    ok = lists:foreach(fun(RrdConf) ->
-        case file:read_file_info(RrdConf#rrd_config.file_path) of
-            {ok, _} ->
-                ok;
-            {error, enoent} ->
-                CreateString = RrdConf#rrd_config.create,
-                FileString   = if_win(RrdConf#rrd_config.file_path),
-                RrdCommand = re:replace(CreateString, "<FILE>", FileString,
-                    [{return, list}]),
-                monitor_logger_rrd:exec(RrdCommand)
-        end
-    end, Cfg1),
 
-    % update #rrd_config.update with the filePath name
-    Cfg2 = [
-        RrdRec#rrd_config{
-            update = re:replace(Update, "<FILE>", if_win(File), [{return, list}])
-        } || #rrd_config{
-            update = Update, file_path = File
-            } = RrdRec <- Cfg1
-    ],
 
-    % update #rrd_config.update_regexp with the compiled regexp
-    Cfg3 = [
-        RrdRec#rrd_config{
-            update_regexps = compile_re(Binds)
-        } || #rrd_config{binds = Binds} = RrdRec <- Cfg2
-    ],
 
-    % store config in the LoggersState
-    LoggersState2 = lists:keystore(?MODULE, 1, LoggersState,
-        {?MODULE, Cfg3}
-    ),
 
-    % generate the new ps_state
-    NewProbeSrvState = ProbeSrvState#ps_state{
-        loggers_state = LoggersState2
-    },
 
-    % END init
-    {ok, NewProbeSrvState}.
+
 
 
 log(#ps_state{loggers_state = LoggersState}, 
@@ -130,6 +94,45 @@ rrd_exec(String) ->
             ),
             ok
     end.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% UTILS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+update_rrd_record(Rrds, Dir) -> 
+    NewRecords  = [],
+    update_rrd_record(Rrds, Dir, NewRecords).
+update_rrd_record([], _Dir, NewRecords) ->
+    {ok, NewRecords};
+update_rrd_record([Rrd|Rrds], Dir, NewRrds)   ->
+    RrdFile      = Rrd#rrd_config.file,
+    RrdUpdate    = Rrd#rrd_config.update,
+    RrdBinds     = Rrd#rrd_config.binds,
+    RrdFilePath  = generate_filename(Dir, RrdFile),
+
+    RrdFilePath2 = if_win(RrdFilePath),
+    RrdUpdate2   = re:replace(
+        RrdUpdate, "<FILE>", RrdFilePath2, [{return, list}]),
+    RrdRe        = compile_re(RrdBinds),
+
+    NewRrd       = Rrd#rrd_config{
+        file_path       = RrdFilePath2,
+        update          = RrdUpdate2,
+        update_regexps  = RrdRe
+    },
+    update_rrd_record(Rrds, Dir, [NewRrd|NewRrds]).
+    
+create_file_if_needed([])         -> ok;
+create_file_if_needed([Rrd|Rrds]) ->
+    FilePath    = Rrd#rrd_config.file_path,
+    case file:read_file_info(FilePath) of
+        {ok, _}         -> ok;
+        {error, enoent} ->
+            CreateString = Rrd#rrd_config.create,
+            RrdCommand   = re:replace(
+                CreateString, "<FILE>", FilePath, [{return, list}]),
+            monitor_logger_rrd:exec(RrdCommand)
+    end,
+    create_file_if_needed(Rrds).
 
 generate_filename(Dir, Name) ->
     FileName    = io_lib:format("~s.rrd", [Name]),

@@ -38,8 +38,7 @@
                 bmonitor_logger_text,
                 bmonitor_logger_events,
                 bmonitor_probe_nagios,
-                bmonitor_probe_snmp,
-                bmonitor_probe_standard_snmp
+                bmonitor_probe_snmp
             ]},
         {registered, [
                 monitor_sup,
@@ -50,7 +49,7 @@
             ]},
         {applications, 
             [kernel, stdlib, mnesia, supercast, monitor_logger_rrd,
-                monitor_logger_text, snmp, monitor_events]
+                monitor_logger_text, monitor_logger_events, snmp]
         },
         {start_phases,
             [

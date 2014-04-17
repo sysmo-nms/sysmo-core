@@ -25,7 +25,7 @@
     original_reply  = undefined :: string(),
     timestamp       = undefined :: integer(),
     key_vals        = []        :: [{string(), any()}],
-    is_event        = false     :: true | false % used by monitor_events app
+    is_event        = false     :: true | false % used by monitor_logger_events app
 }).
 
 -record(probe, {
@@ -121,7 +121,7 @@
     file_path = none            :: string()
 }).
 
-% monitor_events
+% monitor_logger_events
 -record(probe_event, {
     id          = 0                 :: integer(),
     insert_ts   = 0                 :: integer(),

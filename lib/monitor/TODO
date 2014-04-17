@@ -3,6 +3,4 @@ client at connexion time. If not, the client will only be initialized with
 the first reception of a probe message (deducing the time using the probe
 specific properties step and timeout).
 - only send messages to ifs_mpd when "clients > 0".
-- do not send a full #probe_server_state{} to loggers, inspectors and probe.
-Move the save state logic to the monitor_probe.erl.
 - eunit/dializer

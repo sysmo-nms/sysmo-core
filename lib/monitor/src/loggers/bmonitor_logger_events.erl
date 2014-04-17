@@ -19,9 +19,8 @@
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 % @doc
-% This module log data to an rrd database. Data must exist in the
-% #probe_return.key_val record.
-% To work a valid #rrd_def record must be givent at init conf input.
+% The module implementing this behaviour is used by a monitor_target_channel
+% to store values returned by the probes.
 % @end
 -module(bmonitor_logger_events).
 -behaviour(beha_monitor_logger).
@@ -33,11 +32,17 @@
     dump/1
 ]).
 
-init(_Cfg, _Dir, _Probe) ->
-    {ok, nothing}.
+-define(EVENT_SERVER, monitor_logger_events).
 
-log(_State, _ProbeReturn) ->
-    ok.
+init(_Conf, _Target, Probe) ->
+    TableName   = Probe#probe.name,
+    ok = gen_server:call(?EVENT_SERVER, {init, TableName}),
+    {ok, no_state}.
 
-dump(_ProbeServerState) ->
-    ignore.
+log(State, _) ->
+    gen_server:call(?EVENT_SERVER, {log, a, b}),
+    {ok, State}.
+
+dump(State) ->
+    {ok, _Bin} = gen_server:call(?EVENT_SERVER, {dump, a}),
+    {ok, State}.

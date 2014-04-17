@@ -358,10 +358,10 @@ gen_logger_pdu({logger, bmonitor_logger_text, Cfg}) ->
         {'LoggerText', 
             atom_to_list(bmonitor_logger_text), 
             to_string(Cfg)}};
-gen_logger_pdu({logger, monitor_events, Cfg}) ->
+gen_logger_pdu({logger, bmonitor_logger_events, Cfg}) ->
     {loggerEvents, 
         {'LoggerEvents', 
-            atom_to_list(monitor_events), 
+            atom_to_list(bmonitor_logger_events), 
             to_string(Cfg)}}.
 
 gen_rrd_configs(Cfg) ->

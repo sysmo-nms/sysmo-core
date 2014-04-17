@@ -58,11 +58,11 @@
     take_of/2
 ]).
 
--record(parent, {
-    name,
-    status,
-    last_check
-}).
+%-record(parent, {
+    %name,
+    %status,
+    %last_check
+%}).
 
 -define(OK,         'OK').
 -define(CRITICAL,   'CRITICAL').
@@ -129,26 +129,28 @@ init([Target, Probe]) ->
         timeout = Probe#probe.timeout * 1000,
         pid     = self()
     },
-    Parents                 = UProbe#probe.parents,
-    _Dir                    = Target#target.directory,
-    ProbeParents            = [#parent{name = Parent} || Parent <- Parents],
+
+    %Parents                 = UProbe#probe.parents,
+    %ProbeParents            = [#parent{name = Parent} || Parent <- Parents],
+
     {ok, ProbeInitState}    = init_probe(Target, UProbe),
     {ok, InspectInitState}  = init_inspectors(Target, UProbe),
-    %{ok, _LoggersInitState}  = init_loggers(Probe, Dir),
+    {ok, LoggersInitState}  = init_loggers(Target, UProbe),
     PSState = #ps_state{
         name                = UProbe#probe.name,
         target              = Target,
         probe               = UProbe,
         step                = UProbe#probe.step,
         timeout             = UProbe#probe.timeout,
-        parents             = ProbeParents,
-        childs              = [],
+
+    %    parents             = ProbeParents,
+    %    childs              = [],
+ 
         probe_state         = ProbeInitState ,
         inspectors_state    = InspectInitState,
-        %loggers_state       = LoggersInitState,
-        loggers_state       = []
-        
+        loggers_state       = LoggersInitState
     },
+    %?LOG({loggers_state, LoggersInitState}),
     initiate_start_sequence(ProbeInitState, UProbe, random),
     {ok, 'RUNNING', PSState}.
 
@@ -157,7 +159,7 @@ init([Target, Probe]) ->
 
 % GEN_CHANNEL event
 handle_event({probe_return, NewProbeState, ProbeReturn}, SName, SData) ->
-    ?LOG({probe_return, ProbeReturn}),
+    %?LOG({probe_return, ProbeReturn}),
     Probe        = SData#ps_state.probe,
     Target       = SData#ps_state.target,
     InspectState = SData#ps_state.inspectors_state,
@@ -168,7 +170,7 @@ handle_event({probe_return, NewProbeState, ProbeReturn}, SName, SData) ->
     SData1  = SData#ps_state{probe              = ModifiedProbe},
     SData2  = SData1#ps_state{inspectors_state  = NewInspectState},
     SData3  = SData2#ps_state{probe_state       = NewProbeState},
-    ?LOG({probe_inspect, new_probe, ModifiedProbe}),
+    %?LOG({probe_inspect, new_probe, ModifiedProbe}),
     notify(ProbeReturn, Target, Probe, ModifiedProbe),
 
     %ProbeState  = SData2#ps_state.probe_state,
@@ -191,24 +193,34 @@ terminate(_Reason, _SName, _SData) ->
 code_change(_OldVsn, SName, SData, _Extra) ->
     {ok, SName, SData}.
 
-% INIT PROBE
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% PROBE %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 init_probe(Target, Probe) ->
     Mod         = Probe#probe.monitor_probe_mod,
     InitState   = Mod:init(Target, Probe),
     InitState.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% INIT LOGGERS
-% init_loggers(Probe, Dir) ->
-%     #probe{loggers = Loggers} = Probe,
-%     init_loggers(Probe, Dir, Loggers, []).
-% init_loggers(_, _, [], InitLoggersState) ->
-%     {ok, InitLoggersState};
-% init_loggers(Probe, Dir, [Logger|Rest], State) ->
-%     #logger{module  = Mod}  = Logger,
-%     #logger{conf    = Conf} = Logger,
-%     {ok, Result}    = Mod:init(Conf, Dir, Probe),
-%     State2          = lists:keystore(Mod, 1, State, {Mod, Result}),
-%     init_loggers(Probe, Dir, Rest, State2).
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% LOGGERS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+init_loggers(Target, Probe) ->
+    Loggers         = Probe#probe.loggers,
+    LoggersState    = [],
+    init_loggers(Target, Probe, Loggers, LoggersState).
+init_loggers(_Target, _Probe, [], LoggersState) ->
+    {ok, LoggersState};
+init_loggers(Target, Probe, [Logger|Loggers], LoggersState) ->
+    Mod             = Logger#logger.module,
+    Conf            = Logger#logger.conf,
+    {ok, State}     = Mod:init(Conf, Target, Probe),
+    LoggersState2   = lists:keystore(Mod, 1, LoggersState, {Mod, State}),
+    init_loggers(Target, Probe, Loggers, LoggersState2).
     
 % TODO send conf here
 %-spec log(#ps_state{}, {atom(), any()}) -> ok.
@@ -229,6 +241,11 @@ init_probe(Target, Probe) ->
         %end
     %end, L),
     %L2.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
