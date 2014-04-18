@@ -25,37 +25,17 @@
 -module(beha_monitor_logger).
 -include("include/monitor.hrl").
 
--export([behaviour_info/1]).
-
-% exported here for documentation only:
--export([
-    init/3,
-    log/2,
-    dump/1
-]).
-
-% @private
-behaviour_info(callbacks) ->
-    [
-        {init, 3},
-        {log,  2},
-        {dump, 1}
-    ];
-
-behaviour_info(_) ->
-    undefined.
-
--spec init(Conf::[any()], Dir::string(), Probe::#probe{}) 
-        -> {ok, any()}.
+-callback init(Conf::any(), Target::#target{}, Probe::#probe{}) ->
+    {ok, State::any()}.
 % @doc
-% Called at the target_target_channel probe initialisation.
+% Is called at initialisation stage. Must return a State wich will be used
+% as first argument of the log/2 callback.
 % @end
-init(_Conf, _Dir, _Probe) -> 
-    {ok, undefined}.
 
 
--spec log(ProbeServerState::#ps_state{}, Msg::any()) 
-        -> ok.
+-callback log(State::any(), ProbeReturn::#probe_return{})  ->
+    {ok, State::any()}              |
+    {ok, State::any(), Pdu::tuple}.
 % @doc
 % Called each time a message responce from the probe fun is received.
 % Is it to this module to be sure that a log action is not pending when
@@ -63,19 +43,20 @@ init(_Conf, _Dir, _Probe) ->
 % This function is called from the channel. The channel can call dump/2
 % after. It is to the module to define when a log is pending before
 % sending a dump using a gen_server or other lock method.
+% Must return {ok, State} when State is a possibly modified State value,
+% or {ok, State, Pdu} when Pdu will be sent to registered clients.
 % @end
-log(_ProbeServerState, _Msg) ->
-    ok.
 
--spec dump(ProbeServerState::#ps_state{}) -> 
-    {ok, binary()} | ignore | timeout.
+-callback dump(State::any()) -> 
+    {ok,        Pdu::tuple(), State::any()}   | 
+    {ignore,    State::any()}                   | 
+    {timeout,   State::any()}.
 % @doc
 % Called by a monitor_target_channel on a subscribe request by a client. Must
 % return a binary form of the data logged, ignore or timeout.
 % For synchronisation, the monitor_target_channel server will wait for a
-% a responce. The function MUST return before some kind of timeout return
-% it is reached a buggy logger which lock indefinetely will result in a 
-% crash of the channel.
+% a responce. This function MUST return before some kind of timeout or it will
+% indefinitely block the probe server.
+% State return is a possibly modified State, Pdu is a tuple message 
+% wich will be encoded as is.
 % @end
-dump(_ProbeServerState) ->
-    ignore.

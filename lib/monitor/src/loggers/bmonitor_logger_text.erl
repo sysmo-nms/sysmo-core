@@ -34,17 +34,22 @@
 
 -record(state, {
     file_name,
-    log_srv
+    log_srv,
+    target_id,
+    probe_name
 }).
 
 init(_Conf, Target, Probe) ->
     Dir         = Target#target.directory,
+    TargetId    = Target#target.id,
     ProbeName   = Probe#probe.name,
     LogFile     = generate_filename(Dir, ProbeName),
     {ok, Pid}   = monitor_logger_text_sup:start_logger(LogFile),
     State       = #state{
         file_name   = LogFile,
-        log_srv     = Pid
+        log_srv     = Pid,
+        target_id   = TargetId,
+        probe_name  = ProbeName
     },
     {ok, State}.
 
@@ -56,31 +61,28 @@ log(State, ProbeReturn) ->
     monitor_logger_text:log(LogSrv, EncodedMsg),
     {ok, State}.
 
-dump(#ps_state{
-        loggers_state   = LState,
-        target          = #target{id = TId},
-        probe           = #probe{name = PId}
-    }) ->
-    LogSrv  = get_key(log_srv, LState),
-    Bin     = monitor_logger_text:dump(LogSrv),
-    Pdu     = pdu('probeDump', {TId, PId, Bin}),
-    Pdu.
+dump(State) ->
+    LogSrv      = State#state.log_srv,
+    TargetId    = State#state.target_id,
+    ProbeName   = State#state.probe_name,
+    Bin         = monitor_logger:dump(LogSrv),
+    Pdu         = pdu('probeDump', {TargetId, ProbeName, Bin}),
+    {ok, Pdu, State}.
 
-pdu('probeDump', {TargetId, ProbeId, Binary}) ->
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% UTILS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+pdu('probeDump', {TargetId, ProbeName, Binary}) ->
     {modMonitorPDU,
         {fromServer,
             {probeDump,
                 {'ProbeDump',
                     atom_to_list(TargetId),
-                    atom_to_list(ProbeId),
+                    atom_to_list(ProbeName),
                     atom_to_list(?MODULE),
                     Binary}}}}.
 
 generate_filename(TargetDir, ProbeName) ->
     FileName    = io_lib:format("~s.txt", [ProbeName]),
     filename:absname_join(TargetDir, FileName).
-
-get_key(Key, TupleList) ->
-    {?MODULE, Conf} = lists:keyfind(?MODULE, 1, TupleList),
-    {Key, Value}    = lists:keyfind(Key, 1, Conf),
-    Value.

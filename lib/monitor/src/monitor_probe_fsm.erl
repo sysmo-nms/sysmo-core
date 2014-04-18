@@ -124,11 +124,13 @@ launch(PidName) ->
 
 
 init([Target, Probe]) ->
+    init_random(),
     UProbe = Probe#probe{
         step    = Probe#probe.step    * 1000,
         timeout = Probe#probe.timeout * 1000,
         pid     = self()
     },
+
 
     %Parents                 = UProbe#probe.parents,
     %ProbeParents            = [#parent{name = Parent} || Parent <- Parents],
@@ -159,24 +161,39 @@ init([Target, Probe]) ->
 
 % GEN_CHANNEL event
 handle_event({probe_return, NewProbeState, ProbeReturn}, SName, SData) ->
-    %?LOG({probe_return, ProbeReturn}),
-    Probe        = SData#ps_state.probe,
-    Target       = SData#ps_state.target,
-    InspectState = SData#ps_state.inspectors_state,
+    % Update probe_state
+    SData1  = SData#ps_state{probe_state       = NewProbeState},
 
+    % INSPECT, update probe and inspectors_state,
+    Probe        = SData1#ps_state.probe,
+    InspectState = SData1#ps_state.inspectors_state,
     {ok, NewInspectState, ModifiedProbe} = 
         inspect(InspectState, Probe, ProbeReturn),
+    SData2  = SData1#ps_state{probe             = ModifiedProbe},
+    SData3  = SData2#ps_state{inspectors_state  = NewInspectState},
 
-    SData1  = SData#ps_state{probe              = ModifiedProbe},
-    SData2  = SData1#ps_state{inspectors_state  = NewInspectState},
-    SData3  = SData2#ps_state{probe_state       = NewProbeState},
-    %?LOG({probe_inspect, new_probe, ModifiedProbe}),
+    % NOTIFY
+    Target  = SData3#ps_state.target,
     notify(ProbeReturn, Target, Probe, ModifiedProbe),
 
-    %ProbeState  = SData2#ps_state.probe_state,
-    %Probe       = SData2#ps_state.probe,
-    %initiate_start_sequence(ProbeState, Probe),
-    {next_state, SName, SData3};
+    % LOG, update loggers_state,
+    LoggersState            = SData3#ps_state.loggers_state,
+    {ok, NewLoggersState}   = log_return(LoggersState, ProbeReturn),
+    SData4 = SData3#ps_state{loggers_state = NewLoggersState},
+
+    % LAUNCH
+    PS      = SData4#ps_state.probe_state,
+    P       = SData4#ps_state.probe,
+    initiate_start_sequence(PS, P, normal),
+
+    {next_state, SName, SData4};
+
+handle_event({emit_logger_pdu, Pdu}, SName, SData) ->
+    Probe       = SData#ps_state.probe,
+    ChanName    = Probe#probe.name,
+    Perms       = Probe#probe.permissions,
+    supercast_channel:emit(ChanName, {Perms, Pdu}),
+    {next_state, SName, SData};
 
 handle_event(_, SName, SData) ->
     {next_state, SName, SData}.
@@ -222,6 +239,23 @@ init_loggers(Target, Probe, [Logger|Loggers], LoggersState) ->
     LoggersState2   = lists:keystore(Mod, 1, LoggersState, {Mod, State}),
     init_loggers(Target, Probe, Loggers, LoggersState2).
     
+log_return(LoggersState, ProbeReturn) ->
+    LoggersStateAcc = [],
+    log_return(LoggersState, ProbeReturn, LoggersStateAcc).
+log_return([],  _ProbeReturn, LoggersStateAcc) ->
+    {ok, LoggersStateAcc};
+log_return([Logger|LoggersState],  ProbeReturn, LoggersStateAcc) ->
+    {Mod, State}     = Logger,
+    % loggers may return a Pdu to update the client state.
+    case Mod:log(State, ProbeReturn) of
+        {ok, NewState}      ->
+            ok;
+        {ok, Pdu, NewState} ->
+            gen_fsm:send_all_state_event(self(), {emit_logger_pdu, Pdu})
+    end,
+    LoggersStateAcc2 = lists:keystore(Mod,1,LoggersStateAcc, {Mod, NewState}),
+    log_return(LoggersState, ProbeReturn, LoggersStateAcc2).
+
 % TODO send conf here
 %-spec log(#ps_state{}, {atom(), any()}) -> ok.
 %log(#ps_state{probe = Probe} = PSState, Msg) ->
@@ -296,7 +330,7 @@ inspect([IState|IStates], NIStates, PR, OP, MP) ->
         Step        :: normal | random | now | integer()
     ) -> any().
 initiate_start_sequence(ProbeState, Probe, random) ->
-    Step    = random(Probe#probe.step),
+    Step    = random:uniform(Probe#probe.step),
     initiate_start_sequence(ProbeState, Probe, Step);
 initiate_start_sequence(ProbeState, Probe, normal) ->
     Step    = Probe#probe.step,
@@ -362,9 +396,8 @@ notify_master_required(Orig, Modified) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% UTILS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-random(Step) ->
+init_random() ->
     <<A:32, B:32, C:32>> = crypto:rand_bytes(12),
-    random:seed({A,B,C}),
-    random:uniform(Step).
+    random:seed({A,B,C}).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -33,45 +33,44 @@
     dump/1
 ]).
 
-init(Conf, Target, _Probe) ->
+-record(state, {
+    rrds,
+    target_id,
+    probe_id
+}).
+
+init(Conf, Target, Probe) ->
     ?LOG({init_logger_rrd, Conf}),
+    TargetId    = Target#target.id,
+    ProbeId     = Probe#probe.name,
     Dir         = Target#target.directory,
     {ok, Rrds}  = update_rrd_record(Conf, Dir),
     ok          = create_file_if_needed(Rrds),
-    {ok, Rrds}.
+    State       = #state{
+        rrds        = Rrds,
+        target_id   = TargetId,
+        probe_id    = ProbeId
+    },
+    {ok, State}.
+
+log(State, ProbeReturn) ->
+    Kv      = ProbeReturn#probe_return.key_vals,
+    Rrds    = State#state.rrds,
+    log_rrds(Rrds, Kv),
+    {ok, State}.
 
 
+dump(State) ->
+    Rrds        = State#state.rrds,
+    TargetId    = State#state.target_id,
+    ProbeId     = State#state.probe_id,
+    Pdu         = pdu('rrdProbeDump', {TargetId, ProbeId, Rrds}),
+    {ok, Pdu, State}.
 
 
-
-
-
-
-
-log(#ps_state{loggers_state = LoggersState}, 
-        #probe_return{key_vals = Kv}) ->
-    % Config is a list of rrd_config records.
-    % Kv is a list of {bind, value:int()}
-    {?MODULE, Configs}   = lists:keyfind(?MODULE, 1, LoggersState),
-
-    % foreach rrd_config file
-    lists:foreach(fun(RrdConf) ->
-        UpdateString = RrdConf#rrd_config.update,
-        ReBinds      = RrdConf#rrd_config.update_regexps,
-        UpdateCommand = generate_update_string(Kv, UpdateString, ReBinds),
-        rrd_exec(UpdateCommand)
-    end, Configs),
-    ok.
-
-dump(#ps_state{
-        loggers_state   = LoggersState,
-        target          = #target{id    = TargetId},
-        probe           = #probe{name   = ProbeId}
-    }) ->
-    {?MODULE, Configs}   = lists:keyfind(?MODULE, 1, LoggersState),
-    Pdu = pdu('rrdProbeDump', {TargetId, ProbeId, Configs}),
-    Pdu.
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% UTILS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 pdu('rrdProbeDump', {TargetId, ProbeId, RrdConfigs}) ->
     RrdFileDumps = [{'RrdFileDump', FileId, monitor_logger_rrd:dump(File)} ||
         #rrd_config{file_path = File, file = FileId} <- RrdConfigs
@@ -85,6 +84,14 @@ pdu('rrdProbeDump', {TargetId, ProbeId, RrdConfigs}) ->
                     atom_to_list(?MODULE),
                     RrdFileDumps }}}}.
     
+log_rrds([], _) -> ok;
+log_rrds([RrdConf|Rrds], Kv) ->
+    UpdateString = RrdConf#rrd_config.update,
+    ReBinds      = RrdConf#rrd_config.update_regexps,
+    UpdateComm   = generate_update_string(Kv, UpdateString, ReBinds),
+    rrd_exec(UpdateComm),
+    log_rrds(Rrds, Kv).
+
 rrd_exec(String) ->
     case monitor_logger_rrd:exec(String) of
         {ok, _} -> ok;
@@ -95,9 +102,6 @@ rrd_exec(String) ->
             ok
     end.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% UTILS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 update_rrd_record(Rrds, Dir) -> 
     NewRecords  = [],
     update_rrd_record(Rrds, Dir, NewRecords).

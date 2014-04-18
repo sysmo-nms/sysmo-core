@@ -34,15 +34,28 @@
 
 -define(EVENT_SERVER, monitor_logger_events).
 
-init(_Conf, _Target, Probe) ->
-    TableName   = Probe#probe.name,
-    ok = gen_server:call(?EVENT_SERVER, {init, TableName}),
-    {ok, no_state}.
+-record(state, {
+    table_name,
+    target_id
+}).
 
-log(State, _) ->
-    gen_server:call(?EVENT_SERVER, {log, a, b}),
-    {ok, State}.
+init(_Conf, Target, Probe) ->
+    TableName   = Probe#probe.name,
+    TargetId    = Target#target.id,
+    ok          = gen_server:call(?EVENT_SERVER, {init, TableName}),
+    State       = #state{table_name     = TableName},
+    State2      = State#state{target_id = TargetId},
+    {ok, State2}.
+
+log(State, ProbeReturn) ->
+    TableName = State#state.table_name,
+    case gen_server:call(?EVENT_SERVER, {log, TableName, ProbeReturn}) of
+        ok          -> {ok, State};
+        {ok, Pdu}   -> {ok, Pdu, State}
+    end.
 
 dump(State) ->
-    {ok, _Bin} = gen_server:call(?EVENT_SERVER, {dump, a}),
-    {ok, State}.
+    TableName   = State#state.table_name,
+    TargetId    = State#state.target_id,
+    {ok, Pdu}   = gen_server:call(?EVENT_SERVER, {dump, TableName, TargetId}),
+    {ok, Pdu, State}.

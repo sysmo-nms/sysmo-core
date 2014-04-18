@@ -13,19 +13,8 @@
 ]).
 
 -export([
-    start_link/0,
-    log/2,
-    dump/1
+    start_link/0
 ]).
-
-
-log(ProbeServerState, #probe_return{is_event = true} = ProbeReturn) ->
-    gen_server:cast(?MODULE, {log, ProbeServerState, ProbeReturn});
-log(_ProbeServerState, _ProbeReturn) ->
-    ok.
-
-dump(ProbeServerState) ->
-    gen_server:call(?MODULE, {dump, ProbeServerState}).
 
 
 start_link() ->
@@ -39,34 +28,22 @@ init([]) ->
     end, Rep),
     % read config, some event will not require acknowledgements or/and
     % send notifications.
-    {ok, []}.
+    {ok, no_state}.
 
-
-%  
 handle_call({init, TableName}, _From, State) ->
-    ?LOG({"iiiiiiiiiiiiiiiiiiiiiinit", TableName}),
     create_table(TableName),
     {reply, ok, State};
-
-handle_call({dump, 
-    #ps_state{
-        target = #target{id = TargetId},
-        probe  = #probe{name = ProbeName}
-    }}, _F, S) ->
+handle_call({log, TableName, ProbeReturn}, _From, _S) ->
+    {atomic, ProbeEvent} = insert_record(TableName, ProbeReturn),
+    Pdu = pdu('probeEventMsg', {TableName, ProbeEvent}),
+    {reply, {ok, Pdu}, _S};
+handle_call({dump, TargetId, ProbeName}, _F, S) ->
     Pdu = pdu('eventProbeDump', {TargetId, ProbeName}),
     {reply, Pdu, S};
-
 handle_call(_R, _F, S) ->
     {noreply, S}.
 
 % 
-handle_cast({log, #ps_state{probe = #probe{name = ProbeName}}, 
-        ProbeReturn}, S) ->
-    {atomic, ProbeEvent} = insert_record(ProbeName, ProbeReturn),
-    Pdu = pdu('probeEventMsg', {ProbeName, ProbeEvent}),
-    monitor_probe:external_event(ProbeName, Pdu),
-    {noreply, S};
-
 handle_cast(_,S) ->
     {noreply, S}.
 
@@ -84,7 +61,6 @@ code_change(_,S,_) ->
 
 %
 % @private
-% 
 create_table(TableName) ->
     Rep = lists:member(TableName, mnesia:table_info(schema, tables)),
     create_table(TableName, Rep).
