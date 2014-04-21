@@ -63,7 +63,7 @@ get_perms(PidName) ->
     gen_server:call(PidName, get_perms).
 
 sync_request(PidName, CState) ->
-    gen_server:call(PidName, {sync_request, CState}).
+    gen_server:cast(PidName, {sync_request, CState}).
 
 %%----------------------------------------------------------------------------
 %%----------------------------------------------------------------------------
@@ -194,16 +194,6 @@ handle_call({chan_del, #target{id = Id, global_perm = Perm}}, _F,
 handle_call(get_perms, _F, #state{perm = P} = S) ->
     {reply, P, S};
 
-handle_call({sync_request, #client_state{module = CMod} = CState}, 
-        _F, #state{chans = Chans, probe_modules = PMods} = State) ->
-    % I want this client to receive my messages,
-    supercast_channel:subscribe(?MASTER_CHAN, CState),
-    PMList  = [pdu(probeModInfo, Probe) || Probe <- PMods],
-    % gen_dump_pdus will filter based on CState permissions
-    PDUs    = gen_dump_pdus(CState, Chans),
-    PTotal  = lists:append(PMList, PDUs),
-    lists:foreach(fun(Pdu) -> CMod:send(CState, Pdu) end, PTotal),
-    {reply, ok, State};
 
 handle_call(dump, _F, State) ->
     {reply, State, State}.
@@ -213,6 +203,18 @@ handle_call(dump, _F, State) ->
 %% HANDLE_CAST
 %%----------------------------------------------------------------------------
 %%----------------------------------------------------------------------------
+handle_cast({sync_request, CState}, State) ->
+    Chans   = State#state.chans,
+    PMods   = State#state.probe_modules,
+    % I want this client to receive my messages,
+    supercast_channel:subscribe(?MASTER_CHAN, CState),
+    PMList  = [pdu(probeModInfo, Probe) || Probe <- PMods],
+    % gen_dump_pdus will filter based on CState permissions
+    PDumps  = gen_dump_pdus(CState, Chans),
+    Pdus    = lists:append(PMList, PDumps),
+    supercast_channel:unicast(CState, Pdus),
+    {noreply, State};
+
 handle_cast(_R, S) ->
     {noreply, S}.
 

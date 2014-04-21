@@ -188,18 +188,27 @@ handle_event({probe_return, NewProbeState, ProbeReturn}, SName, SData) ->
 
     {next_state, SName, SData4};
 
-handle_event({emit_logger_pdu, Pdu}, SName, SData) ->
+handle_event({emit_pdu, Pdu}, SName, SData) ->
     Probe       = SData#ps_state.probe,
     ChanName    = Probe#probe.name,
     Perms       = Probe#probe.permissions,
     supercast_channel:emit(ChanName, {Perms, Pdu}),
     {next_state, SName, SData};
 
-handle_event(_, SName, SData) ->
-    {next_state, SName, SData}.
+handle_event({sync_request, CState}, SName, SData) ->
+    Probe   = SData#ps_state.probe,
+    Name    = Probe#probe.name,
+    LStates = SData#ps_state.loggers_state,
+    {ok, NewLStates, Pdus} = log_dump(LStates),
+    ok      = supercast_channel:unicast(CState, Pdus),
+    ok      = supercast_channel:subscribe(Name, CState),
+    SData1  = SData#ps_state{loggers_state = NewLStates},
+    {next_state, SName, SData1}.
 
-handle_sync_event(_Any, _From, SName, SData) ->
-    {reply, ok, SName, SData}.
+handle_sync_event(get_perms, _From, SName, SData) ->
+    Probe = SData#ps_state.probe,
+    Perms = Probe#probe.permissions,
+    {reply, Perms, SName, SData}.
 
 handle_info(_Info, SName, SData) ->
     {next_state, SName, SData}.
@@ -251,19 +260,26 @@ log_return([Logger|LoggersState],  ProbeReturn, LoggersStateAcc) ->
         {ok, NewState}      ->
             ok;
         {ok, Pdu, NewState} ->
-            gen_fsm:send_all_state_event(self(), {emit_logger_pdu, Pdu})
+            gen_fsm:send_all_state_event(self(), {emit_pdu, Pdu})
     end,
     LoggersStateAcc2 = lists:keystore(Mod,1,LoggersStateAcc, {Mod, NewState}),
     log_return(LoggersState, ProbeReturn, LoggersStateAcc2).
 
-% TODO send conf here
-%-spec log(#ps_state{}, {atom(), any()}) -> ok.
-%log(#ps_state{probe = Probe} = PSState, Msg) ->
-    %lists:foreach(fun(#logger{module = Mod}) ->
-        %spawn(fun() -> Mod:log(PSState, Msg) end)
-    %end, Probe#probe.loggers),
-    %ok.
-
+log_dump(LoggersState) ->
+    PduAcc      = [],
+    NewLogState = [],
+    log_dump(LoggersState, PduAcc, NewLogState).
+log_dump([], Pdus, LogState) ->
+    {ok, Pdus, LogState};
+log_dump([LoggerState|LState], PduAcc, NLogState) ->
+    {Mod, State}        = LoggerState,
+    case Mod:dump(State) of
+        {ok, Pdu, State2} ->
+            log_dump(LState, [Pdu|PduAcc], [State2|NLogState]);
+        {ignore, State2} ->
+            log_dump(LState, PduAcc,       [State2|NLogState])
+    end.
+    
 %-spec log_dump(#ps_state{}) -> any().
 %log_dump(#ps_state{probe = Probe} = PSState) ->
     %L = [Mod:dump(PSState) || 
@@ -391,7 +407,6 @@ notify_master_required(Orig, Modified) ->
         _ ->
             true
     end.
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% UTILS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

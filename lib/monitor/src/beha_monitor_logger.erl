@@ -49,11 +49,10 @@
 
 -callback dump(State::any()) -> 
     {ok,        Pdu::tuple(), State::any()}   | 
-    {ignore,    State::any()}                   | 
-    {timeout,   State::any()}.
+    {ignore,    State::any()}.
 % @doc
 % Called by a monitor_target_channel on a subscribe request by a client. Must
-% return a binary form of the data logged, ignore or timeout.
+% return a binary form of the data logged or ignore if there is no need.
 % For synchronisation, the monitor_target_channel server will wait for a
 % a responce. This function MUST return before some kind of timeout or it will
 % indefinitely block the probe server.
