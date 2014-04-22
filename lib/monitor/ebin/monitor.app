@@ -53,8 +53,8 @@
         },
         {start_phases,
             [
-                {create_targets, []},
-                {launch_probes,  []}
+                %{create_targets, []},
+                %{launch_probes,  []}
             ]
         },
         {mod, {monitor_app, []}}

@@ -34,11 +34,13 @@ start(_Type, _Args) ->
     mnesia:create_schema([node()]),
     application:start(mnesia),
     {ok, ProbeModules} = application:get_env(monitor, probe_modules),
-    monitor_sup:start_link(ProbeModules).
+    {ok, ConfFile    } = application:get_env(monitor, config_file),
+    monitor_sup:start_link(ProbeModules, ConfFile).
 
 start_phase(create_targets, normal, []) ->
-    {ok, ConfFile} = application:get_env(monitor, config_file),
-    ok = monitor_target_channel_sup:cold_start(ConfFile);
+    {ok, _ConfFile} = application:get_env(monitor, config_file),
+    ok;
+    %ok = monitor_target_channel_sup:cold_start(ConfFile);
 
 start_phase(launch_probes, normal, []) -> ok.
     %monitor_probe_sup:launch().

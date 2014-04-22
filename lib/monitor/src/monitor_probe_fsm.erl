@@ -371,7 +371,7 @@ take_of(ProbeState, Probe) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 notify(ProbeReturn, Target, OriginalProbe, NewProbe) ->
     ok = notify_subscribers(ProbeReturn, Target, NewProbe),
-    ok = notify_master(Target, OriginalProbe, NewProbe, ProbeReturn).
+    ok = notify_master(Target, OriginalProbe, NewProbe).
 
 notify_subscribers(ProbeReturn, Target, Probe) ->
     ChanName = ProbeName = Probe#probe.name,
@@ -380,16 +380,12 @@ notify_subscribers(ProbeReturn, Target, Probe) ->
     Pdu         = monitor_pdu:probe_return({ProbeReturn, TargetId, ProbeName}),
     supercast_channel:emit(ChanName, {Perms, Pdu}).
 
-notify_master(Target, OriginalProbe, Probe, ProbeReturn) ->
+notify_master(Target, OriginalProbe, Probe) ->
     case notify_master_required(OriginalProbe, Probe) of
-        true ->
-            TargetId = Target#target.id,
-            ProbeId  = Probe#probe.id,
-            monitor_target_channel:update(
-                TargetId, ProbeId, {Probe, ProbeReturn}
-            );
-        false ->
-            ok
+        true  ->
+            TargetId    = Target#target.id,
+            monitor_master_channel:probe_info(TargetId, Probe);
+        false -> ok
     end.
 
 notify_master_required(Orig, Modified) ->

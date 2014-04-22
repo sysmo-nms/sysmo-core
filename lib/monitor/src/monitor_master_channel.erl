@@ -41,11 +41,11 @@
 
 % API
 -export([
-    start_link/1,
+    start_link/2,
     chan_add/1,
     chan_del/1,
     chan_update/1,
-    probe_update/2,
+    probe_info/2,
     dump/0
 ]).
 
@@ -71,9 +71,9 @@ sync_request(PidName, CState) ->
 %%----------------------------------------------------------------------------
 %%----------------------------------------------------------------------------
 % @private
--spec start_link([any()]) -> {ok, pid()}.
-start_link(ProbeModules) ->
-    gen_server:start_link({local, ?MASTER_CHAN}, ?MODULE, [ProbeModules], []).
+-spec start_link(ProbeModules::[tuple()], ConfFile::string()) -> {ok, pid()}.
+start_link(PMods, CFile) ->
+    gen_server:start_link({local, ?MASTER_CHAN}, ?MODULE, [PMods, CFile], []).
 
 
 %%----------------------------------------------------------------------------
@@ -105,11 +105,11 @@ chan_update(NewTarget) ->
     gen_server:call(?MASTER_CHAN, {chan_update, NewTarget}).
 
 % @doc
-% Called by a monitor_target_channel when information must be forwarded
-% to subscribers of 'target-MasterChan' concerning one of the probes.
+% Called by a monitor_probe_fsm when information must be forwarded
+% to subscribers of 'target-MasterChan' concerning the probe.
 % @end
-probe_update(NewTarget, NewProbe) ->
-    gen_server:call(?MASTER_CHAN, {probe_update, NewTarget, NewProbe}).
+probe_info(Target, Probe) ->
+    gen_server:call(?MASTER_CHAN, {probe_info, Target, Probe}).
 
 dump() ->
     gen_server:call(?MASTER_CHAN, dump).
@@ -128,10 +128,11 @@ dump() ->
 %% INIT
 %%----------------------------------------------------------------------------
 %%----------------------------------------------------------------------------
-init([ProbeModules]) ->
+init([ProbeModules, ConfFile]) ->
     P = extract_probes_info(ProbeModules),
+    {ok, Targets} = load_targets_conf(ConfFile),
     {ok, #state{
-            chans = [],
+            chans = Targets,
             perm = #perm_conf{
                 read    = ["admin", "wheel"],
                 write   = ["admin"]
@@ -149,14 +150,25 @@ init([ProbeModules]) ->
 %%----------------------------------------------------------------------------
 %% SELF API CALLS
 %%----------------------------------------------------------------------------
-handle_call({probe_update, 
-        #target{id = TargetId}      = NewTarget, 
-        #probe{permissions = Perm}  = NewProbe
-    }, _F, #state{chans = Chans} = S) ->
-    NewChans = lists:keyreplace(TargetId, 2, Chans, NewTarget),
-    supercast_channel:emit(?MASTER_CHAN, {Perm, 
-        pdu(probeInfo, {update, TargetId, NewProbe})}),
-    {reply, ok, S#state{chans = NewChans}};
+update_info_chan(TargetId, Chans, Probe) ->
+    Target  = lists:keyfind(TargetId, 2, Chans),
+    Probes  = Target#target.probes,
+    PrId    = Probe#probe.id,
+    % TODO use #probe.name instead of #probe.id
+    NProbes = lists:keystore(PrId, 2, Probes, Probe),
+    NTarget = Target#target{probes = NProbes},
+    NChans  = lists:keystore(TargetId, 2, Chans, NTarget),
+    {ok, NChans}.
+
+    
+handle_call({probe_info, TargetId, NewProbe}, _F, S) ->
+    Chans       = S#state.chans,
+    Perms       = NewProbe#probe.permissions,
+    {ok, NewChans} = update_info_chan(TargetId, Chans, NewProbe),
+    Pdu = pdu(probeInfo, {update, TargetId, NewProbe}),
+    supercast_channel:emit(?MASTER_CHAN, {Perms, Pdu}),
+    NS = S#state{chans = NewChans},
+    {reply, ok, NS};
 
 handle_call({chan_update, #target{id = Id, global_perm = Perm} = Target}, _F, 
         #state{chans = C} = S) ->
@@ -318,6 +330,41 @@ pdu(probeActivity, {TargetId, ProbeId, PState, Msg, ReturnStatus, Time}) ->
 %%----------------------------------------------------------------------------
 %% UTILS    
 %%----------------------------------------------------------------------------
+load_targets_conf(TargetsConfFile) ->
+    {ok, TargetsConf}  = file:consult(TargetsConfFile),
+    TargetsState = [],
+    load_targets_conf(TargetsConf, TargetsState).
+load_targets_conf([], TargetsState) ->
+    {ok, TargetsState};
+load_targets_conf([T|Targets], TargetsState) ->
+    ok       = init_target_dir(T),
+    {ok, T2} = init_probes(T),
+    load_targets_conf(Targets, [T2|TargetsState]).
+    
+init_probes(Target) ->
+    ProbesOrig  = Target#target.probes,
+    ProbesNew   = [],
+    init_probes(Target, ProbesOrig, ProbesNew).
+init_probes(Target, [], ProbesNew) ->
+    TargetNew = Target#target{probes = ProbesNew},
+    {ok, TargetNew};
+init_probes(Target, [P|Probes], ProbesN) ->
+    {ok, Pid} = monitor_probe_sup:new({Target, P}),
+    NP        = P#probe{pid = Pid},
+    ProbesN2  = [NP|ProbesN],
+    init_probes(Target, Probes, ProbesN2).
+
+init_target_dir(Target) ->
+    Dir = Target#target.directory,
+    case file:read_file_info(Dir) of
+        {ok, _} ->
+            ok;
+        {error, enoent} ->
+            file:make_dir(Dir);
+        Other ->
+            {error, Other}
+    end.
+
 extract_probes_info(ProbeModules) ->
     lists:foldl(
         fun(PMod, Acc) ->
