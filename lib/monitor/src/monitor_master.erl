@@ -42,11 +42,7 @@
 % API
 -export([
     start_link/2,
-    chan_add/1,
-    chan_del/1,
-    chan_update/1,
-    probe_info/2,
-    dump/0
+    probe_info/2
 ]).
 
 -record(state, {
@@ -58,75 +54,41 @@
 -define(MASTER_CHAN, 'target-MasterChan').
 
 
-%% GEN_CHANNEL
-get_perms(PidName) ->
-    gen_server:call(PidName, get_perms).
 
-sync_request(PidName, CState) ->
-    gen_server:cast(PidName, {sync_request, CState}).
 
-%%----------------------------------------------------------------------------
-%%----------------------------------------------------------------------------
-%% API
-%%----------------------------------------------------------------------------
-%%----------------------------------------------------------------------------
-% @private
 -spec start_link(ProbeModules::[tuple()], ConfFile::string()) -> {ok, pid()}.
 start_link(PMods, CFile) ->
     gen_server:start_link({local, ?MASTER_CHAN}, ?MODULE, [PMods, CFile], []).
 
 
 %%----------------------------------------------------------------------------
-%% API for the monitor_probe_fsm(s) modules
+%% supercast_channel API
 %%----------------------------------------------------------------------------
+-spec get_perms(PidName::atom()) -> {ok, PermConf::#perm_conf{}}.
+get_perms(PidName) ->
+    gen_server:call(PidName, get_perms).
 
--spec chan_add(#target{}) -> ok.
-% @doc
-% Called by a target_channel at initialisation stage.
-% @end
-chan_add(Target) ->
-    io:format("Chan add ~p~n", [?MODULE]),
-    gen_server:call(?MASTER_CHAN, {chan_update, Target}).
+sync_request(PidName, CState) ->
+    gen_server:cast(PidName, {sync_request, CState}).
 
-    
--spec chan_del(#target{}) -> ok.
-% @doc
-% Called by a target_channel at termination stage.
-% @end
-chan_del(Target) ->
-    io:format("Chan del ~p~n", [?MODULE]),
-    gen_server:call(?MASTER_CHAN, {chan_del, Target}).
 
-% @doc
-% Called by a monitor_probe_fsm when information must be forwarded
-% to subscribers of 'target-MasterChan'.
-% @end
-chan_update(NewTarget) ->
-    gen_server:call(?MASTER_CHAN, {chan_update, NewTarget}).
-
+%%----------------------------------------------------------------------------
+%% monitor_probe_fsm API
+%%----------------------------------------------------------------------------
+-spec probe_info(TargetId::atom(), Probe::#probe{}) -> ok.
 % @doc
 % Called by a monitor_probe_fsm when information must be forwarded
 % to subscribers of 'target-MasterChan' concerning the probe.
 % @end
-probe_info(Target, Probe) ->
-    gen_server:call(?MASTER_CHAN, {probe_info, Target, Probe}).
+probe_info(TargetId, Probe) ->
+    gen_server:cast(?MASTER_CHAN, {probe_info, TargetId, Probe}).
 
-dump() ->
-    gen_server:call(?MASTER_CHAN, dump).
 
-%%----------------------------------------------------------------------------
-%%----------------------------------------------------------------------------
+
+
+
 %%----------------------------------------------------------------------------
 %% GEN_SERVER CALLBACKS
-%%----------------------------------------------------------------------------
-%%----------------------------------------------------------------------------
-%%----------------------------------------------------------------------------
-
-
-%%----------------------------------------------------------------------------
-%%----------------------------------------------------------------------------
-%% INIT
-%%----------------------------------------------------------------------------
 %%----------------------------------------------------------------------------
 init([ProbeModules, ConfFile]) ->
     P = extract_probes_info(ProbeModules),
@@ -144,48 +106,38 @@ init([ProbeModules, ConfFile]) ->
 %%----------------------------------------------------------------------------
 %% SELF API CALLS
 %%----------------------------------------------------------------------------
-handle_call({probe_info, TargetId, NewProbe}, _F, S) ->
-    Chans       = S#state.chans,
-    Perms       = NewProbe#probe.permissions,
-    {ok, NewChans} = update_info_chan(TargetId, Chans, NewProbe),
-    Pdu = pdu(probeInfo, {update, TargetId, NewProbe}),
-    supercast_channel:emit(?MASTER_CHAN, {Perms, Pdu}),
-    NS = S#state{chans = NewChans},
-    {reply, ok, NS};
-
-handle_call({chan_update, #target{id = Id, global_perm = Perm} = Target}, _F, 
-        #state{chans = C} = S) ->
-    case lists:keyfind(Id, 2, C) of
-        false ->    % did not exist insert
-            supercast_channel:emit(?MASTER_CHAN, {Perm,
-                pdu(targetInfo, Target)}),
-            {reply, ok, S#state{
-                    chans = [Target | C]
-                }
-            };
-        _ -> % exist update
-            supercast_channel:emit(?MASTER_CHAN, {Perm,
-                pdu(targetInfo, Target)}),
-            {reply, ok, 
-                S#state{
-                    chans = lists:keyreplace(Id, 2, C, Target)
-                }
-            }
-    end;
-
-handle_call({chan_del, #target{id = Id, global_perm = Perm}}, _F, 
-        #state{chans = C} = S) ->
-    supercast_channel:emit(?MASTER_CHAN, {Perm, pdu(targetDelete, Id)}),
-    {reply, ok, S#state{chans = lists:keydelete(Id, 2, C)}};
+% handle_call({chan_update, #target{id = Id, global_perm = Perm} = Target}, _F, 
+%         #state{chans = C} = S) ->
+%     case lists:keyfind(Id, 2, C) of
+%         false ->    % did not exist insert
+%             supercast_channel:emit(?MASTER_CHAN, {Perm,
+%                 pdu(targetInfo, Target)}),
+%             {reply, ok, S#state{
+%                     chans = [Target | C]
+%                 }
+%             };
+%         _ -> % exist update
+%             supercast_channel:emit(?MASTER_CHAN, {Perm,
+%                 pdu(targetInfo, Target)}),
+%             {reply, ok, 
+%                 S#state{
+%                     chans = lists:keyreplace(Id, 2, C, Target)
+%                 }
+%             }
+%     end;
+% 
+% handle_call({chan_del, #target{id = Id, global_perm = Perm}}, _F, 
+%         #state{chans = C} = S) ->
+%     supercast_channel:emit(?MASTER_CHAN, {Perm, pdu(targetDelete, Id)}),
+%     {reply, ok, S#state{chans = lists:keydelete(Id, 2, C)}};
 
 %%----------------------------------------------------------------------------
 %% SUPERCAST_CHANNEL BEHAVIOUR CALLS
 %%----------------------------------------------------------------------------
 handle_call(get_perms, _F, #state{perm = P} = S) ->
-    {reply, P, S};
+    {reply, P, S}.
 
-handle_call(dump, _F, State) ->
-    {reply, State, State}.
+
 
 %%----------------------------------------------------------------------------
 %% SUPERCAST_CHANNEL BEHAVIOUR CASTS
@@ -205,11 +157,19 @@ handle_cast({sync_request, CState}, State) ->
 %%----------------------------------------------------------------------------
 %% SELF API CASTS
 %%----------------------------------------------------------------------------
+handle_cast({probe_info, TargetId, NewProbe}, S) ->
+    Chans       = S#state.chans,
+    Perms       = NewProbe#probe.permissions,
+    {ok, NewChans} = update_info_chan(TargetId, Chans, NewProbe),
+    Pdu = pdu(probeInfo, {update, TargetId, NewProbe}),
+    supercast_channel:emit(?MASTER_CHAN, {Perms, Pdu}),
+    NS = S#state{chans = NewChans},
+    {noreply, NS};
+
 handle_cast(_R, S) ->
     {noreply, S}.
 
-handle_info(I, S) ->
-    io:format("handle_info ~p ~p ~p~n", [?MODULE, I, S]),
+handle_info(_, S) ->
     {noreply, S}.
 
 terminate(_R, _S) ->
@@ -217,6 +177,63 @@ terminate(_R, _S) ->
 
 code_change(_O, S, _E) ->
     {ok, S}.
+
+
+%%----------------------------------------------------------------------------
+%% UTILS    
+%%----------------------------------------------------------------------------
+update_info_chan(TargetId, Chans, Probe) ->
+    Target  = lists:keyfind(TargetId, 2, Chans),
+    Probes  = Target#target.probes,
+    PrId    = Probe#probe.id,
+    % TODO use #probe.name instead of #probe.id
+    NProbes = lists:keystore(PrId, 2, Probes, Probe),
+    NTarget = Target#target{probes = NProbes},
+    NChans  = lists:keystore(TargetId, 2, Chans, NTarget),
+    {ok, NChans}.
+
+load_targets_conf(TargetsConfFile) ->
+    {ok, TargetsConf}  = file:consult(TargetsConfFile),
+    TargetsState = [],
+    load_targets_conf(TargetsConf, TargetsState).
+load_targets_conf([], TargetsState) ->
+    {ok, TargetsState};
+load_targets_conf([T|Targets], TargetsState) ->
+    ok       = init_target_dir(T),
+    {ok, T2} = init_probes(T),
+    load_targets_conf(Targets, [T2|TargetsState]).
+    
+init_probes(Target) ->
+    ProbesOrig  = Target#target.probes,
+    ProbesNew   = [],
+    init_probes(Target, ProbesOrig, ProbesNew).
+init_probes(Target, [], ProbesNew) ->
+    TargetNew = Target#target{probes = ProbesNew},
+    {ok, TargetNew};
+init_probes(Target, [P|Probes], ProbesN) ->
+    {ok, Pid} = monitor_probe_sup:new({Target, P}),
+    NP        = P#probe{pid = Pid},
+    ProbesN2  = [NP|ProbesN],
+    init_probes(Target, Probes, ProbesN2).
+
+init_target_dir(Target) ->
+    Dir = Target#target.directory,
+    case file:read_file_info(Dir) of
+        {ok, _} ->
+            ok;
+        {error, enoent} ->
+            file:make_dir(Dir);
+        Other ->
+            {error, Other}
+    end.
+
+extract_probes_info(ProbeModules) ->
+    lists:foldl(
+        fun(PMod, Acc) ->
+            {ok, Info} = PMod:info(),
+            [{PMod, Info} | Acc] 
+        end, 
+    [], ProbeModules).
 
 %%----------------------------------------------------------------------------
 %% PDU BUILD
@@ -290,66 +307,8 @@ pdu(probeActivity, {TargetId, ProbeId, PState, Msg, ReturnStatus, Time}) ->
                     Msg}}}}.
 
 
-%%----------------------------------------------------------------------------
-%% UTILS    
-%%----------------------------------------------------------------------------
-update_info_chan(TargetId, Chans, Probe) ->
-    Target  = lists:keyfind(TargetId, 2, Chans),
-    Probes  = Target#target.probes,
-    PrId    = Probe#probe.id,
-    % TODO use #probe.name instead of #probe.id
-    NProbes = lists:keystore(PrId, 2, Probes, Probe),
-    NTarget = Target#target{probes = NProbes},
-    NChans  = lists:keystore(TargetId, 2, Chans, NTarget),
-    {ok, NChans}.
-
-load_targets_conf(TargetsConfFile) ->
-    {ok, TargetsConf}  = file:consult(TargetsConfFile),
-    TargetsState = [],
-    load_targets_conf(TargetsConf, TargetsState).
-load_targets_conf([], TargetsState) ->
-    {ok, TargetsState};
-load_targets_conf([T|Targets], TargetsState) ->
-    ok       = init_target_dir(T),
-    {ok, T2} = init_probes(T),
-    load_targets_conf(Targets, [T2|TargetsState]).
-    
-init_probes(Target) ->
-    ProbesOrig  = Target#target.probes,
-    ProbesNew   = [],
-    init_probes(Target, ProbesOrig, ProbesNew).
-init_probes(Target, [], ProbesNew) ->
-    TargetNew = Target#target{probes = ProbesNew},
-    {ok, TargetNew};
-init_probes(Target, [P|Probes], ProbesN) ->
-    {ok, Pid} = monitor_probe_sup:new({Target, P}),
-    NP        = P#probe{pid = Pid},
-    ProbesN2  = [NP|ProbesN],
-    init_probes(Target, Probes, ProbesN2).
-
-init_target_dir(Target) ->
-    Dir = Target#target.directory,
-    case file:read_file_info(Dir) of
-        {ok, _} ->
-            ok;
-        {error, enoent} ->
-            file:make_dir(Dir);
-        Other ->
-            {error, Other}
-    end.
-
-extract_probes_info(ProbeModules) ->
-    lists:foldl(
-        fun(PMod, Acc) ->
-            {ok, Info} = PMod:info(),
-            [{PMod, Info} | Acc] 
-        end, 
-    [], ProbeModules).
-
-gen_asn_probe_active(true) ->
-    1;
-gen_asn_probe_active(false) ->
-    0.
+gen_asn_probe_active(true)  -> 1;
+gen_asn_probe_active(false) -> 0.
 
 gen_asn_probe_conf(Conf) when is_record(Conf, nagios_plugin_conf) ->
     #nagios_plugin_conf{executable = Exe, args = Args} = Conf,
