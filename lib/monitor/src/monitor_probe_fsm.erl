@@ -152,7 +152,6 @@ init([Target, Probe]) ->
         inspectors_state    = InspectInitState,
         loggers_state       = LoggersInitState
     },
-    %?LOG({loggers_state, LoggersInitState}),
     initiate_start_sequence(ProbeInitState, UProbe, random),
     {ok, 'RUNNING', PSState}.
 
@@ -161,7 +160,7 @@ init([Target, Probe]) ->
 
 % GEN_CHANNEL event
 handle_event({probe_return, NewProbeState, ProbeReturn}, SName, SData) ->
-    % Update probe_state
+    % UPDATE probe_state
     SData1  = SData#ps_state{probe_state       = NewProbeState},
 
     % INSPECT, update probe and inspectors_state,
@@ -364,6 +363,7 @@ take_of(ProbeState, Probe) ->
     gen_fsm:send_all_state_event(Pid, {probe_return, ProbeState2, Return}).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

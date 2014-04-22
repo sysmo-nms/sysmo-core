@@ -28,7 +28,6 @@
     stop/1]).
 
 start(_Type, _Args) ->
-    ?LOG("start\n"),
     application:stop(mnesia),
     mnesia:create_schema([node()]),
     application:start(mnesia),

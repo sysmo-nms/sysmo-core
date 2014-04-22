@@ -142,25 +142,8 @@ init([ProbeModules, ConfFile]) ->
     }.
     
 %%----------------------------------------------------------------------------
-%%----------------------------------------------------------------------------
-%% HANDLE_CALL
-%%----------------------------------------------------------------------------
-%%----------------------------------------------------------------------------
-
-%%----------------------------------------------------------------------------
 %% SELF API CALLS
 %%----------------------------------------------------------------------------
-update_info_chan(TargetId, Chans, Probe) ->
-    Target  = lists:keyfind(TargetId, 2, Chans),
-    Probes  = Target#target.probes,
-    PrId    = Probe#probe.id,
-    % TODO use #probe.name instead of #probe.id
-    NProbes = lists:keystore(PrId, 2, Probes, Probe),
-    NTarget = Target#target{probes = NProbes},
-    NChans  = lists:keystore(TargetId, 2, Chans, NTarget),
-    {ok, NChans}.
-
-    
 handle_call({probe_info, TargetId, NewProbe}, _F, S) ->
     Chans       = S#state.chans,
     Perms       = NewProbe#probe.permissions,
@@ -196,24 +179,16 @@ handle_call({chan_del, #target{id = Id, global_perm = Perm}}, _F,
     {reply, ok, S#state{chans = lists:keydelete(Id, 2, C)}};
 
 %%----------------------------------------------------------------------------
+%% SUPERCAST_CHANNEL BEHAVIOUR CALLS
 %%----------------------------------------------------------------------------
-%% CALLS VIA GEN_CHANNEL BEHAVIOUR
-%%----------------------------------------------------------------------------
-%%----------------------------------------------------------------------------
-% These calls are used by the supercast_channel behaviour module
-% Called by supercast_mpd via supercast_channel to allow or not a client to subscribe in 
-% regard of the result after applying beha_supercast_ctrl:satisfy/3.
 handle_call(get_perms, _F, #state{perm = P} = S) ->
     {reply, P, S};
-
 
 handle_call(dump, _F, State) ->
     {reply, State, State}.
 
 %%----------------------------------------------------------------------------
-%%----------------------------------------------------------------------------
-%% HANDLE_CAST
-%%----------------------------------------------------------------------------
+%% SUPERCAST_CHANNEL BEHAVIOUR CASTS
 %%----------------------------------------------------------------------------
 handle_cast({sync_request, CState}, State) ->
     Chans   = State#state.chans,
@@ -227,31 +202,19 @@ handle_cast({sync_request, CState}, State) ->
     supercast_channel:unicast(CState, Pdus),
     {noreply, State};
 
+%%----------------------------------------------------------------------------
+%% SELF API CASTS
+%%----------------------------------------------------------------------------
 handle_cast(_R, S) ->
     {noreply, S}.
 
-%%----------------------------------------------------------------------------
-%%----------------------------------------------------------------------------
-%% HANDLE_INFO
-%%----------------------------------------------------------------------------
-%%----------------------------------------------------------------------------
 handle_info(I, S) ->
     io:format("handle_info ~p ~p ~p~n", [?MODULE, I, S]),
     {noreply, S}.
 
-%%----------------------------------------------------------------------------
-%%----------------------------------------------------------------------------
-%% TERMINATE  
-%%----------------------------------------------------------------------------
-%%----------------------------------------------------------------------------
 terminate(_R, _S) ->
     normal.
 
-%%----------------------------------------------------------------------------
-%%----------------------------------------------------------------------------
-%% CODE_CHANGE
-%%----------------------------------------------------------------------------
-%%----------------------------------------------------------------------------
 code_change(_O, S, _E) ->
     {ok, S}.
 
@@ -330,6 +293,16 @@ pdu(probeActivity, {TargetId, ProbeId, PState, Msg, ReturnStatus, Time}) ->
 %%----------------------------------------------------------------------------
 %% UTILS    
 %%----------------------------------------------------------------------------
+update_info_chan(TargetId, Chans, Probe) ->
+    Target  = lists:keyfind(TargetId, 2, Chans),
+    Probes  = Target#target.probes,
+    PrId    = Probe#probe.id,
+    % TODO use #probe.name instead of #probe.id
+    NProbes = lists:keystore(PrId, 2, Probes, Probe),
+    NTarget = Target#target{probes = NProbes},
+    NChans  = lists:keystore(TargetId, 2, Chans, NTarget),
+    {ok, NChans}.
+
 load_targets_conf(TargetsConfFile) ->
     {ok, TargetsConf}  = file:consult(TargetsConfFile),
     TargetsState = [],
