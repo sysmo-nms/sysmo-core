@@ -8,7 +8,7 @@
             undefined,
             'check_icmp-switch-1',
             {perm_conf, ["admin"], ["admin"]},
-            btracker_probe_nagios,
+            bmonitor_probe_nagios,
             {nagios_plugin_conf,
                 "/usr/lib/nagios/plugins/check_icmp",
                 [
@@ -21,14 +21,14 @@
             5,
             4,
             [
-                {inspector, btracker_inspector_status_set,[]},
-                {inspector, btracker_inspector_property_set, ["status"]}
+                {inspector, bmonitor_inspector_status_set,[]},
+                {inspector, bmonitor_inspector_property_set, ["status"]}
             ],
             [
-                {logger, tracker_events, []},
-                {logger, btracker_logger_text, []},
+                {logger, monitor_events, []},
+                {logger, bmonitor_logger_text, []},
                 {logger, 
-                    btracker_logger_rrd, [
+                    bmonitor_logger_rrd, [
                         {rrd_config,
                             "switch-2_rrd3",
                             "create <FILE> --step 5 --no-overwrite DS:latency:COUNTER:10:0:U RRA:AVERAGE:0.5:1:600 RRA:AVERAGE:0.5:6:700 RRA:AVERAGE:0.5:24:775 RRA:AVERAGE:0.5:288:797",
@@ -58,7 +58,7 @@
             undefined,
             'snmp-properties-switch-1',
             {perm_conf, ["admin", "other"], ["admin"]},
-            btracker_probe_snmp,
+            bmonitor_probe_snmp,
             {snmp_conf,
                 "switch-1",
                 "172.16.0.10",
@@ -80,13 +80,13 @@
             5,
             4,
             [
-                {inspector, btracker_inspector_status_set,[]},
-                {inspector, btracker_inspector_property_set, 
+                {inspector, bmonitor_inspector_status_set,[]},
+                {inspector, bmonitor_inspector_property_set, 
                     ["status", "sysName", "location"]}
             ],
             [
-                {logger, tracker_events, []},
-                {logger, btracker_logger_text, []}
+                {logger, monitor_events, []},
+                {logger, bmonitor_logger_text, []}
             ],
             [],
             [],
@@ -97,7 +97,7 @@
             true
         }
     ],
-    "var/tracker/switch-1"
+    "var/monitor/switch-1"
 }.
 {target,
     'switch-2',
@@ -109,7 +109,7 @@
             undefined,
             'check_icmp-switch-2',
             {perm_conf, ["admin"], ["admin"]},
-            btracker_probe_nagios,
+            bmonitor_probe_nagios,
             {nagios_plugin_conf,
                 "/usr/lib/nagios/plugins/check_icmp",
                 [
@@ -122,14 +122,14 @@
             5,
             4,
             [
-                {inspector, btracker_inspector_status_set,[]},
-                {inspector, btracker_inspector_property_set, ["status"]}
+                {inspector, bmonitor_inspector_status_set,[]},
+                {inspector, bmonitor_inspector_property_set, ["status"]}
             ],
             [
-                {logger, tracker_events, []},
-                {logger, btracker_logger_text, []},
+                {logger, monitor_events, []},
+                {logger, bmonitor_logger_text, []},
                 {logger, 
-                    btracker_logger_rrd, [
+                    bmonitor_logger_rrd, [
                         {rrd_config,
                             "switch-1_rrd3",
                             "create <FILE> --step 5 --no-overwrite DS:latency:COUNTER:10:0:U RRA:AVERAGE:0.5:1:600 RRA:AVERAGE:0.5:6:700 RRA:AVERAGE:0.5:24:775 RRA:AVERAGE:0.5:288:797",
@@ -159,7 +159,7 @@
             undefined,
             'snmp-properties-switch-2',
             {perm_conf, ["admin", "other"], ["admin"]},
-            btracker_probe_snmp,
+            bmonitor_probe_snmp,
             {snmp_conf,
                 "switch-2",
                 "172.16.0.11",
@@ -181,13 +181,13 @@
             5,
             4,
             [
-                {inspector, btracker_inspector_status_set,[]},
-                {inspector, btracker_inspector_property_set, 
+                {inspector, bmonitor_inspector_status_set,[]},
+                {inspector, bmonitor_inspector_property_set, 
                     ["status", "sysName", "location"]}
             ],
             [
-                {logger, tracker_events, []},
-                {logger, btracker_logger_text, []}
+                {logger, monitor_events, []},
+                {logger, bmonitor_logger_text, []}
             ],
             [],
             [],
@@ -198,5 +198,5 @@
             true
         }
     ],
-    "var/tracker/switch-2"
+    "var/monitor/switch-2"
 }.

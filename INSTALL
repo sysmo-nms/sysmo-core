@@ -20,9 +20,9 @@ directory and rrdtool executable path in the sys.config file.
     In the sys.config file modify the user who will execute nagios plugins
 under the "exec" configuration directives. Default user is "enms".
 
-    Take a look at the configuration file example cfg/tracker.conf.example.
-Copy it to cfg/tracker.conf. Every entry is an erlang record wich can be
-interpreted using the file lib/tracker/include/tracker.hrl.
+    Take a look at the configuration file example cfg/monitor.conf.example.
+Copy it to cfg/monitor.conf. Every entry is an erlang record wich can be
+interpreted using the file lib/monitor/include/monitor.hrl.
 
     "make start" Will create a local release and start the system. The mean
 of Enms is data visualization. You can test the fonctionnalities of it with

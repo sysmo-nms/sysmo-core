@@ -78,7 +78,7 @@ init(#locator_agent{
 
     _AgingTime = snmp_manager:get_dot1q_aging(AgentName),
 
-    % TODO subscribe to tracker events triggered by the master configuration
+    % TODO subscribe to monitor events triggered by the master configuration
     % channel.
 
     {ok, 

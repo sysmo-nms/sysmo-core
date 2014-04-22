@@ -43,8 +43,8 @@ start_link() ->
 init([]) ->
     Agents = snmp_manager:which_agents(),
     % XXX should call:
-    % btracker_probe_standard_snmp:sys_infos/1 and
-    % btracker_probe_standard_snmp:if_infos/1.
+    % bmonitor_probe_standard_snmp:sys_infos/1 and
+    % bmonitor_probe_standard_snmp:if_infos/1.
     AgentsRecords = [
         #locator_agent{
             agent_name  = Agent,
