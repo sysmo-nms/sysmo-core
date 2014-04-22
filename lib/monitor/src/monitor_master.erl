@@ -18,7 +18,7 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
--module(monitor_master_channel).
+-module(monitor_master).
 -behaviour(gen_server).
 -behaviour(supercast_channel).
 -include("include/monitor.hrl").

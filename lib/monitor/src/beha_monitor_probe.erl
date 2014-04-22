@@ -47,7 +47,7 @@
 -callback info() ->
     {ok, ProbeInfo::string()}.
 % @doc
-% Called by the monitor_master_channel for presentation of the module to the
+% Called by the monitor_master for presentation of the module to the
 % client. Must include every aspect of the probe and special configuration
 % parameters explanations.
 % @end

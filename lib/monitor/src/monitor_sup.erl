@@ -43,12 +43,12 @@ init([ProbeModules, ConfigFile]) ->
                     [monitor_probe_sup]
                 },
                 {
-                    monitor_master_channel,
-                    {monitor_master_channel, start_link, [ProbeModules, ConfigFile]},
+                    monitor_master,
+                    {monitor_master, start_link, [ProbeModules, ConfigFile]},
                     permanent,
                     2000,
                     worker,
-                    [monitor_master_channel]
+                    [monitor_master]
                 },
                 {
                     monitor_commander,

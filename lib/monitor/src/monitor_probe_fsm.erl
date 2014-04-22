@@ -367,7 +367,7 @@ take_of(ProbeState, Probe) ->
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% master_channel and supercast_channel NOTIFY %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% monitor_master and supercast_channel NOTIFY %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 notify(ProbeReturn, Target, OriginalProbe, NewProbe) ->
     ok = notify_subscribers(ProbeReturn, Target, NewProbe),
@@ -384,7 +384,7 @@ notify_master(Target, OriginalProbe, Probe) ->
     case notify_master_required(OriginalProbe, Probe) of
         true  ->
             TargetId    = Target#target.id,
-            monitor_master_channel:probe_info(TargetId, Probe);
+            monitor_master:probe_info(TargetId, Probe);
         false -> ok
     end.
 

@@ -26,7 +26,7 @@
                 monitor_app,
                 monitor_pdu,
                 monitor_commander,
-                monitor_master_channel,
+                monitor_master,
                 monitor_probe_sup,
                 monitor_probe,
                 monitor_sup,
