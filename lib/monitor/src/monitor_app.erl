@@ -25,7 +25,6 @@
 
 -export([
     start/2,
-    start_phase/3,
     stop/1]).
 
 start(_Type, _Args) ->
@@ -36,14 +35,6 @@ start(_Type, _Args) ->
     {ok, ProbeModules} = application:get_env(monitor, probe_modules),
     {ok, ConfFile    } = application:get_env(monitor, config_file),
     monitor_sup:start_link(ProbeModules, ConfFile).
-
-start_phase(create_targets, normal, []) ->
-    {ok, _ConfFile} = application:get_env(monitor, config_file),
-    ok;
-    %ok = monitor_target_channel_sup:cold_start(ConfFile);
-
-start_phase(launch_probes, normal, []) -> ok.
-    %monitor_probe_sup:launch().
 
 stop(_State) ->
     ok.

@@ -29,8 +29,6 @@
                 monitor_master_channel,
                 monitor_probe_sup,
                 monitor_probe,
-                monitor_target_channel,
-                monitor_target_channel_sup,
                 monitor_sup,
                 bmonitor_inspector_property_set,
                 bmonitor_inspector_status_set,
@@ -44,19 +42,13 @@
                 monitor_sup,
                 'target-MasterChan',
                 monitor_commander,
-                monitor_probe_sup,
-                monitor_target_channel_sup
+                monitor_probe_sup
             ]},
         {applications, 
             [kernel, stdlib, mnesia, supercast, monitor_logger_rrd,
                 monitor_logger_text, monitor_logger_events, snmp]
         },
-        {start_phases,
-            [
-                %{create_targets, []},
-                %{launch_probes,  []}
-            ]
-        },
+        {start_phases, []},
         {mod, {monitor_app, []}}
     ]
 }.

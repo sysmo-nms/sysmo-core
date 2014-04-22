@@ -77,7 +77,7 @@ start_link(PMods, CFile) ->
 
 
 %%----------------------------------------------------------------------------
-%% API for the monitor_target_channel(s) modules
+%% API for the monitor_probe_fsm(s) modules
 %%----------------------------------------------------------------------------
 
 -spec chan_add(#target{}) -> ok.
@@ -98,7 +98,7 @@ chan_del(Target) ->
     gen_server:call(?MASTER_CHAN, {chan_del, Target}).
 
 % @doc
-% Called by a monitor_target_channel when information must be forwarded
+% Called by a monitor_probe_fsm when information must be forwarded
 % to subscribers of 'target-MasterChan'.
 % @end
 chan_update(NewTarget) ->
