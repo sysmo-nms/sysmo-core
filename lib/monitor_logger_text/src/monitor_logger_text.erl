@@ -59,7 +59,7 @@ handle_call(dump, _, #state{file = F, dump_size = DS} = S) ->
             file:close(Fd),
             Bin = to_binary(Data)
     end,
-    {reply, Bin, S};
+    {reply, {ok, Bin}, S};
 handle_call(_,_,S) ->
     {reply, ok, S}.
 

@@ -39,7 +39,7 @@ handle_call({log, TableName, ProbeReturn}, _From, _S) ->
     {reply, {ok, Pdu}, _S};
 handle_call({dump, TargetId, ProbeName}, _F, S) ->
     Pdu = pdu('eventProbeDump', {TargetId, ProbeName}),
-    {reply, Pdu, S};
+    {reply, {ok, Pdu}, S};
 handle_call(_R, _F, S) ->
     {noreply, S}.
 

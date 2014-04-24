@@ -65,7 +65,7 @@ dump(State) ->
     LogSrv      = State#state.log_srv,
     TargetId    = State#state.target_id,
     ProbeName   = State#state.probe_name,
-    Bin         = monitor_logger:dump(LogSrv),
+    {ok, Bin}   = monitor_logger_text:dump(LogSrv),
     Pdu         = pdu('probeDump', {TargetId, ProbeName, Bin}),
     {ok, Pdu, State}.
 

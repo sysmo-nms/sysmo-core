@@ -198,7 +198,7 @@ handle_event({sync_request, CState}, SName, SData) ->
     Probe   = SData#ps_state.probe,
     Name    = Probe#probe.name,
     LStates = SData#ps_state.loggers_state,
-    {ok, NewLStates, Pdus} = log_dump(LStates),
+    {ok, Pdus, NewLStates} = log_dump(LStates),
     ok      = supercast_channel:unicast(CState, Pdus),
     ok      = supercast_channel:subscribe(Name, CState),
     SData1  = SData#ps_state{loggers_state = NewLStates},

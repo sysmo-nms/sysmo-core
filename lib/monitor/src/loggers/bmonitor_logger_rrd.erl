@@ -84,6 +84,7 @@ pdu('rrdProbeDump', {TargetId, ProbeId, RrdConfigs}) ->
                     atom_to_list(?MODULE),
                     RrdFileDumps }}}}.
     
+
 log_rrds([], _) -> ok;
 log_rrds([RrdConf|Rrds], Kv) ->
     UpdateString = RrdConf#rrd_config.update,
