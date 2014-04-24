@@ -274,9 +274,9 @@ log_dump([LoggerState|LState], PduAcc, NLogState) ->
     {Mod, State}        = LoggerState,
     case Mod:dump(State) of
         {ok, Pdu, State2} ->
-            log_dump(LState, [Pdu|PduAcc], [State2|NLogState]);
+            log_dump(LState, [Pdu|PduAcc], [{Mod, State2}|NLogState]);
         {ignore, State2} ->
-            log_dump(LState, PduAcc,       [State2|NLogState])
+            log_dump(LState, PduAcc,       [{Mod, State2}|NLogState])
     end.
     
 %-spec log_dump(#ps_state{}) -> any().
