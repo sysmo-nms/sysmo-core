@@ -16,6 +16,7 @@
     start_link/0
 ]).
 
+-define(LOGGER_TYPE, bmonitor_logger_events).
 
 start_link() ->
     gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
@@ -151,7 +152,7 @@ pdu('eventProbeDump', {TargetId, ProbeName}) ->
                 {'EventProbeDump',
                     atom_to_list(TargetId),
                     atom_to_list(ProbeName),
-                    atom_to_list(?MODULE),
+                    atom_to_list(?LOGGER_TYPE),
                     ProbeEvents}}}};
 
 pdu('probeEventMsg', {ProbeName, #probe_event{
