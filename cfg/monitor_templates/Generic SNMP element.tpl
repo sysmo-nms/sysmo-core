@@ -32,7 +32,7 @@
                 {inspector, bmonitor_inspector_property_set, ["status"]}
             ],
             [
-                {logger, bmonitor_logger_events, []},
+                %{logger, bmonitor_logger_events, []},
                 {logger, bmonitor_logger_text, []}
             ],
             [],
@@ -72,7 +72,7 @@
                     ["status", "sysName", "location"]}
             ],
             [
-                {logger, bmonitor_logger_events, []},
+                %{logger, bmonitor_logger_events, []},
                 {logger, bmonitor_logger_text, []}
             ],
             [],
@@ -114,7 +114,7 @@
                 {inspector, bmonitor_inspector_property_set, ["status"]}
             ],
             [
-                {logger, bmonitor_logger_events, []},
+                %{logger, bmonitor_logger_events, []},
                 {logger, bmonitor_logger_text, []},
                 {logger,
                     bmonitor_logger_rrd, [
