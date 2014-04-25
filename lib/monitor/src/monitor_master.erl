@@ -138,7 +138,28 @@ init([ProbeModules, ConfFile]) ->
 %% SUPERCAST_CHANNEL BEHAVIOUR CALLS
 %%----------------------------------------------------------------------------
 handle_call(get_perms, _F, #state{perm = P} = S) ->
-    {reply, P, S}.
+    {reply, P, S};
+
+handle_call({create_target, Target}, _F, S) ->
+    Target2 = load_target_conf(Target),
+    emit_wide(Target2),
+    Targets = S#state.chans,
+    S2      = S#state{chans = [Target2|Targets]},
+    {reply, ok, S2}.
+
+emit_wide(Target) ->
+    Perm        = Target#target.global_perm,
+    PduTarget   = pdu(targetInfo, Target),
+    supercast_channel:emit(?MASTER_CHAN, {Perm, PduTarget}),
+
+    TId         = Target#target.id,
+    Probes      = Target#target.probes,
+    PduProbes   = [{ProbePerm, pdu(probeInfo, {create, TId, Probe})} || 
+        #probe{permissions = ProbePerm} = Probe <- Probes],
+    lists:foreach(fun(X) ->
+        supercast_channel:emit(?MASTER_CHAN, X)
+    end, PduProbes).
+
 
 
 
@@ -202,10 +223,14 @@ load_targets_conf(TargetsConfFile) ->
 load_targets_conf([], TargetsState) ->
     {ok, TargetsState};
 load_targets_conf([T|Targets], TargetsState) ->
-    ok       = init_target_dir(T),
-    {ok, T2} = init_probes(T),
+    T2 = load_target_conf(T),
     load_targets_conf(Targets, [T2|TargetsState]).
     
+load_target_conf(Target) ->
+    ok              = init_target_dir(Target),
+    {ok, Target2}   = init_probes(Target),
+    Target2.
+
 init_probes(Target) ->
     ProbesOrig  = Target#target.probes,
     ProbesNew   = [],

@@ -144,7 +144,7 @@ handle_create_target(Command, TplDir, VarDir) ->
     Targ5       = Targ4#target{directory    = AbTargetDir},
     Targ6       = fill_probes(Targ5),
 
-    ?LOG({Targ6}),
+    monitor_master:create_target(Targ6),
     Pdu         = pdu(monitorReply, {QueryId, true, "hello"}),
     {ok, Pdu}.
 
@@ -158,8 +158,7 @@ fill_probes(Target, NewProbes, []) ->
 fill_probes(Target, NewProbes, [P|Probes]) ->
     % #probe.name
     {ok, PName} = generate_id("probe-"),
-    PName2      = erlang:list_to_atom(PName),
-    P0          = P#probe{name = PName2},
+    P0          = P#probe{name = PName},
 
     % #probe.permissions
     case P0#probe.permissions of
@@ -207,7 +206,8 @@ generate_id(Head) ->
     RandIdL     = io_lib:format("~p", [RandId]),
     RandIdS     = lists:flatten(RandIdL),
     RandIdF     = lists:concat([Head, RandIdS]),
-    {ok, RandIdF}.
+    ToAtom      = erlang:list_to_atom(RandIdF),
+    {ok, ToAtom}.
 
 send(#client_state{module = CMod} = CState, Msg) ->
     CMod:send(CState, Msg).
