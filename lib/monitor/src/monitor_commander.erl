@@ -37,6 +37,10 @@
     code_change/3
 ]).
 
+-record(state, {
+    tpl_dir,
+    var_dir
+}).
 % 1 000 000 possible values
 -define(RAND_RANGE, 1000000).
 % but must be a minimum of 100000
@@ -46,7 +50,8 @@ start_link() ->
     gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
 handle_command(Command, CState) ->
-    gen_server:cast(?MODULE, {command, Command, CState}).
+    {modMonitorPDU, {fromClient, CastCommand}} = Command,
+    gen_server:cast(?MODULE, {CastCommand, CState}).
 
 %%----------------------------------------------------------------------------
 %%----------------------------------------------------------------------------
@@ -54,7 +59,10 @@ handle_command(Command, CState) ->
 %%----------------------------------------------------------------------------
 %%----------------------------------------------------------------------------
 init([]) -> 
-    {ok, no_commander_state}.
+    {ok, TplDir} = application:get_env(monitor, templates_dir),
+    {ok, VarDir} = application:get_env(monitor, targets_data_dir),
+    State        = #state{tpl_dir = TplDir, var_dir = VarDir},
+    {ok, State}.
 
 %%----------------------------------------------------------------------------
 %%----------------------------------------------------------------------------
@@ -69,11 +77,11 @@ handle_call(_R, _F, S) ->
 %% HANDLE_CAST
 %%----------------------------------------------------------------------------
 %%----------------------------------------------------------------------------
-handle_cast({command, {modMonitorPDU, {fromClient, Command}}, CState}, S) ->
-    {_, {_,_,_,QueryId}} = Command,
-    {ok, Info}           = generate_id("target-"),
-    Pdu                  = pdu(monitorReply, {QueryId, true, Info}),
-    send(CState, Pdu),
+handle_cast({{createTarget, Command}, CState}, S) ->
+    TplDir          = S#state.tpl_dir,
+    VarDir          = S#state.var_dir,
+    {ok, ReplyPdu}  = handle_create_target(Command, TplDir, VarDir),
+    send(CState, ReplyPdu),
     {noreply, S};
 handle_cast(_R, S) ->
     io:format("unknown cast ~p~n", [_R]),
@@ -104,6 +112,89 @@ code_change(_O, S, _E) ->
     {ok, S}.
 
 
+
+
+%%----------------------------------------------------------------------------
+%% MONITOR COMMANDS
+%%----------------------------------------------------------------------------
+handle_create_target(Command, TplDir, VarDir) ->
+    {'CreateTarget',
+        IpAdd,
+        PermConf,
+        Snmpv2ro,
+        Snmpv2rw,
+        Template,
+        QueryId
+    } = Command,
+    File            = filename:flatten([Template, ".tpl"]),
+    TplFile         = filename:join([TplDir, File]),
+    {ok, [Targ0]}   = file:consult(TplFile),
+
+    {ok, Id}    = generate_id("target-"),
+    {_, R, W}   = PermConf,
+    PermC       = #perm_conf{read = R, write = W},
+    TargetDir   = filename:join([VarDir, Id]),
+    AbTargetDir = filename:absname(TargetDir),
+
+    Targ1       = Targ0#target{id           = Id},
+    Targ2       = Targ1#target{ip           = IpAdd},
+    Prop        = [{ip, IpAdd},{snmp_ro, Snmpv2ro},{snmp_rw, Snmpv2rw}],
+    Targ3       = Targ2#target{properties   = Prop},
+    Targ4       = Targ3#target{global_perm  = PermC},
+    Targ5       = Targ4#target{directory    = AbTargetDir},
+    Targ6       = fill_probes(Targ5),
+
+    ?LOG({Targ6}),
+    Pdu         = pdu(monitorReply, {QueryId, true, "hello"}),
+    {ok, Pdu}.
+
+fill_probes(Target) ->
+    Probes      = Target#target.probes,
+    NewProbes   = [],
+    fill_probes(Target, NewProbes, Probes).
+fill_probes(Target, NewProbes, []) ->
+    TargetR = Target#target{probes = NewProbes},
+    TargetR;
+fill_probes(Target, NewProbes, [P|Probes]) ->
+    % #probe.name
+    {ok, PName} = generate_id("probe-"),
+    PName2      = erlang:list_to_atom(PName),
+    P0          = P#probe{name = PName2},
+
+    % #probe.permissions
+    case P0#probe.permissions of
+        'TEMPLATE'          ->
+            PermConf    = Target#target.global_perm,
+            P1          = P0#probe{permissions = PermConf};
+        {perm_conf, _, _}   ->
+            P1          = P0
+    end,
+
+    % #probe.monitor_probe_conf
+    case P1#probe.monitor_probe_mod of
+        bmonitor_probe_nagios ->
+            {ip, TargetIp} = lists:keyfind(ip, 1, Target#target.properties),
+            ProbeConf   = P1#probe.monitor_probe_conf,
+            ConfList    = ProbeConf#nagios_plugin_conf.args,
+            ConfList2   = lists:keystore("-H", 1, ConfList, {"-H", TargetIp}),
+            ProbeConf2  = ProbeConf#nagios_plugin_conf{args = ConfList2},
+            P2          = P1#probe{monitor_probe_conf = ProbeConf2};
+        bmonitor_probe_snmp   ->
+            Prop        = Target#target.properties,
+            {snmp_ro, Ro} = lists:keyfind(snmp_ro, 1, Prop),
+            ProbeConf   = P1#probe.monitor_probe_conf,
+            ProbeConf2  = ProbeConf#snmp_conf{community = Ro},
+            P2          = P1#probe{monitor_probe_conf = ProbeConf2}
+    end,
+
+    % #probe.loggers TODO, include auto generated rrdconfig
+    P3  = P2,
+
+    fill_probes(Target, [P3|NewProbes], Probes).
+
+
+
+    
 
 %%----------------------------------------------------------------------------
 %%----------------------------------------------------------------------------

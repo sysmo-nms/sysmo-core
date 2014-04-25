@@ -53,6 +53,7 @@
     {monitor,
         [
             {config_file,           "cfg/monitor.conf"},
+            {templates_dir,         "cfg/monitor_templates"},
             {targets_data_dir,      "var/monitor"},
             {master_chan_read_perm, ["admin"]},
             {probe_modules,

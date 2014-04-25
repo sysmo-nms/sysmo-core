@@ -53,6 +53,7 @@
     {monitor,
         [
             {config_file,           "%INSTALL_DIR%/noctopus-server/cfg/monitor.conf"},
+            {teplates_dir,          "%INSTALL_DIR%/noctopus-server/cfg/monitor_templates"},
             {targets_data_dir,      "%INSTALL_DIR%/noctopus-server/var/monitor"},
             {master_chan_read_perm, ["admin"]},
             {probe_modules,

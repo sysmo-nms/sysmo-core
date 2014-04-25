@@ -42,7 +42,8 @@
 % API
 -export([
     start_link/2,
-    probe_info/2
+    probe_info/2,
+    create_target/1
 ]).
 
 -record(state, {
@@ -54,11 +55,13 @@
 -define(MASTER_CHAN, 'target-MasterChan').
 
 
-
-
 -spec start_link(ProbeModules::[tuple()], ConfFile::string()) -> {ok, pid()}.
 start_link(PMods, CFile) ->
     gen_server:start_link({local, ?MASTER_CHAN}, ?MODULE, [PMods, CFile], []).
+
+-spec create_target(Target::#target{}) -> ok | {error, Info::string()}.
+create_target(Target) ->
+    gen_server:call(?MASTER_CHAN, {create_target, Target}).
 
 
 %%----------------------------------------------------------------------------
