@@ -40,7 +40,6 @@
 }).
 
 init(Conf, Target, Probe) ->
-    ?LOG({init_logger_rrd, Conf}),
     TargetId    = Target#target.id,
     ProbeId     = Probe#probe.name,
     Dir         = Target#target.directory,
