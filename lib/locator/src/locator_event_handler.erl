@@ -18,18 +18,36 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
-% @private
--module(locator_app).
--behaviour(application).
+-module(locator_event_handler).
+-behaviour(gen_event).
 
 -export([
-    start/2,
-    stop/1
+    init/1,
+    handle_event/2,
+    handle_call/2,
+    handle_info/2,
+    terminate/2,
+    code_change/3
 ]).
 
-start(_Type, _Args) ->
-    monitor_sys_events:subscribe(locator_event_handler),
-    locator_sup:start_link().
+init(_Arg) ->
+    {ok, no_state}.
 
-stop(_State) ->
+handle_event({new_target, Target}, State) ->
+    io:format("locator handle event, ~p~n",[Target]),
+    {ok, State};
+
+handle_event(_Other, State) ->
+    {ok, State}.
+
+handle_call(_Call, State) ->
+    {ok, not_implemented, State}.
+
+handle_info(_Info, State) ->
+    {ok, State}.
+
+terminate(_Term, _State) ->
     ok.
+
+code_change(_, State, _) ->
+    {ok, State}.

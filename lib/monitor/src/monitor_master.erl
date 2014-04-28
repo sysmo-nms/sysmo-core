@@ -143,6 +143,8 @@ handle_call(get_perms, _F, #state{perm = P} = S) ->
 handle_call({create_target, Target}, _F, S) ->
     Target2 = load_target_conf(Target),
     emit_wide(Target2),
+    monitor_sys_events:notify({new_target, Target2}),
+
     Targets = S#state.chans,
     S2      = S#state{chans = [Target2|Targets]},
     {reply, ok, S2}.

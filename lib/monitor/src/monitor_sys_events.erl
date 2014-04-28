@@ -18,18 +18,21 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
-% @private
--module(locator_app).
--behaviour(application).
+-module(monitor_sys_events).
+-include("include/monitor.hrl").
 
+% start
 -export([
-    start/2,
-    stop/1
+    start_link/0,
+    notify/1,
+    subscribe/1
 ]).
 
-start(_Type, _Args) ->
-    monitor_sys_events:subscribe(locator_event_handler),
-    locator_sup:start_link().
+start_link() ->
+    gen_event:start_link({local, ?MODULE}).
 
-stop(_State) ->
-    ok.
+notify(Event) ->
+    gen_event:notify(?MODULE, Event).
+
+subscribe(Handler) ->
+    gen_event:add_handler(?MODULE, Handler, no_args).

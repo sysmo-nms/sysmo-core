@@ -30,6 +30,7 @@
                 monitor_probe_sup,
                 monitor_probe,
                 monitor_sup,
+                monitor_sys_events,
                 bmonitor_inspector_property_set,
                 bmonitor_inspector_status_set,
                 bmonitor_logger_rrd,
@@ -42,6 +43,7 @@
                 monitor_sup,
                 'target-MasterChan',
                 monitor_commander,
+                monitor_sys_events,
                 monitor_probe_sup
             ]},
         {applications, 

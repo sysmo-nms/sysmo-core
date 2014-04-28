@@ -7,7 +7,8 @@
                 locator_app,
                 locator_query,
                 locator_query_sup,
-                locator_sup
+                locator_sup,
+                locator_event_handler
             ]
         },
         {registered, 
