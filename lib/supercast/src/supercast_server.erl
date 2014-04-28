@@ -152,14 +152,19 @@ handle_client_msg(
                             QueryId,
                             Channel
         }   }   }   }   }, CState) ->
-    Chan = erlang:list_to_atom(Channel),
-    % ok mean satisfy return ok for read the chan
-    case supercast_mpd:subscribe_stage1(Chan, CState) of
-        error ->
+    case (catch erlang:list_to_existing_atom(Channel)) of
+        {'EXIT', _} ->
+            % not a registered atom, not a channel
             send(CState, pdu(subscribeErr, {QueryId, Channel}));
-        ok ->
-            send(CState, pdu(subscribeOk, {QueryId, Channel})),
-            supercast_mpd:subscribe_stage2(Chan,CState)
+        Chan ->
+            % ok mean satisfy return ok for read the chan
+            case supercast_mpd:subscribe_stage1(Chan, CState) of
+                error ->
+                    send(CState, pdu(subscribeErr, {QueryId, Channel}));
+                ok ->
+                    send(CState, pdu(subscribeOk, {QueryId, Channel})),
+                    supercast_mpd:subscribe_stage2(Chan,CState)
+            end
     end;
             
 handle_client_msg(
@@ -171,9 +176,14 @@ handle_client_msg(
                             QueryId,
                             Channel
         }   }   }   }   }, CState) ->
-    Chan = erlang:list_to_atom(Channel),
-    ok = supercast_mpd:unsubscribe(Chan, CState),
-    send(CState, pdu(unsubscribeOk, {QueryId, Channel}));
+    case (catch erlang:list_to_existing_atom(Channel)) of
+        {'EXIT', _} -> 
+            % incorrect client call, return nothing.
+            ok;
+        Chan ->
+            ok = supercast_mpd:unsubscribe(Chan, CState),
+            send(CState, pdu(unsubscribeOk, {QueryId, Channel}))
+    end;
 
 handle_client_msg(
         {message, 
