@@ -71,7 +71,7 @@
     },
     {monitor_logger_text,
         [
-            {dump_size,             30000}
+            {dump_size,             3000}
         ]
     },
     {kernel,
