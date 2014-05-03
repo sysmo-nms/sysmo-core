@@ -65,17 +65,17 @@
 %%-------------------------------------------------------------------------
 %% @spec start_link(Encoder) -> {ok,Pid} | ignore | {error,Error}
 %% @doc To be called by the supervisor in order to start the server.
-%%	  If init/1 fails with Reason, the function returns {error,Reason}.
-%%	  If init/1 returns {stop,Reason} or ignore, the process is
-%%	  terminated and the function returns {error,Reason} or ignore,
-%%	  respectively.
+%%      If init/1 fails with Reason, the function returns {error,Reason}.
+%%      If init/1 returns {stop,Reason} or ignore, the process is
+%%      terminated and the function returns {error,Reason} or ignore,
+%%      respectively.
 %% @end
 %%-------------------------------------------------------------------------
 start_link([Encoder]) ->
-	gen_fsm:start_link(?MODULE, [Encoder], []).
+    gen_fsm:start_link(?MODULE, [Encoder], []).
 
 set_socket(Pid, Socket) when is_pid(Pid), is_port(Socket) ->
-	gen_fsm:send_event(Pid, {socket_ready, Socket}).
+    gen_fsm:send_event(Pid, {socket_ready, Socket}).
 
 auth_set(success,  
     #client_state{pid = Pid, ref = Ref}, Name, Roles, AllowedMods) ->
@@ -101,29 +101,29 @@ raw_send(SockState, Pdu) ->
 
 %%-------------------------------------------------------------------------
 %% Func: init/1
-%% Returns: {ok, StateName, StateData}		  |
-%%		  {ok, StateName, StateData, Timeout} |
-%%		  ignore							  |
-%%		  {stop, StopReason}
+%% Returns: {ok, StateName, StateData}          |
+%%          {ok, StateName, StateData, Timeout} |
+%%          ignore                              |
+%%          {stop, StopReason}
 %% @private
 %%-------------------------------------------------------------------------
 init([Encoder]) ->
-	process_flag(trap_exit, true),
-	{ok, 'WAIT_FOR_SOCKET', #client_state{
+    process_flag(trap_exit, true),
+    {ok, 'WAIT_FOR_SOCKET', #client_state{
         encoding_mod    = Encoder,
         state           = 'WAIT_FOR_SOCKET'}}.
 
 %%-------------------------------------------------------------------------
 %% Func: StateName/2
-%% Returns: {next_state, NextStateName, NextStateData}		  |
-%%		  {next_state, NextStateName, NextStateData, Timeout} |
-%%		  {stop, Reason, NextStateData}
+%% Returns: {next_state, NextStateName, NextStateData}          |
+%%          {next_state, NextStateName, NextStateData, Timeout} |
+%%          {stop, Reason, NextStateData}
 %% @private
 %%-------------------------------------------------------------------------
 'WAIT_FOR_SOCKET'({socket_ready, Socket}, State) when is_port(Socket) ->
-	%% Now we own the socket!
-	inet:setopts(Socket, [{active, once}, {packet, 4}, binary]),
-	{ok, {IP, Port}} = inet:peername(Socket),
+    %% Now we own the socket!
+    inet:setopts(Socket, [{active, once}, {packet, 4}, binary]),
+    {ok, {IP, Port}} = inet:peername(Socket),
     NextState = State#client_state{
         socket          = Socket,
         addr            = IP,
@@ -133,12 +133,12 @@ init([Encoder]) ->
         module          = ?MODULE,
         state           = 'WAIT_FOR_CLIENT_AUTH'},
     supercast_server:client_msg(connect, NextState),
-	{next_state, 'WAIT_FOR_CLIENT_AUTH', NextState, ?TIMEOUT};
+    {next_state, 'WAIT_FOR_CLIENT_AUTH', NextState, ?TIMEOUT};
 
 'WAIT_FOR_SOCKET'(Other, State) ->
-	error_logger:error_msg("State:'WAIT_FOR_SOCKET'. Unexpected message:~p\n",
+    error_logger:error_msg("State:'WAIT_FOR_SOCKET'. Unexpected message:~p\n",
             [Other]),
-	{next_state, 'WAIT_FOR_SOCKET', State}.
+    {next_state, 'WAIT_FOR_SOCKET', State}.
 
 
 %%-------------------------------------------------------------------------
@@ -147,7 +147,7 @@ init([Encoder]) ->
 'WAIT_FOR_CLIENT_AUTH'({client_data, Pdu}, 
         #client_state{encoding_mod = Encoder} = State) ->
     supercast_server:client_msg({message, Encoder:decode(Pdu)}, State),
-	{next_state, 'WAIT_FOR_CLIENT_AUTH', State, ?TIMEOUT};
+    {next_state, 'WAIT_FOR_CLIENT_AUTH', State, ?TIMEOUT};
 
 'WAIT_FOR_CLIENT_AUTH'({success, Ref, Name, Roles, Mods}, 
         #client_state{ref = Ref} = State) ->
@@ -160,7 +160,7 @@ init([Encoder]) ->
 
 'WAIT_FOR_CLIENT_AUTH'({auth_fail, Ref, User}, 
         #client_state{ref = Ref} = State) ->
-	io:format("failed to register with user ~p ~n", [User]),
+    io:format("failed to register with user ~p ~n", [User]),
     {next_state, 'WAIT_FOR_CLIENT_AUTH', State, ?TIMEOUT};
 
 'WAIT_FOR_CLIENT_AUTH'({encode_send_msg, Ref,  Msg},  
@@ -175,17 +175,17 @@ init([Encoder]) ->
 
 'WAIT_FOR_CLIENT_AUTH'(timeout, 
         #client_state{auth_request_count = ?MAX_AUTH_ATEMPT} = State) ->
-	{stop, normal, State};
+    {stop, normal, State};
 
 'WAIT_FOR_CLIENT_AUTH'(timeout, State) ->
     NextState = State#client_state{
         auth_request_count = State#client_state.auth_request_count + 1},
     supercast_server:client_msg(connect, NextState),
-	{next_state, 'WAIT_FOR_CLIENT_AUTH', NextState, ?TIMEOUT};
+    {next_state, 'WAIT_FOR_CLIENT_AUTH', NextState, ?TIMEOUT};
 
 'WAIT_FOR_CLIENT_AUTH'(Data, State) ->
-	io:format("~p Ignoring data: ~p\n", [self(), Data]),
-	{next_state, 'WAIT_FOR_CLIENT_AUTH', State}.
+    io:format("~p Ignoring data: ~p\n", [self(), Data]),
+    {next_state, 'WAIT_FOR_CLIENT_AUTH', State}.
 
 %%-------------------------------------------------------------------------
 %% application running
@@ -193,7 +193,7 @@ init([Encoder]) ->
 'RUNNING'({client_data, Pdu}, 
         #client_state{encoding_mod = Encoder} = State) ->
     supercast_server:client_msg({message, Encoder:decode(Pdu)}, State),
-	{next_state, 'RUNNING', State};
+    {next_state, 'RUNNING', State};
 
 'RUNNING'({encode_send_msg, Ref, Msg}, 
         #client_state{ref = Ref, encoding_mod = Encoder} = State) ->
@@ -224,61 +224,61 @@ init([Encoder]) ->
     {next_state, 'RUNNING', State};
 
 'RUNNING'(timeout, State) ->
-	error_logger:error_msg("~p Timeout - closing.\n", [self()]),
-	{stop, normal, State};
+    error_logger:error_msg("~p Timeout - closing.\n", [self()]),
+    {stop, normal, State};
 
 'RUNNING'(Data, State) ->
-	io:format("~p Running Ignoring data: ~p\n", [self(), Data]),
-	{next_state, 'RUNNING', State}.
+    io:format("~p Running Ignoring data: ~p\n", [self(), Data]),
+    {next_state, 'RUNNING', State}.
 
 %%-------------------------------------------------------------------------
 %% Func: handle_event/3
-%% Returns: {next_state, NextStateName, NextStateData}		  |
-%%		  {next_state, NextStateName, NextStateData, Timeout} |
-%%		  {stop, Reason, NextStateData}
+%% Returns: {next_state, NextStateName, NextStateData}          |
+%%          {next_state, NextStateName, NextStateData, Timeout} |
+%%          {stop, Reason, NextStateData}
 %% @private
 %%-------------------------------------------------------------------------
 handle_event(Event, StateName, StateData) ->
-	io:format("handle_event ~p ~p~n", [?MODULE, StateData]),
-	{stop, {StateName, undefined_event, Event}, StateData}.
+    io:format("handle_event ~p ~p~n", [?MODULE, StateData]),
+    {stop, {StateName, undefined_event, Event}, StateData}.
 
 %%-------------------------------------------------------------------------
 %% Func: handle_sync_event/4
-%% Returns: {next_state, NextStateName, NextStateData}			|
-%%		  {next_state, NextStateName, NextStateData, Timeout}   |
-%%		  {reply, Reply, NextStateName, NextStateData}		  |
-%%		  {reply, Reply, NextStateName, NextStateData, Timeout} |
-%%		  {stop, Reason, NextStateData}						  |
-%%		  {stop, Reason, Reply, NextStateData}
+%% Returns: {next_state, NextStateName, NextStateData}            |
+%%          {next_state, NextStateName, NextStateData, Timeout}   |
+%%          {reply, Reply, NextStateName, NextStateData}          |
+%%          {reply, Reply, NextStateName, NextStateData, Timeout} |
+%%          {stop, Reason, NextStateData}                          |
+%%          {stop, Reason, Reply, NextStateData}
 %% @private
 %%-------------------------------------------------------------------------
 handle_sync_event(Event, _From, StateName, StateData) ->
-	io:format("handle_sync_event ~p ~p~n", [?MODULE, StateData]),
-	{stop, {StateName, undefined_event, Event}, StateData}.
+    io:format("handle_sync_event ~p ~p~n", [?MODULE, StateData]),
+    {stop, {StateName, undefined_event, Event}, StateData}.
 
 %%-------------------------------------------------------------------------
 %% Func: handle_info/3
-%% Returns: {next_state, NextStateName, NextStateData}		  |
-%%		  {next_state, NextStateName, NextStateData, Timeout} |
-%%		  {stop, Reason, NextStateData}
+%% Returns: {next_state, NextStateName, NextStateData}          |
+%%          {next_state, NextStateName, NextStateData, Timeout} |
+%%          {stop, Reason, NextStateData}
 %% @private
 %%-------------------------------------------------------------------------
 handle_info({tcp,Socket, Bin}, StateName, 
     #client_state{socket=Socket} = StateData) ->
-	inet:setopts(Socket, [{active, once}]),
-	?MODULE:StateName({client_data, Bin}, StateData);
+    inet:setopts(Socket, [{active, once}]),
+    ?MODULE:StateName({client_data, Bin}, StateData);
 
 handle_info({tcp_closed, Socket}, _StateName,
-			#client_state{socket=Socket, addr=Addr} = StateData) ->
-	error_logger:info_msg("~p Client ~p disconnected.\n", [self(), Addr]),
-	{stop, normal, StateData};
+            #client_state{socket=Socket, addr=Addr} = StateData) ->
+    error_logger:info_msg("~p Client ~p disconnected.\n", [self(), Addr]),
+    {stop, normal, StateData};
 
 handle_info(Info, StateName, StateData) ->
     io:format("INFO: ~p~n", [Info]),
     io:format("STATENAME: ~p~n", [StateName]),
     io:format("STATEDATA: ~p~n", [StateData]),
-	io:format("handle_info 3 ~p ~p ~p~n", [?MODULE, StateData, Info]),
-	{noreply, StateName, StateData}.
+    io:format("handle_info 3 ~p ~p ~p~n", [?MODULE, StateData, Info]),
+    {noreply, StateName, StateData}.
 
 %%-------------------------------------------------------------------------
 %% Func: terminate/3
@@ -287,10 +287,10 @@ handle_info(Info, StateName, StateData) ->
 %% @private
 %%-------------------------------------------------------------------------
 terminate(_Reason, _StateName, #client_state{socket=Socket} = State) ->
-	io:format("terminate ~p ~p~n", [?MODULE, _Reason]),
-	(catch gen_tcp:close(Socket)),
+    io:format("terminate ~p ~p~n", [?MODULE, _Reason]),
+    (catch gen_tcp:close(Socket)),
     supercast_server:client_msg(disconnect, State),
-	ok.
+    ok.
 
 %%-------------------------------------------------------------------------
 %% Func: code_change/4
@@ -299,5 +299,5 @@ terminate(_Reason, _StateName, #client_state{socket=Socket} = State) ->
 %% @private
 %%-------------------------------------------------------------------------
 code_change(_OldVsn, StateName, StateData, _Extra) ->
-	io:format("code_change ~p ~p~n", [?MODULE, StateData]),
-	{ok, StateName, StateData}.
+    io:format("code_change ~p ~p~n", [?MODULE, StateData]),
+    {ok, StateName, StateData}.
