@@ -11,9 +11,9 @@ ifeq ($(CYGW), CYGWIN)
 else
     RELEASE        = unix-release
     LOCAL_RELEASE  = unix-local-release
-    export ERL     = /opt/erlang_otp_R16B03/bin/erl
-    export ERLC    = /opt/erlang_otp_R16B03/bin/erlc -Werror
-    export ASNC    = /opt/erlang_otp_R16B03/bin/erlc -Werror -bber
+    export ERL     = /opt/erlang_otp_R17/bin/erl
+    export ERLC    = /opt/erlang_otp_R17/bin/erlc -Werror
+    export ASNC    = /opt/erlang_otp_R17/bin/erlc -Werror -bber
 endif
 
 export MAKE        = /usr/bin/make
