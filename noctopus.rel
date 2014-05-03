@@ -1,6 +1,6 @@
 {release,
     {"noctopus", "0.2.1"},
-    {erts, "5.10.4"},
+    {erts, "6.0"},
     [
         {kernel,        "3.0"},
         {stdlib,        "2.0"},
