@@ -4,7 +4,7 @@
 ### NOW
 - service virtual check
 - SNMP Elements autogen snmpwalks/rrdtool with MIB2 interface tree,
-(packets, discard, %discard, error, %error)
+(packets unicast/other, bytes in/out, %discard, %error)
 - Simple API add snmp element with perms
 - save target state
 
