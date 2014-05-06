@@ -41,6 +41,7 @@
     tpl_dir,
     var_dir
 }).
+
 % 1 000 000 possible values
 -define(RAND_RANGE, 1000000).
 % but must be a minimum of 100000
@@ -114,6 +115,11 @@ code_change(_O, S, _E) ->
 
 
 
+
+
+
+
+
 %%----------------------------------------------------------------------------
 %% MONITOR COMMANDS
 %%----------------------------------------------------------------------------
@@ -121,79 +127,61 @@ handle_create_target(Command, TplDir, VarDir) ->
     {'CreateTarget',
         IpAdd,
         PermConf,
-        Snmpv2ro,
-        Snmpv2rw,
+        _,
+        _,
         Template,
         QueryId
     } = Command,
-    File            = filename:flatten([Template, ".tpl.erl"]),
-    TplFile         = filename:join([TplDir, File]),
-    {ok, [Targ0]}   = file:consult(TplFile),
+    {ok, TargTemp}      = get_template(TplDir, Template),
+    {ok, TargetId}      = generate_id("target-"),
+    {ok, PermRecord}    = generate_perm_conf(PermConf),
+    {ok, TargetDir}     = generate_target_dir(VarDir, TargetId),
+    {ok, Prop}          = generate_properties(Command),
 
-    {ok, Id}    = generate_id("target-"),
-    {_, R, W}   = PermConf,
-    PermC       = #perm_conf{read = R, write = W},
-    TargetDir   = filename:join([VarDir, Id]),
+    Target1 = TargTemp#target{
+        id          = TargetId,
+        ip          = IpAdd,
+        properties  = Prop,
+        global_perm = PermRecord,
+        directory   = TargetDir
+    },
+    Probes  = [generate_probe(PFun, Target1) || PFun <- Target1#target.probes],
+    ?LOG(Probes),
+    Target2 = Target1#target{probes = Probes},
+    %Target2 = Target1#target{probes = []},
+
+    monitor_master:create_target(Target2),
+    {ok, pdu(monitorReply, {QueryId, true, "hello"})}.
+
+get_template(TplDir, Template) ->
+    File                = filename:flatten([Template, ".tpl.erl"]),
+    TplFile             = filename:join([TplDir, File]),
+    {ok, [TargTemp]}    = file:consult(TplFile),
+    {ok, TargTemp}.
+
+
+generate_perm_conf({_, Read, Write}) ->
+    {ok, #perm_conf{read = Read, write = Write}}.
+
+generate_target_dir(VarDir, TargetId) ->
+    TargetDir   = filename:join([VarDir, TargetId]),
     AbTargetDir = filename:absname(TargetDir),
+    {ok, AbTargetDir}.
 
-    Targ1       = Targ0#target{id           = Id},
-    Targ2       = Targ1#target{ip           = IpAdd},
-    Prop        = [{ip, IpAdd},{snmp_ro, Snmpv2ro},{snmp_rw, Snmpv2rw}],
-    Targ3       = Targ2#target{properties   = Prop},
-    Targ4       = Targ3#target{global_perm  = PermC},
-    Targ5       = Targ4#target{directory    = AbTargetDir},
-    Targ6       = fill_probes(Targ5),
-
-    monitor_master:create_target(Targ6),
-    Pdu         = pdu(monitorReply, {QueryId, true, "hello"}),
-    {ok, Pdu}.
-
-fill_probes(Target) ->
-    Probes      = Target#target.probes,
-    NewProbes   = [],
-    fill_probes(Target, NewProbes, Probes).
-fill_probes(Target, NewProbes, []) ->
-    TargetR = Target#target{probes = NewProbes},
-    TargetR;
-fill_probes(Target, NewProbes, [P|Probes]) ->
-    % #probe.name
-    {ok, PName} = generate_id("probe-"),
-    P0          = P#probe{name = PName},
-
-    % #probe.permissions
-    case P0#probe.permissions of
-        'TEMPLATE'          ->
-            PermConf    = Target#target.global_perm,
-            P1          = P0#probe{permissions = PermConf};
-        {perm_conf, _, _}   ->
-            P1          = P0
-    end,
-
-    % #probe.monitor_probe_conf
-    case P1#probe.monitor_probe_mod of
-        bmonitor_probe_nagios ->
-            {ip, TargetIp} = lists:keyfind(ip, 1, Target#target.properties),
-            ProbeConf   = P1#probe.monitor_probe_conf,
-            ConfList    = ProbeConf#nagios_plugin_conf.args,
-            ConfList2   = lists:keystore("-H", 1, ConfList, {"-H", TargetIp}),
-            ProbeConf2  = ProbeConf#nagios_plugin_conf{args = ConfList2},
-            P2          = P1#probe{monitor_probe_conf = ProbeConf2};
-        bmonitor_probe_snmp   ->
-            Prop        = Target#target.properties,
-            {snmp_ro, Ro} = lists:keyfind(snmp_ro, 1, Prop),
-            ProbeConf   = P1#probe.monitor_probe_conf,
-            ProbeConf2  = ProbeConf#snmp_conf{community = Ro},
-            P2          = P1#probe{monitor_probe_conf = ProbeConf2}
-    end,
-
-    % #probe.loggers TODO, include auto generated rrdconfig
-    P3  = P2,
-
-    fill_probes(Target, [P3|NewProbes], Probes).
-
-
-
+generate_properties({_, IpAdd, _, SnmpV2ro, SnmpV2rw, _, _}) ->
+    {ok, [{ip, IpAdd},{snmp_ro, SnmpV2ro},{snmp_rw, SnmpV2rw}]}.
     
+generate_probe(PFun, Target) ->
+    {function, Mod, Fun}    = PFun,
+    {ok, ProbeId}           = generate_id("probe-"),
+    {ok, PRec}              = erlang:apply(Mod, Fun, [ProbeId, Target]),
+    PRec.
+
+
+
+
+
+
 
 %%----------------------------------------------------------------------------
 %%----------------------------------------------------------------------------
@@ -220,76 +208,3 @@ pdu(monitorReply, {QueryId, Status, Info}) ->
                     QueryId,
                     Status,
                     Info }}}}.
-
-
-
-
-
-
-%%----------------------------------------------------------------------------
-% handle_command({fromClient, {createProbe, Msg}}, 
-%         #client_state{module = _CMod} = _CState) ->
-%     io:format("createProbe ~p~n",[Msg]);
-% 
-% handle_command({fromClient, {createTarget, Msg}}, 
-%         #client_state{module = CMod} = CState) ->
-%     {'TargetCreate', 
-%         Ip, Hostname, 
-%         Sysname, 
-%         {'PermConf', Read, Write},
-%         CmdId
-%     } = Msg,
-%     ReadPerm = case Read of
-%         [] ->
-%             ["admin"];
-%         _  ->
-%             ["admin"| Read]
-%     end,
-%     WritePerm = case Write of
-%         [] ->
-%             ["admin"];
-%         _ ->
-%             ["admin"| Write]
-%     end,
-%     case inet_parse:address(Ip) of
-%         {ok, EIp}   ->
-%             launch_target(#target{
-%                 id          = monitor_misc:generate_id(),
-%                 properties = [
-%                     {ip             , EIp},
-%                     {hostname       , Hostname},
-%                     {sysname        , Sysname},
-%                     {global_perm    , 
-%                         #perm_conf{
-%                             read    = ReadPerm,
-%                             write   = WritePerm
-%                         }
-%                     }  
-% 
-%                 ]
-%             }, CState, CmdId);
-%         {error, _}  ->
-%             CMod:send(CState, pdu(comResp, {CmdId, "ERROR: Bad ip format"}))
-%     end;
-% 
-% 
-% handle_command({fromClient, Other}, _) ->
-%     io:format("Unknown command ~p~n", [Other]).
-% 
-% 
-% 
-% % UTILS
-% launch_target(Target, #client_state{module = CMod} = CState, CmdId) ->
-%     case monitor_target_channel_sup:new(Target) of
-%         {ok, Pid} ->
-%             Info = erlang:process_info(Pid),
-%             {registered_name, RegName} = 
-%                 lists:keyfind(registered_name, 1, Info),
-%             Rep = lists:append("OK: ", atom_to_list(RegName)),
-%             io:format("rep is ~p~n", [Rep]),
-%             CMod:send(CState, pdu(comResp, {CmdId, Rep}));
-%         Other ->
-%             Rep = lists:append("ERROR: ", atom_to_list(Other)),
-%             CMod:send(CState, pdu(comResp, {CmdId, Rep}))
-%     end.
-
