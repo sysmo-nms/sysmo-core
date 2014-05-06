@@ -126,7 +126,7 @@ handle_create_target(Command, TplDir, VarDir) ->
         Template,
         QueryId
     } = Command,
-    File            = filename:flatten([Template, ".tpl"]),
+    File            = filename:flatten([Template, ".tpl.erl"]),
     TplFile         = filename:join([TplDir, File]),
     {ok, [Targ0]}   = file:consult(TplFile),
 

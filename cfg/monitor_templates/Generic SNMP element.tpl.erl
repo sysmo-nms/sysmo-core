@@ -13,7 +13,7 @@
             undefined,
             'TEMPLATE',
             "ICMP Echo request",
-            "Trigger a single echo request every 5 seconds",
+            "Trigger a single echo request every 30 seconds",
             'TEMPLATE',
             bmonitor_probe_nagios,
             {nagios_plugin_conf,
@@ -26,7 +26,7 @@
             },
             'UNKNOWN',
             5,
-            5,
+            30,
             [
                 {inspector, bmonitor_inspector_status_set,[]},
                 {inspector, bmonitor_inspector_property_set, ["status"]}
@@ -43,9 +43,9 @@
             2,
             undefined,
             'TEMPLATE',
-            "SNMP sys info set",
+            "SNMP sysInfo set",
             "Set the target name and location properties depending on the MIB2
-            sysName and sysLocation OIDs every 1 minutes",
+            sysName and sysLocation OIDs every 5 minutes",
             'TEMPLATE',
             bmonitor_probe_snmp,
             {snmp_conf,
@@ -65,7 +65,7 @@
             },
             'UNKNOWN',
             5,
-            60,
+            300,
             [
                 {inspector, bmonitor_inspector_status_set,[]},
                 {inspector, bmonitor_inspector_property_set, 
