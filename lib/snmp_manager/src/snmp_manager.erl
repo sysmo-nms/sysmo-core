@@ -33,10 +33,21 @@
     handle_report/3
 ]).
 
-%% API exports
+%% UTILS API  
 -export([
     which_agents/0,
-    sync_walk_bulk/2,
+    register_agent/2,
+    agent_registered/1
+]).
+
+%% SNMP API
+-export([
+    sync_get/3,
+    sync_walk_bulk/2
+]).
+
+%% SPECIALIZED API
+-export([
     get_mib2_system/1,
     get_mib2_interfaces/1,
     get_dot1q_aging/1,
@@ -74,10 +85,84 @@ handle_report(_TargetName, _SnmpReport, _UserData) ->
 
 
 
-%% API
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% UTILS API %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-spec which_agents() -> [Agent::string()].
 which_agents() ->
     snmpm:which_agents(?SNMPM_USER).
 
+-spec register_agent(Agent::string(), [SnmpArgs::tuple()]) -> 
+        ok | {error, Reason::term()}.
+register_agent(AgentName, SnmpArgs) ->
+    snmpm:register_agent(?SNMPM_USER, AgentName, SnmpArgs).
+
+-spec agent_registered(Agent::string()) -> true | false.
+agent_registered(AgentName) ->
+    lists:member(AgentName, which_agents()).
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% SNMP API %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-spec sync_get(
+        Agent::string(),
+        Request::[Oids::[integer()]],
+        Timeout::integer()) ->
+    {ok, SnmpReply::term(), Remaining::integer()} | {error, Reason::term()}.
+sync_get(Agent, Request, Timeout) ->
+    snmpm:sync_get(?SNMPM_USER, Agent, Request, Timeout).
+
+-spec sync_walk_bulk(Agent::string(), Oid::[integer()]) -> any().
+sync_walk_bulk(Agent, Oid) ->
+    % TODO Handle loss of PDUs: implement a retry count on timeout.
+    % sync_walk_bulk(Agent, Oid, Retry) ->
+    sync_walk_bulk(Agent, Oid, Oid, []).
+sync_walk_bulk(Agent, StartOID, LastOID, Result) ->
+    Reply = snmpm:sync_get_bulk(
+        ?SNMPM_USER, Agent, 0, ?BULK_MAX_REP, [LastOID]
+    ),
+    case Reply of
+        {ok, {noError,_,R}, _} ->
+
+            {_,Last,_,_,_} = lists:last(R),
+            case still_in_tree(StartOID, Last) of
+                true  -> 
+                    sync_walk_bulk(
+                        Agent, StartOID, Last, lists:append([Result,R])
+                    );
+                false ->    
+                    FilteredR = remove_out_of_tree_OIDs(StartOID, R),
+                    lists:append([Result, FilteredR])
+            end;
+
+        {ok, {noSuchName,_,_},_} -> 
+            FilteredR = remove_out_of_tree_OIDs(StartOID, Result),
+            FilteredR;
+        _ ->
+            error_logger:info_msg(
+                "~p ~p: sync_walk_bulk received: ~p", [?MODULE, ?LINE, Reply]
+            ),
+            []
+    end.
+
+remove_out_of_tree_OIDs(Oid, List) ->
+    lists:takewhile(fun({_,X,_,_,_}) ->
+        still_in_tree(Oid, X)
+    end, List).
+
+still_in_tree(Tree,Oid) when length(Tree) > length(Oid) ->
+    false;
+still_in_tree([], _Oid) -> 
+    true;
+still_in_tree([TH|TreeOid] , [OH|Oid]) when TH == OH ->
+    still_in_tree(TreeOid, Oid);
+still_in_tree(_,_) ->
+    false.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% SPECIALIZED API %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 get_ipAddrTable(Agent) ->
     Reply = sync_walk_bulk(Agent, ?OID_IP_ADDRESS_TABLE),
     Reply.
@@ -225,57 +310,12 @@ generate_if_records([Index|OtherIndexes], Values, Accum) ->
     },
     generate_if_records(OtherIndexes,Values,[Record|Accum]).
     
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% SNMP BULK WALK IMPLEMENTATION
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-sync_walk_bulk(Agent, Oid) ->
-    % TODO Handle loss of PDUs: implement a retry count on timeout.
-    % sync_walk_bulk(Agent, Oid, Retry) ->
-    sync_walk_bulk(Agent, Oid, Oid, []).
-sync_walk_bulk(Agent, StartOID, LastOID, Result) ->
-    Reply = snmpm:sync_get_bulk(
-        ?SNMPM_USER, Agent, 0, ?BULK_MAX_REP, [LastOID]
-    ),
-    case Reply of
-        {ok, {noError,_,R}, _} ->
 
-            {_,Last,_,_,_} = lists:last(R),
-            case still_in_tree(StartOID, Last) of
-                true  -> 
-                    sync_walk_bulk(
-                        Agent, StartOID, Last, lists:append([Result,R])
-                    );
-                false ->    
-                    FilteredR = remove_out_of_tree_OIDs(StartOID, R),
-                    lists:append([Result, FilteredR])
-            end;
 
-        {ok, {noSuchName,_,_},_} -> 
-            FilteredR = remove_out_of_tree_OIDs(StartOID, Result),
-            FilteredR;
-        _ ->
-            error_logger:info_msg(
-                "~p ~p: sync_walk_bulk received: ~p", [?MODULE, ?LINE, Reply]
-            ),
-            []
-    end.
-
-remove_out_of_tree_OIDs(Oid, List) ->
-    lists:takewhile(fun({_,X,_,_,_}) ->
-        still_in_tree(Oid, X)
-    end, List).
-
-still_in_tree(Tree,Oid) when length(Tree) > length(Oid) ->
-    false;
-still_in_tree([], _Oid) -> 
-    true;
-still_in_tree([TH|TreeOid] , [OH|Oid]) when TH == OH ->
-    still_in_tree(TreeOid, Oid);
-still_in_tree(_,_) ->
-    false.
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-% PRIVATE
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% PRIVATE %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% @private
 decode_services(S1) ->
     % TODO use bit-syntax
     case S1 >= 64 of

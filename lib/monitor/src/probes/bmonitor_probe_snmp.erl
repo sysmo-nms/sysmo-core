@@ -22,7 +22,6 @@
 -behaviour(beha_monitor_probe).
 -include_lib("snmp/include/snmp_types.hrl").
 -include("include/monitor.hrl").
--define(SNMP_USER, "noctopus_snmpm_user").
 
 %% beha_monitor_probe exports
 -export([
@@ -54,7 +53,7 @@ init(Target, Probe) ->
     Community   = Conf#snmp_conf.community,
     Oids        = Conf#snmp_conf.oids,
 
-    case agent_is_registered(AgentName) of
+    case snmp_manager:agent_registered(AgentName) of
         true  -> ok;
         false ->
             SnmpArgs = [
@@ -64,7 +63,7 @@ init(Target, Probe) ->
                 {version,   Version},
                 {community, Community}
             ],
-            snmpm:register_agent(?SNMP_USER, AgentName, SnmpArgs)
+            snmp_manager:register_agent(AgentName, SnmpArgs)
     end,
 
     {ok, #state{
@@ -84,7 +83,7 @@ exec(State) ->
 
     {_, MicroSec1}  = sys_timestamp(),
     % TODO use snmp_manager:bulk_walk
-    Reply           = snmpm:sync_get(?SNMP_USER, Agent, Request, Timeout),
+    Reply           = snmp_manager:sync_get(Agent, Request, Timeout),
     {_, MicroSec2}  = sys_timestamp(),
 
     case Reply of
@@ -127,12 +126,8 @@ eval_snmp_return({noError, _, VarBinds}, Oids) ->
         key_vals        = [{"status", 'OK'} | KeyVals]
     }.
 
-
 to_string(Term) ->
     lists:flatten(io_lib:format("~p~n", [Term])).
-
-agent_is_registered(Agent) ->
-    lists:member(Agent, snmpm:which_agents(?SNMP_USER)).
 
 sys_timestamp() ->
     {Meg, Sec, Micro} = os:timestamp(),
