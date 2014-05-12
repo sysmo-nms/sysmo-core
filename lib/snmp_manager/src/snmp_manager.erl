@@ -23,6 +23,8 @@
 -include_lib("snmp/include/snmp_types.hrl").
 -include("include/snmp_manager.hrl").
 
+-define(TMP_AGENT, "temp_agent").
+
 %% BEHAVIOUR snmpm_user exports
 -export([
     handle_error/3,
@@ -37,6 +39,7 @@
 -export([
     which_agents/0,
     register_agent/2,
+    register_temporary_agent/1,
     agent_registered/1
 ]).
 
@@ -92,7 +95,7 @@ handle_report(_TargetName, _SnmpReport, _UserData) ->
 which_agents() ->
     snmpm:which_agents(?SNMPM_USER).
 
--spec register_agent(Agent::string(), [SnmpArgs::tuple()]) -> 
+-spec register_agent(Agent::string(), SnmpArgs::[tuple()]) -> 
         ok | {error, Reason::term()}.
 register_agent(AgentName, SnmpArgs) ->
     snmpm:register_agent(?SNMPM_USER, AgentName, SnmpArgs).
@@ -101,6 +104,16 @@ register_agent(AgentName, SnmpArgs) ->
 agent_registered(AgentName) ->
     lists:member(AgentName, which_agents()).
 
+-spec register_temporary_agent(SnmpArgs::[tuple()]) -> ok | {error, any()}.
+register_temporary_agent(SnmpArgs) ->
+    case agent_registered(?TMP_AGENT) of
+        true ->
+            snmpm:unregister_agent(?SNMPM_USER, ?TMP_AGENT);
+        false ->
+            ok
+    end,
+    snmpm:register_agent(?SNMPM_USER, ?TMP_AGENT, SnmpArgs),
+    ?TMP_AGENT.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% SNMP API %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -297,16 +310,16 @@ generate_if_records([Index|OtherIndexes], Values, Accum) ->
     IfLastChangeTuple   = lists:keyfind(MatchIfLastChange, 2, IfLastChange),
     {_,_,_,LastChange,_}   = IfLastChangeTuple,
 
-    Record = #mib2_interface{
-        index           = Index,
-        descr           = Descr,
-        type            = Type,
-        mtu             = MTU,
-        speed           = Speed,
-        phys_add        = PhysAdd,
-        admin_status    = AdminStatus,
-        oper_status     = OperStatus,
-        last_change     = LastChange
+    Record = #mib2_ifEntry{
+        ifIndex         = Index,
+        ifDescr         = Descr,
+        ifType          = Type,
+        ifMtu           = MTU,
+        ifSpeed         = Speed,
+        ifPhysAddress   = PhysAdd,
+        ifAdminStatus   = AdminStatus,
+        ifOperStatus    = OperStatus,
+        ifLastChange    = LastChange
     },
     generate_if_records(OtherIndexes,Values,[Record|Accum]).
     

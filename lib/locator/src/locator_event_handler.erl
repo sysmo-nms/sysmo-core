@@ -33,8 +33,8 @@
 init(_Arg) ->
     {ok, no_state}.
 
-handle_event({new_target, Target}, State) ->
-    io:format("locator handle event, ~p~n",[Target]),
+handle_event({new_target, _Target}, State) ->
+    %io:format("locator handle event, ~p~n",[Target]),
     {ok, State};
 
 handle_event(_Other, State) ->

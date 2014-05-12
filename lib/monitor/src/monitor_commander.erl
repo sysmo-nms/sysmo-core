@@ -146,7 +146,6 @@ handle_create_target(Command, TplDir, VarDir) ->
         directory   = TargetDir
     },
     Probes  = [generate_probe(PFun, Target1) || PFun <- Target1#target.probes],
-    ?LOG(Probes),
     Target2 = Target1#target{probes = Probes},
     %Target2 = Target1#target{probes = []},
 
