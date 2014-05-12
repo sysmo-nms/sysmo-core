@@ -46,6 +46,18 @@
     ]
 ).
 
+-define(RRD_ifPkts_CREATE,
+"create <FILE> --step 5 DS:<INUPKTS>:COUNTER:10:U:U DS:<OUTUPKTS>:COUNTER:10:U:U DS:<INNUPKTS>:COUNTER:10:U:U DS:<OUTNUPKTS>:COUNTER:10:U:U DS:<INERR>:COUNTER:10:U:U DS:<OUTERR>:COUNTER:10:U:U RRA:AVERAGE:0.5:1:600 RRA:AVERAGE:0.5:6:700 RRA:AVERAGE:0.5:24:775 RRA:AVERAGE:0.5:288:797"
+).
+-define(RRD_ifPkts_UPDATE,
+"update <FILE> --template <INUPKTS>:<OUTUPKTS>:<INNUPKTS>:<OUTNUPKTS>:<INERR>:<OUTERR> N:<UIN>:<UOUT>:<NUIN>:<NUOUT>:<ERRIN>:<ERROUT>"
+).
+-define(RRD_ifPkts_GRAPH,
+    [
+"DEF:unicastIn=<FILE>:<INUPKTS>:AVERAGE DEF:unicastOut=<FILE>:<OUTUPKTS>:AVERAGE DEF:nunicastIn=<FILE>:<INNUPKTS>:AVERAGE DEF:nunicastOut=<FILE>:<OUTNUPKTS> DEF:errIn:<FILE>:<INERR> DEF:errOut:<FILE>:<OUTERR> LINE1:unicastIn#ff0000 LINE2:unicastOut#00ff00 LINE3:nunicastIn#0000ff LINE4:nunicastOut#f0f000 LINE5:errIn#ffff00 LINE6:errOut#00ffff"
+    ]
+).
+
 generate_icmpProbe(ProbeId, Target) ->
     {ok, 
         #probe{
@@ -287,7 +299,7 @@ generate_conf([If|Ifs], {OidsAcc, RrdsAcc}) ->
         %{IfOutErrors,       OidOutErrors}
     ],
 
-    % rrd_config if in/out octets
+    % rrd_config
     {ok, InDescrRE}     = re:compile("<INDESCR>"),
     {ok, OutDescrRE}    = re:compile("<OUTDESCR>"),
 
@@ -308,8 +320,14 @@ generate_conf([If|Ifs], {OidsAcc, RrdsAcc}) ->
         update  = Update1,
         graphs  = Graphs1,
         binds   = [
-            {IfOctetsIn,  "<OCTETS-IN>"},
-            {IfOctetsOut, "<OCTETS-OUT>"}
+            {IfOctetsIn,        "<OCTETS-IN>"},
+            {IfOctetsOut,       "<OCTETS-OUT>"}
+%             {IfInUcastPkts,     "<UCAST-IN>"},
+%             {IfInNUcastPkts,    "<NUCAST-IN>"},
+%             {IfOutUcastPkts,    "<UCAST-OUT>"},
+%             {IfOutNUcastPkts,   "<NUCAST-OUT>"},
+%             {IfInErrors,        "<ERRORS-IN>"},
+%             {IfOutErrors,       "<ERRORS-OUT>"}
         ],
         update_regexps  = none,
         file_path       = none
