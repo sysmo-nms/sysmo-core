@@ -34,6 +34,18 @@
     209         % bridge
 ]).
 
+-define(RRD_ifOctets_CREATE,
+"create <FILE> --step 5 DS:<INDESCR>:COUNTER:10:U:U DS:<OUTDESCR>:COUNTER:10:U:U RRA:AVERAGE:0.5:1:600 RRA:AVERAGE:0.5:6:700 RRA:AVERAGE:0.5:24:775 RRA:AVERAGE:0.5:288:797"
+).
+-define(RRD_ifOctets_UPDATE,
+"update <FILE> --template <INDESCR>:<OUTDESCR> N:<OCTETS-IN>:<OCTETS-OUT>"
+).
+-define(RRD_ifOctets_GRAPH,
+    [
+"DEF:octetsIn=<FILE>:<INDESCR>:AVERAGE DEF:octetsOut=<FILE>:<OUTDESCR>:AVERAGE LINE1:octetsIn#3465A4 LINE2:octetsOut#CC0000"
+    ]
+).
+
 generate_icmpProbe(ProbeId, Target) ->
     {ok, 
         #probe{
@@ -156,12 +168,7 @@ generate_ifPerfProbe(ProbeId, Target) ->
                 port        = 161,
                 version     = v2,
                 community   = Community,
-                oids        = [
-                    {"sis0in",     [1,3,6,1,2,1,2,2,1,10,1,0]},
-                    {"sis0out",    [1,3,6,1,2,1,2,2,1,16,1,0]},
-                    {"sis1in",     [1,3,6,1,2,1,2,2,1,10,2,0]},
-                    {"sis1out",    [1,3,6,1,2,1,2,2,1,16,2,0]}
-                ]
+                oids        = QueryOids
             },
             status      = 'UNKNOWN',
             timeout     = 5,
@@ -184,36 +191,7 @@ generate_ifPerfProbe(ProbeId, Target) ->
                 },
                 #logger{
                     module  = bmonitor_logger_rrd,
-                    conf    = [
-                        #rrd_config{
-                            file    = atom_to_list(ProbeId) ++ "1.rrd",
-                            create  =  "create <FILE> --step 5 DS:sis0in:COUNTER:10:U:U DS:sis0out:COUNTER:10:U:U RRA:AVERAGE:0.5:1:600 RRA:AVERAGE:0.5:6:700 RRA:AVERAGE:0.5:24:775 RRA:AVERAGE:0.5:288:797",
-                            update  = "update <FILE> --template sis0in:sis0out N:<SIS0-IN>:<SIS0-OUT>",
-                            graphs  = [
-                                "DEF:s0in=<FILE>:sis0in:AVERAGE DEF:s0out=<FILE>:sis0out:AVERAGE LINE1:s0in#3465A4 LINE2:s0out#CC0000"
-                            ],
-                            binds   = [
-                                 {"sis0in",  "<SIS0-IN>"},
-                                 {"sis0out", "<SIS0-OUT>"}
-                            ],
-                            update_regexps  = none,
-                            file_path       = none
-                        },
-                        #rrd_config{
-                            file    = atom_to_list(ProbeId) ++ "2.rrd",
-                            create  =  "create <FILE> --step 5 DS:sis1in:COUNTER:10:U:U DS:sis1out:COUNTER:10:U:U RRA:AVERAGE:0.5:1:600 RRA:AVERAGE:0.5:6:700 RRA:AVERAGE:0.5:24:775 RRA:AVERAGE:0.5:288:797",
-                            update  = "update <FILE> --template sis1in:sis1out N:<SIS1-IN>:<SIS1-OUT>",
-                            graphs  = [
-                                "DEF:s0in=<FILE>:sis1in:AVERAGE DEF:s0out=<FILE>:sis1out:AVERAGE LINE1:s0in#3465A4 LINE2:s0out#CC0000"
-                            ],
-                            binds   = [
-                                 {"sis1in",  "<SIS1-IN>"},
-                                 {"sis1out", "<SIS1-OUT>"}
-                            ],
-                            update_regexps  = none,
-                            file_path       = none
-                        }
-                    ]
+                    conf    = RrdConf
                 }
             ],
             parents     = [],
@@ -283,31 +261,63 @@ generate_conf([If|Ifs], {OidsAcc, RrdsAcc}) ->
     %RrdConf0    = #rrd_config
 
     % generate if in out packets u/nu and errors
-    IfInUcastPkts    = Descr ++ "_ifInUcastPkts",
-    IfInNUcastPkts   = Descr ++ "_ifInNUcastPkts",
-    IfInErrors       = Descr ++ "_ifInErrors",
-    IfOutUcastPkts   = Descr ++ "_ifOutUcastPkts",
-    IfOutNUcastPkts  = Descr ++ "_ifOutNUcastPkts",
-    IfOutErrors      = Descr ++ "_ifOutErrors",
-    
-    OidInUcastPkts   = [1,3,6,1,2,1,2,2,1,11,Index,0],
-    OidInNUcastPkts  = [1,3,6,1,2,1,2,2,1,12,Index,0],
-    OidInErrors      = [1,3,6,1,2,1,2,2,1,14,Index,0],
-    OidOutUcastPkts  = [1,3,6,1,2,1,2,2,1,17,Index,0],
-    OidOutNUcastPkts = [1,3,6,1,2,1,2,2,1,18,Index,0],
-    OidOutErrors     = [1,3,6,1,2,1,2,2,1,20,Index,0],
+%     IfInUcastPkts    = Descr ++ "_ifInUcastPkts",
+%     IfInNUcastPkts   = Descr ++ "_ifInNUcastPkts",
+%     IfInErrors       = Descr ++ "_ifInErrors",
+%     IfOutUcastPkts   = Descr ++ "_ifOutUcastPkts",
+%     IfOutNUcastPkts  = Descr ++ "_ifOutNUcastPkts",
+%     IfOutErrors      = Descr ++ "_ifOutErrors",
+%     
+%     OidInUcastPkts   = [1,3,6,1,2,1,2,2,1,11,Index,0],
+%     OidInNUcastPkts  = [1,3,6,1,2,1,2,2,1,12,Index,0],
+%     OidInErrors      = [1,3,6,1,2,1,2,2,1,14,Index,0],
+%     OidOutUcastPkts  = [1,3,6,1,2,1,2,2,1,17,Index,0],
+%     OidOutNUcastPkts = [1,3,6,1,2,1,2,2,1,18,Index,0],
+%     OidOutErrors     = [1,3,6,1,2,1,2,2,1,20,Index,0],
 
     % query oids
     Oids = [
         {IfOctetsIn,        OidOctetsIn},
-        {IfOctetsOut,       OidOctetsOut},
-        {IfInUcastPkts,     OidInUcastPkts},
-        {IfInNUcastPkts,    OidInNUcastPkts},
-        {IfInErrors,        OidInErrors},
-        {IfOutUcastPkts,    OidOutUcastPkts},
-        {IfOutNUcastPkts,   OidOutNUcastPkts},
-        {IfOutErrors,       OidOutErrors}
+        {IfOctetsOut,       OidOctetsOut}
+        %{IfInUcastPkts,     OidInUcastPkts},
+        %{IfInNUcastPkts,    OidInNUcastPkts},
+        %{IfInErrors,        OidInErrors},
+        %{IfOutUcastPkts,    OidOutUcastPkts},
+        %{IfOutNUcastPkts,   OidOutNUcastPkts},
+        %{IfOutErrors,       OidOutErrors}
     ],
 
-    % TODO rrd_config
-    generate_conf(Ifs, {[Oids|OidsAcc], [none|RrdsAcc]}).
+    % rrd_config if in/out octets
+    {ok, InDescrRE}     = re:compile("<INDESCR>"),
+    {ok, OutDescrRE}    = re:compile("<OUTDESCR>"),
+
+    Create0 = re:replace(?RRD_ifOctets_CREATE, InDescrRE, IfOctetsIn, [{return, list}]),
+    Create1 = re:replace(Create0, OutDescrRE, IfOctetsOut, [{return, list}]),
+
+    Update0 = re:replace(?RRD_ifOctets_UPDATE, InDescrRE, IfOctetsIn, [{return, list}]),
+    Update1 = re:replace(Update0, OutDescrRE, IfOctetsOut, [{return, list}]),
+
+    Graphs0 = ?RRD_ifOctets_GRAPH,
+    Graphs1 = [
+    generate_ifOctets_graphs(Graph,InDescrRE,OutDescrRE,IfOctetsIn,IfOctetsOut) 
+        || Graph <- Graphs0],
+
+    OctetsInOutRrdConf = #rrd_config{
+        file    = Descr,
+        create  = Create1,
+        update  = Update1,
+        graphs  = Graphs1,
+        binds   = [
+            {IfOctetsIn,  "<OCTETS-IN>"},
+            {IfOctetsOut, "<OCTETS-OUT>"}
+        ],
+        update_regexps  = none,
+        file_path       = none
+    },
+
+    generate_conf(Ifs, {[Oids|OidsAcc], [OctetsInOutRrdConf|RrdsAcc]}).
+
+generate_ifOctets_graphs(Graph,InDescrRE,OutDescrRE,IfOctetsIn,IfOctetsOut) ->
+    G0 = re:replace(Graph, InDescrRE, IfOctetsIn, [{return, list}]),
+    G1 = re:replace(G0,    OutDescrRE, IfOctetsOut, [{return, list}]),
+    G1.

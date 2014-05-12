@@ -37,6 +37,7 @@ init([]) ->
 handle_call({exec, Command}, _F, P) ->
     erlang:port_command(P, Command),
     Rep = get_response(P),
+    %error_logger:info_msg("~p have return: ~p ~p~n",[?MODULE, Rep, Command]),
     {reply, Rep, P};
 
 handle_call({dump, File}, _F, P) ->
