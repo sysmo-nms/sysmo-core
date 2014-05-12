@@ -88,6 +88,7 @@ exec(State) ->
 
     case Reply of
         {error, _Error} = R ->
+            error_logger:info_msg("snmp fail ~p ~p ~p", [?MODULE, ?LINE, R]),
             KV = [{"status",'CRITICAL'},{"sys_latency",MicroSec2 - MicroSec1}],
             OR = to_string(R),
             S  = 'CRITICAL',

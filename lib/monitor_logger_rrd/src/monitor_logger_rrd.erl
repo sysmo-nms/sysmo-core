@@ -61,19 +61,22 @@ get_response(Port) ->
 get_response(Port, Reply) ->
     receive
         {Port, {data, {eol, "ERROR" = Line}}} ->
-            %io:format("~n---------------------- ~p", [Reply]),
+            %io:format("~n1 ---------------------- ~p", [Reply]),
+            {error, lists:append([Reply, Line])};
+        {Port, {data, {noeol, "ERROR" ++ _ = Line}}} ->     % WTF
             {error, lists:append([Reply, Line])};
         {Port, {data, {eol, "ERROR" ++ _ = Line}}} ->
-            %io:format("~n---------------------- ~p", [Reply]),
+            %io:format("~n2 ---------------------- ~p", [Reply]),
             {error, lists:append([Reply, Line])};
         {Port, {data, {eol, "OK" = Line}}} ->
-            %io:format("~nlaaa---------------------- ~p", [Reply]),
+            %io:format("~n3 ---------------------- ~p", [Reply]),
             {ok, lists:append([Reply, Line])};
         {Port, {data, {eol, "OK" ++ _ = Line}}} ->
-            %io:format("~n---------------------- ~p", [Reply]),
+            %io:format("~n4 ---------------------- ~p", [Reply]),
             {ok, lists:append([Reply, Line])};
         {Port, {data, {eol, Line}}} ->
             get_response(Port, lists:append([Reply, Line]))
+
     after 500 -> 
             timeout
     end.
