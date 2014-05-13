@@ -35,14 +35,16 @@
 ]).
 
 -define(RRD_ifOctets_CREATE,
-"create <FILE> --step 5 DS:octetsIn:COUNTER:10:U:U DS:octetsOut:COUNTER:10:U:U DS:ucastPkIn:COUNTER:10:U:U DS:nucastPkIn:COUNTER:10:U:U DS:errorsIn:COUNTER:10:U:U DS:ucastPkOut:COUNTER:10:U:U RRA:AVERAGE:0.5:1:600 RRA:AVERAGE:0.5:6:700 RRA:AVERAGE:0.5:24:775 RRA:AVERAGE:0.5:288:797"
+"create <FILE> --step 5 DS:octetsIn:COUNTER:10:U:U DS:octetsOut:COUNTER:10:U:U DS:ucastPkIn:COUNTER:10:U:U DS:nucastPkIn:COUNTER:10:U:U DS:errorsIn:COUNTER:10:U:U DS:ucastPkOut:COUNTER:10:U:U DS:nucastPkOut:COUNTER:10:U:U DS:errorsOut:COUNTER:10:U:U RRA:AVERAGE:0.5:1:600 RRA:AVERAGE:0.5:6:700 RRA:AVERAGE:0.5:24:775 RRA:AVERAGE:0.5:288:797"
 ).
 -define(RRD_ifOctets_UPDATE,
-"update <FILE> --template octetsIn:octetsOut:ucastPkIn:nucastPkIn:errorsIn:ucastPkOut N:<OCTETS-IN>:<OCTETS-OUT>:<UCAST-IN>:<NUCAST-IN>:<ERRORS-IN>:<UCAST-OUT>"
+"update <FILE> --template octetsIn:octetsOut:ucastPkIn:nucastPkIn:errorsIn:ucastPkOut:nucastPkOut:errorsOut N:<OCTETS-IN>:<OCTETS-OUT>:<UCAST-IN>:<NUCAST-IN>:<ERRORS-IN>:<UCAST-OUT>:<NUCAST-OUT>:<ERRORS-OUT>"
 ).
 -define(RRD_ifOctets_GRAPH,
     [
-"DEF:oIn=<FILE>:octetsIn:AVERAGE DEF:oOut=<FILE>:octetsOut:AVERAGE LINE1:oIn#3465A4 LINE2:oOut#CC0000"
+"DEF:oIn=<FILE>:octetsIn:AVERAGE DEF:oOut=<FILE>:octetsOut:AVERAGE LINE1:oIn#3465A4 LINE2:oOut#CC0000",
+"DEF:errIn=<FILE>:errorsIn:AVERAGE DEF:errOut=<FILE>:errorsOut:AVERAGE LINE1:errIn#3465A4 LINE2:errOut#CC0000",
+"DEF:ucastIn=<FILE>:ucastPkIn:AVERAGE DEF:ucastOut=<FILE>:ucastPkOut:AVERAGE DEF:nucastIn:=<FILE>:nucastPkIn:AVERAGE DEF:nucastOut:=<FILE>:nucastPkOut:AVERAGE LINE1:ucastIn#3465A4 LINE2:ucastOut#CC0000 LINE3:nucastIn#ff0000 LINE4:nucastOut#00ff00"
     ]
 ).
 
@@ -188,7 +190,9 @@ generate_ifPerfProbe(ProbeId, Target) ->
                     [1,3,6,1,2,1,2,2,1,12],
                     [1,3,6,1,2,1,2,2,1,14],
                     [1,3,6,1,2,1,2,2,1,16],
-                    [1,3,6,1,2,1,2,2,1,17]
+                    [1,3,6,1,2,1,2,2,1,17],
+                    [1,3,6,1,2,1,2,2,1,18],
+                    [1,3,6,1,2,1,2,2,1,20]
                 ]}
             },
             status      = 'UNKNOWN',
@@ -267,8 +271,8 @@ generate_conf([If|Ifs], {OidsAcc, RrdsAcc}) ->
     IfInNUcastPkts   = Descr ++ "_ifInNUcastPkts",
     IfInErrors       = Descr ++ "_ifInErrors",
     IfOutUcastPkts   = Descr ++ "_ifOutUcastPkts",
-    %IfOutNUcastPkts  = Descr ++ "_ifOutNUcastPkts",
-%     IfOutErrors      = Descr ++ "_ifOutErrors",
+    IfOutNUcastPkts  = Descr ++ "_ifOutNUcastPkts",
+    IfOutErrors      = Descr ++ "_ifOutErrors",
 %     
     OidOctetsIn      = [1,3,6,1,2,1,2,2,1,10,Index,0],
     OidOctetsOut     = [1,3,6,1,2,1,2,2,1,16,Index,0],
@@ -276,8 +280,8 @@ generate_conf([If|Ifs], {OidsAcc, RrdsAcc}) ->
     OidInNUcastPkts  = [1,3,6,1,2,1,2,2,1,12,Index,0],
     OidInErrors      = [1,3,6,1,2,1,2,2,1,14,Index,0],
     OidOutUcastPkts  = [1,3,6,1,2,1,2,2,1,17,Index,0],
-    %OidOutNUcastPkts = [1,3,6,1,2,1,2,2,1,18,Index,0],
-%     OidOutErrors     = [1,3,6,1,2,1,2,2,1,20,Index,0],
+    OidOutNUcastPkts = [1,3,6,1,2,1,2,2,1,18,Index,0],
+    OidOutErrors     = [1,3,6,1,2,1,2,2,1,20,Index,0],
 
     % query oids
     Oids = [
@@ -286,9 +290,9 @@ generate_conf([If|Ifs], {OidsAcc, RrdsAcc}) ->
         {IfInUcastPkts,     OidInUcastPkts},
         {IfInNUcastPkts,    OidInNUcastPkts},
         {IfInErrors,        OidInErrors},
-        {IfOutUcastPkts,    OidOutUcastPkts}
-        %{IfOutNUcastPkts,   OidOutNUcastPkts}
-        %{IfOutErrors,       OidOutErrors}
+        {IfOutUcastPkts,    OidOutUcastPkts},
+        {IfOutNUcastPkts,   OidOutNUcastPkts},
+        {IfOutErrors,       OidOutErrors}
     ],
 
     OctetsInOutRrdConf = #rrd_config{
@@ -302,9 +306,9 @@ generate_conf([If|Ifs], {OidsAcc, RrdsAcc}) ->
             {IfInUcastPkts,     "<UCAST-IN>"},
             {IfInNUcastPkts,    "<NUCAST-IN>"},
             {IfInErrors,        "<ERRORS-IN>"},
-            {IfOutUcastPkts,    "<UCAST-OUT>"}
-            %{IfOutNUcastPkts,   "<NUCAST-OUT>"}
-            %{IfOutErrors,       "<ERRORS-OUT>"}
+            {IfOutUcastPkts,    "<UCAST-OUT>"},
+            {IfOutNUcastPkts,   "<NUCAST-OUT>"},
+            {IfOutErrors,       "<ERRORS-OUT>"}
         ],
         update_regexps  = none,
         file_path       = none

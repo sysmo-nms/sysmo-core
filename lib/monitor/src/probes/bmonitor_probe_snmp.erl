@@ -142,8 +142,6 @@ eval_snmp_walk_return(VarBinds, Oids) ->
     eval_snmp_return(VarBinds, OidsN).
 
 eval_snmp_return(VarBinds, Oids) ->
-    ?LOG(VarBinds),
-    ?LOG(Oids),
     KeyVals = [
         {Key, (lists:keyfind(Oid, 2, VarBinds))#varbind.value} || 
         {Key, Oid} <- Oids
