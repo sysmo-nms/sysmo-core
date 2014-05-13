@@ -1,23 +1,28 @@
 # Makefile 
 
+EXTERNAL = go-check/build
+
 compile: recurse
 
 all: compile doc test local-release www
 
-recurse: externals_compile
+recurse: externals
 	@for i in $(MODS); do cd $$i; $(MAKE) compile; cd ../; done
 
 test:
-	@for i in $(MODS); do cd $$i; $(MAKE) test; cd ../; done
+	@for i in $(MODS); do cd $$i; $(MAKE) test;  cd ../; done
 
 doc:
-	@for i in $(MODS); do cd $$i; $(MAKE) doc; cd ../; done
+	@for i in $(MODS); do cd $$i; $(MAKE) doc;  cd ../; done
 
-clean: externals_clean
-	@for i in $(MODS); do cd $$i; $(MAKE) clean; cd ../; done
+clean:
+	@for i in $(MODS); do cd $$i; $(MAKE) clean;  cd ../; done
 
-externals_compile:
-	@for i in $(REBAR); do cd $$i; rebar compile; cd ../; done
+externals: $(EXTERNAL)
 
-externals_clean:
-	@for i in $(REBAR); do cd $$i; rebar clean; cd ../; done
+go-check/build: go-check
+	cd go-check; make
+
+go-check:
+	@git clone https://github.com/ssbx/go-check.git
+

@@ -35,3 +35,4 @@ sys.config
 var/httpd/8080_props.conf
 noctopus.tar
 *.plt
+lib/go-check

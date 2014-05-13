@@ -66,13 +66,14 @@ generate_icmpProbe(ProbeId, Target) ->
             permissions = Target#target.global_perm,
             monitor_probe_mod   = bmonitor_probe_nagios,
             monitor_probe_conf  = #nagios_plugin_conf{
-                 executable = "/usr/lib/nagios/plugins/check_icmp",
-                 args       = [{"-H", Target#target.ip}, {"-t", "5"}],
+                 executable = "lib/go-check/build/go_check_icmp",
+                 args       = ["-H", Target#target.ip, "-t", "5"],
                  eval_perfs = false
             },
             status      = 'UNKNOWN',
             timeout     = 5,
-            step        = 30,
+            %step        = 30,
+            step        = 2,
             inspectors  = [
                 #inspector{
                     module  = bmonitor_inspector_status_set,

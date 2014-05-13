@@ -46,20 +46,18 @@ info() ->
 
 init(_Target, Probe) ->
     Conf = Probe#probe.monitor_probe_conf,
-    Args = Conf#nagios_plugin_conf.args,
-    ArgList = [erlang:tuple_to_list(X) || X <- Args],
 
     {ok, NagRe} = compile_nagios_re(),
     {ok, #state{
             nag_re      = NagRe,
             exec        = Conf#nagios_plugin_conf.executable,
-            args        = ArgList,
+            args        = Conf#nagios_plugin_conf.args,
             eval_perfs  = Conf#nagios_plugin_conf.eval_perfs
         }
     }.
 
 exec(State) ->
-    ArgList         = State#state.args,
+    Args            = State#state.args,
     Exec            = State#state.exec,
     Evaluate        = State#state.eval_perfs,
     Re              = State#state.nag_re,
@@ -67,7 +65,7 @@ exec(State) ->
     {_, MicroSec1}  = sys_timestamp(),
 
     erlang:open_port({spawn_executable, Exec}, 
-        [exit_status, {args, ArgList}]),
+        [exit_status, stderr_to_stdout, {args, Args}]),
 
     case receive_port_info() of
         {0, Stdout} ->
