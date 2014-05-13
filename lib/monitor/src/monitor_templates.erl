@@ -104,6 +104,16 @@ generate_icmpProbe(ProbeId, Target) ->
 
 generate_sysLocNameProbe(ProbeId, Target) ->
     Community = proplists:get_value(snmp_ro, Target#target.properties),
+    Ip        = proplists:get_value(ip,      Target#target.properties),
+    case try_register_snmp_agent(Community, Ip) of
+        {ok, _} ->
+            generate_sysLocNameProbe(ProbeId, Target, Community);
+        {error, Other} ->
+            {error, Other}
+    end.
+
+generate_sysLocNameProbe(ProbeId, Target, Community) ->
+    Community = proplists:get_value(snmp_ro, Target#target.properties),
     {ok, 
         #probe{
             id          = 1,
@@ -151,18 +161,18 @@ generate_sysLocNameProbe(ProbeId, Target) ->
         }
     }.
 
+
 generate_ifPerfProbe(ProbeId, Target) ->
     Community = proplists:get_value(snmp_ro, Target#target.properties),
     Ip        = proplists:get_value(ip,      Target#target.properties),
-    % TODO handle SNMP v3
-    TmpArgs = [
-        {engine_id, "none"},
-        {address,   Ip},
-        {port,      161},
-        {version,   v2},
-        {community, Community}
-    ],
-    TmpAgent    = snmp_manager:register_temporary_agent(TmpArgs),
+    case try_register_snmp_agent(Community, Ip) of
+        {ok, TmpAgent} ->
+            generate_ifPerfProbe(ProbeId, Target, Community, TmpAgent);
+        {error, Other} ->
+            {error, Other}
+    end.
+
+generate_ifPerfProbe(ProbeId, Target, Community, TmpAgent) ->
     Ifs         = snmp_manager:get_mib2_interfaces(TmpAgent),
     Ifs2        = filter_if_for_perfs(Ifs),
     Ifs3        = rename_if_needed(Ifs2),
@@ -315,3 +325,21 @@ generate_conf([If|Ifs], {OidsAcc, RrdsAcc}) ->
     },
 
     generate_conf(Ifs, {[Oids|OidsAcc], [OctetsInOutRrdConf|RrdsAcc]}).
+
+
+
+
+
+
+
+try_register_snmp_agent(Community, Ip) ->
+    % TODO handle SNMP v3
+    TmpArgs = [
+        {engine_id, "none"},
+        {address,   Ip},
+        {port,      161},
+        {version,   v2},
+        {community, Community}
+    ],
+    %TmpAgent    = snmp_manager:register_temporary_agent(TmpArgs),
+    snmp_manager:register_temporary_agent(TmpArgs).

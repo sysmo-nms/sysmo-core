@@ -148,8 +148,14 @@ handle_create_target(Command, TplDir, VarDir) ->
     Probes  = [generate_probe(PFun, Target1) || PFun <- Target1#target.probes],
     Target2 = Target1#target{probes = Probes},
 
-    monitor_master:create_target(Target2),
-    {ok, pdu(monitorReply, {QueryId, true, "hello"})}.
+    case lists:keyfind(error, 1, Probes) of
+        {error, Reason} ->
+            RString = lists:flatten(io_lib:format("~p",[Reason])),
+            {ok, pdu(monitorReply, {QueryId, false, RString})};
+        false ->
+            monitor_master:create_target(Target2),
+            {ok, pdu(monitorReply, {QueryId, true, "Success"})}
+    end.
 
 get_template(TplDir, Template) ->
     File                = filename:flatten([Template, ".tpl.erl"]),
@@ -172,8 +178,11 @@ generate_properties({_, IpAdd, _, SnmpV2ro, SnmpV2rw, _, _}) ->
 generate_probe(PFun, Target) ->
     {function, Mod, Fun}    = PFun,
     {ok, ProbeId}           = generate_id("probe-"),
-    {ok, PRec}              = erlang:apply(Mod, Fun, [ProbeId, Target]),
-    PRec.
+
+    case erlang:apply(Mod, Fun, [ProbeId, Target]) of
+        {ok, PRec}  -> PRec;
+        Other       -> {error, Other}
+    end.
 
 
 

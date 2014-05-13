@@ -114,7 +114,10 @@ register_temporary_agent(SnmpArgs) ->
             ok
     end,
     snmpm:register_agent(?SNMPM_USER, ?TMP_AGENT, SnmpArgs),
-    ?TMP_AGENT.
+    case sync_get(?TMP_AGENT, [?OID_SYS_DESCR], 1000) of
+        {ok, _, _}      -> {ok, ?TMP_AGENT};
+        {error, Reason} -> {error, Reason}
+    end.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% SNMP API %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
