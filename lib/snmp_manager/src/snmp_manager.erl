@@ -46,6 +46,7 @@
 %% SNMP API
 -export([
     sync_get/3,
+    sync_get_bulk/3,
     sync_walk_bulk/2
 ]).
 
@@ -125,6 +126,9 @@ register_temporary_agent(SnmpArgs) ->
     {ok, SnmpReply::term(), Remaining::integer()} | {error, Reason::term()}.
 sync_get(Agent, Request, Timeout) ->
     snmpm:sync_get(?SNMPM_USER, Agent, Request, Timeout).
+
+sync_get_bulk(Agent, Oids, Timeout) ->
+    snmpm:sync_get_bulk(?SNMPM_USER, Agent, 2, 50, Oids, Timeout).
 
 -spec sync_walk_bulk(Agent::string(), Oid::[integer()]) -> any().
 sync_walk_bulk(Agent, Oid) ->

@@ -34,7 +34,8 @@
     agent,
     oids,
     request_oids,
-    timeout
+    timeout,
+    method
 }).
 
 info() -> {ok, "snmp get and walk module"}.
@@ -52,6 +53,7 @@ init(Target, Probe) ->
     Version     = Conf#snmp_conf.version,
     Community   = Conf#snmp_conf.community,
     Oids        = Conf#snmp_conf.oids,
+    Method      = Conf#snmp_conf.method,
 
     case snmp_manager:agent_registered(AgentName) of
         true  -> ok;
@@ -70,7 +72,8 @@ init(Target, Probe) ->
             agent           = AgentName,
             oids            = Oids,
             request_oids    = [Oid || {_, Oid} <- Oids],
-            timeout         = Probe#probe.timeout
+            timeout         = Probe#probe.timeout,
+            method          = Method
         }
     }.
 
@@ -80,10 +83,20 @@ exec(State) ->
     Request         = State#state.request_oids,
     Oids            = State#state.oids,
     Timeout         = State#state.timeout,
+    Method          = State#state.method,
 
     {_, MicroSec1}  = sys_timestamp(),
     % TODO use snmp_manager:bulk_walk
-    Reply           = snmp_manager:sync_get(Agent, Request, Timeout),
+    case Method of
+        get ->
+            Reply   = snmp_manager:sync_get(Agent, Request, Timeout);
+        {walk, WOids} ->
+            ReplyT   = [
+                snmp_manager:sync_walk_bulk(Agent, Oid) ||
+                    Oid <- WOids],
+            Reply = {ok, lists:flatten(ReplyT)}
+    end,
+
     {_, MicroSec2}  = sys_timestamp(),
 
     case Reply of
@@ -99,7 +112,15 @@ exec(State) ->
                 timestamp       = MicroSec2},
             {ok, State, PR};
         {ok, SnmpReply, _Remaining} ->
-            PR      = eval_snmp_return(SnmpReply, Oids),
+            PR      = eval_snmp_get_return(SnmpReply, Oids),
+            KV      = PR#probe_return.key_vals,
+            KV2     = [{"sys_latency", MicroSec2 - MicroSec1} | KV],
+            PR2     = PR#probe_return{
+                timestamp = MicroSec2,
+                key_vals  = KV2},
+            {ok, State, PR2};
+        {ok, SnmpReply} ->
+            PR      = eval_snmp_walk_return(SnmpReply, Oids),
             KV      = PR#probe_return.key_vals,
             KV2     = [{"sys_latency", MicroSec2 - MicroSec1} | KV],
             PR2     = PR#probe_return{
@@ -112,11 +133,17 @@ exec(State) ->
 %% UTILS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % @private
-% @doc
-% from snmpm documentation: snmpm, Common Data Types 
-% snmp_reply() = {error_status(), error_index(), varbinds()}
-% @end
-eval_snmp_return({noError, _, VarBinds}, Oids) ->
+eval_snmp_get_return({noError, _, VarBinds}, Oids) ->
+    eval_snmp_return(VarBinds, Oids).
+
+eval_snmp_walk_return(VarBinds, Oids) ->
+
+    OidsN = [{K, lists:droplast(O)} || {K, O} <- Oids],
+    eval_snmp_return(VarBinds, OidsN).
+
+eval_snmp_return(VarBinds, Oids) ->
+    ?LOG(VarBinds),
+    ?LOG(Oids),
     KeyVals = [
         {Key, (lists:keyfind(Oid, 2, VarBinds))#varbind.value} || 
         {Key, Oid} <- Oids

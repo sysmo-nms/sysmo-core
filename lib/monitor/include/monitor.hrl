@@ -99,7 +99,8 @@
     authalgo    = none          :: none | 'hmac-md5' | 'hmac-sha1',
     enckey      = none          :: none | string(),
     encalgo     = none          :: none | des | aes,
-    oids        = []            :: [any()]
+    oids        = []            :: [any()],
+    method      = get           :: get | {walk, any()}
 }).
 
 

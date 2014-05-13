@@ -120,7 +120,8 @@ generate_sysLocNameProbe(ProbeId, Target) ->
                 oids        = [
                     {"sysName",  [1,3,6,1,2,1,1,5,0]},
                     {"location", [1,3,6,1,2,1,1,6,0]}
-                ]
+                ],
+                method      = get
             },
             status      = 'UNKNOWN',
             timeout     = 5,
@@ -180,7 +181,15 @@ generate_ifPerfProbe(ProbeId, Target) ->
                 port        = 161,
                 version     = v2,
                 community   = Community,
-                oids        = QueryOids
+                oids        = QueryOids,
+                method      = {walk, [
+                    [1,3,6,1,2,1,2,2,1,10],
+                    [1,3,6,1,2,1,2,2,1,11],
+                    [1,3,6,1,2,1,2,2,1,12],
+                    [1,3,6,1,2,1,2,2,1,14],
+                    [1,3,6,1,2,1,2,2,1,16],
+                    [1,3,6,1,2,1,2,2,1,17]
+                ]}
             },
             status      = 'UNKNOWN',
             timeout     = 5,
