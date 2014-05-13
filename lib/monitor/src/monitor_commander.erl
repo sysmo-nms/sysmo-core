@@ -147,7 +147,6 @@ handle_create_target(Command, TplDir, VarDir) ->
     },
     Probes  = [generate_probe(PFun, Target1) || PFun <- Target1#target.probes],
     Target2 = Target1#target{probes = Probes},
-    %Target2 = Target1#target{probes = []},
 
     monitor_master:create_target(Target2),
     {ok, pdu(monitorReply, {QueryId, true, "hello"})}.
