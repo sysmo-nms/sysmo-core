@@ -34,8 +34,13 @@
     209         % bridge
 ]).
 
+% four RRAs from 100 hours to 10 years
+% RRA: (1*300)  * 1200 = 360000    seconds = 6000    minutes = 100   hours
+% RRA: (12*300) * 2400 = 8640000   seconds = 14400   minutes = 2400  hours = 100 days
+% RRA: (50*300) * 6400 = 96000000  seconds = 1600000 minutes = 26666 hours = 1111 days = 3 years
+% RRA: (118*300)* 8900 = 315060000 seconds = 5251000 minutes = 87516 hours = 3646 days = 10 years
 -define(RRD_ifOctets_CREATE,
-"create <FILE> --step 5 DS:octetsIn:COUNTER:10:U:U DS:octetsOut:COUNTER:10:U:U DS:ucastPkIn:COUNTER:10:U:U DS:nucastPkIn:COUNTER:10:U:U DS:errorsIn:COUNTER:10:U:U DS:ucastPkOut:COUNTER:10:U:U DS:nucastPkOut:COUNTER:10:U:U DS:errorsOut:COUNTER:10:U:U RRA:AVERAGE:0.5:1:600 RRA:AVERAGE:0.5:6:700 RRA:AVERAGE:0.5:24:775 RRA:AVERAGE:0.5:288:797"
+"create <FILE> --step 300 DS:octetsIn:COUNTER:650:U:U DS:octetsOut:COUNTER:650:U:U DS:ucastPkIn:COUNTER:650:U:U DS:nucastPkIn:COUNTER:650:U:U DS:errorsIn:COUNTER:650:U:U DS:ucastPkOut:COUNTER:650:U:U DS:nucastPkOut:COUNTER:650:U:U DS:errorsOut:COUNTER:650:U:U RRA:AVERAGE:0.5:1:1200 RRA:AVERAGE:0.5:12:2400 RRA:AVERAGE:0.5:50:6400 RRA:AVERAGE:0.5:118:8900"
 ).
 -define(RRD_ifOctets_UPDATE,
 "update <FILE> --template octetsIn:octetsOut:ucastPkIn:nucastPkIn:errorsIn:ucastPkOut:nucastPkOut:errorsOut N:<OCTETS-IN>:<OCTETS-OUT>:<UCAST-IN>:<NUCAST-IN>:<ERRORS-IN>:<UCAST-OUT>:<NUCAST-OUT>:<ERRORS-OUT>"
@@ -45,18 +50,6 @@
 "DEF:oIn=<FILE>:octetsIn:AVERAGE DEF:oOut=<FILE>:octetsOut:AVERAGE LINE1:oIn#3465A4 LINE2:oOut#CC0000",
 "DEF:errIn=<FILE>:errorsIn:AVERAGE DEF:errOut=<FILE>:errorsOut:AVERAGE LINE1:errIn#3465A4 LINE2:errOut#CC0000",
 "DEF:ucastIn=<FILE>:ucastPkIn:AVERAGE DEF:ucastOut=<FILE>:ucastPkOut:AVERAGE DEF:nucastIn:=<FILE>:nucastPkIn:AVERAGE DEF:nucastOut:=<FILE>:nucastPkOut:AVERAGE LINE1:ucastIn#3465A4 LINE2:ucastOut#CC0000 LINE3:nucastIn#ff0000 LINE4:nucastOut#00ff00"
-    ]
-).
-
--define(RRD_ifPkts_CREATE,
-"create <FILE> --step 5 DS:<INUPKTS>:COUNTER:10:U:U DS:<OUTUPKTS>:COUNTER:10:U:U DS:<INNUPKTS>:COUNTER:10:U:U DS:<OUTNUPKTS>:COUNTER:10:U:U DS:<INERR>:COUNTER:10:U:U DS:<OUTERR>:COUNTER:10:U:U RRA:AVERAGE:0.5:1:600 RRA:AVERAGE:0.5:6:700 RRA:AVERAGE:0.5:24:775 RRA:AVERAGE:0.5:288:797"
-).
--define(RRD_ifPkts_UPDATE,
-"update <FILE> --template <INUPKTS>:<OUTUPKTS>:<INNUPKTS>:<OUTNUPKTS>:<INERR>:<OUTERR> N:<UIN>:<UOUT>:<NUIN>:<NUOUT>:<ERRIN>:<ERROUT>"
-).
--define(RRD_ifPkts_GRAPH,
-    [
-"DEF:unicastIn=<FILE>:<INUPKTS>:AVERAGE DEF:unicastOut=<FILE>:<OUTUPKTS>:AVERAGE DEF:nunicastIn=<FILE>:<INNUPKTS>:AVERAGE DEF:nunicastOut=<FILE>:<OUTNUPKTS> DEF:errIn:<FILE>:<INERR> DEF:errOut:<FILE>:<OUTERR> LINE1:unicastIn#ff0000 LINE2:unicastOut#00ff00 LINE3:nunicastIn#0000ff LINE4:nunicastOut#f0f000 LINE5:errIn#ffff00 LINE6:errOut#00ffff"
     ]
 ).
 
@@ -72,14 +65,13 @@ generate_icmpProbe(ProbeId, Target) ->
             permissions = Target#target.global_perm,
             monitor_probe_mod   = bmonitor_probe_nagios,
             monitor_probe_conf  = #nagios_plugin_conf{
-                 executable = "/opt/nagios-plugins-1.4.16/libexec/check_icmp",
+                 executable = "/usr/lib/nagios/plugins/check_icmp",
                  args       = [{"-H", Target#target.ip}, {"-t", "5"}],
                  eval_perfs = false
             },
             status      = 'UNKNOWN',
             timeout     = 5,
-            %step        = 30,
-            step        = 5,
+            step        = 30,
             inspectors  = [
                 #inspector{
                     module  = bmonitor_inspector_status_set,
@@ -121,7 +113,7 @@ generate_sysLocNameProbe(ProbeId, Target, Community) ->
             description = "SNMP: sysInfo set",
             info        = "
                 Set the target name and location properties depending on the
-                MIB2 sysName and sysLocation OIDs every 5 minutes
+                MIB2 sysName and sysLocation OIDs every 10 minutes
             ",
             permissions = Target#target.global_perm,
             monitor_probe_mod   = bmonitor_probe_snmp,
@@ -137,8 +129,7 @@ generate_sysLocNameProbe(ProbeId, Target, Community) ->
             },
             status      = 'UNKNOWN',
             timeout     = 5,
-            %step        = 300,
-            step        = 5,
+            step        = 600,
             inspectors  = [
                 #inspector{
                     module  = bmonitor_inspector_status_set,
@@ -177,14 +168,13 @@ generate_ifPerfProbe(ProbeId, Target, Community, TmpAgent) ->
     Ifs2        = filter_if_for_perfs(Ifs),
     Ifs3        = rename_if_needed(Ifs2),
     {QueryOids, RrdConf}   = generate_conf(Ifs3),
-    %?LOG({QueryOids, RrdConf}),
     {ok,
         #probe{
             id          = 2,
             name        = ProbeId,
             description = "SNMP: Interfaces performances",
             info        = "
-            Query the element MIB-2 interface tree every 2 minutes and store 
+            Query the element MIB-2 interface tree every 5 minutes and store 
             the results in a rrd database.
             ",
             permissions = Target#target.global_perm,
@@ -207,8 +197,7 @@ generate_ifPerfProbe(ProbeId, Target, Community, TmpAgent) ->
             },
             status      = 'UNKNOWN',
             timeout     = 5,
-            %step        = 120,
-            step        = 5,
+            step        = 300,
             inspectors  = [
                 #inspector{
                     module  = bmonitor_inspector_status_set,
