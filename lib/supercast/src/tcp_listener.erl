@@ -66,8 +66,16 @@ start_link(Port, Module, ConnLimit) ->
 %%----------------------------------------------------------------------
 init([Port, Module, ConnLimit]) ->
     process_flag(trap_exit, true),
-    Opts = [binary, {packet, 2}, {reuseaddr, true},
-            {keepalive, true}, {backlog, 30}, {active, false}],
+    Opts = [
+        binary,
+        {packet,        2},
+        {reuseaddr,     true},
+        {keepalive,     true},
+        {backlog,       30},
+        {active,        false},
+        {send_timeout,  3000},
+        {send_timeout_close, true}
+    ],
     case gen_tcp:listen(Port, Opts) of
     {ok, Listen_socket} ->
         %%Create first accepting process

@@ -165,12 +165,12 @@ init([Encoder]) ->
 
 'WAIT_FOR_CLIENT_AUTH'({encode_send_msg, Ref,  Msg},  
         #client_state{ref = Ref, encoding_mod = Encoder} = State) ->
-    gen_tcp:send(State#client_state.socket, Encoder:encode(Msg)),
+    tcp_send(State#client_state.socket, Encoder:encode(Msg)),
     {next_state, 'WAIT_FOR_CLIENT_AUTH', State};
 
 'WAIT_FOR_CLIENT_AUTH'({send_pdu, Ref,  Pdu},  
         #client_state{ref = Ref} = State) ->
-    gen_tcp:send(State#client_state.socket, Pdu),
+    tcp_send(State#client_state.socket, Pdu),
     {next_state, 'WAIT_FOR_CLIENT_AUTH', State};
 
 'WAIT_FOR_CLIENT_AUTH'(timeout, 
@@ -197,11 +197,11 @@ init([Encoder]) ->
 
 'RUNNING'({encode_send_msg, Ref, Msg}, 
         #client_state{ref = Ref, encoding_mod = Encoder} = State) ->
-    gen_tcp:send(State#client_state.socket, Encoder:encode(Msg)),
+    tcp_send(State#client_state.socket, Encoder:encode(Msg)),
     {next_state, 'RUNNING', State};
 
 'RUNNING'({send_pdu, Ref, Pdu}, #client_state{ref = Ref} = State) ->
-    gen_tcp:send(State#client_state.socket, Pdu),
+    tcp_send(State#client_state.socket, Pdu),
     {next_state, 'RUNNING', State};
 
 'RUNNING'({synchronize_chan, Ref, Fun}, #client_state{
@@ -219,7 +219,7 @@ init([Encoder]) ->
         end
     end, PduList),
     lists:foreach(fun(Pdu) -> 
-        gen_tcp:send(Sock, Encoder:encode(Pdu))
+        tcp_send:send(Sock, Encoder:encode(Pdu))
     end, PduList2),
     {next_state, 'RUNNING', State};
 
@@ -301,3 +301,13 @@ terminate(_Reason, _StateName, #client_state{socket=Socket} = State) ->
 code_change(_OldVsn, StateName, StateData, _Extra) ->
     io:format("code_change ~p ~p~n", [?MODULE, StateData]),
     {ok, StateName, StateData}.
+
+%% UTILS
+%% @private
+tcp_send(Socket, Packet) ->
+    case gen_tcp:send(Socket, Packet) of
+        ok              -> ok;
+        {error, Reason} ->
+            error_logger:info_msg("~p ~p gen_tcp:send/2 error: ~p",
+                [?MODULE,?LINE,Reason])
+    end.
