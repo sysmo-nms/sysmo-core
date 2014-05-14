@@ -153,7 +153,7 @@ init([Target, Probe]) ->
         loggers_state       = LoggersInitState
     },
     initiate_start_sequence(ProbeInitState, UProbe, random),
-    {ok, 'RUNNING', PSState}.
+    {ok, 'RUNNING', PSState, hibernate}.
 
 'RUNNING'(_Event, SName, SData) ->
     {next_state, SName, SData}.
@@ -185,7 +185,7 @@ handle_event({probe_return, NewProbeState, ProbeReturn}, SName, SData) ->
     P       = SData4#ps_state.probe,
     initiate_start_sequence(PS, P, normal),
 
-    {next_state, SName, SData4};
+    {next_state, SName, SData4, hibernate};
 
 handle_event({emit_pdu, Pdu}, SName, SData) ->
     Probe       = SData#ps_state.probe,
