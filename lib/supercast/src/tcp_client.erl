@@ -88,11 +88,11 @@ auth_set(auth_fail,     NewState) ->
     gen_fsm:send_event(Pid, {auth_fail, Ref, UserName}).
 
 send(SockState, Msg) ->
-    gen_fsm:send_event(SockState#client_state.pid,
+    gen_fsm:send_all_state_event(SockState#client_state.pid,
         {encode_send_msg, SockState#client_state.ref, Msg}).
 
 raw_send(SockState, Pdu) ->
-    gen_fsm:send_event(SockState#client_state.pid, 
+    gen_fsm:send_all_state_event(SockState#client_state.pid, 
         {send_pdu, SockState#client_state.ref, Pdu}).
 
 %%%------------------------------------------------------------------------
@@ -163,16 +163,6 @@ init([Encoder]) ->
     io:format("failed to register with user ~p ~n", [User]),
     {next_state, 'WAIT_FOR_CLIENT_AUTH', State, ?TIMEOUT};
 
-'WAIT_FOR_CLIENT_AUTH'({encode_send_msg, Ref,  Msg},  
-        #client_state{ref = Ref, encoding_mod = Encoder} = State) ->
-    tcp_send(State#client_state.socket, Encoder:encode(Msg)),
-    {next_state, 'WAIT_FOR_CLIENT_AUTH', State};
-
-'WAIT_FOR_CLIENT_AUTH'({send_pdu, Ref,  Pdu},  
-        #client_state{ref = Ref} = State) ->
-    tcp_send(State#client_state.socket, Pdu),
-    {next_state, 'WAIT_FOR_CLIENT_AUTH', State};
-
 'WAIT_FOR_CLIENT_AUTH'(timeout, 
         #client_state{auth_request_count = ?MAX_AUTH_ATEMPT} = State) ->
     {stop, normal, State};
@@ -193,15 +183,6 @@ init([Encoder]) ->
 'RUNNING'({client_data, Pdu}, 
         #client_state{encoding_mod = Encoder} = State) ->
     supercast_server:client_msg({message, Encoder:decode(Pdu)}, State),
-    {next_state, 'RUNNING', State};
-
-'RUNNING'({encode_send_msg, Ref, Msg}, 
-        #client_state{ref = Ref, encoding_mod = Encoder} = State) ->
-    tcp_send(State#client_state.socket, Encoder:encode(Msg)),
-    {next_state, 'RUNNING', State};
-
-'RUNNING'({send_pdu, Ref, Pdu}, #client_state{ref = Ref} = State) ->
-    tcp_send(State#client_state.socket, Pdu),
     {next_state, 'RUNNING', State};
 
 'RUNNING'({synchronize_chan, Ref, Fun}, #client_state{
@@ -238,6 +219,36 @@ init([Encoder]) ->
 %%          {stop, Reason, NextStateData}
 %% @private
 %%-------------------------------------------------------------------------
+handle_event({send_pdu, Ref, Pdu}, StateName,
+        #client_state{ref = Ref} = State) ->
+    io:format("send pdu~n"),
+    Socket  = State#client_state.socket,
+    case gen_tcp:send(Socket, Pdu) of
+        ok              ->
+            {next_state, StateName, State};
+        {error, Reason} ->
+            error_logger:info_msg("~p ~p gen_tcp:send/2 error: ~p",
+                [?MODULE,?LINE,Reason]),
+            {stop, {error, Reason}, State}
+    end;
+handle_event({encode_send_msg, Ref, Msg}, StateName,
+        #client_state{ref = Ref} = State) ->
+    io:format("send pdu~n"),
+    Socket  = State#client_state.socket,
+    Encoder = State#client_state.encoding_mod,
+    Pdu     = Encoder:encode(Msg),
+    case gen_tcp:send(Socket, Pdu) of
+        ok              ->
+            {next_state, StateName, State};
+        {error, Reason} ->
+            error_logger:info_msg("~p ~p gen_tcp:send/2 error: ~p",
+                [?MODULE,?LINE,Reason]),
+            {stop, {error, Reason}, State}
+    end;
+
+handle_event({encode_send_msg, _, _}, StateName, State) ->
+    {next_state, StateName, State};
+
 handle_event(Event, StateName, StateData) ->
     io:format("handle_event ~p ~p~n", [?MODULE, StateData]),
     {stop, {StateName, undefined_event, Event}, StateData}.
@@ -301,13 +312,3 @@ terminate(_Reason, _StateName, #client_state{socket=Socket} = State) ->
 code_change(_OldVsn, StateName, StateData, _Extra) ->
     io:format("code_change ~p ~p~n", [?MODULE, StateData]),
     {ok, StateName, StateData}.
-
-%% UTILS
-%% @private
-tcp_send(Socket, Packet) ->
-    case gen_tcp:send(Socket, Packet) of
-        ok              -> ok;
-        {error, Reason} ->
-            error_logger:info_msg("~p ~p gen_tcp:send/2 error: ~p",
-                [?MODULE,?LINE,Reason])
-    end.
