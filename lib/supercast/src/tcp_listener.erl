@@ -73,7 +73,7 @@ init([Port, Module, ConnLimit]) ->
         {keepalive,     true},
         {backlog,       30},
         {active,        false},
-        {send_timeout,  3000},
+        {send_timeout,  40000},
         {send_timeout_close, true}
     ],
     case gen_tcp:listen(Port, Opts) of

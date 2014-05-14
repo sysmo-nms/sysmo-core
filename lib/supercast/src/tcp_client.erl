@@ -39,6 +39,10 @@
 ]).
 
 -export([
+    tcp_send_msg/4,
+    tcp_send_pdu/3
+]).
+-export([
     init/1,
     handle_event/3,
     handle_sync_event/4, 
@@ -221,33 +225,26 @@ init([Encoder]) ->
 %%-------------------------------------------------------------------------
 handle_event({send_pdu, Ref, Pdu}, StateName,
         #client_state{ref = Ref} = State) ->
-    io:format("send pdu~n"),
     Socket  = State#client_state.socket,
-    case gen_tcp:send(Socket, Pdu) of
-        ok              ->
-            {next_state, StateName, State};
-        {error, Reason} ->
-            error_logger:info_msg("~p ~p gen_tcp:send/2 error: ~p",
-                [?MODULE,?LINE,Reason]),
-            {stop, {error, Reason}, State}
-    end;
+    tcp_send_pdu(Socket, Pdu),
+    {next_state, StateName, State};
+handle_event({send_pdu, _, _}, StateName, State) ->
+    {next_state, StateName, State};
+
 handle_event({encode_send_msg, Ref, Msg}, StateName,
         #client_state{ref = Ref} = State) ->
-    io:format("send pdu~n"),
     Socket  = State#client_state.socket,
     Encoder = State#client_state.encoding_mod,
-    Pdu     = Encoder:encode(Msg),
-    case gen_tcp:send(Socket, Pdu) of
-        ok              ->
-            {next_state, StateName, State};
-        {error, Reason} ->
-            error_logger:info_msg("~p ~p gen_tcp:send/2 error: ~p",
-                [?MODULE,?LINE,Reason]),
-            {stop, {error, Reason}, State}
-    end;
-
+    tcp_send_msg(Socket, Msg, Encoder),
+    {next_state, StateName, State};
 handle_event({encode_send_msg, _, _}, StateName, State) ->
     {next_state, StateName, State};
+
+handle_event({tcp_error, Reason}, StateName, State) ->
+    error_logger:info_msg("~p ~p gen_tcp:send/2 error: ~p",
+        [?MODULE,?LINE,Reason]),
+    {stop, {error, Reason, StateName}, State};
+
 
 handle_event(Event, StateName, StateData) ->
     io:format("handle_event ~p ~p~n", [?MODULE, StateData]),
@@ -312,3 +309,33 @@ terminate(_Reason, _StateName, #client_state{socket=Socket} = State) ->
 code_change(_OldVsn, StateName, StateData, _Extra) ->
     io:format("code_change ~p ~p~n", [?MODULE, StateData]),
     {ok, StateName, StateData}.
+
+
+%%
+%% IMPORTANT
+%% Due to the garbage collector behaviour of erlang for long living
+%% processes and binary datas, pdus must be send by another process.
+%% Another options would be to call erlang:garbage_collect() from
+%% the process at each send.
+%% note: gen_fsm:start_link(Name, Args, [{fullsweep_after, 0}]) did not
+%% work.
+%%
+tcp_send_pdu(Socket, Pdu) ->
+    spawn(?MODULE, tcp_send_pdu, [Socket, Pdu, self()]).
+tcp_send_pdu(Socket, Pdu, Pid) ->
+    case gen_tcp:send(Socket, Pdu) of
+        ok              -> ok;
+        {error, Reason} ->
+            gen_fsm:send_all_state_event(Pid, {tcp_error, Reason})
+    end.
+
+
+tcp_send_msg(Socket, Msg, Encoder) ->
+    spawn(?MODULE, tcp_send_msg, [Socket, Msg, Encoder, self()]).
+tcp_send_msg(Socket, Msg, Encoder, Pid) ->
+    Pdu = Encoder:encode(Msg),
+    case gen_tcp:send(Socket, Pdu) of
+        ok              -> ok;
+        {error, Reason} ->
+            gen_fsm:send_all_state_event(Pid, {tcp_error, Reason})
+    end.
