@@ -59,7 +59,7 @@ generate_icmpProbe(ProbeId, Target) ->
         #probe{
             id          = 0,
             name        = ProbeId,
-            description = "ICMP Echo request",
+            description = "icmp:Echo request",
             info        = "
                 Trigger a single echo request every 30 seconds
             ",
@@ -112,7 +112,7 @@ generate_sysLocNameProbe(ProbeId, Target, Community) ->
         #probe{
             id          = 1,
             name        = ProbeId,
-            description = "SNMP: sysInfo set",
+            description = "snmp:sysName sysLocation",
             info        = "
                 Set the target name and location properties depending on the
                 MIB2 sysName and sysLocation OIDs every 10 minutes
@@ -124,8 +124,8 @@ generate_sysLocNameProbe(ProbeId, Target, Community) ->
                 version     = v2,
                 community   = Community,
                 oids        = [
-                    {"sysName",  [1,3,6,1,2,1,1,5,0]},
-                    {"location", [1,3,6,1,2,1,1,6,0]}
+                    {"sysName",     [1,3,6,1,2,1,1,5,0]},
+                    {"sysLocation", [1,3,6,1,2,1,1,6,0]}
                 ],
                 method      = get
             },
@@ -140,6 +140,12 @@ generate_sysLocNameProbe(ProbeId, Target, Community) ->
                 #inspector{
                     module  = bmonitor_inspector_property_set,
                     conf    = ["status", "sysName", "location"]
+                    %% propagate will also set the target property defined:
+                    %conf    = [
+                        %"status",
+                        %{propagate, "sysName"},
+                        %{propagate, "sysLocation"}
+                    %]
                 }
             ],
             loggers     = [
@@ -174,7 +180,7 @@ generate_ifPerfProbe(ProbeId, Target, Community, TmpAgent) ->
         #probe{
             id          = 2,
             name        = ProbeId,
-            description = "SNMP: Interfaces performances",
+            description = "snmp:ifTable performances",
             info        = "
             Query the element MIB-2 interface tree every 5 minutes and store 
             the results in a rrd database.

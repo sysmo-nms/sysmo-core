@@ -216,6 +216,8 @@ update_info_chan(TargetId, Chans, Probe) ->
     NProbes = lists:keystore(PrId, 2, Probes, Probe),
     NTarget = Target#target{probes = NProbes},
     NChans  = lists:keystore(TargetId, 2, Chans, NTarget),
+    % TODO update target property if probe property is set to "propagate"
+    % for example for the sysName/sysLocation probe.
     {ok, NChans}.
 
 load_targets_conf(TargetsConfFile) ->
