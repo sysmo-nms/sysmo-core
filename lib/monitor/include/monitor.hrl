@@ -44,6 +44,7 @@
     loggers             = []            :: [#logger{}],
     parents             = []            :: [atom()],
     properties          = []            :: [{string(), any()}],
+    forward_properties  = []            :: [string()],
     active              = true          :: true | false
 }).
 
@@ -54,14 +55,9 @@
         read        =   ["admin"],
         write       =   ["admin"]
     },
-    properties  = [
-        {ip,            undefined},
-        {hostname,      undefined},
-        {sysname,       undefined},
-        {snmp_conf,     undefined}
-    ]        :: [{any(), any()}],
-    probes      = [] :: [#probe{}],
-    directory   = ""
+    properties  = []            :: [{any(), any()}],
+    probes      = []            :: [#probe{}],
+    directory   = ""            :: string()
 }).
 
 -record(probe_set, {

@@ -210,15 +210,49 @@ code_change(_O, S, _E) ->
 %%----------------------------------------------------------------------------
 update_info_chan(TargetId, Chans, Probe) ->
     Target  = lists:keyfind(TargetId, 2, Chans),
+
+    TProperties     = Target#target.properties,
+    PProperties     = Probe#probe.properties,
+    PForward        = Probe#probe.forward_properties,
+
+    {ok, NewTProp} = probe_property_forward(TProperties, PProperties, PForward),
+    case NewTProp of
+        TProperties ->
+            % nothing to do
+            ok;
+        _ ->
+            % nenerate apropriate pdu
+            ?LOG({"require propupdate",NewTProp}),
+            ok
+    end,
+
+
     Probes  = Target#target.probes,
     PrId    = Probe#probe.id,
     % TODO use #probe.name instead of #probe.id
     NProbes = lists:keystore(PrId, 2, Probes, Probe),
-    NTarget = Target#target{probes = NProbes},
+    NTarget = Target#target{
+        probes      = NProbes,
+        properties  = NewTProp
+    },
     NChans  = lists:keystore(TargetId, 2, Chans, NTarget),
-    % TODO update target property if probe property is set to "propagate"
-    % for example for the sysName/sysLocation probe.
     {ok, NChans}.
+
+probe_property_forward(TProperties, _, []) ->
+    {ok, TProperties};
+probe_property_forward(TProperties, PProperties, [P|Rest]) ->
+    case lists:keyfind(P, 1, PProperties) of
+        false ->
+            probe_property_forward(TProperties, PProperties, Rest);
+        {P, Val} ->
+            NTProperties = lists:keystore(P,1,TProperties, {P,Val}),
+            probe_property_forward(NTProperties, PProperties, Rest)
+    end.
+
+    
+
+
+
 
 load_targets_conf(TargetsConfFile) ->
     {ok, TargetsConf}  = file:consult(TargetsConfFile),
