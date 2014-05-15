@@ -292,8 +292,10 @@ pdu(targetDelete, Id) ->
 
 pdu(probeInfo, {InfoType, Id, 
         #probe{
-            permissions = #perm_conf{read = R, write = W},
-            monitor_probe_conf = ProbeConf
+            permissions         = #perm_conf{read = R, write = W},
+            monitor_probe_conf  = ProbeConf,
+            description         = Descr,
+            info                = Info
         } = Probe
     }) ->
     P = {modMonitorPDU,
@@ -303,6 +305,8 @@ pdu(probeInfo, {InfoType, Id,
                     atom_to_list(Id),
                     Probe#probe.id,
                     atom_to_list(Probe#probe.name),
+                    Descr,
+                    Info,
                     {'PermConf', R, W},
                     atom_to_list(Probe#probe.monitor_probe_mod),
                     gen_asn_probe_conf(ProbeConf),
