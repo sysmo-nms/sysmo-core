@@ -157,3 +157,9 @@ Shedule everithing that need it:
 
 TODO maybe:
 smokeping probe compatibility
+
+################
+# PERFORMANCES #
+################
+- src/monitor_master, keep configuration in dets or file,
+- src/monitor_master hibernate,
