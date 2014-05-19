@@ -240,8 +240,7 @@ update_info_chan(TargetId, Chans, Probe) ->
             % nothing to do
             ok;
         _ ->
-            % nenerate apropriate pdu
-            ?LOG({emit, NewTProp}),
+            % update target properties state to the client
             TargetPerm  = NTarget#target.global_perm,
             Pdu         = pdu(targetInfo, NTarget),
             supercast_channel:emit(?MASTER_CHAN, {TargetPerm, Pdu})

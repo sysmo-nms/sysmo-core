@@ -152,8 +152,8 @@ init([Target, Probe]) ->
         inspectors_state    = InspectInitState,
         loggers_state       = LoggersInitState
     },
-    initiate_start_sequence(ProbeInitState, UProbe, random),
-    {ok, 'RUNNING', PSState, hibernate}.
+    {ok, TRef} = initiate_start_sequence(ProbeInitState, UProbe, random),
+    {ok, 'RUNNING', PSState#ps_state{tref=TRef}, hibernate}.
 
 'RUNNING'(_Event, SName, SData) ->
     {next_state, SName, SData}.
@@ -183,9 +183,9 @@ handle_event({probe_return, NewProbeState, ProbeReturn}, SName, SData) ->
     % LAUNCH
     PS      = SData4#ps_state.probe_state,
     P       = SData4#ps_state.probe,
-    initiate_start_sequence(PS, P, normal),
+    {ok, TRef} = initiate_start_sequence(PS, P, normal),
 
-    {next_state, SName, SData4, hibernate};
+    {next_state, SName, SData4#ps_state{tref=TRef}, hibernate};
 
 handle_event({emit_pdu, Pdu}, SName, SData) ->
     Probe       = SData#ps_state.probe,
