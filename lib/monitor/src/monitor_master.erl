@@ -43,7 +43,8 @@
 -export([
     start_link/2,
     probe_info/2,
-    create_target/1
+    create_target/1,
+    id_used/1
 ]).
 
 -record(state, {
@@ -86,7 +87,13 @@ sync_request(PidName, CState) ->
 probe_info(TargetId, Probe) ->
     gen_server:cast(?MASTER_CHAN, {probe_info, TargetId, Probe}).
 
-
+-spec id_used(Id::atom()) -> true | false.
+% @doc
+% Used by monitor_commander:generate_id to check the presence of a randomly
+% created id.
+% @end
+id_used(Id) ->
+    gen_server:call(?MASTER_CHAN, {id_used, Id}).
 
 
 
@@ -137,6 +144,15 @@ init([ProbeModules, ConfFile]) ->
 %%----------------------------------------------------------------------------
 %% SUPERCAST_CHANNEL BEHAVIOUR CALLS
 %%----------------------------------------------------------------------------
+handle_call({id_used, Id}, _F, #state{chans=Chans} = S) ->
+    TargetAtomList  = [Tid    || #target{id=Tid} <- Chans],
+    Probes          = [Probes || #target{probes=Probes} <- Chans],
+    ProbeAtomList   = [PrId   || #probe{name=PrId} <- lists:flatten(Probes)],
+    TotalAtomList   = lists:append(TargetAtomList, ProbeAtomList),
+    Rep = lists:member(Id, TotalAtomList),
+    ?LOG(Rep),
+    {reply, Rep, S};
+
 handle_call(get_perms, _F, #state{perm = P} = S) ->
     {reply, P, S};
 

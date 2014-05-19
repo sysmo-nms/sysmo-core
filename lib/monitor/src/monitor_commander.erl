@@ -210,10 +210,9 @@ generate_id(Head) ->
     RandIdS     = lists:flatten(RandIdL),
     RandIdF     = lists:concat([Head, RandIdS]),
     ToAtom      = erlang:list_to_atom(RandIdF),
-    case whereis(ToAtom) of
-        undefined -> {ok, ToAtom};
-        _ ->
-            generate_id(Head)
+    case monitor_master:id_used(ToAtom) of
+        false->  {ok, ToAtom};
+        true  -> generate_id(Head)
     end.
 
 send(#client_state{module = CMod} = CState, Msg) ->
