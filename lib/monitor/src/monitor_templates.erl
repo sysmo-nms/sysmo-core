@@ -92,13 +92,14 @@ generate_icmpProbe(ProbeId, Target) ->
             ],
             parents     = [],
             properties  = [],
+            forward_properties = [],
             active      = true
         }
     }.
 
 generate_sysLocNameProbe(ProbeId, Target) ->
-    Community = proplists:get_value(snmp_ro, Target#target.properties),
-    Ip        = proplists:get_value(ip,      Target#target.properties),
+    Community = proplists:get_value("snmp_ro", Target#target.properties),
+    Ip        = proplists:get_value("ip",      Target#target.properties),
     case try_register_snmp_agent(Community, Ip) of
         {ok, _} ->
             generate_sysLocNameProbe(ProbeId, Target, Community);
@@ -107,7 +108,7 @@ generate_sysLocNameProbe(ProbeId, Target) ->
     end.
 
 generate_sysLocNameProbe(ProbeId, Target, Community) ->
-    Community = proplists:get_value(snmp_ro, Target#target.properties),
+    Community = proplists:get_value("snmp_ro", Target#target.properties),
     {ok, 
         #probe{
             id          = 1,
@@ -131,7 +132,8 @@ generate_sysLocNameProbe(ProbeId, Target, Community) ->
             },
             status      = 'UNKNOWN',
             timeout     = 5,
-            step        = 600,
+            %step        = 600,
+            step        = 5,
             inspectors  = [
                 #inspector{
                     module  = bmonitor_inspector_status_set,
@@ -139,13 +141,7 @@ generate_sysLocNameProbe(ProbeId, Target, Community) ->
                 },
                 #inspector{
                     module  = bmonitor_inspector_property_set,
-                    conf    = ["status", "sysName", "location"]
-                    %% propagate will also set the target property defined:
-                    %conf    = [
-                        %"status",
-                        %{propagate, "sysName"},
-                        %{propagate, "sysLocation"}
-                    %]
+                    conf    = ["status", "sysName", "sysLocation"]
                 }
             ],
             loggers     = [
@@ -156,14 +152,15 @@ generate_sysLocNameProbe(ProbeId, Target, Community) ->
             ],
             parents     = [],
             properties  = [],
+            forward_properties = ["sysName", "sysLocation"],
             active      = true
         }
     }.
 
 
 generate_ifPerfProbe(ProbeId, Target) ->
-    Community = proplists:get_value(snmp_ro, Target#target.properties),
-    Ip        = proplists:get_value(ip,      Target#target.properties),
+    Community = proplists:get_value("snmp_ro", Target#target.properties),
+    Ip        = proplists:get_value("ip",      Target#target.properties),
     case try_register_snmp_agent(Community, Ip) of
         {ok, TmpAgent} ->
             generate_ifPerfProbe(ProbeId, Target, Community, TmpAgent);
@@ -228,6 +225,7 @@ generate_ifPerfProbe(ProbeId, Target, Community, TmpAgent) ->
             ],
             parents     = [],
             properties  = [],
+            forward_properties = [],
             active      = true
         }
     }.
