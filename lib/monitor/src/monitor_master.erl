@@ -150,7 +150,6 @@ handle_call({id_used, Id}, _F, #state{chans=Chans} = S) ->
     ProbeAtomList   = [PrId   || #probe{name=PrId} <- lists:flatten(Probes)],
     TotalAtomList   = lists:append(TargetAtomList, ProbeAtomList),
     Rep = lists:member(Id, TotalAtomList),
-    ?LOG(Rep),
     {reply, Rep, S};
 
 handle_call(get_perms, _F, #state{perm = P} = S) ->
