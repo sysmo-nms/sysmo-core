@@ -92,13 +92,14 @@ generate_icmpProbe(ProbeId, Target) ->
             ],
             parents     = [],
             properties  = [],
+            forward_properties = [],
             active      = true
         }
     }.
 
 generate_sysLocNameProbe(ProbeId, Target) ->
-    Community = proplists:get_value(snmp_ro, Target#target.properties),
-    Ip        = proplists:get_value(ip,      Target#target.properties),
+    Community = proplists:get_value("snmp_ro", Target#target.properties),
+    Ip        = proplists:get_value("ip",      Target#target.properties),
     case try_register_snmp_agent(Community, Ip) of
         {ok, _} ->
             generate_sysLocNameProbe(ProbeId, Target, Community);
@@ -107,7 +108,7 @@ generate_sysLocNameProbe(ProbeId, Target) ->
     end.
 
 generate_sysLocNameProbe(ProbeId, Target, Community) ->
-    Community = proplists:get_value(snmp_ro, Target#target.properties),
+    Community = proplists:get_value("snmp_ro", Target#target.properties),
     {ok, 
         #probe{
             id          = 1,
@@ -158,8 +159,8 @@ generate_sysLocNameProbe(ProbeId, Target, Community) ->
 
 
 generate_ifPerfProbe(ProbeId, Target) ->
-    Community = proplists:get_value(snmp_ro, Target#target.properties),
-    Ip        = proplists:get_value(ip,      Target#target.properties),
+    Community = proplists:get_value("snmp_ro", Target#target.properties),
+    Ip        = proplists:get_value("ip",      Target#target.properties),
     case try_register_snmp_agent(Community, Ip) of
         {ok, TmpAgent} ->
             generate_ifPerfProbe(ProbeId, Target, Community, TmpAgent);
@@ -224,6 +225,7 @@ generate_ifPerfProbe(ProbeId, Target, Community, TmpAgent) ->
             ],
             parents     = [],
             properties  = [],
+            forward_properties = [],
             active      = true
         }
     }.

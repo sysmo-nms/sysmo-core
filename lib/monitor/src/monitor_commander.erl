@@ -173,7 +173,14 @@ generate_target_dir(VarDir, TargetId) ->
     {ok, AbTargetDir}.
 
 generate_properties({_, IpAdd, _, SnmpV2ro, SnmpV2rw, _, _}) ->
-    {ok, [{ip, IpAdd},{snmp_ro, SnmpV2ro},{snmp_rw, SnmpV2rw}]}.
+    {ok, [
+        {"ip",          IpAdd},
+        {"snmp_ro",     SnmpV2ro},
+        {"snmp_rw",     SnmpV2rw},
+        {"sysLocation", "undefined"},
+        {"sysName",     "undefined"},
+        {"hostname",    "undefined"}
+    ]}.
     
 generate_probe(PFun, Target) ->
     {function, Mod, Fun}    = PFun,

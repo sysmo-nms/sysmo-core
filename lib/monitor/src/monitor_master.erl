@@ -216,13 +216,13 @@ update_info_chan(TargetId, Chans, Probe) ->
     PForward        = Probe#probe.forward_properties,
 
     {ok, NewTProp} = probe_property_forward(TProperties, PProperties, PForward),
+
     case NewTProp of
         TProperties ->
             % nothing to do
             ok;
         _ ->
             % nenerate apropriate pdu
-            ?LOG({"require propupdate",NewTProp}),
             ok
     end,
 
@@ -235,6 +235,17 @@ update_info_chan(TargetId, Chans, Probe) ->
         probes      = NProbes,
         properties  = NewTProp
     },
+    case NewTProp of
+        TProperties ->
+            % nothing to do
+            ok;
+        _ ->
+            % nenerate apropriate pdu
+            ?LOG({emit, NewTProp}),
+            TargetPerm  = NTarget#target.global_perm,
+            Pdu         = pdu(targetInfo, NTarget),
+            supercast_channel:emit(?MASTER_CHAN, {TargetPerm, Pdu})
+    end,
     NChans  = lists:keystore(TargetId, 2, Chans, NTarget),
     {ok, NChans}.
 
@@ -304,20 +315,31 @@ extract_probes_info(ProbeModules) ->
 %%----------------------------------------------------------------------------
 %% PDU BUILD
 %%----------------------------------------------------------------------------
-pdu(targetInfo, #target{id = Id, properties = Prop}) ->
-    AsnProp = lists:foldl(fun({X,_Y}, Acc) ->
-        %[{'TargetProperty', atom_to_list(X), io_lib:format("~p", [Y])} | Acc]
-        [{'Property', atom_to_list(X), "hello"} | Acc]
+pdu(targetInfo, #target{id=Id, properties=Prop}) ->
+    AsnProps = lists:foldl(fun({K,V}, Acc) ->
+        [{'Property', K, V} | Acc]
     end, [], Prop),
     {modMonitorPDU,
         {fromServer,
             {targetInfo,
                 {'TargetInfo',
                     atom_to_list(Id),
-                    AsnProp,
+                    AsnProps,
                     create}}}};
 
-pdu(targetDelete, Id) ->
+pdu(targetInfoUpdate, #target{id=Id, properties=Prop}) ->
+    AsnProps = lists:foldl(fun({K,V}, Acc) ->
+        [{'Property', K, V} | Acc]
+    end, [], Prop),
+    {modMonitorPDU,
+        {fromServer,
+            {targetInfo,
+                {'TargetInfo',
+                    atom_to_list(Id),
+                    AsnProps,
+                    update}}}};
+
+pdu(targetInfoDelete, Id) ->
     {modMonitorPDU,
         {fromServer,
             {targetInfo,
