@@ -50,7 +50,8 @@
 -record(state, {
     chans,
     perm,
-    probe_modules
+    probe_modules,
+    db
 }).
 
 -define(MASTER_CHAN, 'target-MasterChan').
@@ -100,19 +101,47 @@ id_used(Id) ->
 %%----------------------------------------------------------------------------
 %% GEN_SERVER CALLBACKS
 %%----------------------------------------------------------------------------
-init([ProbeModules, ConfFile]) ->
-    P = extract_probes_info(ProbeModules),
-    {ok, Targets} = load_targets_conf(ConfFile),
+init([ProbeModules, _ConfFile]) ->
+    {ok, Table} = init_database(),
+    %P2  = load_db_conf(Table),
+    %?LOG(P2),
+    P   = extract_probes_info(ProbeModules),
+    %{ok, Targets} = load_targets_conf_from_file(ConfFile),
+    {ok, Targets} = load_targets_conf_from_dets(Table),
     {ok, #state{
             chans = Targets,
             perm = #perm_conf{
                 read    = ["admin", "wheel"],
                 write   = ["admin"]
             },
-            probe_modules = P
+            probe_modules = P,
+            db          = Table
         }
     }.
     
+init_database() ->
+    {ok, VarDir} = application:get_env(monitor, targets_data_dir),
+    DetsFile     = filename:absname_join(VarDir, "targets.dets"),
+    case filelib:is_file(DetsFile) of
+        true  ->
+            case dets:is_dets_file(DetsFile) of
+                true ->
+                    dets:open_file(DetsFile);
+                false ->
+                    ok = file:delete(DetsFile),
+                    dets:open_file(DetsFile)
+            end;
+        false ->
+            {ok, N} = dets:open_file('targets_db', [
+                {file,   DetsFile},
+                {keypos, 2},
+                {ram_file, true},
+                {auto_save, 180000},
+                {type, set}
+            ]),
+            dets:close(N),
+            dets:open_file(DetsFile)
+    end.
 %%----------------------------------------------------------------------------
 %% SELF API CALLS
 %%----------------------------------------------------------------------------
@@ -159,6 +188,7 @@ handle_call({create_target, Target}, _F, S) ->
     Target2 = load_target_conf(Target),
     emit_wide(Target2),
     monitor_sys_events:notify({new_target, Target2}),
+    dets:insert(S#state.db, Target2),
 
     Targets = S#state.chans,
     S2      = S#state{chans = [Target2|Targets]},
@@ -201,7 +231,11 @@ handle_cast({sync_request, CState}, State) ->
 handle_cast({probe_info, TargetId, NewProbe}, S) ->
     Chans       = S#state.chans,
     Perms       = NewProbe#probe.permissions,
-    {ok, NewChans} = update_info_chan(TargetId, Chans, NewProbe),
+    Target      = lists:keyfind(TargetId, 2, Chans),
+    {ok, NewTarg} = update_info_chan(Target, NewProbe),
+    NewChans      = lists:keystore(TargetId, 2, Chans, NewTarg),
+    dets:insert(S#state.db, NewTarg),
+
     Pdu = pdu(probeInfo, {update, TargetId, NewProbe}),
     supercast_channel:emit(?MASTER_CHAN, {Perms, Pdu}),
     NS = S#state{chans = NewChans},
@@ -213,7 +247,8 @@ handle_cast(_R, S) ->
 handle_info(_, S) ->
     {noreply, S}.
 
-terminate(_R, _S) ->
+terminate(_R, #state{db = D}) ->
+    dets:close(D),
     normal.
 
 code_change(_O, S, _E) ->
@@ -223,8 +258,8 @@ code_change(_O, S, _E) ->
 %%----------------------------------------------------------------------------
 %% UTILS    
 %%----------------------------------------------------------------------------
-update_info_chan(TargetId, Chans, Probe) ->
-    Target  = lists:keyfind(TargetId, 2, Chans),
+update_info_chan(Target, Probe) ->
+    %Target  = lists:keyfind(TargetId, 2, Chans),
 
     TProperties     = Target#target.properties,
     PProperties     = Probe#probe.properties,
@@ -260,8 +295,8 @@ update_info_chan(TargetId, Chans, Probe) ->
             Pdu         = pdu(targetInfo, NTarget),
             supercast_channel:emit(?MASTER_CHAN, {TargetPerm, Pdu})
     end,
-    NChans  = lists:keystore(TargetId, 2, Chans, NTarget),
-    {ok, NChans}.
+    %NChans  = lists:keystore(TargetId, 2, Chans, NTarget),
+    {ok, NTarget}.
 
 probe_property_forward(TProperties, _, []) ->
     {ok, TProperties};
@@ -276,13 +311,18 @@ probe_property_forward(TProperties, PProperties, [P|Rest]) ->
 
     
 
-
-
-
-load_targets_conf(TargetsConfFile) ->
-    {ok, TargetsConf}  = file:consult(TargetsConfFile),
+load_targets_conf_from_dets(Table) ->
+    TargetsConf = dets:foldr(fun(X, Acc) ->
+        [X|Acc]
+    end, [], Table),
     TargetsState = [],
     load_targets_conf(TargetsConf, TargetsState).
+
+%load_targets_conf_from_file(TargetsConfFile) ->
+    %{ok, TargetsConf}  = file:consult(TargetsConfFile),
+    %TargetsState = [],
+    %load_targets_conf(TargetsConf, TargetsState).
+
 load_targets_conf([], TargetsState) ->
     {ok, TargetsState};
 load_targets_conf([T|Targets], TargetsState) ->
