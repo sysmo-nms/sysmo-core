@@ -137,13 +137,13 @@ eval_snmp_get_return({noError, _, VarBinds}, Oids) ->
     eval_snmp_return(VarBinds, Oids).
 
 eval_snmp_walk_return(VarBinds, Oids) ->
-
     OidsN = [{K, lists:droplast(O)} || {K, O} <- Oids],
     eval_snmp_return(VarBinds, OidsN).
 
 eval_snmp_return(VarBinds, Oids) ->
+    FilteredVarBinds = filter_varbinds(VarBinds),
     KeyVals = [
-        {Key, (lists:keyfind(Oid, 2, VarBinds))#varbind.value} || 
+        {Key, (lists:keyfind(Oid, 2, FilteredVarBinds))#varbind.value} || 
         {Key, Oid} <- Oids
     ],
     #probe_return{
@@ -151,6 +151,18 @@ eval_snmp_return(VarBinds, Oids) ->
         original_reply  = to_string(VarBinds),
         key_vals        = [{"status", 'OK'} | KeyVals]
     }.
+
+filter_varbinds(VarBinds) ->
+    lists:filter(
+    fun(X) ->
+        case X of
+            {varbind, _, _, _, _} -> true;
+            _ -> 
+                error_logger:info_msg("~p ~p Unknown varbind: ~p~n",
+                    [?MODULE, ?LINE, X]),
+                false
+        end
+    end, VarBinds).
 
 to_string(Term) ->
     lists:flatten(io_lib:format("~p~n", [Term])).
