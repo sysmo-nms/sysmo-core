@@ -89,10 +89,11 @@ handle_cast({{createTarget, Command}, CState}, S) ->
     send(CState, ReplyPdu),
     {noreply, S};
 
-handle_cast({{query, {'Query', _QueryId, "getChecksInfo"}}, _CState}, S) ->
+handle_cast({{query, {'Query', QueryId, "getChecksInfo"}}, CState}, S) ->
     CheckDir    = S#state.check_dir,
     Infos       = get_check_infos(CheckDir),
-    ?LOG(Infos),
+    ReplyPdu    = pdu(getCheckReply, {QueryId, true, Infos}),
+    send(CState, ReplyPdu),
     {noreply, S};
 
 handle_cast({{query, {'Query', QueryId, Other}}, CState}, S) ->
@@ -109,6 +110,7 @@ handle_cast(R, S) ->
     ),
     {noreply, S}.
 
+%% TODO try receive in a gen_server
 get_check_infos(CheckDir) ->
     {ok, Files} = file:list_dir(CheckDir),
     FilesName   = [filename:join(CheckDir, File) || File <- Files],
@@ -119,7 +121,9 @@ get_check_infos([File|Files], Infos) ->
     %{ok, FileInfo} = file:read_file_info(File),
     %?LOG({File, FileInfo#file_info.mode}),
     % TODO check file permission
-    erlang:open_port({spawn_executable, File}, [exit_status, stderr_to_stdout, {args, ["-help"]}]),
+
+    erlang:open_port({spawn_executable, File},
+        [exit_status, stderr_to_stdout, binary, {args, ["-help"]}]),
     Data = get_check_infos_return(),
     get_check_infos(Files, [Data|Infos]).
 get_check_infos_return() ->
@@ -263,6 +267,15 @@ generate_id(Head) ->
 send(#client_state{module = CMod} = CState, Msg) ->
     CMod:send(CState, Msg).
 
+pdu(getCheckReply, {QueryId, Status, Infos}) ->
+    {modMonitorPDU,
+        {fromServer,
+            {getCheckReply,
+                {'GetCheckReply',
+                    QueryId,
+                    Status,
+                    Infos }}}};
+    
 pdu(monitorReply, {QueryId, Status, Info}) ->
     {modMonitorPDU,
         {fromServer,

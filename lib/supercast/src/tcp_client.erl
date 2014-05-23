@@ -42,6 +42,7 @@
     tcp_send_msg/4,
     tcp_send_pdu/3
 ]).
+
 -export([
     init/1,
     handle_event/3,
@@ -203,8 +204,10 @@ init([Encoder]) ->
                 true
         end
     end, PduList),
-    lists:foreach(fun(Pdu) -> 
-        tcp_send:send(Sock, Encoder:encode(Pdu))
+    lists:foreach(fun(Msg) -> 
+        Pdu = Encoder:encode(Msg),
+        gen_tcp:send(Sock, Pdu),
+        maybe_collect(Pdu)
     end, PduList2),
     {next_state, 'RUNNING', State};
 
@@ -226,7 +229,8 @@ init([Encoder]) ->
 handle_event({send_pdu, Ref, Pdu}, StateName,
         #client_state{ref = Ref} = State) ->
     Socket  = State#client_state.socket,
-    tcp_send_pdu(Socket, Pdu),
+    gen_tcp:send(Socket, Pdu),
+    maybe_collect(Pdu),
     {next_state, StateName, State};
 handle_event({send_pdu, _, _}, StateName, State) ->
     {next_state, StateName, State};
@@ -235,7 +239,10 @@ handle_event({encode_send_msg, Ref, Msg}, StateName,
         #client_state{ref = Ref} = State) ->
     Socket  = State#client_state.socket,
     Encoder = State#client_state.encoding_mod,
-    tcp_send_msg(Socket, Msg, Encoder),
+    %tcp_send_msg(Socket, Msg, Encoder),
+    Pdu = Encoder:encode(Msg),
+    gen_tcp:send(Socket, Pdu),
+    maybe_collect(Pdu),
     {next_state, StateName, State};
 handle_event({encode_send_msg, _, _}, StateName, State) ->
     {next_state, StateName, State};
@@ -320,8 +327,8 @@ code_change(_OldVsn, StateName, StateData, _Extra) ->
 %% note: gen_fsm:start_link(Name, Args, [{fullsweep_after, 0}]) did not
 %% work.
 %%
-tcp_send_pdu(Socket, Pdu) ->
-    spawn(?MODULE, tcp_send_pdu, [Socket, Pdu, self()]).
+%tcp_send_pdu(Socket, Pdu) ->
+    %spawn(?MODULE, tcp_send_pdu, [Socket, Pdu, self()]).
 tcp_send_pdu(Socket, Pdu, Pid) ->
     case gen_tcp:send(Socket, Pdu) of
         ok              -> ok;
@@ -330,12 +337,18 @@ tcp_send_pdu(Socket, Pdu, Pid) ->
     end.
 
 
-tcp_send_msg(Socket, Msg, Encoder) ->
-    spawn(?MODULE, tcp_send_msg, [Socket, Msg, Encoder, self()]).
+%tcp_send_msg(Socket, Msg, Encoder) ->
+    %spawn(?MODULE, tcp_send_msg, [Socket, Msg, Encoder, self()]).
 tcp_send_msg(Socket, Msg, Encoder, Pid) ->
     Pdu = Encoder:encode(Msg),
     case gen_tcp:send(Socket, Pdu) of
         ok              -> ok;
         {error, Reason} ->
             gen_fsm:send_all_state_event(Pid, {tcp_error, Reason})
+    end.
+
+maybe_collect(Pdu) ->
+    case erlang:byte_size(Pdu) < 64 of
+        true ->     ok;
+        false ->    erlang:garbage_collect()
     end.

@@ -254,6 +254,11 @@ MonitorReply    ::= SEQUENCE {
     info        PrintableString
 }
 
+GetCheckReply   ::= SEQUENCE {
+    queryId     QueryId,
+    status      BOOLEAN,
+    infos       SEQUENCE OF OCTET STRING
+}
 ---------------------------------------
 -- FULL PDU
 ---------------------------------------
@@ -270,7 +275,8 @@ MonitorPDU ::= CHOICE {
         rrdProbeDump    [9] RrdProbeDump,
         eventProbeDump  [10] EventProbeDump,
         probeEventMsg   [11] ProbeEvent,
-        monitorReply    [12] MonitorReply
+        monitorReply    [12] MonitorReply,
+        getCheckReply   [13] GetCheckReply
     },
     fromClient  [1] CHOICE {
         createTarget    [1] CreateTarget,
