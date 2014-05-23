@@ -23,6 +23,7 @@
 -behaviour(supercast_commander).
 -behaviour(gen_server).
 -include("include/monitor.hrl").
+-include_lib("kernel/include/file.hrl").
 -export([
     start_link/0,
     handle_command/2
@@ -89,8 +90,9 @@ handle_cast({{createTarget, Command}, CState}, S) ->
     {noreply, S};
 
 handle_cast({{query, {'Query', _QueryId, "getChecksInfo"}}, _CState}, S) ->
-    CheckDir = S#state.check_dir,
-    io:format("getChecksInfo in ~p~n", [CheckDir]),
+    CheckDir    = S#state.check_dir,
+    Infos       = get_check_infos(CheckDir),
+    ?LOG(Infos),
     {noreply, S};
 
 handle_cast({{query, {'Query', QueryId, Other}}, CState}, S) ->
@@ -106,6 +108,31 @@ handle_cast(R, S) ->
         "unknown cast for command ~p ~p ~p~n", [?MODULE, ?LINE, R]
     ),
     {noreply, S}.
+
+get_check_infos(CheckDir) ->
+    {ok, Files} = file:list_dir(CheckDir),
+    FilesName   = [filename:join(CheckDir, File) || File <- Files],
+    get_check_infos(FilesName, []).
+get_check_infos([], Infos) ->
+    Infos;
+get_check_infos([File|Files], Infos) ->
+    %{ok, FileInfo} = file:read_file_info(File),
+    %?LOG({File, FileInfo#file_info.mode}),
+    % TODO check file permission
+    erlang:open_port({spawn_executable, File}, [exit_status, stderr_to_stdout, {args, ["-help"]}]),
+    Data = get_check_infos_return(),
+    get_check_infos(Files, [Data|Infos]).
+get_check_infos_return() ->
+    get_check_infos_return("").
+get_check_infos_return(Data) ->
+    receive
+        {_, {exit_status, _}} ->
+            Data;
+        {_, {data, NData}} ->
+            get_check_infos_return(lists:append(Data, NData));
+        _ ->
+            Data
+    end.
 
 %%----------------------------------------------------------------------------
 %%----------------------------------------------------------------------------
