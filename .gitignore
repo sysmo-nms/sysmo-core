@@ -9,6 +9,7 @@ cfg/ssl/*.pem
 doc
 www/*.png
 var/monitor/*
+!var/monitor/README
 var/mnesia/*.LOG
 var/mnesia/*.DAT
 var/mnesia/*.DCD
