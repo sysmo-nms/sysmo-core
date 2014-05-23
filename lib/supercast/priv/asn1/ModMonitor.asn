@@ -2,7 +2,8 @@ ModMonitor DEFINITIONS IMPLICIT TAGS ::=
 BEGIN
 
 -- BASIC TYPES --
-IpAdd   ::= PrintableString
+QueryId         ::= INTEGER
+IpAdd           ::= PrintableString
 ErlangModule    ::= PrintableString
 Second          ::= INTEGER
 MicroSecond     ::= INTEGER
@@ -211,7 +212,7 @@ CreateTarget    ::= SEQUENCE {
     snmpv2ro    PrintableString,
     snmpv2rw    PrintableString,
     template    PrintableString,
-    queryId     INTEGER
+    queryId     QueryId
 }
 
 CreateProbe     ::= SEQUENCE {
@@ -219,6 +220,14 @@ CreateProbe     ::= SEQUENCE {
     probeConf   ProbeConf
 }
 
+QueryType       ::= ENUMERATED {
+    getChecksInfo(0)
+}
+
+Query           ::= SEQUENCE {
+    queryId     QueryId,
+    query       PrintableString
+}
 -- TODO server API
 UpdateTarget    ::= SEQUENCE {
     target      TargetId
@@ -240,7 +249,7 @@ DeleteProbe     ::= SEQUENCE {
 }
 
 MonitorReply    ::= SEQUENCE {
-    queryId     INTEGER,
+    queryId     QueryId,
     status      BOOLEAN,
     info        PrintableString
 }
@@ -269,7 +278,9 @@ MonitorPDU ::= CHOICE {
         deleteTarget    [3] DeleteTarget,
         createProbe     [4] CreateProbe,
         updateProbe     [5] UpdateProbe,
-        deleteProbe     [6] DeleteProbe
+        deleteProbe     [6] DeleteProbe,
+        -- simple queries only include a QueryId
+        query           [10] Query
     }
 }
 

@@ -85,8 +85,11 @@ handle_cast({{createTarget, Command}, CState}, S) ->
     {ok, ReplyPdu}  = handle_create_target(Command, TplDir, VarDir),
     send(CState, ReplyPdu),
     {noreply, S};
-handle_cast(_R, S) ->
-    io:format("unknown cast ~p~n", [_R]),
+
+handle_cast(R, S) ->
+    error_logger:info_msg(
+        "unknown cast for command ~p ~p ~p~n", [R, ?MODULE, ?LINE]
+    ),
     {noreply, S}.
 
 %%----------------------------------------------------------------------------
