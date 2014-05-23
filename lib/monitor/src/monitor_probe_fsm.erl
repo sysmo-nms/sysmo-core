@@ -126,8 +126,6 @@ launch(PidName) ->
 init([Target, Probe]) ->
     init_random(),
     UProbe = Probe#probe{
-        step    = Probe#probe.step    * 1000,
-        timeout = Probe#probe.timeout * 1000,
         pid     = self()
     },
 
