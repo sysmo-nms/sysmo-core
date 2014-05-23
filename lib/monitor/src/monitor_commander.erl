@@ -39,7 +39,8 @@
 
 -record(state, {
     tpl_dir,
-    var_dir
+    var_dir,
+    check_dir
 }).
 
 % 1 000 000 possible values
@@ -61,9 +62,10 @@ handle_command(Command, CState) ->
 %%----------------------------------------------------------------------------
 init([]) -> 
     random:seed(erlang:now()),
-    {ok, TplDir} = application:get_env(monitor, templates_dir),
-    {ok, VarDir} = application:get_env(monitor, targets_data_dir),
-    State        = #state{tpl_dir = TplDir, var_dir = VarDir},
+    {ok, TplDir}   = application:get_env(monitor, templates_dir),
+    {ok, VarDir}   = application:get_env(monitor, targets_data_dir),
+    {ok, CheckDir} = application:get_env(monitor, check_plugins_dir),
+    State = #state{tpl_dir=TplDir, var_dir=VarDir, check_dir=CheckDir},
     {ok, State}.
 
 %%----------------------------------------------------------------------------
@@ -86,9 +88,22 @@ handle_cast({{createTarget, Command}, CState}, S) ->
     send(CState, ReplyPdu),
     {noreply, S};
 
+handle_cast({{query, {'Query', _QueryId, "getChecksInfo"}}, _CState}, S) ->
+    CheckDir = S#state.check_dir,
+    io:format("getChecksInfo in ~p~n", [CheckDir]),
+    {noreply, S};
+
+handle_cast({{query, {'Query', QueryId, Other}}, CState}, S) ->
+    Rep = lists:flatten(io_lib:format("Query ~p not unknown", [Other])),
+    send(CState, pdu(monitorReply, {QueryId, false, Rep})),
+    error_logger:info_msg(
+        "unknown cast for query: ~p from client ~p~n",
+        [Other, CState]
+    ),
+    {noreply, S};
 handle_cast(R, S) ->
     error_logger:info_msg(
-        "unknown cast for command ~p ~p ~p~n", [R, ?MODULE, ?LINE]
+        "unknown cast for command ~p ~p ~p~n", [?MODULE, ?LINE, R]
     ),
     {noreply, S}.
 
