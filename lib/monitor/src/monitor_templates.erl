@@ -67,7 +67,10 @@ generate_icmpProbe(ProbeId, Target) ->
             monitor_probe_mod   = bmonitor_probe_nagios,
             monitor_probe_conf  = #nagios_plugin_conf{
                  executable = "lib/noctopus-checks/bin/ncheck_icmp",
-                 args       = ["-H", Target#target.ip, "-t", "5"],
+                 args       = [
+                    "-host",    Target#target.ip,
+                    "-timeout", "5"
+                ],
                  eval_perfs = false
             },
             status      = 'UNKNOWN',
