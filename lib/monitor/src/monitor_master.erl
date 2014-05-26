@@ -54,6 +54,7 @@
     db
 }).
 
+-define(DETS_TARGETS, 'targets_db').
 -define(MASTER_CHAN, 'target-MasterChan').
 
 
@@ -132,7 +133,7 @@ init_database() ->
                     dets:open_file(DetsFile)
             end;
         false ->
-            {ok, N} = dets:open_file('targets_db', [
+            {ok, N} = dets:open_file(?DETS_TARGETS, [
                 {file,   DetsFile},
                 {keypos, 2},
                 {ram_file, false},

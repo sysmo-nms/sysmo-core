@@ -45,6 +45,8 @@
     check_db_ref
 }).
 
+-define(DETS_CHECK_INFO, check_infos_db).
+
 % used to create random target and probe names
 % 1 000 000 possible values
 -define(RAND_RANGE, 1000000).
@@ -81,7 +83,7 @@ init_check_info_database(VarDir) ->
         false ->
             ok
     end,
-    {ok, N} = dets:open_file('targets_db', [
+    {ok, N} = dets:open_file(?DETS_CHECK_INFO, [
         {file,   DetsFile},
         {keypos, 1},
         {ram_file, false},
