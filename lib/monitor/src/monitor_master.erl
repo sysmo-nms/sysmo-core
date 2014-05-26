@@ -135,7 +135,7 @@ init_database() ->
             {ok, N} = dets:open_file('targets_db', [
                 {file,   DetsFile},
                 {keypos, 2},
-                {ram_file, true},
+                {ram_file, false},
                 {auto_save, 180000},
                 {type, set}
             ]),

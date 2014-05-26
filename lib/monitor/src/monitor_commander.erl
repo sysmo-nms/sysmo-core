@@ -26,7 +26,8 @@
 -include_lib("kernel/include/file.hrl").
 -export([
     start_link/0,
-    handle_command/2
+    handle_command/2,
+    get_check_infos/1
 ]).
 
 -export([
@@ -41,9 +42,10 @@
 -record(state, {
     tpl_dir,
     var_dir,
-    check_dir
+    check_db_ref
 }).
 
+% used to create random target and probe names
 % 1 000 000 possible values
 -define(RAND_RANGE, 1000000).
 % but must be a minimum of 100000
@@ -66,8 +68,28 @@ init([]) ->
     {ok, TplDir}   = application:get_env(monitor, templates_dir),
     {ok, VarDir}   = application:get_env(monitor, targets_data_dir),
     {ok, CheckDir} = application:get_env(monitor, check_dir),
-    State = #state{tpl_dir=TplDir, var_dir=VarDir, check_dir=CheckDir},
+    {ok, DetsRef}  = init_check_info_database(VarDir),
+    generate_check_infos(CheckDir, DetsRef),
+    State = #state{tpl_dir=TplDir, var_dir=VarDir, check_db_ref=DetsRef},
     {ok, State}.
+
+init_check_info_database(VarDir) ->
+    DetsFile     = filename:absname_join(VarDir, "check_infos.dets"),
+    case filelib:is_file(DetsFile) of
+        true  ->
+            ok = file:delete(DetsFile);
+        false ->
+            ok
+    end,
+    {ok, N} = dets:open_file('targets_db', [
+        {file,   DetsFile},
+        {keypos, 1},
+        {ram_file, false},
+        {auto_save, 180000},
+        {type, set}
+    ]),
+    dets:close(N),
+    dets:open_file(DetsFile).
 
 %%----------------------------------------------------------------------------
 %%----------------------------------------------------------------------------
@@ -90,8 +112,11 @@ handle_cast({{createTarget, Command}, CState}, S) ->
     {noreply, S};
 
 handle_cast({{query, {'Query', QueryId, "getChecksInfo"}}, CState}, S) ->
-    CheckDir    = S#state.check_dir,
-    Infos       = get_check_infos(CheckDir),
+    DbRef = S#state.check_db_ref,
+    Infos = dets:foldr(fun(X, Acc) ->
+        {_,I} = X,
+        [I|Acc]
+    end, [], DbRef),
     ReplyPdu    = pdu(getCheckReply, {QueryId, true, Infos}),
     send(CState, ReplyPdu),
     {noreply, S};
@@ -110,33 +135,6 @@ handle_cast(R, S) ->
     ),
     {noreply, S}.
 
-%% TODO try receive in a gen_server
-get_check_infos(CheckDir) ->
-    {ok, Files} = file:list_dir(CheckDir),
-    FilesName   = [filename:join(CheckDir, File) || File <- Files],
-    get_check_infos(FilesName, []).
-get_check_infos([], Infos) ->
-    Infos;
-get_check_infos([File|Files], Infos) ->
-    %{ok, FileInfo} = file:read_file_info(File),
-    %?LOG({File, FileInfo#file_info.mode}),
-    % TODO check file permission
-
-    erlang:open_port({spawn_executable, File},
-        [exit_status, stderr_to_stdout, binary, {args, ["-help"]}]),
-    Data = get_check_infos_return(),
-    get_check_infos(Files, [Data|Infos]).
-get_check_infos_return() ->
-    get_check_infos_return("").
-get_check_infos_return(Data) ->
-    receive
-        {_, {exit_status, _}} ->
-            Data;
-        {_, {data, NData}} ->
-            get_check_infos_return(lists:append(Data, NData));
-        _ ->
-            Data
-    end.
 
 %%----------------------------------------------------------------------------
 %%----------------------------------------------------------------------------
@@ -252,6 +250,43 @@ generate_probe(PFun, Target) ->
 %% UTILS
 %%----------------------------------------------------------------------------
 %%----------------------------------------------------------------------------
+generate_check_infos(CheckDir, DetsRef) ->
+    spawn(?MODULE, get_check_infos, [{CheckDir, DetsRef}]).
+
+get_check_infos({CheckDir, DetsRef}) ->
+    {ok, Files} = file:list_dir(CheckDir),
+    {ok, Re}    = re:compile("^ncheck_.*"),
+    ChecksBin = lists:filter(fun(F) ->
+        case re:run(F, Re) of
+            {match, _}  -> true;
+            nomatch     -> false
+        end
+    end, Files),
+    FilesName   = [filename:join(CheckDir, File) || File <- ChecksBin],
+    Infos = get_check_infos(FilesName, []),
+    lists:foreach(fun(X) ->
+        dets:insert(DetsRef, X)
+    end, Infos).
+get_check_infos([], Infos) ->
+    Infos;
+get_check_infos([File|Files], Infos) ->
+    erlang:open_port({spawn_executable, File},
+        [exit_status, stderr_to_stdout, {args, ["-show-xml-check-def"]}]),
+    Data = get_check_infos_return(),
+    get_check_infos(Files, [{File, Data}|Infos]).
+get_check_infos_return() ->
+    get_check_infos_return("").
+get_check_infos_return(Data) ->
+    receive
+        {_, {exit_status, _}} ->
+            Data;
+        {_, {data, NData}} ->
+            get_check_infos_return(lists:append(Data, NData));
+        _ ->
+            Data
+    end.
+
+%%
 generate_id(Head) ->
     Int         = random:uniform(?RAND_RANGE),
     RandId      = Int + ?RAND_MIN,
