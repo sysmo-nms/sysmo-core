@@ -1,6 +1,6 @@
 # Makefile 
 
-EXTERNAL = go-check/build
+EXTERNAL = noctopus-checks/bin
 
 compile: recurse
 
@@ -20,9 +20,8 @@ clean:
 
 externals: $(EXTERNAL)
 
-go-check/build: go-check
-	cd go-check; make
+noctopus-checks/bin: noctopus-checks
+	cd noctopus-checks; make
 
-go-check:
-	@git clone https://github.com/ssbx/go-check.git
-
+noctopus-checks:
+	@git clone git@github.com:ssbx/noctopus-checks.git

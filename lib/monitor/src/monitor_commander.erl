@@ -65,7 +65,7 @@ init([]) ->
     random:seed(erlang:now()),
     {ok, TplDir}   = application:get_env(monitor, templates_dir),
     {ok, VarDir}   = application:get_env(monitor, targets_data_dir),
-    {ok, CheckDir} = application:get_env(monitor, check_plugins_dir),
+    {ok, CheckDir} = application:get_env(monitor, check_dir),
     State = #state{tpl_dir=TplDir, var_dir=VarDir, check_dir=CheckDir},
     {ok, State}.
 

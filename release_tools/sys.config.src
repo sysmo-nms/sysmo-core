@@ -56,7 +56,7 @@
             {teplates_dir,          "%INSTALL_DIR%/noctopus-server/cfg/monitor_templates"},
             {targets_data_dir,      "%INSTALL_DIR%/noctopus-server/var/monitor"},
             {master_chan_read_perm, ["admin"]},
-            {check_plugins_dir,     "%INSTALL_DIR%/noctopus-server/lib/go-check/build"},
+            {check_dir,             "%INSTALL_DIR%/noctopus-server/lib/noctopus-checks/bin"},
             {probe_modules,
                 [
                     bmonitor_probe_nagios,
