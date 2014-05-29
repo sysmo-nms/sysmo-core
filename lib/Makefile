@@ -1,12 +1,11 @@
 # Makefile 
 
-EXTERNAL = noctopus-checks/bin
 
-compile: recurse
+compile: recurse external_make
 
 all: compile doc test local-release www
 
-recurse: externals
+recurse:
 	@for i in $(MODS); do cd $$i; $(MAKE) compile; cd ../; done
 
 test:
@@ -15,13 +14,17 @@ test:
 doc:
 	@for i in $(MODS); do cd $$i; $(MAKE) doc;  cd ../; done
 
-clean:
+clean: external_clean
 	@for i in $(MODS); do cd $$i; $(MAKE) clean;  cd ../; done
 
-externals: $(EXTERNAL)
 
-noctopus-checks/bin: noctopus-checks
-	cd noctopus-checks; make
+
+EXTERNAL = noctopus-checks
+external_make: $(EXTERNAL)
+	@cd $(EXTERNAL); make
+
+external_clean: $(EXTERNAL)
+	@cd $(EXTERNAL); make clean
 
 noctopus-checks:
 	@git clone git@github.com:ssbx/noctopus-checks.git
