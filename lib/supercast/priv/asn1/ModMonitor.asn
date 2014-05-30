@@ -228,6 +228,18 @@ Query           ::= SEQUENCE {
     queryId     QueryId,
     query       PrintableString
 }
+
+Arg             ::= SEQUENCE {
+    flag        PrintableString,
+    value       PrintableString
+}
+
+SimulateCheck   ::= SEQUENCE {
+    queryId     QueryId,
+    executable  PrintableString,
+    args        SEQUENCE OF Arg
+}
+
 -- TODO server API
 UpdateTarget    ::= SEQUENCE {
     target      TargetId
@@ -285,6 +297,7 @@ MonitorPDU ::= CHOICE {
         createProbe     [4] CreateProbe,
         updateProbe     [5] UpdateProbe,
         deleteProbe     [6] DeleteProbe,
+        simulateCheck   [7] SimulateCheck,
         -- simple queries only include a QueryId
         query           [10] Query
     }

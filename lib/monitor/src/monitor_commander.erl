@@ -131,6 +131,11 @@ handle_cast({{query, {'Query', QueryId, Other}}, CState}, S) ->
         [Other, CState]
     ),
     {noreply, S};
+
+handle_cast({Other, _CState}, S) ->
+    ?LOG(Other),
+    {noreply, S};
+
 handle_cast(R, S) ->
     error_logger:info_msg(
         "unknown cast for command ~p ~p ~p~n", [?MODULE, ?LINE, R]
