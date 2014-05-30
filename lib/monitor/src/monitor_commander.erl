@@ -42,7 +42,8 @@
 -record(state, {
     tpl_dir,
     var_dir,
-    check_db_ref
+    check_db_ref,
+    replies_waiting = []
 }).
 
 -define(DETS_CHECK_INFO, check_infos_db).
@@ -113,7 +114,7 @@ handle_cast({{createTarget, Command}, CState}, S) ->
     send(CState, ReplyPdu),
     {noreply, S};
 
-handle_cast({{query, {'Query', QueryId, "getChecksInfo"}}, CState}, S) ->
+handle_cast({{query, {_, QueryId, "getChecksInfo"}}, CState}, S) ->
     DbRef = S#state.check_db_ref,
     Infos = dets:foldr(fun(X, Acc) ->
         {_,I} = X,
@@ -123,7 +124,7 @@ handle_cast({{query, {'Query', QueryId, "getChecksInfo"}}, CState}, S) ->
     send(CState, ReplyPdu),
     {noreply, S};
 
-handle_cast({{query, {'Query', QueryId, Other}}, CState}, S) ->
+handle_cast({{query, {_, QueryId, Other}}, CState}, S) ->
     Rep = lists:flatten(io_lib:format("Query ~p not unknown", [Other])),
     send(CState, pdu(monitorReply, {QueryId, false, Rep})),
     error_logger:info_msg(
@@ -132,8 +133,11 @@ handle_cast({{query, {'Query', QueryId, Other}}, CState}, S) ->
     ),
     {noreply, S};
 
-handle_cast({Other, _CState}, S) ->
-    ?LOG(Other),
+handle_cast({{simulateCheck, {_, QueryId, Path, Args}}, _CState}, S) ->
+    ?LOG({QueryId, Path, Args}),
+    % 1 lauch command
+    % 2 fill #state.replies_waiting
+    % 3 wait for reply somewere
     {noreply, S};
 
 handle_cast(R, S) ->
