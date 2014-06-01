@@ -3,11 +3,8 @@
 ##################
 ### NOW
 - service virtual check
-- SNMP Elements autogen snmpwalks/rrdtool with MIB2 interface tree,
-(packets unicast/other, bytes in/out, %discard, %error, over all upackets, over
-all nupackets, over all error, over all discard)
-- Simple API add snmp element with perms
-- save target state
+- mod_multiman: Manage multiple devices with identic configuration (screen
+scripts?)
 
 ### HIGH
 - add "Create web view" wizard using erlang/httpd CGI, with running templates
@@ -56,23 +53,33 @@ loggers.
  storms and occasionnal high traffic.
 - OCS-inventory-NG agent compatibility module.
 
-##################
+###############################################################################
+# DASHBOARD ###################################################################
+###############################################################################
+### HIGH
+- weathermap style maps from monitor/rrds
+- qt mdi with monitor/rrds and monitor/status
+
+###############################################################################
+# NET MANAGER #################################################################
+###############################################################################
 # MODULE LOCATOR #
-##################
 ### HIGH
 V4-ARP V6-CDP traffic monitoring: 
     Where is/was this IP/Mac address
-    Address conflict detection
     MAC address traking
     VLAN tracking
 
-################
 # MODULE IPMAN #
-################
 ### HIGH
 - IP configuration view
 - net mask calculator
+- maps show vlan propagation
 
+# MODULE ARPGUARD #
+### HIGH
+- track mac/ip history on the network
+- trigger alerts on ip conflicts
 
 
 
@@ -102,6 +109,7 @@ in the Knowledge Wiki:
 Shedule everithing that need it:
 - backup commands,
 - sheduled alerts,
+- sheduled downtime,
 - every sys admin commands.
 
 ### MAYBE
@@ -139,15 +147,9 @@ Shedule everithing that need it:
 
 
 
-##################
-# MODULE VLANMAN #
-##################
-- maps show vlan propagation HIGH       0%
-
 ###################
 # MODULE MULTIMAN #
 ###################
-- mod_multiman: Manage multiple devices with identic configuration
 
 
 ##################
