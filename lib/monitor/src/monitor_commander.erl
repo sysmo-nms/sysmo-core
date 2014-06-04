@@ -27,7 +27,8 @@
 -export([
     start_link/0,
     handle_command/2,
-    get_check_infos/1
+    get_check_infos/1,
+    spawn_exec/2
 ]).
 
 -export([
@@ -39,11 +40,17 @@
     code_change/3
 ]).
 
+-record(reply, {
+    id,
+    client_state
+}).
+
 -record(state, {
     tpl_dir,
     var_dir,
     check_db_ref,
-    replies_waiting = []
+    replies_waiting = [] :: [#reply{}],
+    check_dir
 }).
 
 -define(DETS_CHECK_INFO, check_infos_db).
@@ -73,7 +80,12 @@ init([]) ->
     {ok, CheckDir} = application:get_env(monitor, check_dir),
     {ok, DetsRef}  = init_check_info_database(VarDir),
     generate_check_infos(CheckDir, DetsRef),
-    State = #state{tpl_dir=TplDir, var_dir=VarDir, check_db_ref=DetsRef},
+    State = #state{
+        tpl_dir=TplDir,
+        var_dir=VarDir,
+        check_db_ref=DetsRef,
+        check_dir=filename:absname(CheckDir)
+    },
     {ok, State}.
 
 init_check_info_database(VarDir) ->
@@ -133,12 +145,30 @@ handle_cast({{query, {_, QueryId, Other}}, CState}, S) ->
     ),
     {noreply, S};
 
-handle_cast({{simulateCheck, {_, QueryId, Path, Args}}, _CState}, S) ->
-    ?LOG({QueryId, Path, Args}),
+handle_cast({{simulateCheck, {_, QueryId, Check, Args}}, CState}, S) ->
+    ?LOG({QueryId, Check, Args}),
+    Path = filename:join(S#state.check_dir, Check),
+
     % 1 lauch command
     % 2 fill #state.replies_waiting
     % 3 wait for reply somewere
-    {noreply, S};
+ 
+    case filename:pathtype(Path) of
+        relative ->
+            % do not allow relative paths
+            error_logger:info_msg(
+            "~p ~p: warning ~p is not a relative path. siulateCheck from ~p~n",
+            [?MODULE, ?LINE, Path, CState]),
+            % TODO reply error to client and close connexion to mitigate DOS
+            {noreply, S};
+        _ ->
+            PortArgs = [
+                lists:flatten(io_lib:format("--~s=~s", [Flag, Val]))
+            || {_, Flag, Val} <- Args],
+            ?LOG({spawn, Path, PortArgs}),
+            spawn(?MODULE, spawn_exec, [{QueryId, CState}, {Path, PortArgs}]),
+            {noreply, S}
+    end;
 
 handle_cast(R, S) ->
     error_logger:info_msg(
@@ -262,6 +292,24 @@ generate_probe(PFun, Target) ->
 %% UTILS
 %%----------------------------------------------------------------------------
 %%----------------------------------------------------------------------------
+spawn_exec({QueryId, CState}, {File, Args}) ->
+    erlang:open_port({spawn_executable, File}, [
+        exit_status,
+        stderr_to_stdout,
+        {args, Args}
+    ]),
+    {_ExitStatus, Rep} = get_port_reply(),
+    % TODO ncheck API use xml as check return status. Use exit_status 
+    % as a normal executable
+    %case ExitStatus of
+        %0 ->
+        % ok but maybe check as failed
+        %_ ->
+        % error in the check execution
+    %end,
+    ?LOG({reply, _ExitStatus, Rep}),
+    send(CState, pdu(monitorReply, {QueryId, true, Rep})).
+
 generate_check_infos(CheckDir, DetsRef) ->
     spawn(?MODULE, get_check_infos, [{CheckDir, DetsRef}]).
 
@@ -284,18 +332,22 @@ get_check_infos([], Infos) ->
 get_check_infos([File|Files], Infos) ->
     erlang:open_port({spawn_executable, File},
         [exit_status, stderr_to_stdout, {args, ["-show-xml-check-def"]}]),
-    Data = get_check_infos_return(),
+    {_ExitStatus, Data} = get_port_reply(),
     get_check_infos(Files, [{File, Data}|Infos]).
-get_check_infos_return() ->
-    get_check_infos_return("").
-get_check_infos_return(Data) ->
+
+get_port_reply() ->
+    get_port_reply("").
+get_port_reply(Data) ->
     receive
-        {_, {exit_status, _}} ->
-            Data;
+        {_, {exit_status, S}} ->
+            {S, Data};
         {_, {data, NData}} ->
-            get_check_infos_return(lists:append(Data, NData));
-        _ ->
-            Data
+            get_port_reply(lists:append(Data, NData));
+        _R ->
+            error_logger:info_msg("~p ~p: should not be here ~p~n",
+                [?MODULE, ?LINE, _R]
+            ),
+            {4, Data}
     end.
 
 %%
