@@ -108,8 +108,6 @@ sys_timestamp() ->
     {Seconds, Microsec}.
 
 evaluate_ncheck_output(_Eval, Stdout) ->
-    ?LOG(Stdout),
-    % XXX Sdtout is sometime "\n"?
     C = (catch xmerl_scan:string(Stdout, [{space,normalize}])),
     case C of
         {'EXIT', Error} ->
@@ -119,7 +117,6 @@ evaluate_ncheck_output(_Eval, Stdout) ->
                 original_reply  = Stdout
             };
         {X,_R} ->
-
             %Attrs       = X#xmlElement.attributes,
             %NameAttr    = lists:keyfind(name, 2, Attrs),
             %Name        = NameAttr#xmlAttribute.value,
@@ -132,6 +129,8 @@ evaluate_ncheck_output(_Eval, Stdout) ->
             %Command     = lists:keyfind(command,        2, Contents),
             Status      = lists:keyfind(status,         2, Contents),
             TextOut     = lists:keyfind(text_output,    2, Contents),
+
+            % TODO perfs
             %_Perfs      = lists:keyfind(perfs,          2, Contents),
         
             %[C] = Command#xmlElement.content,
