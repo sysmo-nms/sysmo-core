@@ -64,8 +64,8 @@ generate_icmpProbe(ProbeId, Target) ->
                 Trigger a single echo request every 30 seconds
             ",
             permissions = Target#target.global_perm,
-            monitor_probe_mod   = bmonitor_probe_nagios,
-            monitor_probe_conf  = #nagios_plugin_conf{
+            monitor_probe_mod   = bmonitor_probe_ncheck,
+            monitor_probe_conf  = #ncheck_probe_conf{
                  executable = "lib/noctopus-checks/bin/ncheck_icmp",
                  args       = [
                     "-host",    Target#target.ip,

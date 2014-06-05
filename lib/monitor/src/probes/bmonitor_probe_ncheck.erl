@@ -22,6 +22,7 @@
 -module(bmonitor_probe_ncheck).
 -behaviour(beha_monitor_probe).
 -include("include/monitor.hrl").
+-include_lib("xmerl/include/xmerl.hrl").
 
 -export([
     init/2,
@@ -93,8 +94,9 @@ receive_port_info(StdOut) ->
         {_, {exit_status, Status}} ->
             {Status, StdOut};
         {_, {data, StdOutData}} ->
-            receive_port_info(StdOutData);
-        _ ->
+            receive_port_info(lists:append(StdOut, StdOutData));
+        R ->
+            ?LOG({what, R, StdOut}),
             receive_port_info(StdOut)
     end.
 
@@ -106,9 +108,37 @@ sys_timestamp() ->
     {Seconds, Microsec}.
 
 evaluate_ncheck_output(_Eval, Stdout) ->
-    % voir doc xmerl_scan
-    %A = xmerl_scan:string(Stdout),
-    #probe_return{
-        status          = 'UNKNOWN',
-        original_reply  = Stdout
-    }.
+    ?LOG(Stdout),
+    % XXX Sdtout is sometime "\n"?
+    C = (catch xmerl_scan:string(Stdout, [{space,normalize}])),
+    case C of
+        {'EXIT', Error} ->
+            error_logger:info_msg("~p ~p: error: ~p~n",[?MODULE,?LINE,Error]),
+            #probe_return{
+                status          = 'UNKNOWN',
+                original_reply  = Stdout
+            };
+        {X,_R} ->
+
+            %Attrs       = X#xmlElement.attributes,
+            %NameAttr    = lists:keyfind(name, 2, Attrs),
+            %Name        = NameAttr#xmlAttribute.value,
+            Contents    = lists:filter(fun(E) ->
+                case E of
+                    #xmlElement{} = E -> true;
+                    _                 -> false
+                end
+            end ,X#xmlElement.content),
+            %Command     = lists:keyfind(command,        2, Contents),
+            Status      = lists:keyfind(status,         2, Contents),
+            TextOut     = lists:keyfind(text_output,    2, Contents),
+            %_Perfs      = lists:keyfind(perfs,          2, Contents),
+        
+            %[C] = Command#xmlElement.content,
+            [S] = Status#xmlElement.content,
+            [T] = TextOut#xmlElement.content,
+            #probe_return{
+                status          = erlang:list_to_existing_atom(S#xmlText.value),
+                original_reply  = T#xmlText.value
+            }
+    end.

@@ -101,7 +101,7 @@ receive_port_info(StdOut) ->
         {_, {exit_status, Status}} ->
             {Status, StdOut};
         {_, {data, StdOutData}} ->
-            receive_port_info(StdOutData);
+            receive_port_info(lists:append(StdOut, StdOutData));
         _ ->
             receive_port_info(StdOut)
     end.

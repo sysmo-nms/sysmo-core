@@ -457,6 +457,10 @@ pdu(probeActivity, {TargetId, ProbeId, PState, Msg, ReturnStatus, Time}) ->
 gen_asn_probe_active(true)  -> 1;
 gen_asn_probe_active(false) -> 0.
 
+gen_asn_probe_conf(Conf) when is_record(Conf, ncheck_probe_conf) ->
+    #ncheck_probe_conf{executable = Exe, args = Args} = Conf,
+    lists:flatten([Exe, " ", [[A, " ", B, " "] || {A, B} <- Args]]);
+
 gen_asn_probe_conf(Conf) when is_record(Conf, nagios_plugin_conf) ->
     #nagios_plugin_conf{executable = Exe, args = Args} = Conf,
     lists:flatten([Exe, " ", [[A, " ", B, " "] || {A, B} <- Args]]);
