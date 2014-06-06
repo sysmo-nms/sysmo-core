@@ -46,9 +46,11 @@ info() ->
 
 init(_Target, Probe) ->
     Conf = Probe#probe.monitor_probe_conf,
+    Args = [lists:flatten(io_lib:format("--~s=~s", [A,B])) || {A,B} <-
+        Conf#ncheck_probe_conf.args],
     {ok, #state{
             exec        = Conf#ncheck_probe_conf.executable,
-            args        = Conf#ncheck_probe_conf.args,
+            args        = Args,
             eval_perfs  = Conf#ncheck_probe_conf.eval_perfs
         }
     }.
