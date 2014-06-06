@@ -24,6 +24,8 @@
 -include("../snmp_manager/include/snmp_manager.hrl").
 
 -export([
+    generate_standard_probe/3,
+    generate_perf_probe/3,
     generate_icmpProbe/2,
     generate_sysLocNameProbe/2,
     generate_ifPerfProbe/2
@@ -53,6 +55,12 @@
 "DEF:ucastIn=<FILE>:ucastPkIn:AVERAGE DEF:ucastOut=<FILE>:ucastPkOut:AVERAGE DEF:nucastIn:=<FILE>:nucastPkIn:AVERAGE DEF:nucastOut:=<FILE>:nucastPkOut:AVERAGE LINE1:ucastIn#3465A4 LINE2:ucastOut#CC0000 LINE3:nucastIn#ff0000 LINE4:nucastOut#00ff00"
     ]
 ).
+
+generate_standard_probe(_ProbeId, _Target, _Conf) ->
+    {ok, probe}.
+
+generate_perf_probe(_ProbeId, _Target, _Conf) ->
+    {ok, probe}.
 
 generate_icmpProbe(ProbeId, Target) ->
     {ok, 
