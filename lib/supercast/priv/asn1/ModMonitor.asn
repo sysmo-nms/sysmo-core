@@ -217,7 +217,8 @@ CreateTarget    ::= SEQUENCE {
 
 CreateProbe     ::= SEQUENCE {
     target      TargetId,
-    probeConf   ProbeConf
+    probeConf   ProbeConf,
+    queryId     QueryId
 }
 
 QueryType       ::= ENUMERATED {
