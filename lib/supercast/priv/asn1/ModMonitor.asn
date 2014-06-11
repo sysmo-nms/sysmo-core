@@ -209,6 +209,7 @@ CommandResponce ::= SEQUENCE {
 CreateTarget    ::= SEQUENCE {
     ipAdd       PrintableString,
     permConf    PermConf,
+    staticName  PrintableString,
     snmpv2ro    PrintableString,
     snmpv2rw    PrintableString,
     template    PrintableString,

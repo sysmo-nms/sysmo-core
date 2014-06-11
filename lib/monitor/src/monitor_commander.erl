@@ -119,7 +119,19 @@ handle_call(_R, _F, S) ->
 %% HANDLE_CAST
 %%----------------------------------------------------------------------------
 %%----------------------------------------------------------------------------
+
+% this guard catch non snmp targets with no templates
+handle_cast({{createTarget,
+        {_, _, _, _, "undefined", "undefined", "undefined", _} = Command}, 
+    CState}, S) ->
+    ?LOG({"hello undefined", Command}),
+    VarDir = S#state.var_dir,
+    {ok, ReplyPdu} = handle_create_target(Command, VarDir),
+    send(CState, ReplyPdu),
+    {noreply, S};
+
 handle_cast({{createTarget, Command}, CState}, S) ->
+    ?LOG(Command),
     TplDir          = S#state.tpl_dir,
     VarDir          = S#state.var_dir,
     {ok, ReplyPdu}  = handle_create_target(Command, TplDir, VarDir),
@@ -213,10 +225,35 @@ code_change(_O, S, _E) ->
 %%----------------------------------------------------------------------------
 %% MONITOR COMMANDS
 %%----------------------------------------------------------------------------
+handle_create_target(Command, VarDir) ->
+    {'CreateTarget',
+        IpAdd,
+        PermConf,
+        _,
+        _,
+        _,
+        _,
+        QueryId
+    } = Command,
+    {ok, TargetId}      = generate_id("target-"),
+    {ok, PermRecord}    = generate_perm_conf(PermConf),
+    {ok, TargetDir}     = generate_target_dir(VarDir, TargetId),
+    {ok, Prop}          = generate_properties(Command),
+    Target = #target{
+        id          = TargetId,
+        ip          = IpAdd,
+        properties  = Prop,
+        global_perm = PermRecord,
+        directory   = TargetDir
+    },
+    monitor_master:create_target(Target),
+    {ok, pdu(monitorReply, {QueryId, true, atom_to_list(TargetId)})}.
+
 handle_create_target(Command, TplDir, VarDir) ->
     {'CreateTarget',
         IpAdd,
         PermConf,
+        _,
         _,
         _,
         Template,
@@ -262,13 +299,19 @@ generate_target_dir(VarDir, TargetId) ->
     AbTargetDir = filename:absname(TargetDir),
     {ok, AbTargetDir}.
 
-generate_properties({_, IpAdd, _, SnmpV2ro, SnmpV2rw, _, _}) ->
+generate_properties({_, IpAdd, _, Name, SnmpV2ro, SnmpV2rw, _, _}) ->
+    case Name of
+        "" -> SName = "undefined";
+        _  -> SName = Name
+    end,
     {ok, [
         {"ip",          IpAdd},
+        {"staticName",  SName},
         {"snmp_ro",     SnmpV2ro},
         {"snmp_rw",     SnmpV2rw},
         {"sysLocation", "undefined"},
         {"sysName",     "undefined"},
+        {"dnsName",     "undefined"},
         {"hostname",    "undefined"}
     ]}.
     
