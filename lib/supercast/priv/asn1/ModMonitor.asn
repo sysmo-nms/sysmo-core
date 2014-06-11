@@ -216,9 +216,15 @@ CreateTarget    ::= SEQUENCE {
     queryId     QueryId
 }
 
-CreateProbe     ::= SEQUENCE {
+CreateSimpleProbe     ::= SEQUENCE {
     target      TargetId,
-    probeConf   ProbeConf,
+    name        PrintableString,
+    description PrintableString,
+    permConf    PermConf,
+    template    PrintableString,
+    timeout     INTEGER,
+    step        INTEGER,
+    flags       Properties,
     queryId     QueryId
 }
 
@@ -296,7 +302,7 @@ MonitorPDU ::= CHOICE {
         createTarget    [1] CreateTarget,
         updateTarget    [2] UpdateTarget,
         deleteTarget    [3] DeleteTarget,
-        createProbe     [4] CreateProbe,
+        createSimpleProbe   [4] CreateSimpleProbe,
         updateProbe     [5] UpdateProbe,
         deleteProbe     [6] DeleteProbe,
         simulateCheck   [7] SimulateCheck,

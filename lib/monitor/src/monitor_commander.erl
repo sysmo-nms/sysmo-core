@@ -120,6 +120,12 @@ handle_call(_R, _F, S) ->
 %%----------------------------------------------------------------------------
 %%----------------------------------------------------------------------------
 
+handle_cast({{createSimpleProbe, _ = Com}, CState}, S) ->
+    {_,_,_,_,_,_,_,_,_,QueryId} = Com,
+    ?LOG(Com),
+    send(CState, pdu(monitorReply, {QueryId, true, "continue!"})),
+    {noreply, S};
+
 % this guard catch non snmp targets with no templates
 handle_cast({{createTarget,
         {_, _, _, _, "undefined", "undefined", "undefined", _} = Command}, 
