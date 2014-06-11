@@ -167,6 +167,10 @@ smokeping probe compatibility
 - src/monitor_master hibernate,
 
 
+#################
+# international #
+#################
+- move some asn elements from PrintableString to UTF8String
 
 
 ###########
