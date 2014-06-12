@@ -352,7 +352,6 @@ initiate_start_sequence(ProbeState, Probe, now) ->
     Step    = 0,
     initiate_start_sequence(ProbeState, Probe, Step);
 initiate_start_sequence(ProbeState, Probe, Step) ->
-    ?LOG({apply, Step * 1000}),
     timer:apply_after(Step * 1000,   ?MODULE, take_of, [ProbeState, Probe]).
 
 take_of(ProbeState, Probe) ->

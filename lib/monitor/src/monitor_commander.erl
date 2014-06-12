@@ -29,7 +29,7 @@
     handle_command/2,
     get_check_infos/1,
     spawn_exec/2,
-    handle_create_probe/3
+    handle_create_probe/4
 ]).
 
 -export([
@@ -123,8 +123,8 @@ handle_call(_R, _F, S) ->
 
 handle_cast({{createSimpleProbe, _ = Com}, CState}, S) ->
     CheckDir    = S#state.check_dir,
-    %{ok, Name}  = generate_id("probe-"), %should create and lock id here
-    spawn(?MODULE, handle_create_probe, [Com, CheckDir, CState]),
+    {ok, Name}  = generate_id("probe-"),
+    spawn(?MODULE, handle_create_probe, [Com, CheckDir, CState, Name]),
     {noreply, S};
 
 % this guard catch non snmp targets with no templates
@@ -229,9 +229,8 @@ code_change(_O, S, _E) ->
 %% MONITOR COMMANDS
 %%----------------------------------------------------------------------------
 % this function is spawned because we use open_port/2
-handle_create_probe(Command, CheckDir, CState) ->
+handle_create_probe(Command, CheckDir, CState, Name) ->
     {_,Target,DisplayName,Descr,Perm,"simple",Timeout,Step,Flags,Exe,QId} = Command,
-    {ok, Name}  = generate_id("probe-"), % used in spawn, race condition risk
     {_, R, W}   = Perm,
     ExeF        = filename:join(CheckDir, filename:basename(Exe)),
     Args = [{F,V} || {_,F,V} <- Flags],
