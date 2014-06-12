@@ -352,7 +352,8 @@ initiate_start_sequence(ProbeState, Probe, now) ->
     Step    = 0,
     initiate_start_sequence(ProbeState, Probe, Step);
 initiate_start_sequence(ProbeState, Probe, Step) ->
-    timer:apply_after(Step,   ?MODULE, take_of, [ProbeState, Probe]).
+    ?LOG({apply, Step * 1000}),
+    timer:apply_after(Step * 1000,   ?MODULE, take_of, [ProbeState, Probe]).
 
 take_of(ProbeState, Probe) ->
     Mod     = Probe#probe.monitor_probe_mod,

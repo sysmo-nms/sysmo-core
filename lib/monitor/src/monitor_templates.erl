@@ -82,9 +82,9 @@ generate_icmpProbe(ProbeId, Target) ->
                  eval_perfs = false
             },
             status      = 'UNKNOWN',
-            timeout     = 5000,
+            timeout     = 5,
             %step        = 30,
-            step        = 2000,
+            step        = 5,
             inspectors  = [
                 #inspector{
                     module  = bmonitor_inspector_status_set,
@@ -142,9 +142,9 @@ generate_sysLocNameProbe(ProbeId, Target, Community) ->
                 method      = get
             },
             status      = 'UNKNOWN',
-            timeout     = 5000,
+            timeout     = 5,
             %step        = 600,
-            step        = 5000,
+            step        = 300,
             inspectors  = [
                 #inspector{
                     module  = bmonitor_inspector_status_set,
@@ -212,8 +212,8 @@ generate_ifPerfProbe(ProbeId, Target, Community, TmpAgent) ->
                 ]}
             },
             status      = 'UNKNOWN',
-            timeout     = 5000,
-            step        = 300000,
+            timeout     = 5,
+            step        = 300,
             inspectors  = [
                 #inspector{
                     module  = bmonitor_inspector_status_set,

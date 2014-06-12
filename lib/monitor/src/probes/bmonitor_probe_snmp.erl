@@ -72,7 +72,7 @@ init(Target, Probe) ->
             agent           = AgentName,
             oids            = Oids,
             request_oids    = [Oid || {_, Oid} <- Oids],
-            timeout         = Probe#probe.timeout,
+            timeout         = Probe#probe.timeout * 1000,
             method          = Method
         }
     }.
