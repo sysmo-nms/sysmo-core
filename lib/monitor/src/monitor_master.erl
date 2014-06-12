@@ -30,7 +30,8 @@
     handle_cast/2, 
     handle_info/2, 
     terminate/2, 
-    code_change/3
+    code_change/3,
+    dump/0
 ]).
 
 % GEN_CHANNEL
@@ -44,6 +45,7 @@
     start_link/2,
     probe_info/2,
     create_target/1,
+    create_probe/2,
     id_used/1
 ]).
 
@@ -62,10 +64,17 @@
 start_link(PMods, CFile) ->
     gen_server:start_link({local, ?MASTER_CHAN}, ?MODULE, [PMods, CFile], []).
 
+dump() ->
+    gen_server:call(?MASTER_CHAN, dump_dets).
+
 -spec create_target(Target::#target{}) -> ok | {error, Info::string()}.
 create_target(Target) ->
     gen_server:call(?MASTER_CHAN, {create_target, Target}).
 
+-spec create_probe(TargetId::atom(), Probe::#probe{}) 
+    -> ok | {error, string()}.
+create_probe(TargetId, Probe) ->
+    gen_server:call(?MASTER_CHAN, {create_probe, TargetId, Probe}).
 
 %%----------------------------------------------------------------------------
 %% supercast_channel API
@@ -185,6 +194,35 @@ handle_call({id_used, Id}, _F, #state{chans=Chans} = S) ->
 handle_call(get_perms, _F, #state{perm = P} = S) ->
     {reply, P, S};
 
+handle_call({create_probe, TargetId, Probe}, _F, S) ->
+    % is targetId a valid atom?
+    case (catch erlang:list_to_existing_atom(TargetId)) of
+        {'EXIT', _} ->
+            Msg = lists:flatten(
+                io_lib:format("Target ~s did not exist",[TargetId])
+            ),
+            {reply, {error, Msg}, S};
+        TargetAtom ->
+            Table = S#state.db,
+            case dets:lookup(Table, TargetAtom) of
+                {error, Reason} ->
+                    {reply, {error, Reason}, S};
+                [TargetRecord] ->
+                    {NProbe, NTarget} = insert_probe(Probe, TargetRecord),
+                    ProbeInfoPdu = pdu(probeInfo, {create, TargetAtom, NProbe}),
+                    Perm = NProbe#probe.permissions,
+                    supercast_channel:emit(?MASTER_CHAN, {Perm, ProbeInfoPdu}),
+                    dets:insert(Table, NTarget),
+                    {reply, ok, S};
+                _ ->
+                    {reply, {error, "Key error"}, S}
+            end
+    end;
+    % get the Targetconf from dets:
+    %Table = S#state.db,
+    %case dets:lookup(
+
+
 handle_call({create_target, Target}, _F, S) ->
     Target2 = load_target_conf(Target),
     emit_wide(Target2),
@@ -193,7 +231,36 @@ handle_call({create_target, Target}, _F, S) ->
 
     Targets = S#state.chans,
     S2      = S#state{chans = [Target2|Targets]},
-    {reply, ok, S2}.
+    {reply, ok, S2};
+
+handle_call(dump_dets, _F, S) ->
+    Table = S#state.db,
+    TargetsConf = dets:foldr(fun(X, Acc) ->
+        [X|Acc]
+    end, [], Table),
+    ?LOG(TargetsConf),
+    {reply, ok, S}.
+
+insert_probe(Probe, Target) ->
+    Probes = Target#target.probes,
+    Id = get_free_probe_id(Probes),
+    P1 = Probe#probe{id = Id},
+    T1 = Target#target{probes = [P1|Probes]},
+    {ok, Pid} = monitor_probe_sup:new({Target, P1}),
+    P2 = P1#probe{pid = Pid},
+    T2 = T1#target{probes = [P2|Probes]},
+    {P2, T2}.
+
+get_free_probe_id(Probes) ->
+    Ids = [P#probe.id || P <- Probes],
+    get_free_probe_id(0, Ids).
+get_free_probe_id(N, Ids) ->
+    case lists:member(N, Ids) of
+        true ->
+            get_free_probe_id(N + 1, Ids);
+        false ->
+            N
+    end.
 
 emit_wide(Target) ->
     Perm        = Target#target.global_perm,

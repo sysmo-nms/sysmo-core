@@ -225,6 +225,7 @@ CreateSimpleProbe     ::= SEQUENCE {
     timeout     INTEGER,
     step        INTEGER,
     flags       Properties,
+    exe         PrintableString,
     queryId     QueryId
 }
 

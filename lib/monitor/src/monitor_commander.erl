@@ -28,7 +28,8 @@
     start_link/0,
     handle_command/2,
     get_check_infos/1,
-    spawn_exec/2
+    spawn_exec/2,
+    handle_create_probe/3
 ]).
 
 -export([
@@ -121,23 +122,21 @@ handle_call(_R, _F, S) ->
 %%----------------------------------------------------------------------------
 
 handle_cast({{createSimpleProbe, _ = Com}, CState}, S) ->
-    {_,_,_,_,_,_,_,_,_,QueryId} = Com,
-    ?LOG(Com),
-    send(CState, pdu(monitorReply, {QueryId, true, "continue!"})),
+    CheckDir    = S#state.check_dir,
+    %{ok, Name}  = generate_id("probe-"), %should create and lock id here
+    spawn(?MODULE, handle_create_probe, [Com, CheckDir, CState]),
     {noreply, S};
 
 % this guard catch non snmp targets with no templates
 handle_cast({{createTarget,
         {_, _, _, _, "undefined", "undefined", "undefined", _} = Command}, 
     CState}, S) ->
-    ?LOG({"hello undefined", Command}),
     VarDir = S#state.var_dir,
     {ok, ReplyPdu} = handle_create_target(Command, VarDir),
     send(CState, ReplyPdu),
     {noreply, S};
 
 handle_cast({{createTarget, Command}, CState}, S) ->
-    ?LOG(Command),
     TplDir          = S#state.tpl_dir,
     VarDir          = S#state.var_dir,
     {ok, ReplyPdu}  = handle_create_target(Command, TplDir, VarDir),
@@ -164,7 +163,6 @@ handle_cast({{query, {_, QueryId, Other}}, CState}, S) ->
     {noreply, S};
 
 handle_cast({{simulateCheck, {_, QueryId, Check, Args}}, CState}, S) ->
-    ?LOG({QueryId, Check, Args}),
     Path = filename:join(S#state.check_dir, Check),
 
     % 1 lauch command
@@ -183,7 +181,6 @@ handle_cast({{simulateCheck, {_, QueryId, Check, Args}}, CState}, S) ->
             PortArgs = [
                 lists:flatten(io_lib:format("--~s=~s", [Flag, Val]))
             || {_, Flag, Val} <- Args],
-            ?LOG({spawn, Path, PortArgs}),
             spawn(?MODULE, spawn_exec, [{QueryId, CState}, {Path, PortArgs}]),
             {noreply, S}
     end;
@@ -231,6 +228,63 @@ code_change(_O, S, _E) ->
 %%----------------------------------------------------------------------------
 %% MONITOR COMMANDS
 %%----------------------------------------------------------------------------
+% this function is spawned because we use open_port/2
+handle_create_probe(Command, CheckDir, CState) ->
+    {_,Target,DisplayName,Descr,Perm,"simple",Timeout,Step,Flags,Exe,QId} = Command,
+    {ok, Name}  = generate_id("probe-"), % used in spawn, race condition risk
+    {_, R, W}   = Perm,
+    ExeF        = filename:join(CheckDir, filename:basename(Exe)),
+    Args = [{F,V} || {_,F,V} <- Flags],
+    Probe = #probe{
+        name        =   Name,
+        description =   DisplayName,
+        info        =   Descr,
+        permissions =   #perm_conf{read=R,write=W},
+        monitor_probe_mod   = bmonitor_probe_ncheck,
+        monitor_probe_conf  = #ncheck_probe_conf{
+            executable  = ExeF,
+            args        = Args,
+            eval_perfs  = false
+        },
+        timeout     =   Timeout,
+        step        =   Step,
+        inspectors  = [
+            {inspector, bmonitor_inspector_status_set, []},
+            {inspector, bmonitor_inspector_property_set, ["status"]}
+        ],
+        loggers = [
+            {logger, bmonitor_logger_text, []}
+        ]
+    },
+
+    % Test if the command is well formed. Only check the return status wich
+    % should not be 0.
+    ExeArgs = [
+        lists:flatten(io_lib:format("--~s=~s", [K,V])) 
+        || {K,V} <- Args],
+    erlang:open_port({spawn_executable, ExeF}, [
+        exit_status,
+        stderr_to_stdout,
+        {args, ExeArgs}
+    ]),
+    {ExitStatus, Rep} = get_port_reply(),
+
+    case ExitStatus of
+        0 ->
+            Reply = monitor_master:create_probe(Target, Probe),
+            case Reply of
+                {error, Error} ->
+                    Pdu = pdu(monitorReply, {QId, false, Error}),
+                    send(CState, Pdu);
+                ok ->
+                    Pdu = pdu(monitorReply, {QId, true, "success"}),
+                    send(CState, Pdu)
+            end;
+        _ ->
+            Pdu = pdu(monitorReply, {QId, false, Rep}),
+            send(CState, Pdu)
+    end.
+
 handle_create_target(Command, VarDir) ->
     {'CreateTarget',
         IpAdd,
@@ -356,7 +410,6 @@ spawn_exec({QueryId, CState}, {File, Args}) ->
         %_ ->
         % error in the check execution
     %end,
-    ?LOG({reply, _ExitStatus, Rep}),
     send(CState, pdu(monitorReply, {QueryId, true, Rep})).
 
 generate_check_infos(CheckDir, DetsRef) ->
