@@ -114,6 +114,10 @@ Shedule everithing that need it:
 
 ### MAYBE
 - TODO tasks schedule
+- general scheduler:
+  - near end of support alert (contract reneval),
+  - near end of registrar contract (reneval domain registration)
+
 
 ##################
 # MODULE TICKETS #
