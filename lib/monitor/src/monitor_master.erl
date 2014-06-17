@@ -44,6 +44,7 @@
 -export([
     start_link/2,
     probe_info/2,
+    probe_activity/3,
     create_target/1,
     create_probe/2,
     id_used/1
@@ -105,6 +106,11 @@ probe_info(TargetId, Probe) ->
 % @end
 id_used(Id) ->
     gen_server:call(?MASTER_CHAN, {id_used, Id}).
+
+-spec probe_activity(Target::atom(), Probe::#probe{}, Return::#probe_return{}) ->
+    ok.
+probe_activity(Target, Probe, Return) ->
+    gen_server:cast(?MASTER_CHAN, {probe_activity, Target, Probe, Return}).
 
 
 
@@ -308,6 +314,20 @@ handle_cast({probe_info, TargetId, NewProbe}, S) ->
     supercast_channel:emit(?MASTER_CHAN, {Perms, Pdu}),
     NS = S#state{chans = NewChans},
     {noreply, NS};
+
+handle_cast({probe_activity, Target, Probe, Return}, S) ->
+    ?LOG({"probe activity", Target#target.id, Probe#probe.id, none, 
+        Return#probe_return.original_reply, Return#probe_return.status}),
+    Pdu = pdu(probeActivity, {
+        Target#target.id,
+        Probe#probe.id,
+        none,
+        Return#probe_return.original_reply,
+        Return#probe_return.status,
+        Return#probe_return.timestamp
+    }),
+    supercast_channel:emit(?MASTER_CHAN, {Probe#probe.permissions, Pdu}),
+    {noreply, S};
 
 handle_cast(_R, S) ->
     {noreply, S}.
