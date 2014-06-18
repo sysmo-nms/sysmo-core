@@ -130,8 +130,8 @@ ProbeEvent      ::= SEQUENCE {
 
 -- ProbeActivity 
 ProbeActivity ::= SEQUENCE {
-    channel     TargetId,
-    probeId     ProbeId,
+    target      TargetId,
+    probeName   PrintableString,
     timestamp   MicroSecond,
     state       PrintableString,
     returnStatus PrintableString,

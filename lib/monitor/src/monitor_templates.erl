@@ -83,8 +83,8 @@ generate_icmpProbe(ProbeId, Target) ->
             },
             status      = 'UNKNOWN',
             timeout     = 5,
-            %step        = 30,
-            step        = 5,
+            step        = 30,
+            %step        = 5,
             inspectors  = [
                 #inspector{
                     module  = bmonitor_inspector_status_set,

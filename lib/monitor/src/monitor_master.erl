@@ -316,11 +316,9 @@ handle_cast({probe_info, TargetId, NewProbe}, S) ->
     {noreply, NS};
 
 handle_cast({probe_activity, Target, Probe, Return}, S) ->
-    ?LOG({"probe activity", Target#target.id, Probe#probe.id, none, 
-        Return#probe_return.original_reply, Return#probe_return.status}),
     Pdu = pdu(probeActivity, {
         Target#target.id,
-        Probe#probe.id,
+        Probe#probe.name,
         none,
         Return#probe_return.original_reply,
         Return#probe_return.status,
@@ -528,13 +526,13 @@ pdu(probeModInfo,  {ProbeName, ProbeInfo}) ->
                     atom_to_list(ProbeName),
                     ProbeInfo }}}};
 
-pdu(probeActivity, {TargetId, ProbeId, PState, Msg, ReturnStatus, Time}) ->
+pdu(probeActivity, {TargetId, ProbeName, PState, Msg, ReturnStatus, Time}) ->
     {modMonitorPDU,
         {fromServer,
             {probeActivity,
                 {'ProbeActivity',
                     atom_to_list(TargetId),
-                    ProbeId,
+                    atom_to_list(ProbeName),
                     Time,
                     atom_to_list(PState),
                     atom_to_list(ReturnStatus),
