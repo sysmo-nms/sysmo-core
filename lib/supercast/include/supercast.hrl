@@ -46,7 +46,7 @@
     auth_request_count = 1,     % used by max request count
     module,                     % callback mod to send data
     encoding_mod,               %
-    communication_mod,
+    communication_mod,          % must implement the X:send(Socket, Msg) fun
     state,                      %
     pid                         % pid() of the gen_server howner of the socket
 }). 
