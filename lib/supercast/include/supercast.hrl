@@ -20,6 +20,7 @@
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 -define(LOGS(X), io:format("{~w, ~w}: DEBUG: ~p~n", [?MODULE, ?LINE, X])).
 
+-type   supercast_msg()     ::  {function, fun()} | {pdu, tuple()}.
 -record(perm_conf, {
     read    = []    :: [term()],
     write   = []    :: [term()]

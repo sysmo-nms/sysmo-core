@@ -58,6 +58,4 @@ dump(State) ->
     TableName   = State#state.table_name,
     TargetId    = State#state.target_id,
     {ok, Pdu}   = gen_server:call(?EVENT_SERVER, {dump, TargetId, TableName}),
-    {ok, Pdu, State}.
-    %?LOG(Pdu),
-    %{ok, State}.
+    {ok, {pdu, Pdu}, State}.

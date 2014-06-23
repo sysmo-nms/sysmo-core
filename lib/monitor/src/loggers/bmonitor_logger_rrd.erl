@@ -64,7 +64,7 @@ dump(State) ->
     TargetId    = State#state.target_id,
     ProbeId     = State#state.probe_id,
     Pdu         = pdu('rrdProbeDump', {TargetId, ProbeId, Rrds}),
-    {ok, Pdu, State}.
+    {ok, {pdu, Pdu}, State}.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

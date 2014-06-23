@@ -92,6 +92,14 @@ auth_set(auth_fail,     NewState) ->
     UserName    = NewState#client_state.user_name,
     gen_fsm:send_event(Pid, {auth_fail, Ref, UserName}).
 
+send(SockState, {function, Msg}) ->
+    gen_fsm:send_all_state_event(SockState#client_state.pid,
+        {fexec, SockState#client_state.ref, Msg});
+
+send(SockState, {pdu, Msg}) ->
+    gen_fsm:send_all_state_event(SockState#client_state.pid,
+        {encode_send_msg, SockState#client_state.ref, Msg});
+
 send(SockState, Msg) ->
     gen_fsm:send_all_state_event(SockState#client_state.pid,
         {encode_send_msg, SockState#client_state.ref, Msg}).
@@ -246,6 +254,12 @@ handle_event({encode_send_msg, Ref, Msg}, StateName,
     {next_state, StateName, State};
 handle_event({encode_send_msg, _, _}, StateName, State) ->
     {next_state, StateName, State};
+
+handle_event({fexec, Ref, Fun}, StateName,
+        #client_state{ref = Ref} = State) ->
+    Fun(),
+    {next_state, StateName, State};
+
 
 handle_event({tcp_error, Reason}, StateName, State) ->
     error_logger:info_msg("~p ~p gen_tcp:send/2 error: ~p",

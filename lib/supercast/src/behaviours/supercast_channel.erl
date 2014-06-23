@@ -103,17 +103,21 @@ subscribe(ChannelName, CState) ->
 emit(PName, {Perms, Pdu}) ->
     supercast_mpd:multicast_msg(PName, {Perms, Pdu}).
 
--spec unicast(CState::#client_state{}, Pdus::[Pdu::tuple()]) -> ok.
+-spec unicast(CState::#client_state{}, Msgs::[supercast_msg()]) -> ok.
 % @doc
-% Used by a channel to send a list of message to a single client
+% supercast_msg()   :: {function, fun()} | {pdu, tuple()}.
+%
+% Used by a channel to send a list of message or funs to a single client
 % identified by CState wich is a #client_state.
+% fun() will just be executed as is in the client loop. 
+% You must use the client_state to send messages when building the fun.
 % @end
 unicast(_, []) ->
     ok;
-unicast(CState, [Pdu|Pdus]) ->
+unicast(CState, [Elem|Elems]) ->
     Mod = CState#client_state.module,
-    Mod:send(CState, Pdu),
-    unicast(CState, Pdus).
+    Mod:send(CState, Elem),
+    unicast(CState, Elems).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % UTILS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
