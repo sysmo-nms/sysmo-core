@@ -123,8 +123,9 @@ raw_send(SockState, Pdu) ->
 init([Encoder]) ->
     process_flag(trap_exit, true),
     {ok, 'WAIT_FOR_SOCKET', #client_state{
-        encoding_mod    = Encoder,
-        state           = 'WAIT_FOR_SOCKET'}}.
+        encoding_mod        = Encoder,
+        communication_mod   = gen_tcp,
+        state               = 'WAIT_FOR_SOCKET'}}.
 
 %%-------------------------------------------------------------------------
 %% Func: StateName/2
@@ -257,7 +258,7 @@ handle_event({encode_send_msg, _, _}, StateName, State) ->
 
 handle_event({fexec, Ref, Fun}, StateName,
         #client_state{ref = Ref} = State) ->
-    Fun(),
+    Fun(State),
     {next_state, StateName, State};
 
 

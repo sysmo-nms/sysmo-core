@@ -46,6 +46,7 @@
     auth_request_count = 1,     % used by max request count
     module,                     % callback mod to send data
     encoding_mod,               %
+    communication_mod,
     state,                      %
     pid                         % pid() of the gen_server howner of the socket
 }). 

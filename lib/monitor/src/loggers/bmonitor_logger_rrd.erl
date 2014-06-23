@@ -63,27 +63,30 @@ dump(State) ->
     Rrds        = State#state.rrds,
     TargetId    = State#state.target_id,
     ProbeId     = State#state.probe_id,
-    Pdu         = pdu('rrdProbeDump', {TargetId, ProbeId, Rrds}),
-    {ok, {pdu, Pdu}, State}.
+
+    TId         = atom_to_list(TargetId),
+    PId         = atom_to_list(ProbeId),
+    Mod         = atom_to_list(?MODULE),
+
+    F = fun(CState) ->
+        Socket  = CState#client_state.socket,
+        Encoder = CState#client_state.encoding_mod,
+        Comm    = CState#client_state.communication_mod,
+        lists:foreach(fun(Rrd) ->
+            #rrd_config{file_path = File, file = FileId} = Rrd,
+            Bin = monitor_logger_rrd:dump(File),
+            Msg = {modMonitorPDU,{fromServer,{rrdFileDump,
+                {'RrdFileDump', TId, PId, Mod, FileId, Bin}}}},
+            Pdu = Encoder:encode(Msg),
+            Comm:send(Socket, Pdu)
+        end, Rrds)
+    end,
+    {ok, {function, F}, State}.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% UTILS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-pdu('rrdProbeDump', {TargetId, ProbeId, RrdConfigs}) ->
-    RrdFileDumps = [{'RrdFileDump', FileId, monitor_logger_rrd:dump(File)} ||
-        #rrd_config{file_path = File, file = FileId} <- RrdConfigs
-    ],
-    {modMonitorPDU,
-        {fromServer,
-            {rrdProbeDump,
-                {'RrdProbeDump',
-                    atom_to_list(TargetId),
-                    atom_to_list(ProbeId),
-                    atom_to_list(?MODULE),
-                    RrdFileDumps }}}}.
-    
-
 log_rrds([], _) -> ok;
 log_rrds([RrdConf|Rrds], Kv) ->
     UpdateString = RrdConf#rrd_config.update,

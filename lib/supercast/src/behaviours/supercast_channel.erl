@@ -109,7 +109,9 @@ emit(PName, {Perms, Pdu}) ->
 %
 % Used by a channel to send a list of message or funs to a single client
 % identified by CState wich is a #client_state.
-% fun() will just be executed as is in the client loop. 
+% fun() will just be executed as is in the client loop with #client_state{}
+% as argument. You will need tu use it (specialy #client_state.socket and
+% #client_state.encoding_mod) to encode and send messages.
 % You must use the client_state to send messages when building the fun.
 % @end
 unicast(_, []) ->

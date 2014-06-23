@@ -165,15 +165,11 @@ EventProbeDump  ::= SEQUENCE {
 
 -- RrdProbeDump --
 RrdFileDump ::= SEQUENCE {
-    fileId  PrintableString,
-    bin     FileData
-}
-
-RrdProbeDump    ::= SEQUENCE {
     target      TargetId,
     probeName   PrintableString,
     probeModule PrintableString,
-    files       SEQUENCE OF RrdFileDump
+    fileId      PrintableString,
+    bin         FileData
 }
 
 -- ProbeDump --
@@ -293,7 +289,7 @@ MonitorPDU ::= CHOICE {
         probeModInfo    [6] ProbeModuleInfo,
         probeActivity   [7] ProbeActivity,
         probeReturn     [8] ProbeReturn,
-        rrdProbeDump    [9] RrdProbeDump,
+        rrdFileDump     [9] RrdFileDump,
         eventProbeDump  [10] EventProbeDump,
         probeEventMsg   [11] ProbeEvent,
         monitorReply    [12] MonitorReply,
