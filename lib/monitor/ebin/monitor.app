@@ -35,8 +35,8 @@
                 bmonitor_inspector_status_set,
                 bmonitor_logger_rrd,
                 bmonitor_logger_text,
-                bmonitor_logger_events,
                 bmonitor_probe_nagios,
+                bmonitor_probe_ncheck,
                 bmonitor_probe_snmp
             ]},
         {registered, [
@@ -48,7 +48,7 @@
             ]},
         {applications, 
             [kernel, stdlib, mnesia, supercast, monitor_logger_rrd,
-                monitor_logger_text, monitor_logger_events, snmp]
+                monitor_logger_text, monitor_events, snmp]
         },
         {start_phases, []},
         {mod, {monitor_app, []}}

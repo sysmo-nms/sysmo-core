@@ -308,6 +308,7 @@ handle_cast({probe_info, TargetId, NewProbe}, S) ->
     Target      = lists:keyfind(TargetId, 2, Chans),
     {ok, NewTarg} = update_info_chan(Target, NewProbe),
     NewChans      = lists:keystore(TargetId, 2, Chans, NewTarg),
+    ?LOG('probe_info'),
     dets:insert(S#state.db, NewTarg),
 
     Pdu = pdu(probeInfo, {update, TargetId, NewProbe}),
@@ -574,11 +575,6 @@ gen_logger_pdu({logger, bmonitor_logger_text, Cfg}) ->
     {loggerText, 
         {'LoggerText', 
             atom_to_list(bmonitor_logger_text), 
-            to_string(Cfg)}};
-gen_logger_pdu({logger, bmonitor_logger_events, Cfg}) ->
-    {loggerEvents, 
-        {'LoggerEvents', 
-            atom_to_list(bmonitor_logger_events), 
             to_string(Cfg)}}.
 
 gen_rrd_configs(Cfg) ->

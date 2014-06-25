@@ -2,7 +2,7 @@
 % Copyright (C) 2012 <Sébastien Serre sserre.bx@gmail.com>
 % 
 % Enms is a Network Management System aimed to manage and monitor SNMP
-% target, monitor network hosts and services, provide a consistent
+% monitor_logger_texts, monitor network hosts and services, provide a consistent
 % documentation system and tools to help network professionals
 % to have a wide perspective of the networks they manage.
 % 
@@ -18,17 +18,26 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
-% @private
--module(monitor_logger_events_app).
--behaviour(application).
-
--export([
-    start/2,
-    stop/1
-]).
-
-start(_Type, _Args) ->
-    monitor_logger_events_sup:start_link().
-
-stop(_State) ->
-    ok.
+{application, monitor_events,
+    [
+        {description, "events alerting and acknowledgement for monitor"},
+        {vsn, "0.1.0"},
+        {modules, [
+                monitor_events,
+                monitor_events_app,
+                monitor_events_sup
+            ]
+        },
+        {registered, 
+            [
+                monitor_events_sup,
+                monitor_events
+            ]
+        },
+        {applications, 
+            [kernel, stdlib]
+        },
+        {start_phases, []},
+        {mod, {monitor_events_app, []}}
+    ]
+}.
