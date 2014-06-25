@@ -219,15 +219,12 @@ handle_call({create_probe, TargetId, Probe}, _F, S) ->
                     Perm = NProbe#probe.permissions,
                     supercast_channel:emit(?MASTER_CHAN, {Perm, ProbeInfoPdu}),
                     dets:insert(Table, NTarget),
+                    monitor_sys_events:notify({create_probe, NTarget}),
                     {reply, ok, S};
                 _ ->
                     {reply, {error, "Key error"}, S}
             end
     end;
-    % get the Targetconf from dets:
-    %Table = S#state.db,
-    %case dets:lookup(
-
 
 handle_call({create_target, Target}, _F, S) ->
     Target2 = load_target_conf(Target),
@@ -303,6 +300,7 @@ handle_cast({sync_request, CState}, State) ->
 %% SELF API CASTS
 %%----------------------------------------------------------------------------
 handle_cast({probe_info, TargetId, NewProbe}, S) ->
+    monitor_sys_events:notify({probe_info, TargetId, NewProbe}),
     Chans       = S#state.chans,
     Perms       = NewProbe#probe.permissions,
     Target      = lists:keyfind(TargetId, 2, Chans),
@@ -317,6 +315,7 @@ handle_cast({probe_info, TargetId, NewProbe}, S) ->
     {noreply, NS};
 
 handle_cast({probe_activity, Target, Probe, Return}, S) ->
+    monitor_sys_events:notify({probe_activity, Target, Probe, Return}),
     Pdu = pdu(probeActivity, {
         Target#target.id,
         Probe#probe.name,

@@ -21,18 +21,59 @@
 -module(monitor_sys_events).
 -include("include/monitor.hrl").
 
-% start
+% manager
 -export([
     start_link/0,
     notify/1,
     subscribe/1
 ]).
 
+% handler
+-export([
+    init/1,
+    handle_event/2,
+    handle_call/2,
+    handle_info/2,
+    terminate/2,
+    code_change/3
+]).
+
+
+%% manager
 start_link() ->
-    gen_event:start_link({local, ?MODULE}).
+    Ret = gen_event:start_link({local, ?MODULE}),
+    gen_event:add_handler(?MODULE, ?MODULE, no_args),
+    Ret.
 
 notify(Event) ->
     gen_event:notify(?MODULE, Event).
 
 subscribe(Handler) ->
     gen_event:add_handler(?MODULE, Handler, no_args).
+
+
+%% standard handler
+init(_) -> {ok, no_state}.
+
+handle_event({probe_activity, _Target, _Probe, _Return}, State) ->
+    {ok, State};
+handle_event({probe_info, _TargetId, _NewProbe}, State) ->
+    ?LOG({probe_info, _TargetId, _NewProbe}),
+    {ok, State};
+handle_event({new_target, _Event}, State) ->
+    {ok, State};
+handle_event({create_probe, _NewTarget}, State) ->
+    {ok, State};
+handle_event(_, State) ->
+    {ok, State}.
+
+handle_call(Request, State) ->
+    ?LOG({"handle_call", Request}),
+    {ok, ok, State}.
+handle_info(Info, State) ->
+    ?LOG({"handle_info", Info}),
+    {ok, State}.
+terminate(_Arg, _State) ->
+    ok.
+code_change(_OldVsn, State, _Extra) ->
+    {ok, State}.
