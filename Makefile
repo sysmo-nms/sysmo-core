@@ -51,6 +51,7 @@ clean: var-clean rel-clean
 var-clean:
 	rm -rf var/monitor/*/
 	rm -rf var/monitor/targets.dets
+	rm -rf var/monitor_events
 	rm -f var/snmp/snmpm_config_db
 	rm -f var/log/*.log
 	rm -f var/mnesia/*.LOG

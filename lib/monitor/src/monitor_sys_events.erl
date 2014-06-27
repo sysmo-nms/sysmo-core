@@ -20,6 +20,7 @@
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 -module(monitor_sys_events).
 -include("include/monitor.hrl").
+-behaviour(gen_event).
 
 % manager
 -export([
@@ -42,7 +43,7 @@
 %% manager
 start_link() ->
     Ret = gen_event:start_link({local, ?MODULE}),
-    gen_event:add_handler(?MODULE, ?MODULE, no_args),
+    ok  = gen_event:add_handler(?MODULE, ?MODULE, no_args),
     Ret.
 
 notify(Event) ->
@@ -53,7 +54,19 @@ subscribe(Handler) ->
 
 
 %% standard handler
-init(_) -> {ok, no_state}.
+-record(state, {
+    dir,
+    file
+}).
+
+init(_) -> 
+    {ok, Dir} = application:get_env(monitor, events_dir),
+    case filelib:is_dir(Dir) of
+        true ->     ok;
+        false ->
+            ok = file:make_dir(Dir)
+    end,
+    {ok, #state{dir = Dir}}.
 
 handle_event({probe_activity, _Target, _Probe, _Return}, State) ->
     {ok, State};
@@ -77,3 +90,7 @@ terminate(_Arg, _State) ->
     ok.
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
+
+
+
+
