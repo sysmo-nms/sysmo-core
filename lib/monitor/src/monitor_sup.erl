@@ -35,12 +35,20 @@ init([ProbeModules, ConfigFile]) ->
             {one_for_one, 1, 60},
             [
                 {
-                    monitor_sys_events,
-                    {monitor_sys_events, start_link, []},
+                    monitor_event_logger,
+                    {monitor_event_logger, start_link, []},
                     permanent,
                     2000,
                     worker,
-                    [monitor_sys_events]
+                    [monitor_event_logger]
+                },
+                {
+                    monitor_event_manager,
+                    {monitor_event_manager, start_link, []},
+                    permanent,
+                    2000,
+                    worker,
+                    [monitor_event_manager]
                 },
                 {
                     monitor_probe_sup,

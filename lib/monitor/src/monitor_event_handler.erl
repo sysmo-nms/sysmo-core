@@ -18,18 +18,42 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
-% @private
--module(locator_app).
--behaviour(application).
+-module(monitor_event_handler).
+-include("include/monitor.hrl").
+-behaviour(gen_event).
 
+% handler
 -export([
-    start/2,
-    stop/1
+    init/1,
+    handle_event/2,
+    handle_call/2,
+    handle_info/2,
+    terminate/2,
+    code_change/3
 ]).
 
-start(_Type, _Args) ->
-    monitor_event_manager:subscribe(locator_event_handler),
-    locator_sup:start_link().
+init(_) -> 
+    {ok, nostate}.
 
-stop(_State) ->
+handle_event({probe_activity, _Target, _Probe, _Return}, State) ->
+    {ok, State};
+handle_event({probe_info, _TargetId, _NewProbe}, State) ->
+    ?LOG({probe_info, _TargetId, _NewProbe}),
+    {ok, State};
+handle_event({new_target, _Event}, State) ->
+    {ok, State};
+handle_event({create_probe, _NewTarget}, State) ->
+    {ok, State};
+handle_event(_, State) ->
+    {ok, State}.
+
+handle_call(Request, State) ->
+    ?LOG({"handle_call", Request}),
+    {ok, ok, State}.
+handle_info(Info, State) ->
+    ?LOG({"handle_info", Info}),
+    {ok, State}.
+terminate(_Arg, _State) ->
     ok.
+code_change(_OldVsn, State, _Extra) ->
+    {ok, State}.
