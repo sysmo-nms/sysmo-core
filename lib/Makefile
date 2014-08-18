@@ -19,12 +19,12 @@ clean: external_clean
 
 
 
-EXTERNAL = noctopus-checks
+EXTERNAL = nchecks
 external_make: $(EXTERNAL)
 	@cd $(EXTERNAL); make
 
 external_clean: $(EXTERNAL)
 	@cd $(EXTERNAL); make clean
 
-noctopus-checks:
-	@git clone git@github.com:ssbx/noctopus-checks.git
+nchecks:
+	@git clone git@github.com:ssbx/nchecks.git

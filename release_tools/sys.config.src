@@ -57,7 +57,7 @@
             {targets_data_dir,      "%INSTALL_DIR%/noctopus-server/var/monitor"},
             {events_dir,            "%INSTALL_DIR%/noctopus-server/var/events"},
             {master_chan_read_perm, ["admin"]},
-            {check_dir,             "%INSTALL_DIR%/noctopus-server/lib/noctopus-checks/bin"},
+            {check_dir,             "%INSTALL_DIR%/noctopus-server/lib/nchecks/bin"},
             {probe_modules,         
                 [
                     bmonitor_probe_nagios,

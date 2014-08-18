@@ -74,7 +74,7 @@ generate_icmpProbe(ProbeId, Target) ->
             permissions = Target#target.global_perm,
             monitor_probe_mod   = bmonitor_probe_ncheck,
             monitor_probe_conf  = #ncheck_probe_conf{
-                 executable = "lib/noctopus-checks/bin/ncheck_icmp",
+                 executable = "lib/nchecks/bin/ncheck_icmp",
                  args       = [
                     {"host",    Target#target.ip},
                     {"timeout", "5"}

@@ -36,4 +36,4 @@ sys.config
 var/httpd/8080_props.conf
 noctopus.tar
 *.plt
-lib/noctopus-checks
+lib/nchecks
