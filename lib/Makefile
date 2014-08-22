@@ -20,6 +20,9 @@ clean: external_clean
 
 
 EXTERNAL = nchecks
+external_update:
+	cd $(EXTERNAL); git pull
+
 external_make: $(EXTERNAL)
 	@cd $(EXTERNAL); make
 
