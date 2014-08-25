@@ -34,11 +34,11 @@ ERL_REL_COMM2   = '\
     init:stop()\
 '
 
-external_update:
-	cd lib; $(MAKE) external_update
-
 compile:
 	@cd lib; $(MAKE)
+
+external_update:
+	cd lib; $(MAKE) external_update
 
 test:
 	@cd lib; $(MAKE) test
