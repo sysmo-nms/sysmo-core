@@ -287,9 +287,18 @@ GetCheckReply   ::= SEQUENCE {
 -- EXTENDED QUERY/REPLY
 -------------------------------------------------------------------------------
 SnmpElementInfoQuery ::= SEQUENCE {
-    ip          IpInfo,
-    roCommunity PrintableString,
-    rwCommunity PrintableString
+    ip            IpInfo,
+    port          INTEGER,
+    timeout       INTEGER,
+    snmpVer       PrintableString,
+    v2RCommunity  PrintableString,
+    v2WCommunity  PrintableString,
+    v3SecLevel    PrintableString,
+    v3User        PrintableString,
+    v3AuthAlgo    PrintableString,
+    v3AuthKey     PrintableString,
+    v3PrivAlgo    PrintableString,
+    v3PrivKey     PrintableString
 }
 
 ExtendedQuery   ::= CHOICE {
