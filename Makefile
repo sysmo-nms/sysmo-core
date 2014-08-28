@@ -155,3 +155,12 @@ unix-release: var-clean rel-clean compile
 #####################
 # UNIX RELEASES END #
 #####################
+
+#####################################
+# start  with custom otp src erlang #
+#####################################
+startc: export ERL     = ~/src/lib/otp_src_17.1/bin/erl
+startc: export ERLC    = ~/src/lib/otp_src_17.1/bin/erlc -Werror
+startc: export ASNC    = ~/src/lib/otp_src_17.1/bin/erlc -Werror -bber
+startc: rel-clean $(LOCAL_RELEASE)
+	@$(ERL) -sname server -boot ./$(REL_NAME) -config ./sys
