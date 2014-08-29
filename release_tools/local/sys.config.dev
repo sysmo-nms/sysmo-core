@@ -110,7 +110,7 @@
                     {def_user_module,   bmonitor_probe_snmp},
                     {net_if,
                         [
-                            {module,    snmpm_net_if},
+                            {module,    snmp_disco_net_if},
                             {verbosity, info},
                             {options,   [{bind_to, false}, {no_reuse, false}]}
                         ]
