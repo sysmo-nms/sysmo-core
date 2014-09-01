@@ -72,7 +72,7 @@
 -define(DEFAULT_FILTER_OPTS,   [{module, ?DEFAULT_FILTER_MODULE}]).
 
 -define(GS_START_LINK(Args),
-    gen_server:start_link(?MODULE, Args, [])).
+    gen_server:start_link({local, ?MODULE}, ?MODULE, Args, [])).
 
 -define(IRGC_TIMEOUT, timer:minutes(5)).
 

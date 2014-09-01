@@ -40,7 +40,9 @@
     which_agents/0,
     register_agent/2,
     register_temporary_agent/1,
-    agent_registered/1
+    agent_registered/1,
+    test/0,
+    test2/0
 ]).
 
 %% SNMP API
@@ -60,6 +62,65 @@
     get_ipNetToPhysical_table/1,
     get_ipNetToMedia_table/1
 ]).
+
+test() ->
+    V2Agent = [
+        {engine_id, ""},
+        {address, [10,1,1,2]},
+        {version, v2},
+        {sec_model, v2c},
+        {community, "public"}
+    ],
+    register_agent("test_agentv2", V2Agent),
+    %R1 = snmpm:sync_get2(?SNMPM_USER, "test_agentv2", [[1,3,6,1,2,1,1,1,0]]),
+
+    A = 170,
+    AAEngineId = [A,A,A,A,A],
+    V3Agent = [
+        {engine_id, AAEngineId},
+        {address,   [10,1,1,1]},
+        {sec_name,  "initial"},
+        {version,   v3},
+        {sec_model, usm},
+        {sec_level, authPriv}
+    ],
+    register_agent("test_agentv3", V3Agent),
+    % generate the keys for "v3snmp" element
+    AuthKey = snmp:passwd2localized_key(sha, "password123", AAEngineId),
+    PrivKey = snmp:passwd2localized_key(md5, "password321", AAEngineId),
+    Conf = [
+        {sec_name,  "initial"},
+        {auth, usmHMACSHAAuthProtocol},
+        {auth_key, AuthKey},
+        {priv, usmDESPrivProtocol},
+        {priv_key, PrivKey}
+    ],
+    
+    % register users
+    ok = snmpm:register_usm_user(AAEngineId, "obelix", Conf),
+
+    {AuthKey, PrivKey}.
+
+test2() ->
+    R2 = snmpm:sync_get2(?SNMPM_USER, "test_agentv3", [[1,3,6,1,2,1,1,1,0]]),
+    R2.
+%     V3Args = [
+%         {engine_id, "800075cb80a864707b53fda0eb"},
+%         {address, "192.168.0.5"},
+%         {version, v3},
+%         {sec_model, usm},
+%         {sec_level, authPriv},
+%         {sec_name,  "asterix"}
+%     ],
+%     USMUser = [
+%         {sec_name, "asterix"},
+%         {auth, usmHMACSHAAuthProtocol},
+%         {auth_key, "password123"},
+%         {priv, usmAesCfb128Protocol},
+%         {priv_key, "enckey123"}
+%     ],
+%     register_agent("test_agentv3", V3Args),
+%     snmpm:register_usm_user("", "asterix", USMUser),
 
 %% BEHAVIOUR snmpm_user
 handle_error(_ReqId, _Reason, _UserData) ->
