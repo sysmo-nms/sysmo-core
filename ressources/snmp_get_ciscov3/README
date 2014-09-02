@@ -1,8 +1,0 @@
-WTF WTF WTF it work.
-
-./manager.sh
-
-> snmpm:sync_get("simple_user", "cisco agent", [[1,3,6,1,2,1,1,5,0]]).
-
-NOTE: the first command will fail, and learn engine boot and time. The rest
-will be successfull.
