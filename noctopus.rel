@@ -18,7 +18,6 @@
         {monitor_logger_text,  "0.1.0"},
         {monitor_logger_rrd,   "0.1.0"},
         {monitor,       "0.1.0"},
-        {locator,       "0.1.0"},
-        {ipman,         "0.1.0"}
+        {snmpman,       "0.1.0"}
     ]
 }.

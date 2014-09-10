@@ -9,8 +9,7 @@
             {pdu_dispatch,
                 [
                     % {supercast_module_behaviour, asn_key}
-                    {monitor_commander, modMonitorPDU},
-                    {locator_api, modLocatorPDU}
+                    {monitor_commander, modMonitorPDU}
                 ]
             },
 
@@ -22,8 +21,7 @@
             % module.
             {main_channels,
                 [
-                    'target-MasterChan',
-                    'locator-MasterChan'
+                    'target-MasterChan'
                 ]
             },
 
@@ -124,9 +122,6 @@
             {dir,       "%INSTALL_DIR%/noctopus-server/var/mnesia"},
             {debug,     none}
         ]
-    },
-    {locator,
-        []
     },
     {inets,
         [
