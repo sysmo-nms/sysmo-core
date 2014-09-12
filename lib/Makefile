@@ -5,13 +5,13 @@ compile: recurse external_make
 
 all: compile doc test local-release www
 
-recurse:
+recurse: snmpman
 	@for i in $(MODS); do cd $$i; $(MAKE) compile; cd ../; done
 
-test:
+test: snmpman
 	@for i in $(MODS); do cd $$i; $(MAKE) test;  cd ../; done
 
-doc:
+doc: snmpman
 	@for i in $(MODS); do cd $$i; $(MAKE) doc;  cd ../; done
 
 clean: external_clean
@@ -20,10 +20,10 @@ clean: external_clean
 
 
 EXTERNAL = nchecks
-external_update:
+external_update: snmpman
 	cd $(EXTERNAL); git pull
 
-external_make: $(EXTERNAL)
+external_make: $(EXTERNAL) snmpman
 	@cd $(EXTERNAL); make
 
 external_clean: $(EXTERNAL)
@@ -31,3 +31,6 @@ external_clean: $(EXTERNAL)
 
 nchecks:
 	@git clone git@github.com:ssbx/nchecks.git
+
+snmpman:
+	@git clone git@github.com:ssbx/snmpman.git

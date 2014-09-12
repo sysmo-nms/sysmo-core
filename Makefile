@@ -72,7 +72,7 @@ rel-clean:
 	rm -rf $(REL_NAME)-$(REL_VERSION).win32
 
 start: rel-clean $(LOCAL_RELEASE)
-	@$(ERL) -sname noctopus -boot ./$(REL_NAME) -config ./sys
+	@$(ERL) -sname master -boot ./$(REL_NAME) -config ./sys
 
 release: $(RELEASE)
 
@@ -163,4 +163,4 @@ startc: export ERL     = ~/src/otp/bin/erl
 startc: export ERLC    = ~/src/otp/bin/erlc -Werror
 startc: export ASNC    = ~/src/otp/bin/erlc -Werror -bber
 startc: rel-clean $(LOCAL_RELEASE)
-	@$(ERL) -sname server -boot ./$(REL_NAME) -config ./sys
+	@$(ERL) -sname master -boot ./$(REL_NAME) -config ./sys
