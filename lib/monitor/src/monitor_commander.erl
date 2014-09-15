@@ -186,10 +186,7 @@ handle_cast({{simulateCheck, {_, QueryId, Check, Args}}, CState}, S) ->
     end;
 
 handle_cast({{extendedQueryMsg, 
-        {_, _QueryId, {snmpElementInfoQuery, Query}}}, _CState}, S) ->
-    error_logger:info_msg(
-        "unknown cast for command ~p ~p ~p~n", [?MODULE, ?LINE, Query]
-    ),
+        {_, _QueryId, {snmpElementInfoQuery, _Query}}}, _CState}, S) ->
     {noreply, S};
 
 handle_cast(R, S) ->
