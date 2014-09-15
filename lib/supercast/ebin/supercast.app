@@ -69,6 +69,7 @@
         {applications, 
             [kernel, stdlib, crypto, public_key, ssl]
         },
+        {start_phases, []},
         {mod, {supercast_app, []}}
     ]
 }.

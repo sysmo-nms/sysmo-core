@@ -13,7 +13,7 @@ start_link() ->
 init([]) ->
     {ok, 
         {
-            {one_for_one, 10, 60},
+            {one_for_all, 1, 6000},
             [
                 {
                     snmpman_app,
@@ -30,6 +30,14 @@ init([]) ->
                     2000,
                     supervisor,
                     [monitor_app]
+                },
+                {
+                    supercast_app,
+                    {supercast_app, start, [normal,[]]},
+                    permanent,
+                    2000,
+                    supervisor,
+                    [supercast_app]
                 }
             ]
         }

@@ -16,7 +16,8 @@
         {included_applications, 
             [
                 monitor,
-                snmpman
+                snmpman,
+                supercast
             ]
         },
         {applications, 
