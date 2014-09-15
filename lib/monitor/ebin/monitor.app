@@ -51,9 +51,9 @@
             ]},
         {applications, 
             [kernel, stdlib, mnesia, supercast, monitor_logger_rrd,
-                monitor_logger_text, monitor_events, snmp]
+                monitor_logger_text, monitor_events, snmpman]
         },
-        {start_phases, []},
+        {start_phases, [{second_monitor, []}]},
         {mod, {monitor_app, []}}
     ]
 }.

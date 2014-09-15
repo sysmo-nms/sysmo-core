@@ -21,7 +21,7 @@
 % @private
 -module(monitor_templates).
 -include("include/monitor.hrl").
--include("../snmp_manager/include/snmp_manager.hrl").
+-include("../snmpman/include/snmpman.hrl").
 
 -export([
     generate_standard_probe/3,

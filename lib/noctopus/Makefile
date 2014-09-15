@@ -2,7 +2,7 @@
 
 ERL         ?= erl
 ERLC        ?= erlc -Werror
-#EPATH       += -pa ebin -pa ../monitor/ebin
+EPATH       += -pa ebin
 
 APP         = $(subst ebin/,,$(basename $(wildcard ebin/*.app)))
 INCLUDE     = $(wildcard include/*.hrl)
@@ -23,3 +23,4 @@ clean:
 	rm -f doc/*.png
 	rm -f doc/*.css
 	rm -f doc/edoc-info
+	rm -f priv/asn1/build/*
