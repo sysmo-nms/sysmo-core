@@ -37,3 +37,4 @@ var/httpd/8080_props.conf
 noctopus.tar
 *.plt
 lib/nchecks
+var/engineID.conf

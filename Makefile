@@ -61,6 +61,7 @@ var-clean:
 	rm -f var/mnesia/*.DAT
 	rm -f var/mnesia/*.DCD
 	rm -f var/mnesia/*.DCL
+	rm -f var/engindID.conf
 
 rel-clean:
 	rm -f $(REL_NAME).script
