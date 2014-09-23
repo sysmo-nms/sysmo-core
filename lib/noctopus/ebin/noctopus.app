@@ -23,12 +23,7 @@
         {applications, 
             [kernel, stdlib]
         },
-        {start_phases, 
-            [
-                {first_snmpman, []},
-                {second_monitor, []}
-            ]
-        },
+        {start_phases, []},
         {mod, {application_starter, [noctopus_app, []]}}
     ]
 }.

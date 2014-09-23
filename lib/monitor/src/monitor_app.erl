@@ -25,7 +25,6 @@
 
 -export([
     start/2,
-    start_phase/3,
     stop/1]).
 
 start(_Type, _Args) ->
@@ -35,11 +34,6 @@ start(_Type, _Args) ->
     {ok, ProbeModules} = application:get_env(monitor, probe_modules),
     {ok, ConfFile    } = application:get_env(monitor, config_file),
     monitor_sup:start_link(ProbeModules, ConfFile).
-
-start_phase(second_monitor, normal, []) ->
-    io:format("the init...~n"),
-    monitor_master:final_phase();
-start_phase(_, normal, []) -> ok.
 
 stop(_State) ->
     ok.

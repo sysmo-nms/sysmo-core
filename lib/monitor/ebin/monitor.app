@@ -53,7 +53,7 @@
             [kernel, stdlib, mnesia, supercast, monitor_logger_rrd,
                 monitor_logger_text, monitor_events, snmpman]
         },
-        {start_phases, [{second_monitor, []}]},
+        {start_phases, []},
         {mod, {monitor_app, []}}
     ]
 }.

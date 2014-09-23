@@ -26,7 +26,6 @@
 % GEN_SERVER
 -export([
     init/1,
-    final_phase/0,
     handle_call/3, 
     handle_cast/2, 
     handle_info/2, 
@@ -68,13 +67,6 @@ start_link(PMods, CFile) ->
 
 dump() ->
     gen_server:call(?MASTER_CHAN, dump_dets).
-
--spec final_phase() -> ok.
-% @doc
-% Called when snmpman is up from the second_monitor phase.
-% @end
-final_phase() ->
-    gen_server:cast(?MASTER_CHAN, final_phase).
 
 -spec create_target(Target::#target{}) -> ok | {error, Info::string()}.
 create_target(Target) ->
@@ -129,8 +121,9 @@ init([ProbeModules, _ConfFile]) ->
     {ok, Table} = init_database(),
     P   = extract_probes_info(ProbeModules),
     %{ok, Targets} = load_targets_conf_from_file(ConfFile),
-    %{ok, Targets} = load_targets_conf_from_dets(Table),
+    {ok, Targets} = load_targets_conf_from_dets(Table),
     {ok, #state{
+            chans = Targets,
             perm = #perm_conf{
                 read    = ["admin", "wheel"],
                 write   = ["admin"]
@@ -331,11 +324,6 @@ handle_cast({probe_activity, Target, Probe, Return}, S) ->
     }),
     supercast_channel:emit(?MASTER_CHAN, {Probe#probe.permissions, Pdu}),
     {noreply, S};
-
-handle_cast(final_phase, #state{db = Table} = S) ->
-    {ok, Targets} = load_targets_conf_from_dets(Table),
-    NewS = S#state{chans = Targets},
-    {noreply, NewS};
 
 handle_cast(_R, S) ->
     {noreply, S}.
