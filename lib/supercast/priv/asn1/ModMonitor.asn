@@ -309,12 +309,6 @@ ExtendedQueryMsg   ::= SEQUENCE {
     query       ExtendedQuery
 }
 
-
-
-ExtendedReply ::= CHOICE {
-    snmpElementInfoReply    [0] SnmpElementInfoReply
-}
-
 ExtendedReplyMsg   ::= SEQUENCE {
     queryId     QueryId,
     status      BOOLEAN,

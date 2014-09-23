@@ -32,6 +32,25 @@
     handle_create_probe/4
 ]).
 
+-define(IF_INDEX, "1.3.6.1.2.1.2.2.1.1").
+-define(IF_DESCR, "1.3.6.1.2.1.2.2.1.2").
+-define(IF_TYPE,  "1.3.6.1.2.1.2.2.1.3").
+-define(IF_MTU,   "1.3.6.1.2.1.2.2.1.4").
+-define(IF_SPEED, "1.3.6.1.2.1.2.2.1.5").
+-define(IF_PHYS_ADDRESS, "1.3.6.1.2.1.2.2.1.6").
+-define(IF_ADMIN_STATUS, "1.3.6.1.2.1.2.2.1.7").
+-define(IF_OPER_STATUS,  "1.3.6.1.2.1.2.2.1.8").
+-define(IF_LAST_CHANGE,  "1.3.6.1.2.1.2.2.1.9").
+
+-define(IF_INFO,
+    [?IF_INDEX, ?IF_DESCR, ?IF_TYPE, ?IF_MTU, ?IF_SPEED,
+    ?IF_PHYS_ADDRESS, ?IF_ADMIN_STATUS, ?IF_OPER_STATUS,
+    ?IF_LAST_CHANGE]).
+
+-define(TMP_ELEMENT, "testTarget").
+
+-define(SYS_NAME, "1.3.6.1.2.1.1.5.0").
+
 -export([
     init/1, 
     handle_call/3, 
@@ -188,7 +207,7 @@ handle_cast({{simulateCheck, {_, QueryId, Check, Args}}, CState}, S) ->
 handle_cast({{extendedQueryMsg, 
         {_, _QueryId, {snmpElementInfoQuery, _Query}}}, _CState}, S) ->
     io:format("query ~p~n", [_Query]),
-    handle_snmpElementInfoQuery(_Query),
+    handle_snmpElementInfoQuery(_QueryId, _CState, _Query),
     {noreply, S};
 
 handle_cast(R, S) ->
@@ -197,7 +216,7 @@ handle_cast(R, S) ->
     ),
     {noreply, S}.
 
-handle_snmpElementInfoQuery({
+handle_snmpElementInfoQuery(QueryId, CState, {
         _,
         {_, IpVer, Ip},
         Port,
@@ -209,19 +228,101 @@ handle_snmpElementInfoQuery({
         _AuthProto,
         _AuthKey,
         _PrivProto,
-        _PrivKey}) ->
+        _PrivKey} = Args) ->
     case SnmpVer of
         "3"  ->
             case snmpman:discovery(Ip, IpVer, Port, Timeout) of
                 {ok, EngineId} ->
-                    io:format("-----------~p~n", [EngineId]);
+                    Pdu = pdu(getCheckReply, {QueryId, true, false, EngineId}),
+                    send(CState, Pdu),
+                    case snmp_getSysName(Args, EngineId) of
+                        {ok, SysName} ->
+                            Pdu2 = pdu(getCheckReply, {QueryId, true, false, SysName}),
+                            send(CState, Pdu2),
+                            case snmp_getIfInfos(Args, EngineId) of
+                                {ok, Val} ->
+                                    Pdu3 = pdu(getCheckReply, {QueryId, true, true, Val}),
+                                    send(CState, Pdu3);
+                                {error, Reason} ->
+                                    Pdu3 = pdu(getCheckReply, {QueryId, false, true, Reason}),
+                                    send(CState, Pdu3)
+                            end;
+                        {error, Reason} ->
+                            Pdu2 = pdu(getCheckReply, {QueryId, false, true, Reason}),
+                            send(CState, Pdu2)
+                        end;
                 {error, Reason} ->
-                    io:format("------------~p~n",[Reason])
+                    Pdu = pdu(getCheckReply, {QueryId, false, true, Reason}),
+                    send(CState, Pdu)
             end;
         "2c" -> ok;
         "1"  -> ok;
         _    -> error
     end.
+
+snmp_getIfInfos(Args, EngineId) ->
+    {_,{_,IpVer, Ip}, Port, Timeout, SnmpVer, Community, SecLevel, SecName,
+    AuthProto, AuthKey, PrivProto, PrivKey} = Args,
+
+    case snmpman:register_element(?TMP_ELEMENT,
+        [
+            {ip_address, Ip},
+            {ip_version, IpVer},
+            {snmp_version, SnmpVer},
+            {security_level, SecLevel},
+            {port, Port},
+            {timeout, Timeout},
+            {community, Community},
+            {priv_proto, PrivProto},
+            {priv_key, PrivKey},
+            {auth_proto, AuthProto},
+            {auth_key, AuthKey},
+            {security_name, SecName},
+            {engine_id, EngineId}
+        ]) of
+        ok ->
+            _Ret = snmpman:walk_table(?TMP_ELEMENT, ?IF_INFO),
+            snmpman:unregister_element(?TMP_ELEMENT),
+            io:format("ret is ~p~n",[_Ret]),
+            {ok, "if infos"};
+        {error, Error} ->
+            {error, Error}
+    end.
+
+snmp_getSysName(Args, EngineId) ->
+    {_,{_,IpVer, Ip}, Port, Timeout, SnmpVer, Community, SecLevel, SecName,
+    AuthProto, AuthKey, PrivProto, PrivKey} = Args,
+
+    case snmpman:register_element(?TMP_ELEMENT,
+        [
+            {ip_address, Ip},
+            {ip_version, IpVer},
+            {snmp_version, SnmpVer},
+            {security_level, SecLevel},
+            {port, Port},
+            {timeout, Timeout},
+            {community, Community},
+            {priv_proto, PrivProto},
+            {priv_key, PrivKey},
+            {auth_proto, AuthProto},
+            {auth_key, AuthKey},
+            {security_name, SecName},
+            {engine_id, EngineId}
+        ]) of
+        ok ->
+            Ret = snmpman:get(?TMP_ELEMENT, ?SYS_NAME),
+            snmpman:unregister_element(?TMP_ELEMENT),
+            case Ret of
+                {ok, [{_, [{_,_,_,Value}]}]} ->
+                    {ok, Value};
+                Other ->
+                    Other
+            end;
+
+        {error, Error} ->
+            {error, Error}
+    end.
+
 
 
 
@@ -500,6 +601,18 @@ generate_id(Head) ->
 send(#client_state{module = CMod} = CState, Msg) ->
     CMod:send(CState, Msg).
 
+pdu(getCheckReply, {QueryId, Status, Last, Info}) when is_atom(Info) ->
+    pdu(getCheckReply, {QueryId, Status, Last, atom_to_list(Info)});
+pdu(getCheckReply, {QueryId, Status, Last, Info}) ->
+    {modMonitorPDU,
+        {fromServer,
+            {extendedReplyMsg,
+                {'ExtendedReplyMsg',
+                    QueryId,
+                    Status,
+                    Last,
+                    Info}}}};
+ 
 pdu(getCheckReply, {QueryId, Status, Infos}) ->
     {modMonitorPDU,
         {fromServer,
