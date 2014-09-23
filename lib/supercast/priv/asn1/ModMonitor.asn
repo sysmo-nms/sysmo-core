@@ -23,7 +23,7 @@ ProbeValue      ::= INTEGER
 ProbeTimeout    ::= INTEGER
 
 IpInfo          ::= SEQUENCE {
-    version     INTEGER,
+    version     PrintableString,
     stringVal   PrintableString
 }
 -- SEQUENCE TYPES --
@@ -311,18 +311,15 @@ ExtendedQueryMsg   ::= SEQUENCE {
 
 
 
-SnmpElementInfoReply    ::= SEQUENCE {
-    todo    PrintableString
-}
-
 ExtendedReply ::= CHOICE {
     snmpElementInfoReply    [0] SnmpElementInfoReply
 }
 
 ExtendedReplyMsg   ::= SEQUENCE {
     queryId     QueryId,
+    status      BOOLEAN,
     lastPdu     BOOLEAN,
-    reply       ExtendedReply
+    reply       PrintableString
 }
 -------------------------------------------------------------------------------
 -- EXTENDED QUERY/REPLY END

@@ -38,7 +38,7 @@ init(_) ->
 handle_event({probe_activity, _Target, _Probe, _Return}, State) ->
     {ok, State};
 handle_event({probe_info, _TargetId, _NewProbe}, State) ->
-    ?LOG({probe_info, _TargetId, _NewProbe}),
+    %?LOG({probe_info, _TargetId, _NewProbe}),
     {ok, State};
 handle_event({new_target, _Event}, State) ->
     {ok, State};

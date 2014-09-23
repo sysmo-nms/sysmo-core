@@ -1,3 +1,6 @@
+- clenup asn messages, remove query keep extendedQuery
+- cleanup/document monitor_commander,
+- cleanup/document monitor_master,
 - remove #probe.id
 - remove #rrd_config.update_regexps, #rrd_config.file_path
 - tref() is {A, _Ref} when A is systime + delay, the timestamp of the execution

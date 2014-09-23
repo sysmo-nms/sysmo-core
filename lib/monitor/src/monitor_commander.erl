@@ -188,6 +188,7 @@ handle_cast({{simulateCheck, {_, QueryId, Check, Args}}, CState}, S) ->
 handle_cast({{extendedQueryMsg, 
         {_, _QueryId, {snmpElementInfoQuery, _Query}}}, _CState}, S) ->
     io:format("query ~p~n", [_Query]),
+    handle_snmpElementInfoQuery(_Query),
     {noreply, S};
 
 handle_cast(R, S) ->
@@ -195,6 +196,33 @@ handle_cast(R, S) ->
         "unknown cast for command ~p ~p ~p~n", [?MODULE, ?LINE, R]
     ),
     {noreply, S}.
+
+handle_snmpElementInfoQuery({
+        _,
+        {_, IpVer, Ip},
+        Port,
+        Timeout,
+        SnmpVer,
+        _Community,
+        _SecLevel,
+        _SecName,
+        _AuthProto,
+        _AuthKey,
+        _PrivProto,
+        _PrivKey}) ->
+    case SnmpVer of
+        "3"  ->
+            case snmpman:discovery(Ip, IpVer, Port, Timeout) of
+                {ok, EngineId} ->
+                    io:format("-----------~p~n", [EngineId]);
+                {error, Reason} ->
+                    io:format("------------~p~n",[Reason])
+            end;
+        "2c" -> ok;
+        "1"  -> ok;
+        _    -> error
+    end.
+
 
 
 %%----------------------------------------------------------------------------
