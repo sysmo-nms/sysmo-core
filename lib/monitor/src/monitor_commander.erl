@@ -187,6 +187,7 @@ handle_cast({{simulateCheck, {_, QueryId, Check, Args}}, CState}, S) ->
 
 handle_cast({{extendedQueryMsg, 
         {_, _QueryId, {snmpElementInfoQuery, _Query}}}, _CState}, S) ->
+    io:format("query ~p~n", [_Query]),
     {noreply, S};
 
 handle_cast(R, S) ->

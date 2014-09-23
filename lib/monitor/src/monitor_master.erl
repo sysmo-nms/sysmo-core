@@ -127,13 +127,10 @@ probe_activity(Target, Probe, Return) ->
 %%----------------------------------------------------------------------------
 init([ProbeModules, _ConfFile]) ->
     {ok, Table} = init_database(),
-    %P2  = load_db_conf(Table),
-    %?LOG(P2),
     P   = extract_probes_info(ProbeModules),
     %{ok, Targets} = load_targets_conf_from_file(ConfFile),
-    {ok, Targets} = load_targets_conf_from_dets(Table),
+    %{ok, Targets} = load_targets_conf_from_dets(Table),
     {ok, #state{
-            chans = Targets,
             perm = #perm_conf{
                 read    = ["admin", "wheel"],
                 write   = ["admin"]
