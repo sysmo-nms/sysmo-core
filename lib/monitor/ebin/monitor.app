@@ -33,6 +33,7 @@
                 monitor_event_logger,
                 monitor_event_manager,
                 monitor_event_handler,
+                monitor_snmp_utils,
                 bmonitor_inspector_property_set,
                 bmonitor_inspector_status_set,
                 bmonitor_logger_rrd,

@@ -32,25 +32,6 @@
     handle_create_probe/4
 ]).
 
--define(IF_INDEX, "1.3.6.1.2.1.2.2.1.1").
--define(IF_DESCR, "1.3.6.1.2.1.2.2.1.2").
--define(IF_TYPE,  "1.3.6.1.2.1.2.2.1.3").
--define(IF_MTU,   "1.3.6.1.2.1.2.2.1.4").
--define(IF_SPEED, "1.3.6.1.2.1.2.2.1.5").
--define(IF_PHYS_ADDRESS, "1.3.6.1.2.1.2.2.1.6").
--define(IF_ADMIN_STATUS, "1.3.6.1.2.1.2.2.1.7").
--define(IF_OPER_STATUS,  "1.3.6.1.2.1.2.2.1.8").
--define(IF_LAST_CHANGE,  "1.3.6.1.2.1.2.2.1.9").
-
--define(IF_INFO,
-    [?IF_INDEX, ?IF_DESCR, ?IF_TYPE, ?IF_MTU, ?IF_SPEED,
-    ?IF_PHYS_ADDRESS, ?IF_ADMIN_STATUS, ?IF_OPER_STATUS,
-    ?IF_LAST_CHANGE]).
-
--define(TMP_ELEMENT, "testTarget").
-
--define(SYS_NAME, "1.3.6.1.2.1.1.5.0").
-
 -export([
     init/1, 
     handle_call/3, 
@@ -235,11 +216,11 @@ handle_snmpElementInfoQuery(QueryId, CState, {
                 {ok, EngineId} ->
                     Pdu = pdu(getCheckReply, {QueryId, true, false, EngineId}),
                     send(CState, Pdu),
-                    case snmp_getSysName(Args, EngineId) of
+                    case monitor_snmp_utils:walk_system(Args, EngineId) of
                         {ok, SysName} ->
                             Pdu2 = pdu(getCheckReply, {QueryId, true, false, SysName}),
                             send(CState, Pdu2),
-                            case snmp_getIfInfos(Args, EngineId) of
+                            case monitor_snmp_utils:walk_ifTable(Args, EngineId) of
                                 {ok, Val} ->
                                     Pdu3 = pdu(getCheckReply, {QueryId, true, true, Val}),
                                     send(CState, Pdu3);
@@ -259,70 +240,6 @@ handle_snmpElementInfoQuery(QueryId, CState, {
         "1"  -> ok;
         _    -> error
     end.
-
-snmp_getIfInfos(Args, EngineId) ->
-    {_,{_,IpVer, Ip}, Port, Timeout, SnmpVer, Community, SecLevel, SecName,
-    AuthProto, AuthKey, PrivProto, PrivKey} = Args,
-
-    case snmpman:register_element(?TMP_ELEMENT,
-        [
-            {ip_address, Ip},
-            {ip_version, IpVer},
-            {snmp_version, SnmpVer},
-            {security_level, SecLevel},
-            {port, Port},
-            {timeout, Timeout},
-            {community, Community},
-            {priv_proto, PrivProto},
-            {priv_key, PrivKey},
-            {auth_proto, AuthProto},
-            {auth_key, AuthKey},
-            {security_name, SecName},
-            {engine_id, EngineId}
-        ]) of
-        ok ->
-            _Ret = snmpman:walk_table(?TMP_ELEMENT, ?IF_INFO),
-            snmpman:unregister_element(?TMP_ELEMENT),
-            io:format("ret is ~p~n",[_Ret]),
-            {ok, "if infos"};
-        {error, Error} ->
-            {error, Error}
-    end.
-
-snmp_getSysName(Args, EngineId) ->
-    {_,{_,IpVer, Ip}, Port, Timeout, SnmpVer, Community, SecLevel, SecName,
-    AuthProto, AuthKey, PrivProto, PrivKey} = Args,
-
-    case snmpman:register_element(?TMP_ELEMENT,
-        [
-            {ip_address, Ip},
-            {ip_version, IpVer},
-            {snmp_version, SnmpVer},
-            {security_level, SecLevel},
-            {port, Port},
-            {timeout, Timeout},
-            {community, Community},
-            {priv_proto, PrivProto},
-            {priv_key, PrivKey},
-            {auth_proto, AuthProto},
-            {auth_key, AuthKey},
-            {security_name, SecName},
-            {engine_id, EngineId}
-        ]) of
-        ok ->
-            Ret = snmpman:get(?TMP_ELEMENT, ?SYS_NAME),
-            snmpman:unregister_element(?TMP_ELEMENT),
-            case Ret of
-                {ok, [{_, [{_,_,_,Value}]}]} ->
-                    {ok, Value};
-                Other ->
-                    Other
-            end;
-
-        {error, Error} ->
-            {error, Error}
-    end.
-
 
 
 

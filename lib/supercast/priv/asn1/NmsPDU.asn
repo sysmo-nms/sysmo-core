@@ -8,13 +8,11 @@ BEGIN
 
 IMPORTS 
     SupercastPDU    FROM ModSupercast
-    MonitorPDU      FROM ModMonitor
-    LocatorPDU      FROM ModLocator;
+    MonitorPDU      FROM ModMonitor;
 
 PDU ::= CHOICE {
     modSupercastPDU [0] SupercastPDU,
-    modMonitorPDU   [2] MonitorPDU,
-    modLocatorPDU   [3] LocatorPDU
+    modMonitorPDU   [2] MonitorPDU
 }
 
 END
