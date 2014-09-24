@@ -210,6 +210,9 @@ handle_snmpElementInfoQuery(QueryId, CState, {
         _AuthKey,
         _PrivProto,
         _PrivKey} = Args) ->
+    
+    BeginPdu = pdu(getCheckReply, {QueryId, true, false, "begin"}),
+    send(CState, BeginPdu),
     case SnmpVer of
         "3"  ->
             case snmpman:discovery(Ip, IpVer, Port, Timeout) of
