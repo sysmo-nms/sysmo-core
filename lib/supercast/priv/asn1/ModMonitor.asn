@@ -309,11 +309,20 @@ ExtendedQueryMsg   ::= SEQUENCE {
     query       ExtendedQuery
 }
 
+ReplyChoice   ::= CHOICE {
+    string          [0] PrintableString,
+    snmpSystemInfo  [1] SnmpSystemInfo
+}
+
 ExtendedReplyMsg   ::= SEQUENCE {
     queryId     QueryId,
     status      BOOLEAN,
     lastPdu     BOOLEAN,
-    reply       PrintableString
+    reply       ReplyChoice
+}
+
+SnmpSystemInfo  ::= SEQUENCE {
+    test        PrintableString
 }
 -------------------------------------------------------------------------------
 -- EXTENDED QUERY/REPLY END

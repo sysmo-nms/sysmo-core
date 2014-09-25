@@ -78,14 +78,29 @@ walk_system(Args, EngineId) ->
             {engine_id, EngineId}
         ]) of
         ok ->
-            _Ret = snmpman:walk_tree(?TMP_ELEMENT, ?MIB2_SYSTEM),
+            %{ok, {varbinds, VBs}} = snmpman:walk_tree(?TMP_ELEMENT, ?MIB2_SYSTEM),
+            case snmpman:walk_tree(?TMP_ELEMENT, ?MIB2_SYSTEM) of
+                {ok, {varbinds, VBs}} ->
+                    Ret = {ok, {varbinds, filter_system_info(VBs)}};
+                {error, _} = Err ->
+                    Ret = Err
+            end,
             snmpman:unregister_element(?TMP_ELEMENT),
-            io:format("ret is ~p~n",[_Ret]),
-            {ok, "if infos"};
+            io:format("ret : ~p~n",[Ret]),
+            Ret;
         {error, Error} ->
             {error, Error}
     end.
  
+filter_system_info(Vbs) ->
+    filter_system_info(Vbs, []).
+filter_system_info([], Acc) ->
+    lists:reverse(Acc);
+filter_system_info([
+    {varbind, "1.3.6.1.2.1.1.9" ++ _, _,_} | _], Acc) ->
+    lists:reverse(Acc);
+filter_system_info([H|T], Acc) ->
+    filter_system_info(T, [H|Acc]).
 
 get_sysName(Args, EngineId) ->
     {_,{_,IpVer, Ip}, Port, Timeout, SnmpVer, Community, SecLevel, SecName,
