@@ -50,10 +50,14 @@ walk_ifTable(Args, EngineId) ->
             {engine_id, EngineId}
         ]) of
         ok ->
-            _Ret = snmpman:walk_table(?TMP_ELEMENT, ?IF_INFO),
+            case snmpman:walk_table(?TMP_ELEMENT, ?IF_INFO) of
+                {ok, Val} ->
+                    Ret = Val;
+                {error, _} = Err ->
+                    Ret = Err
+            end,
             snmpman:unregister_element(?TMP_ELEMENT),
-            io:format("ret is ~p~n",[_Ret]),
-            {ok, "if infos"};
+            {ok, Ret};
         {error, Error} ->
             {error, Error}
     end.
