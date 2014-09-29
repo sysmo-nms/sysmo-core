@@ -136,7 +136,6 @@ get_sysName(Args, EngineId) ->
                 Other ->
                     Other
             end;
-
-        {error, Error} ->
-            {error, Error}
+        {error,_} = Err ->
+            Err
     end.

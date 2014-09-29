@@ -229,20 +229,62 @@ handle_snmpElementInfoQuery(QueryId, CState, {
                                     Pdu3 = pdu(extendedReplyMsgWalkIfTable, {QueryId, true, true, Val}),
                                     send(CState, Pdu3);
                                 {error, Reason} ->
-                                    Pdu3 = pdu(extendedReplyMsg, {QueryId, false, true, Reason}),
+                                    Pdu3 = pdu(extendedReplyMsgString, {QueryId, false, true, Reason}),
                                     send(CState, Pdu3)
                             end;
                         {error, Reason} ->
-                            Pdu2 = pdu(extendedReplyMsg, {QueryId, false, true, Reason}),
+                            Pdu2 = pdu(extendedReplyMsgString, {QueryId, false, true, Reason}),
                             send(CState, Pdu2)
                         end;
                 {error, Reason} ->
-                    Pdu = pdu(extendedReplyMsg, {QueryId, false, true, Reason}),
+                    Pdu = pdu(extendedReplyMsgString, {QueryId, false, true, Reason}),
                     send(CState, Pdu)
             end;
-        "2c" -> ok;
-        "1"  -> ok;
-        _    -> error
+        "2c" -> 
+            EngineId = "AAAAAAAAAAAA",
+            Pdu = pdu(extendedReplyMsgString, {QueryId, true, false, EngineId}),
+            send(CState, Pdu),
+            case monitor_snmp_utils:walk_system(Args, EngineId) of
+                {ok, System} ->
+                    Pdu2 = pdu(extendedReplyMsgWalkSystem, {QueryId, true, false, System}),
+                    send(CState, Pdu2),
+                    case monitor_snmp_utils:walk_ifTable(Args, EngineId) of
+                        {ok, Val} ->
+                            Pdu3 = pdu(extendedReplyMsgWalkIfTable, {QueryId, true, true, Val}),
+                            send(CState, Pdu3);
+                        {error, Reason} ->
+                            Pdu3 = pdu(extendedReplyMsgString, {QueryId, false, true, Reason}),
+                            send(CState, Pdu3)
+                    end;
+                {error, Reason} ->
+                    Pdu2 = pdu(extendedReplyMsgString, {QueryId, false, true, Reason}),
+                    send(CState, Pdu2)
+            end;
+
+        "1"  ->
+            EngineId = "AAAAAAAAAAAA",
+            Pdu = pdu(extendedReplyMsgString, {QueryId, true, false, EngineId}),
+            send(CState, Pdu),
+            case monitor_snmp_utils:walk_system(Args, EngineId) of
+                {ok, System} ->
+                    Pdu2 = pdu(extendedReplyMsgWalkSystem, {QueryId, true, false, System}),
+                    send(CState, Pdu2),
+                    case monitor_snmp_utils:walk_ifTable(Args, EngineId) of
+                        {ok, Val} ->
+                            Pdu3 = pdu(extendedReplyMsgWalkIfTable, {QueryId, true, true, Val}),
+                            send(CState, Pdu3);
+                        {error, Reason} ->
+                            Pdu3 = pdu(extendedReplyMsgString, {QueryId, false, true, Reason}),
+                            send(CState, Pdu3)
+                    end;
+                {error, Reason} ->
+                    Pdu2 = pdu(extendedReplyMsgString, {QueryId, false, true, Reason}),
+                    send(CState, Pdu2)
+            end;
+
+        _    -> 
+            Pdu = pdu(extendedReplyMsgString, {QueryId, false, true, "Unknown SNMP version"}),
+            send(CState, Pdu)
     end.
 
 
