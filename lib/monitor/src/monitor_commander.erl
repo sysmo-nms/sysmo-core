@@ -187,16 +187,24 @@ handle_cast({{simulateCheck, {_, QueryId, Check, Args}}, CState}, S) ->
     end;
 
 handle_cast({{extendedQueryMsg, 
-        {_, _QueryId, {snmpElementInfoQuery, _Query}}}, _CState}, S) ->
-    io:format("query ~p~n", [_Query]),
-    handle_snmpElementInfoQuery(_QueryId, _CState, _Query),
+        {_, QueryId, {snmpElementInfoQuery, Query}}}, CState}, S) ->
     {noreply, S};
+
+handle_cast({{extendedQueryMsg, 
+        {_, QueryId, {snmpUpdateElementQuery, Query}}}, CState}, S) ->
+    io:format("query ~p~n", [Query]),
+    handle_snmpUpdateElementQuery(QueryId, CState, Query),
+    {noreply, S};
+
 
 handle_cast(R, S) ->
     error_logger:info_msg(
         "unknown cast for command ~p ~p ~p~n", [?MODULE, ?LINE, R]
     ),
     {noreply, S}.
+
+handle_snmpUpdateElementQuery(_QueryId, _CState, _Query) ->
+    ok.
 
 handle_snmpElementInfoQuery(QueryId, CState, {
         _,
