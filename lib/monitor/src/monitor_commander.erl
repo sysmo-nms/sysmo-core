@@ -188,11 +188,11 @@ handle_cast({{simulateCheck, {_, QueryId, Check, Args}}, CState}, S) ->
 
 handle_cast({{extendedQueryMsg, 
         {_, QueryId, {snmpElementInfoQuery, Query}}}, CState}, S) ->
+    handle_snmpElementInfoQuery(QueryId, CState, Query),
     {noreply, S};
 
 handle_cast({{extendedQueryMsg, 
         {_, QueryId, {snmpUpdateElementQuery, Query}}}, CState}, S) ->
-    io:format("query ~p~n", [Query]),
     handle_snmpUpdateElementQuery(QueryId, CState, Query),
     {noreply, S};
 
@@ -203,8 +203,8 @@ handle_cast(R, S) ->
     ),
     {noreply, S}.
 
-handle_snmpUpdateElementQuery(_QueryId, _CState, _Query) ->
-    ok.
+handle_snmpUpdateElementQuery(_QueryId, _CState, Query) ->
+    io:format("update element query ~p~n", [Query]).
 
 handle_snmpElementInfoQuery(QueryId, CState, {
         _,
