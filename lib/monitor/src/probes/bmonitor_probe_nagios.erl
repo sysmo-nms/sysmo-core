@@ -50,9 +50,9 @@ init(_Target, Probe) ->
     {ok, NagRe} = compile_nagios_re(),
     {ok, #state{
             nag_re      = NagRe,
-            exec        = Conf#nagios_plugin_conf.executable,
-            args        = Conf#nagios_plugin_conf.args,
-            eval_perfs  = Conf#nagios_plugin_conf.eval_perfs
+            exec        = Conf#nagios_probe_conf.executable,
+            args        = Conf#nagios_probe_conf.args,
+            eval_perfs  = Conf#nagios_probe_conf.eval_perfs
         }
     }.
 

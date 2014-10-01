@@ -25,9 +25,82 @@
 -export([
     walk_ifTable/2,
     get_sysName/2,
-    walk_system/2
+    walk_system/2,
+    generate_standard_snmp_target/1
 ]).
 
+generate_standard_snmp_target(_Args) ->
+    {ok,
+     #target{
+        id = 'jojo17',
+        ip = "192.168.0.5",
+        ip_version = "v4",
+        global_perm = #perm_conf{read = ["admin"], write = ["admin"]},
+        properties = [
+            {"ip", "192.168.0.5"},
+            {"staticName", "jojo17"},
+            {"sysLocation", "undefined"},
+            {"sysName", "undefined"},
+            {"dnsName", "undefined"}
+        ],
+        probes = [
+            #probe{
+               id = 0,
+               name = 'jojoprobe',
+               description = "jojojojojo",
+               info = "jojojojojo",
+               permissions = #perm_conf{read = ["admin"], write = ["admin"]},
+               monitor_probe_mod  = bmonitor_probe_snmp,
+               monitor_probe_conf = #snmp_probe_conf{
+                    port    = 161,
+                    version = "v2",
+                    seclevel    = "noAuthNoPriv",
+                    community   = "public",
+                    usm_user    = "undefined",
+                    authkey = "undefinied",
+                    authproto = "SHA",
+                    privkey = "undefinied",
+                    privproto = "AES",
+                    engine_id = "AAAAAAAAAAAA",
+                    method = get,
+                    oids = [
+                        {"sysName", "1.3.6.1.2.1.1.5.0"},
+                        {"sysLocation", "1.3.6.1.2.1.1.5.0"}
+                    ],
+                    retries = 1
+               },
+               status = 'UNKNOWN',
+               timeout = 2,
+               step    = 5,
+               inspectors = [
+                            #inspector{
+                               module = bmonitor_inspector_status_set, 
+                               conf = []
+                              },
+                            #inspector{
+                               module = bmonitor_inspector_property_set, 
+                               conf = ["sysName", "sysLocation"]
+                              }
+
+                           ],
+               loggers = [
+                          #logger{
+                             module = bmonitor_logger_text, 
+                             conf = []
+                            }
+                         ],
+               properties = [
+                             {"status", "UNKNOWN"},
+                             {"sysName", "undefined"},
+                             {"sysLocation", "undefined"}
+                            ],
+               forward_properties = ["status", "sysName", "sysLocation"],
+               active = true
+            }
+        ],
+        directory = "var/monitor/jojo17"
+       }
+    }.
 
 walk_ifTable(Args, EngineId) ->
     {_,{_,IpVer, Ip}, Port, Timeout, SnmpVer, Community, SecLevel, SecName,

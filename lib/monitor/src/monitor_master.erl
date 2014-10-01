@@ -545,11 +545,11 @@ gen_asn_probe_conf(Conf) when is_record(Conf, ncheck_probe_conf) ->
     #ncheck_probe_conf{executable = Exe, args = Args} = Conf,
     lists:flatten([Exe, " ", [[A, " ", B, " "] || {A, B} <- Args]]);
 
-gen_asn_probe_conf(Conf) when is_record(Conf, nagios_plugin_conf) ->
-    #nagios_plugin_conf{executable = Exe, args = Args} = Conf,
+gen_asn_probe_conf(Conf) when is_record(Conf, nagios_probe_conf) ->
+    #nagios_probe_conf{executable = Exe, args = Args} = Conf,
     lists:flatten([Exe, " ", [[A, " ", B, " "] || {A, B} <- Args]]);
 
-gen_asn_probe_conf(Conf) when is_record(Conf, snmp_conf) ->
+gen_asn_probe_conf(Conf) when is_record(Conf, snmp_probe_conf) ->
     lists:flatten(io_lib:format("~p", [Conf])).
 
 gen_asn_probe_inspectors(Inspectors) ->

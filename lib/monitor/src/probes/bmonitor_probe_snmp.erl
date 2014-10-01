@@ -34,7 +34,6 @@
     agent,
     oids,
     request_oids,
-    timeout,
     method
 }).
 
@@ -45,34 +44,51 @@ init(Target, Probe) ->
     TargetName  = Target#target.id,
     AgentName   = atom_to_list(TargetName),
 
-    TargetIp    = Target#target.ip,
-    {ok, Ip}    = inet:parse_address(TargetIp),
-
     Conf        = Probe#probe.monitor_probe_conf,
-    Port        = Conf#snmp_conf.port,
-    Version     = Conf#snmp_conf.version,
-    Community   = Conf#snmp_conf.community,
-    Oids        = Conf#snmp_conf.oids,
-    Method      = Conf#snmp_conf.method,
+    Method      = Conf#snmp_probe_conf.method,
+    Oids        = Conf#snmp_probe_conf.oids,
 
-    case snmp_manager:agent_registered(AgentName) of
+
+    case snmpman:element_registered(AgentName) of
         true  -> ok;
         false ->
+            Ip    = Target#target.ip,
+            IpVer = Target#target.ip_version,
+
+            Port        = Conf#snmp_probe_conf.port,
+            Version     = Conf#snmp_probe_conf.version,
+            SecLevel    = Conf#snmp_probe_conf.seclevel,
+            Community   = Conf#snmp_probe_conf.community,
+            AuthKey     = Conf#snmp_probe_conf.authkey,
+            AuthProto   = Conf#snmp_probe_conf.authproto,
+            PrivKey     = Conf#snmp_probe_conf.privkey,
+            PrivProto   = Conf#snmp_probe_conf.privproto,
+            EngineId    = Conf#snmp_probe_conf.engine_id,
+            Retries     = Conf#snmp_probe_conf.retries,
+            Timeout     = Probe#probe.timeout,
             SnmpArgs = [
-                {engine_id, "none"},
-                {address,   Ip},
-                {port  ,    Port},
-                {version,   Version},
-                {community, Community}
+                {ip_address,    Ip},
+                {ip_version,    IpVer},
+                {timeout,       Timeout},
+                {port  ,        Port},
+                {snmp_version,  Version},
+                {security_level,SecLevel},
+                {community,     Community},
+                {auth_key,      AuthKey},
+                {auth_proto,    AuthProto},
+                {priv_key,      PrivKey},
+                {priv_proto,    PrivProto},
+                {engine_id,     EngineId},
+                {retries,       Retries}
+
             ],
-            snmp_manager:register_agent(AgentName, SnmpArgs)
+            snmpman:register_element(AgentName, SnmpArgs)
     end,
 
     {ok, #state{
             agent           = AgentName,
             oids            = Oids,
             request_oids    = [Oid || {_, Oid} <- Oids],
-            timeout         = Probe#probe.timeout * 1000,
             method          = Method
         }
     }.
@@ -82,7 +98,7 @@ exec(State) ->
     Agent           = State#state.agent,
     Request         = State#state.request_oids,
     Oids            = State#state.oids,
-    Timeout         = State#state.timeout,
+    Timeout         = "jo",
     Method          = State#state.method,
 
     {_, MicroSec1}  = sys_timestamp(),

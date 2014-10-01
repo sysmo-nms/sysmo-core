@@ -20,11 +20,29 @@
     eval_perfs  = false         :: false | true
 }).
 
--record(nagios_plugin_conf, {
+-record(nagios_probe_conf, {
     executable  = undefined             :: string(),
     args        = []                    :: [{any(), any()}],
     eval_perfs  = false                 :: false | true
 }).
+
+-record(snmp_probe_conf, {
+    port        = 161           :: integer(),
+    version     = "v2"          :: string(), % "1" | "2c" | "3"
+    seclevel    = "noAuthNoPriv" :: string(), % "authPriv", "authNoPriv", "noAuthNoPriv"
+    community   = "none"        :: string(),
+    usm_user    = "undefined"   :: string(),
+    authkey     = none          :: none | string(),
+    authproto   = "SHA"          :: string(),
+    privkey     = none          :: none | string(),
+    privproto   = "AES"          :: string(),
+    oids        = []            :: [any()],
+    engine_id   = "undefined"   :: string(),
+    method      = get           :: get | {walk, any()},
+    retries     = 1             :: integer()
+}).
+
+
 
 -record(probe_return, {
     status          = 'UNKNOWN' :: 'OK' | 'UNKNOWN' | 'WARNING' | 'CRITICAL',
@@ -57,6 +75,7 @@
 -record(target, {
     id          = undefined     :: atom(),
     ip          = undefined     :: string(),
+    ip_version  = undefined     :: string(),
     global_perm = #perm_conf{
         read        =   ["admin"],
         write       =   ["admin"]
@@ -91,20 +110,6 @@
     loggers_state       = [],
     probe_state        = []
 }).
-
--record(snmp_conf, {
-    port        = 161           :: integer(),
-    version     = v2            :: v2 | v3,
-    seclevel    = none          :: none | auth | enc,
-    community   = "none"        :: string(),
-    authkey     = none          :: none | string(),
-    authalgo    = none          :: none | 'hmac-md5' | 'hmac-sha1',
-    enckey      = none          :: none | string(),
-    encalgo     = none          :: none | des | aes,
-    oids        = []            :: [any()],
-    method      = get           :: get | {walk, any()}
-}).
-
 
 % RRD related. The max line accpeted by rrdtool is reached with
 % a 48 ports switch. It is why we need to break rrd databases

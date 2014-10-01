@@ -204,6 +204,8 @@ handle_cast(R, S) ->
     {noreply, S}.
 
 handle_snmpUpdateElementQuery(_QueryId, _CState, Query) ->
+    {ok, Target} = monitor_snmp_utils:generate_standard_snmp_target(Query),
+    monitor_master:create_target(Target),
     io:format("update element query ~p~n", [Query]).
 
 handle_snmpElementInfoQuery(QueryId, CState, {

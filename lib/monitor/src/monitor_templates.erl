@@ -131,7 +131,7 @@ generate_sysLocNameProbe(ProbeId, Target, Community) ->
             ",
             permissions = Target#target.global_perm,
             monitor_probe_mod   = bmonitor_probe_snmp,
-            monitor_probe_conf  = #snmp_conf{
+            monitor_probe_conf  = #snmp_probe_conf{
                 port        = 161,
                 version     = v2,
                 community   = Community,
@@ -195,7 +195,7 @@ generate_ifPerfProbe(ProbeId, Target, Community, TmpAgent) ->
             ",
             permissions = Target#target.global_perm,
             monitor_probe_mod   = bmonitor_probe_snmp,
-            monitor_probe_conf  = #snmp_conf{
+            monitor_probe_conf  = #snmp_probe_conf{
                 port        = 161,
                 version     = v2,
                 community   = Community,
