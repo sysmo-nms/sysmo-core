@@ -119,6 +119,13 @@
     macro   = ""                :: string()
 }).
 
+-record(rrd_config2, {
+    file,
+    create,
+    update,
+    graphs,
+    binds
+}).
 -record(rrd_config, {
     file    = ""                :: string(),
     create  = ""                :: string(),

@@ -52,20 +52,20 @@ generate_standard_snmp_target(_Args) ->
                permissions = #perm_conf{read = ["admin"], write = ["admin"]},
                monitor_probe_mod  = bmonitor_probe_snmp,
                monitor_probe_conf = #snmp_probe_conf{
-                    port    = 161,
-                    version = "v2",
+                    port        = 161,
+                    version     = "2c",
                     seclevel    = "noAuthNoPriv",
                     community   = "public",
                     usm_user    = "undefined",
-                    authkey = "undefinied",
-                    authproto = "SHA",
-                    privkey = "undefinied",
-                    privproto = "AES",
-                    engine_id = "AAAAAAAAAAAA",
+                    authkey     = "undefined",
+                    authproto   = "SHA",
+                    privkey     = "undefined",
+                    privproto   = "AES",
+                    engine_id   = "AAAAAAAAAAAA",
                     method = get,
                     oids = [
                         {"sysName", "1.3.6.1.2.1.1.5.0"},
-                        {"sysLocation", "1.3.6.1.2.1.1.5.0"}
+                        {"sysLocation", "1.3.6.1.2.1.1.6.0"}
                     ],
                     retries = 1
                },
