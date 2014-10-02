@@ -143,7 +143,7 @@
             {java_node, 
                 [
                     {java_com,
-"/usr/lib64/java/bin/java -cp lib/snmpman/java_bin/:lib/snmpman/java_lib/OtpErlang.jar:lib/snmpman/java_lib/snmp4j-2.3.1.jar: org.noctopusNms.snmpm.Snmpman >> var/snmpman4j.log var/engineID.conf 2>&1 &"
+"/usr/lib64/java/bin/java -cp lib/snmpman/java_bin/:lib/snmpman/java_lib/OtpErlang.jar:lib/snmpman/java_lib/snmp4j-2.3.1.jar: io.noctopus.snmpm.Snmpman >> var/snmpman4j.log var/engineID.conf 2>&1 &"
                     }
                 ]
             }
