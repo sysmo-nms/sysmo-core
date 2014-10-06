@@ -47,7 +47,6 @@ generate_standard_snmp_target(_Args) ->
         ],
         probes = [
             #probe{
-               id = 0,
                name = 'jojoprobe',
                description = "jojojojojo",
                info = "jojojojojo",

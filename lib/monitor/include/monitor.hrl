@@ -53,9 +53,8 @@
 }).
 
 -record(probe, {
-    id                  = undefined     :: integer(), % unique in a target
-    pid                 = undefined     :: undefined | pid(),
     name                = undefined     :: atom(),
+    pid                 = undefined     :: undefined | pid(),
     description         = ""            :: string(),
     info                = ""            :: string(),
     permissions         = #perm_conf{}  :: #perm_conf{},

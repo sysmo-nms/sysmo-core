@@ -216,25 +216,11 @@ handle_call(dump_dets, _F, S) ->
     {reply, ok, S}.
 
 insert_probe(Probe, Target) ->
+    {ok, Pid} = monitor_probe_sup:new({Target, Probe}),
+    P2 = Probe#probe{pid = Pid},
     Probes = Target#target.probes,
-    Id = get_free_probe_id(Probes),
-    P1 = Probe#probe{id = Id},
-    T1 = Target#target{probes = [P1|Probes]},
-    {ok, Pid} = monitor_probe_sup:new({Target, P1}),
-    P2 = P1#probe{pid = Pid},
-    T2 = T1#target{probes = [P2|Probes]},
+    T2 = Target#target{probes = [P2|Probes]},
     {P2, T2}.
-
-get_free_probe_id(Probes) ->
-    Ids = [P#probe.id || P <- Probes],
-    get_free_probe_id(0, Ids).
-get_free_probe_id(N, Ids) ->
-    case lists:member(N, Ids) of
-        true ->
-            get_free_probe_id(N + 1, Ids);
-        false ->
-            N
-    end.
 
 emit_wide(Target) ->
     Perm        = Target#target.global_perm,
@@ -325,8 +311,7 @@ update_info_chan(Target, Probe) ->
 
 
     Probes  = Target#target.probes,
-    PrId    = Probe#probe.id,
-    % TODO use #probe.name instead of #probe.id
+    PrId    = Probe#probe.name,
     NProbes = lists:keystore(PrId, 2, Probes, Probe),
     NTarget = Target#target{
         probes      = NProbes,
@@ -450,7 +435,7 @@ pdu(targetInfoDelete, Id) ->
                     [],
                     delete}}}};
 
-pdu(probeInfo, {InfoType, Id, 
+pdu(probeInfo, {InfoType, TargetId, 
         #probe{
             permissions         = #perm_conf{read = R, write = W},
             monitor_probe_conf  = ProbeConf,
@@ -462,8 +447,7 @@ pdu(probeInfo, {InfoType, Id,
         {fromServer,
             {probeInfo,
                 {'ProbeInfo',
-                    atom_to_list(Id),
-                    Probe#probe.id,
+                    atom_to_list(TargetId),
                     atom_to_list(Probe#probe.name),
                     Descr,
                     Info,

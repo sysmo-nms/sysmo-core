@@ -36,7 +36,7 @@
 -record(state, {
     rrds,
     target_id,
-    probe_id
+    probe_name
 }).
 
 init(Conf, Target, Probe) ->
@@ -48,7 +48,7 @@ init(Conf, Target, Probe) ->
     State       = #state{
         rrds        = Rrds,
         target_id   = TargetId,
-        probe_id    = ProbeId
+        probe_name    = ProbeId
     },
     {ok, State}.
 
@@ -62,7 +62,7 @@ log(State, ProbeReturn) ->
 dump(State) ->
     Rrds        = State#state.rrds,
     TargetId    = State#state.target_id,
-    ProbeId     = State#state.probe_id,
+    ProbeId     = State#state.probe_name,
 
     TId         = atom_to_list(TargetId),
     PId         = atom_to_list(ProbeId),

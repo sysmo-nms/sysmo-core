@@ -65,7 +65,6 @@ generate_perf_probe(_ProbeId, _Target, _Conf) ->
 generate_icmpProbe(ProbeId, Target) ->
     {ok, 
         #probe{
-            id          = 0,
             name        = ProbeId,
             description = "icmp:Echo request",
             info        = "
@@ -122,7 +121,6 @@ generate_sysLocNameProbe(ProbeId, Target, Community) ->
     Community = proplists:get_value("snmp_ro", Target#target.properties),
     {ok, 
         #probe{
-            id          = 1,
             name        = ProbeId,
             description = "snmp:sysName sysLocation",
             info        = "
@@ -186,7 +184,6 @@ generate_ifPerfProbe(ProbeId, Target, Community, TmpAgent) ->
     {QueryOids, RrdConf}   = generate_conf(Ifs3),
     {ok,
         #probe{
-            id          = 2,
             name        = ProbeId,
             description = "snmp:ifTable performances",
             info        = "

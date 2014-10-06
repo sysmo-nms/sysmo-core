@@ -101,7 +101,6 @@ FileData        ::= OCTET STRING
 
 ProbeInfo   ::= SEQUENCE {
     channel     TargetId,
-    probeId     ProbeId,
     name        ProbeName,
     descr       PrintableString,
     info        PrintableString,
