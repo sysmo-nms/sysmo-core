@@ -70,7 +70,7 @@ generate_standard_snmp_target(_Args) ->
                     retries = 1
                },
                status = 'UNKNOWN',
-               timeout = 2,
+               timeout = 2000,
                step    = 5,
                inspectors = [
                             #inspector{
