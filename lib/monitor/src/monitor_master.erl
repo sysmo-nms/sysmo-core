@@ -156,33 +156,6 @@ init_database() ->
             dets:close(N),
             dets:open_file(DetsFile)
     end.
-%%----------------------------------------------------------------------------
-%% SELF API CALLS
-%%----------------------------------------------------------------------------
-% handle_call({chan_update, #target{id = Id, global_perm = Perm} = Target}, _F, 
-%         #state{chans = C} = S) ->
-%     case lists:keyfind(Id, 2, C) of
-%         false ->    % did not exist insert
-%             supercast_channel:emit(?MASTER_CHAN, {Perm,
-%                 pdu(targetInfo, Target)}),
-%             {reply, ok, S#state{
-%                     chans = [Target | C]
-%                 }
-%             };
-%         _ -> % exist update
-%             supercast_channel:emit(?MASTER_CHAN, {Perm,
-%                 pdu(targetInfo, Target)}),
-%             {reply, ok, 
-%                 S#state{
-%                     chans = lists:keyreplace(Id, 2, C, Target)
-%                 }
-%             }
-%     end;
-% 
-% handle_call({chan_del, #target{id = Id, global_perm = Perm}}, _F, 
-%         #state{chans = C} = S) ->
-%     supercast_channel:emit(?MASTER_CHAN, {Perm, pdu(targetDelete, Id)}),
-%     {reply, ok, S#state{chans = lists:keydelete(Id, 2, C)}};
 
 %%----------------------------------------------------------------------------
 %% SUPERCAST_CHANNEL BEHAVIOUR CALLS

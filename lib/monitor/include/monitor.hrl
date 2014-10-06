@@ -97,22 +97,6 @@
     probe = []          :: [#probe{}]
 }).
 
--record(ps_state, {
-    target_id,
-    name,
-    probe,
-    tref,
-    last_check,
-    check_state         = stopped   :: ready | running | stopped,
-    check_flag          = normal    :: normal | force | random,
-    nego_parents        = [],
-    nego_return,
-    parents             = [] :: {atom(), atom()},   % {pidName, status}
-    childs              = [],   %dynamicaly added
-    inspectors_state    = [],
-    loggers_state       = [],
-    probe_state         = []
-}).
 
 % RRD related. The max line accpeted by rrdtool is reached with
 % a 48 ports switch. It is why we need to break rrd databases

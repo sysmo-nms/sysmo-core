@@ -63,6 +63,23 @@
     %last_check
 %}).
 
+-record(state, {
+    target_id,
+    name,
+    probe,
+    tref,   %
+    last_check,
+    check_state         = stopped   :: ready | running | stopped,
+    check_flag          = normal    :: normal | force | random,
+    nego_parents        = [],
+    nego_return,
+    parents             = [] :: {atom(), atom()},   % {pidName, status}
+    childs              = [],   %dynamicaly added
+    inspectors_state    = [],
+    loggers_state       = [],
+    probe_state         = []
+}).
+
 -define(OK,         'OK').
 -define(CRITICAL,   'CRITICAL').
 -define(WARNING,    'WARNING').
@@ -135,7 +152,7 @@ init([Target, Probe]) ->
     {ok, ProbeInitState}    = init_probe(Target, UProbe),
     {ok, InspectInitState}  = init_inspectors(Target, UProbe),
     {ok, LoggersInitState}  = init_loggers(Target, UProbe),
-    PSState = #ps_state{
+    PSState = #state{
         target_id           = Target#target.id,
         name                = UProbe#probe.name,
         probe               = UProbe,
@@ -145,7 +162,7 @@ init([Target, Probe]) ->
         loggers_state       = LoggersInitState
     },
     {ok, TRef} = initiate_start_sequence(UProbe#probe.step, random),
-    {ok, 'RUNNING', PSState#ps_state{tref=TRef}, hibernate}.
+    {ok, 'RUNNING', PSState#state{tref=TRef}, hibernate}.
 
 'RUNNING'(_Event, SName, SData) ->
     {next_state, SName, SData}.
@@ -153,56 +170,56 @@ init([Target, Probe]) ->
 % GEN_CHANNEL event
 handle_event({probe_return, NewProbeState, ProbeReturn}, SName, SData) ->
     % UPDATE probe_state
-    SData1  = SData#ps_state{probe_state       = NewProbeState},
+    SData1  = SData#state{probe_state       = NewProbeState},
 
     % INSPECT, update probe and inspectors_state,
-    Probe        = SData1#ps_state.probe,
-    InspectState = SData1#ps_state.inspectors_state,
+    Probe        = SData1#state.probe,
+    InspectState = SData1#state.inspectors_state,
     {ok, NewInspectState, ModifiedProbe} = 
         inspect(InspectState, Probe, ProbeReturn),
-    SData2  = SData1#ps_state{probe             = ModifiedProbe},
-    SData3  = SData2#ps_state{inspectors_state  = NewInspectState},
+    SData2  = SData1#state{probe             = ModifiedProbe},
+    SData3  = SData2#state{inspectors_state  = NewInspectState},
 
     % NOTIFY
-    TargetId  = SData3#ps_state.target_id,
+    TargetId  = SData3#state.target_id,
     notify(ProbeReturn, TargetId, Probe, ModifiedProbe),
 
     % LOG, update loggers_state,
-    LoggersState            = SData3#ps_state.loggers_state,
+    LoggersState            = SData3#state.loggers_state,
     {ok, NewLoggersState}   = log_return(LoggersState, ProbeReturn),
-    SData4 = SData3#ps_state{loggers_state = NewLoggersState},
+    SData4 = SData3#state{loggers_state = NewLoggersState},
 
     % LAUNCH
-    _PS      = SData4#ps_state.probe_state,
-    P       = SData4#ps_state.probe,
+    _PS      = SData4#state.probe_state,
+    P       = SData4#state.probe,
     {ok, TRef} = initiate_start_sequence(P#probe.step, normal),
 
-    {next_state, SName, SData4#ps_state{tref=TRef}, hibernate};
+    {next_state, SName, SData4#state{tref=TRef}, hibernate};
 
 handle_event({emit_pdu, Pdu}, SName, SData) ->
-    Probe       = SData#ps_state.probe,
+    Probe       = SData#state.probe,
     ChanName    = Probe#probe.name,
     Perms       = Probe#probe.permissions,
     supercast_channel:emit(ChanName, {Perms, Pdu}),
     {next_state, SName, SData};
 
 handle_event({sync_request, CState}, SName, SData) ->
-    Probe   = SData#ps_state.probe,
+    Probe   = SData#state.probe,
     Name    = Probe#probe.name,
-    LStates = SData#ps_state.loggers_state,
+    LStates = SData#state.loggers_state,
     {ok, Pdus, NewLStates} = log_dump(LStates),
     ok      = supercast_channel:unicast(CState, Pdus),
     ok      = supercast_channel:subscribe(Name, CState),
-    SData1  = SData#ps_state{loggers_state = NewLStates},
+    SData1  = SData#state{loggers_state = NewLStates},
     {next_state, SName, SData1}.
 
 handle_sync_event(get_perms, _From, SName, SData) ->
-    Probe = SData#ps_state.probe,
+    Probe = SData#state.probe,
     Perms = Probe#probe.permissions,
     {reply, Perms, SName, SData}.
 
 handle_info(take_of, SName, SData) ->
-    #ps_state{
+    #state{
        probe_state = ProbeState,
        probe = #probe{monitor_probe_mod = Mod}
     } = SData,
@@ -279,8 +296,8 @@ log_dump([LoggerState|LState], PduAcc, NLogState) ->
             log_dump(LState, PduAcc,       [{Mod, State2}|NLogState])
     end.
     
-%-spec log_dump(#ps_state{}) -> any().
-%log_dump(#ps_state{probe = Probe} = PSState) ->
+%-spec log_dump(#state{}) -> any().
+%log_dump(#state{probe = Probe} = PSState) ->
     %L = [Mod:dump(PSState) || 
             %#logger{module = Mod} <- Probe#probe.loggers],
     %L2 = lists:filter(fun(Element) ->
@@ -355,7 +372,6 @@ initiate_start_sequence(Step) ->
     timer:send_after(Step * 1000, take_of).
 
 take_of(Parent, Mod, ProbeState) ->
-    io:format("take_of~n"),
     erlang:spawn(fun() ->
         {ok, ProbeState2, Return}  = Mod:exec(ProbeState),
         gen_fsm:send_all_state_event(Parent, {probe_return, ProbeState2, Return})
