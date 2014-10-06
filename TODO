@@ -40,7 +40,7 @@ Include concept of documented Acknoledgement.
 Alerts on rrdfetch and probe status events.
 Alert on value returned by rrdfetch. Compare with an AVERAGE expected
 value. Apply an algorithm. Send an alert if needed.
-Will need to use a gen_event somewhere in monitor_logger_rrd to put a fun which will 
+Will need to use a gen_event somewhere in errdtools to put a fun which will 
 wait for the current probe_return to be writed to the file.rrd and then query
 the rrd. A delayed inspector in some way because inspectors are launch before
 loggers.

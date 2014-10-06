@@ -1,2 +1,0 @@
-- use rrdcached et rrdflushcached pour les dump
-- use rrdjtool (search: java rrdtool jni)

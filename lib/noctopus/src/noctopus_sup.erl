@@ -32,6 +32,14 @@ init([]) ->
                     [monitor_app]
                 },
                 {
+                    errdtools_app,
+                    {errdtools_app, start, [normal,[]]},
+                    permanent,
+                    2000,
+                    supervisor,
+                    [errdtools_app]
+                },
+                {
                     supercast_app,
                     {supercast_app, start, [normal,[]]},
                     permanent,
@@ -39,6 +47,7 @@ init([]) ->
                     supervisor,
                     [supercast_app]
                 }
+
             ]
         }
     }.

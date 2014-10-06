@@ -17,6 +17,7 @@
             [
                 monitor,
                 snmpman,
+                errdtools,
                 supercast
             ]
         },

@@ -15,7 +15,7 @@
         {noctopus,      "0.1.0"},
         {monitor_events,"0.1.0"},
         {monitor_logger_text,  "0.1.0"},
-        {monitor_logger_rrd,   "0.1.0"},
+        {errdtools,     "0.1.0"},
         {monitor,       "0.1.0"},
         {snmpman,       "0.1.0"}
     ]
