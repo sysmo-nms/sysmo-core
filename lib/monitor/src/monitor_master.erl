@@ -343,22 +343,12 @@ code_change(_O, S, _E) ->
 %% UTILS    
 %%----------------------------------------------------------------------------
 update_info_chan(Target, Probe) ->
-    %Target  = lists:keyfind(TargetId, 2, Chans),
-
     TProperties     = Target#target.properties,
     PProperties     = Probe#probe.properties,
     PForward        = Probe#probe.forward_properties,
 
-    {ok, NewTProp} = probe_property_forward(TProperties, PProperties, PForward),
-
-    case NewTProp of
-        TProperties ->
-            % nothing to do
-            ok;
-        _ ->
-            % nenerate apropriate pdu
-            ok
-    end,
+    {ok, NewTProp} = 
+        probe_property_forward(TProperties, PProperties, PForward),
 
 
     Probes  = Target#target.probes,

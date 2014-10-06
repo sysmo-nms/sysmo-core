@@ -36,12 +36,14 @@ generate_standard_snmp_target(_Args) ->
         ip = "192.168.0.5",
         ip_version = "v4",
         global_perm = #perm_conf{read = ["admin"], write = ["admin"]},
+        directory = "var/monitor/jojo17",
         properties = [
-            {"ip", "192.168.0.5"},
-            {"staticName", "jojo17"},
+            {"ip",          "192.168.0.5"},
+            {"ipVersion",   "v4"},
+            {"staticName",  "jojo17"},
             {"sysLocation", "undefined"},
-            {"sysName", "undefined"},
-            {"dnsName", "undefined"}
+            {"sysName",     "undefined"},
+            {"dnsName",     "undefined"}
         ],
         probes = [
             #probe{
@@ -50,6 +52,21 @@ generate_standard_snmp_target(_Args) ->
                description = "jojojojojo",
                info = "jojojojojo",
                permissions = #perm_conf{read = ["admin"], write = ["admin"]},
+               status = 'UNKNOWN',
+               step    = 5,
+               timeout = 2000,
+
+               properties = [
+                             {"status", "UNKNOWN"},
+                             {"sysName", "undefined"},
+                             {"sysLocation", "undefined"}
+               ],
+               forward_properties = ["sysName", "sysLocation"],
+
+               parents = [],
+               active = true,
+
+                
                monitor_probe_mod  = bmonitor_probe_snmp,
                monitor_probe_conf = #snmp_probe_conf{
                     port        = 161,
@@ -63,15 +80,13 @@ generate_standard_snmp_target(_Args) ->
                     privproto   = "AES",
                     engine_id   = "AAAAAAAAAAAA",
                     method = get,
+                    retries = 1,
                     oids = [
                         {"sysName", "1.3.6.1.2.1.1.5.0"},
                         {"sysLocation", "1.3.6.1.2.1.1.6.0"}
-                    ],
-                    retries = 1
+                    ]
                },
-               status = 'UNKNOWN',
-               timeout = 2000,
-               step    = 5,
+
                inspectors = [
                             #inspector{
                                module = bmonitor_inspector_status_set, 
@@ -83,22 +98,15 @@ generate_standard_snmp_target(_Args) ->
                               }
 
                            ],
-               loggers = [
-                          #logger{
-                             module = bmonitor_logger_text, 
-                             conf = []
-                            }
-                         ],
-               properties = [
-                             {"status", "UNKNOWN"},
-                             {"sysName", "undefined"},
-                             {"sysLocation", "undefined"}
-                            ],
-               forward_properties = ["status", "sysName", "sysLocation"],
-               active = true
+               loggers = 
+               [
+                    #logger{
+                        module = bmonitor_logger_text, 
+                        conf = []
+                      }
+               ]
             }
-        ],
-        directory = "var/monitor/jojo17"
+        ]
        }
     }.
 
