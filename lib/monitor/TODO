@@ -1,3 +1,4 @@
+0 bug when adding a target with a probe wich is instantly fail (client or server?)
 1 make snmpman work
 2 remove #probe.id
 3 remove #rrd_config.update_regexps, #rrd_config.file_path
