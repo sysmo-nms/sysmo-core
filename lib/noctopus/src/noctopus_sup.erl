@@ -24,20 +24,28 @@ init([]) ->
                     [snmpman_app]
                 },
                 {
-                    monitor_app,
-                    {monitor_app, start, [normal,[]]},
-                    permanent,
-                    2000,
-                    supervisor,
-                    [monitor_app]
-                },
-                {
                     errdtools_app,
                     {errdtools_app, start, [normal,[]]},
                     permanent,
                     2000,
                     supervisor,
                     [errdtools_app]
+                },
+                {
+                    text_logger_app,
+                    {text_logger_app, start, [normal,[]]},
+                    permanent,
+                    2000,
+                    supervisor,
+                    [text_logger_app]
+                },
+                {
+                    monitor_app,
+                    {monitor_app, start, [normal,[]]},
+                    permanent,
+                    2000,
+                    supervisor,
+                    [monitor_app]
                 },
                 {
                     supercast_app,

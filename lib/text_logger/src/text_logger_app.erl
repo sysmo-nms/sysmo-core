@@ -19,7 +19,7 @@
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 % @private
--module(monitor_events_app).
+-module(text_logger_app).
 -behaviour(application).
 
 -export([
@@ -28,7 +28,7 @@
 ]).
 
 start(_Type, _Args) ->
-    monitor_events_sup:start_link().
+    text_logger_sup:start_link().
 
 stop(_State) ->
-    ok.
+	ok.

@@ -44,7 +44,7 @@ init(_Conf, Target, Probe) ->
     TargetId    = Target#target.id,
     ProbeName   = Probe#probe.name,
     LogFile     = generate_filename(Dir, ProbeName),
-    {ok, Pid}   = monitor_logger_text_sup:start_logger(LogFile),
+    {ok, Pid}   = text_logger_sup:start_logger(LogFile),
     State       = #state{
         file_name   = LogFile,
         log_srv     = Pid,
@@ -58,14 +58,14 @@ log(State, ProbeReturn) ->
     Msg         = ProbeReturn#probe_return.original_reply,
     T           = ProbeReturn#probe_return.timestamp,
     EncodedMsg  = list_to_binary(io_lib:format("~p>>> ~s", [T, Msg])),
-    monitor_logger_text:log(LogSrv, EncodedMsg),
+    text_logger:log(LogSrv, EncodedMsg),
     {ok, State}.
 
 dump(State) ->
     LogSrv      = State#state.log_srv,
     TargetId    = State#state.target_id,
     ProbeName   = State#state.probe_name,
-    {ok, Bin}   = monitor_logger_text:dump(LogSrv),
+    {ok, Bin}   = text_logger:dump(LogSrv),
     Pdu         = pdu('probeDump', {TargetId, ProbeName, Bin}),
     {ok, {pdu, Pdu}, State}.
 

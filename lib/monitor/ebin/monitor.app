@@ -52,7 +52,7 @@
             ]},
         {applications, 
             [kernel, stdlib, mnesia, supercast, errdtools,
-                monitor_logger_text, monitor_events, snmpman]
+                text_logger, snmpman]
         },
         {start_phases, []},
         {mod, {monitor_app, []}}
