@@ -98,7 +98,7 @@
 }).
 
 -record(ps_state, {
-    target,
+    target_id,
     name,
     probe,
     step,

@@ -137,8 +137,8 @@ init([Target, Probe]) ->
     {ok, InspectInitState}  = init_inspectors(Target, UProbe),
     {ok, LoggersInitState}  = init_loggers(Target, UProbe),
     PSState = #ps_state{
+        target_id           = Target#target.id,
         name                = UProbe#probe.name,
-        target              = Target,
         probe               = UProbe,
         step                = UProbe#probe.step,
         timeout             = UProbe#probe.timeout,
@@ -170,8 +170,8 @@ handle_event({probe_return, NewProbeState, ProbeReturn}, SName, SData) ->
     SData3  = SData2#ps_state{inspectors_state  = NewInspectState},
 
     % NOTIFY
-    Target  = SData3#ps_state.target,
-    notify(ProbeReturn, Target, Probe, ModifiedProbe),
+    TargetId  = SData3#ps_state.target_id,
+    notify(ProbeReturn, TargetId, Probe, ModifiedProbe),
 
     % LOG, update loggers_state,
     LoggersState            = SData3#ps_state.loggers_state,
@@ -367,26 +367,24 @@ take_of(ProbeState, Probe) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% monitor_master and supercast_channel NOTIFY %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-notify(ProbeReturn, Target, OriginalProbe, NewProbe) ->
-    ok = notify_subscribers(ProbeReturn, Target, NewProbe),
-    ok = notify_master(Target, OriginalProbe, NewProbe, ProbeReturn).
+notify(ProbeReturn, TargetId, OriginalProbe, NewProbe) ->
+    ok = notify_subscribers(ProbeReturn, TargetId, NewProbe),
+    ok = notify_master(TargetId, OriginalProbe, NewProbe, ProbeReturn).
 
-notify_subscribers(ProbeReturn, Target, Probe) ->
+notify_subscribers(ProbeReturn, TargetId, Probe) ->
     ChanName = ProbeName = Probe#probe.name,
-    Perms       = Probe#probe.permissions,
-    TargetId    = Target#target.id,
-    Pdu         = monitor_pdu:probe_return({ProbeReturn, TargetId, ProbeName}),
+    Perms    = Probe#probe.permissions,
+    Pdu      = monitor_pdu:probe_return({ProbeReturn, TargetId, ProbeName}),
     supercast_channel:emit(ChanName, {Perms, Pdu}).
 
-notify_master(Target, OriginalProbe, Probe, ProbeReturn) ->
+notify_master(TargetId, OriginalProbe, Probe, ProbeReturn) ->
     case notify_master_required(OriginalProbe, Probe) of
         true  ->
-            TargetId    = Target#target.id,
             monitor_master:probe_info(TargetId, Probe);
         false -> ok
     end,
     % ACTIVITY allways called:
-    monitor_master:probe_activity(Target, Probe, ProbeReturn).
+    monitor_master:probe_activity(TargetId, Probe, ProbeReturn).
     
 
 notify_master_required(Orig, Modified) ->

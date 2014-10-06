@@ -107,10 +107,10 @@ probe_info(TargetId, Probe) ->
 id_used(Id) ->
     gen_server:call(?MASTER_CHAN, {id_used, Id}).
 
--spec probe_activity(Target::atom(), Probe::#probe{}, Return::#probe_return{}) ->
+-spec probe_activity(TargetId::atom(), Probe::#probe{}, Return::#probe_return{}) ->
     ok.
-probe_activity(Target, Probe, Return) ->
-    gen_server:cast(?MASTER_CHAN, {probe_activity, Target, Probe, Return}).
+probe_activity(TargetId, Probe, Return) ->
+    gen_server:cast(?MASTER_CHAN, {probe_activity, TargetId, Probe, Return}).
 
 
 
@@ -312,10 +312,10 @@ handle_cast({probe_info, TargetId, NewProbe}, S) ->
     NS = S#state{chans = NewChans},
     {noreply, NS};
 
-handle_cast({probe_activity, Target, Probe, Return}, S) ->
-    monitor_event_manager:notify({probe_activity, Target, Probe, Return}),
+handle_cast({probe_activity, TargetId, Probe, Return}, S) ->
+    monitor_event_manager:notify({probe_activity, TargetId, Probe, Return}),
     Pdu = pdu(probeActivity, {
-        Target#target.id,
+        TargetId,
         Probe#probe.name,
         none,
         Return#probe_return.original_reply,
