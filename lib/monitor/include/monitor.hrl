@@ -101,8 +101,6 @@
     target_id,
     name,
     probe,
-    step,
-    timeout,
     tref,
     last_check,
     check_state         = stopped   :: ready | running | stopped,

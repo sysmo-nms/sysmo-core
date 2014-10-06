@@ -54,8 +54,7 @@
     reset_family/1,
     synchronize_parents/1,
     synchronize_childs/1,
-    launch/1,           % from monitor_probe_sup:parents_sync/0
-    take_of/2
+    launch/1           % from monitor_probe_sup:parents_sync/0
 ]).
 
 %-record(parent, {
@@ -140,17 +139,12 @@ init([Target, Probe]) ->
         target_id           = Target#target.id,
         name                = UProbe#probe.name,
         probe               = UProbe,
-        step                = UProbe#probe.step,
-        timeout             = UProbe#probe.timeout,
-
-    %    parents             = ProbeParents,
-    %    childs              = [],
  
         probe_state         = ProbeInitState ,
         inspectors_state    = InspectInitState,
         loggers_state       = LoggersInitState
     },
-    {ok, TRef} = initiate_start_sequence(ProbeInitState, UProbe, random),
+    {ok, TRef} = initiate_start_sequence(UProbe#probe.step, random),
     {ok, 'RUNNING', PSState#ps_state{tref=TRef}, hibernate}.
 
 'RUNNING'(_Event, SName, SData) ->
@@ -179,9 +173,9 @@ handle_event({probe_return, NewProbeState, ProbeReturn}, SName, SData) ->
     SData4 = SData3#ps_state{loggers_state = NewLoggersState},
 
     % LAUNCH
-    PS      = SData4#ps_state.probe_state,
+    _PS      = SData4#ps_state.probe_state,
     P       = SData4#ps_state.probe,
-    {ok, TRef} = initiate_start_sequence(PS, P, normal),
+    {ok, TRef} = initiate_start_sequence(P#probe.step, normal),
 
     {next_state, SName, SData4#ps_state{tref=TRef}, hibernate};
 
@@ -207,7 +201,15 @@ handle_sync_event(get_perms, _From, SName, SData) ->
     Perms = Probe#probe.permissions,
     {reply, Perms, SName, SData}.
 
-handle_info(_Info, SName, SData) ->
+handle_info(take_of, SName, SData) ->
+    #ps_state{
+       probe_state = ProbeState,
+       probe = #probe{monitor_probe_mod = Mod}
+    } = SData,
+    take_of(self(), Mod, ProbeState),
+    {next_state, SName, SData};
+
+handle_info(_, SName, SData) ->
     {next_state, SName, SData}.
 
 terminate(_Reason, _SName, _SData) ->
@@ -338,27 +340,26 @@ inspect([IState|IStates], NIStates, PR, OP, MP) ->
 %% PROBE LAUNCH %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec initiate_start_sequence(
-        ProbeState  ::any(),
-        Probe       ::#probe{},
-        Step        :: normal | random | now | integer()
+        Step        :: integer(),
+        Mode        :: normal | random | now
     ) -> any().
-initiate_start_sequence(ProbeState, Probe, random) ->
-    Step    = random:uniform(Probe#probe.step),
-    initiate_start_sequence(ProbeState, Probe, Step);
-initiate_start_sequence(ProbeState, Probe, normal) ->
-    Step    = Probe#probe.step,
-    initiate_start_sequence(ProbeState, Probe, Step);
-initiate_start_sequence(ProbeState, Probe, now) ->
-    Step    = 0,
-    initiate_start_sequence(ProbeState, Probe, Step);
-initiate_start_sequence(ProbeState, Probe, Step) ->
-    timer:apply_after(Step * 1000,   ?MODULE, take_of, [ProbeState, Probe]).
+initiate_start_sequence(Step, random) ->
+    Step2   = random:uniform(Step),
+    initiate_start_sequence(Step2);
+initiate_start_sequence(Step, normal) ->
+    initiate_start_sequence(Step);
+initiate_start_sequence(_, now) ->
+    initiate_start_sequence(0).
 
-take_of(ProbeState, Probe) ->
-    Mod     = Probe#probe.monitor_probe_mod,
-    Pid     = Probe#probe.pid,
-    {ok, ProbeState2, Return}  = Mod:exec(ProbeState),
-    gen_fsm:send_all_state_event(Pid, {probe_return, ProbeState2, Return}).
+initiate_start_sequence(Step) ->
+    timer:send_after(Step * 1000, take_of).
+
+take_of(Parent, Mod, ProbeState) ->
+    io:format("take_of~n"),
+    erlang:spawn(fun() ->
+        {ok, ProbeState2, Return}  = Mod:exec(ProbeState),
+        gen_fsm:send_all_state_event(Parent, {probe_return, ProbeState2, Return})
+    end).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
