@@ -1,9 +1,24 @@
-# Makefile 
+UNAME = $(shell uname)
+CYGW  = $(findstring CYGWIN, $(UNAME))
+
+ifeq ($(CYGW), CYGWIN)
+    RELEASE        = windows-release
+    LOCAL_RELEASE  = windows-local-release
+    export ERL     = /cygdrive/c/Program\ Files/erl5.10.4/bin/erl
+    export ERLC    = /cygdrive/c/Program\ Files/erl5.10.4/bin/erlc -Werror
+    export ASNC    = /cygdrive/c/Program\ Files/erl5.10.4/bin/erlc -Werror -bber
+else
+    RELEASE        = unix-release
+    LOCAL_RELEASE  = unix-local-release
+    export ERL     = /opt/erlang_otp_17.1/bin/erl
+    export ERLC    = /opt/erlang_otp_17.1/bin/erlc -Werror
+    export ASNC    = /opt/erlang_otp_17.1/bin/erlc -Werror -bber
+endif
+
 export MAKE        = /usr/bin/make
 export REL_NAME    = noctopus
 export REL_VERSION = 0.2.1
 export MODS = supercast monitor errdtools text_logger snmpman noctopus
-
 
 .PHONY: compile test doc clean var-clean rel-clean start \
 	unix-release unix-local-release windows-release windows-local-release
@@ -17,9 +32,7 @@ test:
 doc:
 	$(MAKE) -C lib doc
 
-clean: var-clean rel-clean
-	rm -f erl_crash.dump
-	rm -f MnesiaCore.*
+clean: var-clean crash-clean rel-clean
 	$(MAKE) -C lib clean
 
 var-clean:
@@ -33,6 +46,10 @@ var-clean:
 	rm -f var/mnesia/*.DCD
 	rm -f var/mnesia/*.DCL
 	rm -f var/engineID.conf
+
+crash-clean:
+	rm -f erl_crash.dump
+	rm -f MnesiaCore.*
 
 rel-clean:
 	rm -f $(REL_NAME).script
@@ -51,22 +68,6 @@ rel-clean:
 ######################
 # RELEASES UTILITIES #
 ######################
-UNAME = $(shell uname)
-CYGW  = $(findstring CYGWIN, $(UNAME))
-ifeq ($(CYGW), CYGWIN)
-    RELEASE        = windows-release
-    LOCAL_RELEASE  = windows-local-release
-    export ERL     = /cygdrive/c/Program\ Files/erl5.10.4/bin/erl
-    export ERLC    = /cygdrive/c/Program\ Files/erl5.10.4/bin/erlc -Werror
-    export ASNC    = /cygdrive/c/Program\ Files/erl5.10.4/bin/erlc -Werror -bber
-else
-    RELEASE        = unix-release
-    LOCAL_RELEASE  = unix-local-release
-    export ERL     = /opt/erlang_otp_17.1/bin/erl
-    export ERLC    = /opt/erlang_otp_17.1/bin/erlc -Werror
-    export ASNC    = /opt/erlang_otp_17.1/bin/erlc -Werror -bber
-endif
-
 MODS_EBIN_DIR      = $(addprefix ./lib/, $(addsuffix /ebin, $(MODS)))
 MODS_DEF_FILE      = $(foreach app, $(MODS_EBIN_DIR), $(wildcard $(app)/*.app))
 ERL_NMS_PATH       = $(addprefix -pa ,$(MODS_EBIN_DIR))
@@ -79,7 +80,6 @@ ERL_REL_COMM2   = '\
     systools:make_tar("$(REL_NAME)", [{erts, code:root_dir()}]),\
     init:stop()\
 '
-
 start: rel-clean $(LOCAL_RELEASE)
 	@$(ERL) -sname master -boot ./$(REL_NAME) -config ./sys
 
@@ -89,7 +89,6 @@ $(REL_NAME).script: $(MODS_DEF_FILE) $(REL_NAME).rel
 	@echo "Generating $(REL_NAME).script and $(REL_NAME).boot files..."
 	@$(ERL) -noinput $(ERL_NMS_PATH) -eval $(ERL_REL_COMM)
 
-
 TMP_DIR     = /tmp/nms_tar_dir
 WIN_TMP_DIR = C:\\cygwin\\tmp\\nms_tar_dir
 ERL_UNTAR   = '\
@@ -97,6 +96,7 @@ ERL_UNTAR   = '\
     erl_tar:extract(File, [{cwd, "$(WIN_TMP_DIR)"}]), \
     init:stop() \
 '
+
 
 ##########################
 # WINDOWS RELEASES BEGIN #
@@ -106,7 +106,6 @@ windows-local-release: compile $(REL_NAME).script
 	cp release_tools/local/8080_props.conf.dev ./var/httpd/8080_props.conf
 	chmod -w sys.config
 	chmod -w var/httpd/8080_props.conf
-
 
 windows-release: var-clean rel-clean compile
 	@echo "Generating $(REL_NAME)-$(REL_VERSION).win32 directory"
@@ -126,14 +125,6 @@ windows-release: var-clean rel-clean compile
 	@mkdir $(TMP_DIR)/cfg
 	@touch $(TMP_DIR)/cfg/monitor.conf
 	@cp -r $(TMP_DIR) $(REL_NAME)-$(REL_VERSION).win32
-########################
-# WINDOWS RELEASES END #
-########################
-
-
-
-
-
 
 
 #######################
@@ -161,6 +152,3 @@ unix-release: var-clean rel-clean compile
 	@mkdir $(TMP_DIR)/cfg
 	@touch $(TMP_DIR)/cfg/monitor.conf
 	@tar -czf $(REL_NAME)-$(REL_VERSION).tar.gz -C $(TMP_DIR) .
-#####################
-# UNIX RELEASES END #
-#####################
