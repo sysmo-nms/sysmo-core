@@ -1,55 +1,26 @@
 # Makefile 
-
-UNAME = $(shell uname)
-CYGW  = $(findstring CYGWIN, $(UNAME))
-ifeq ($(CYGW), CYGWIN)
-    RELEASE        = windows-release
-    LOCAL_RELEASE  = windows-local-release
-    export ERL     = /cygdrive/c/Program\ Files/erl5.10.4/bin/erl
-    export ERLC    = /cygdrive/c/Program\ Files/erl5.10.4/bin/erlc -Werror
-    export ASNC    = /cygdrive/c/Program\ Files/erl5.10.4/bin/erlc -Werror -bber
-else
-    RELEASE        = unix-release
-    LOCAL_RELEASE  = unix-local-release
-    export ERL     = /opt/erlang_otp_17.1/bin/erl
-    export ERLC    = /opt/erlang_otp_17.1/bin/erlc -Werror
-    export ASNC    = /opt/erlang_otp_17.1/bin/erlc -Werror -bber
-endif
-
 export MAKE        = /usr/bin/make
 export REL_NAME    = noctopus
 export REL_VERSION = 0.2.1
-export MODS = supercast monitor errdtools \
-                         text_logger snmpman noctopus
-MODS_EBIN_DIR      = $(addprefix ./lib/, $(addsuffix /ebin, $(MODS)))
-MODS_DEF_FILE      = $(foreach app, $(MODS_EBIN_DIR), $(wildcard $(app)/*.app))
-ERL_NMS_PATH       = $(addprefix -pa ,$(MODS_EBIN_DIR))
-ERL_REL_COMM       = '\
-    systools:make_script("$(REL_NAME)", [local]),\
-    init:stop()\
-'
-ERL_REL_COMM2   = '\
-    systools:make_script("$(REL_NAME)", []), \
-    systools:make_tar("$(REL_NAME)", [{erts, code:root_dir()}]),\
-    init:stop()\
-'
+export MODS = supercast monitor errdtools text_logger snmpman noctopus
+
+
+.PHONY: compile test doc clean var-clean rel-clean start \
+	unix-release unix-local-release windows-release windows-local-release
 
 compile:
-	@cd lib; $(MAKE)
-
-external_update:
-	cd lib; $(MAKE) external_update
+	$(MAKE) -C lib
 
 test:
-	@cd lib; $(MAKE) test
+	$(MAKE) -C lib test
 
 doc:
-	@cd lib; $(MAKE) doc
+	$(MAKE) -C lib doc
 
 clean: var-clean rel-clean
 	rm -f erl_crash.dump
 	rm -f MnesiaCore.*
-	@cd lib; $(MAKE) clean
+	$(MAKE) -C lib clean
 
 var-clean:
 	rm -rf var/monitor/*/
@@ -71,6 +42,43 @@ rel-clean:
 	rm -f $(REL_NAME).tar
 	rm -f $(REL_NAME)-$(REL_VERSION).tar.gz
 	rm -rf $(REL_NAME)-$(REL_VERSION).win32
+
+
+
+
+
+
+######################
+# RELEASES UTILITIES #
+######################
+UNAME = $(shell uname)
+CYGW  = $(findstring CYGWIN, $(UNAME))
+ifeq ($(CYGW), CYGWIN)
+    RELEASE        = windows-release
+    LOCAL_RELEASE  = windows-local-release
+    export ERL     = /cygdrive/c/Program\ Files/erl5.10.4/bin/erl
+    export ERLC    = /cygdrive/c/Program\ Files/erl5.10.4/bin/erlc -Werror
+    export ASNC    = /cygdrive/c/Program\ Files/erl5.10.4/bin/erlc -Werror -bber
+else
+    RELEASE        = unix-release
+    LOCAL_RELEASE  = unix-local-release
+    export ERL     = /opt/erlang_otp_17.1/bin/erl
+    export ERLC    = /opt/erlang_otp_17.1/bin/erlc -Werror
+    export ASNC    = /opt/erlang_otp_17.1/bin/erlc -Werror -bber
+endif
+
+MODS_EBIN_DIR      = $(addprefix ./lib/, $(addsuffix /ebin, $(MODS)))
+MODS_DEF_FILE      = $(foreach app, $(MODS_EBIN_DIR), $(wildcard $(app)/*.app))
+ERL_NMS_PATH       = $(addprefix -pa ,$(MODS_EBIN_DIR))
+ERL_REL_COMM       = '\
+    systools:make_script("$(REL_NAME)", [local]),\
+    init:stop()\
+'
+ERL_REL_COMM2   = '\
+    systools:make_script("$(REL_NAME)", []), \
+    systools:make_tar("$(REL_NAME)", [{erts, code:root_dir()}]),\
+    init:stop()\
+'
 
 start: rel-clean $(LOCAL_RELEASE)
 	@$(ERL) -sname master -boot ./$(REL_NAME) -config ./sys
@@ -156,12 +164,3 @@ unix-release: var-clean rel-clean compile
 #####################
 # UNIX RELEASES END #
 #####################
-
-#####################################
-# start  with custom otp src erlang #
-#####################################
-startc: export ERL     = ~/src/otp/bin/erl
-startc: export ERLC    = ~/src/otp/bin/erlc -Werror
-startc: export ASNC    = ~/src/otp/bin/erlc -Werror -bber
-startc: rel-clean $(LOCAL_RELEASE)
-	@$(ERL) -sname master -boot ./$(REL_NAME) -config ./sys
