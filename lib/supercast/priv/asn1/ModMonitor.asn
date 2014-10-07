@@ -71,7 +71,10 @@ LoggerRrd   ::= SEQUENCE {
     module  ErlangModule,
     config  SEQUENCE OF RrdConfig
 }
-
+LoggerRrd2   ::= SEQUENCE {
+    module  ErlangModule,
+    config  PrintableString
+}
 -- Text --
 LoggerText  ::= SEQUENCE {
     module  ErlangModule,
@@ -87,7 +90,8 @@ LoggerEvents ::= SEQUENCE {
 Logger  ::= CHOICE {
     loggerRrd       [0] LoggerRrd,
     loggerText      [1] LoggerText,
-    loggerEvents    [2] LoggerEvents
+    loggerEvents    [2] LoggerEvents,
+    loggerRrd2      [3] LoggerRrd2
 }
 Loggers     ::= SEQUENCE OF Logger
 

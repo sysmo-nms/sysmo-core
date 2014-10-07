@@ -104,7 +104,62 @@ generate_standard_snmp_target(_Args) ->
                         conf = []
                       }
                ]
+            },
+            #probe{
+               name = 'jojoprobe2',
+               description = "jujujuju",
+               info = "jojojojojo",
+               permissions = #perm_conf{read = ["admin"], write = ["admin"]},
+               status = 'UNKNOWN',
+               step    = 5,
+               timeout = 2000,
+
+               properties = [
+                             {"status", "UNKNOWN"},
+                             {"sysName", "undefined"},
+                             {"sysLocation", "undefined"}
+               ],
+               forward_properties = ["sysName", "sysLocation"],
+
+               parents = [],
+               active = true,
+
+                
+               monitor_probe_mod  = bmonitor_probe_snmp,
+               monitor_probe_conf = #snmp_probe_conf{
+                    port        = 161,
+                    version     = "2c",
+                    seclevel    = "noAuthNoPriv",
+                    community   = "public",
+                    usm_user    = "undefined",
+                    authkey     = "undefined",
+                    authproto   = "SHA",
+                    privkey     = "undefined",
+                    privproto   = "AES",
+                    engine_id   = "AAAAAAAAAAAA",
+                    method = get,
+                    retries = 1,
+                    oids = [
+                        {"sysName", "1.3.6.1.2.1.1.5.0"},
+                        {"sysLocation", "1.3.6.1.2.1.1.6.0"}
+                    ]
+               },
+
+               inspectors = [
+                            #inspector{
+                               module = bmonitor_inspector_status_set, 
+                               conf = []
+                              }
+                           ],
+               loggers = 
+               [
+                    #logger{
+                        module = bmonitor_logger_rrd2, 
+                        conf = []
+                      }
+               ]
             }
+ 
         ]
        }
     }.

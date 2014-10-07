@@ -509,6 +509,13 @@ gen_asn_probe_inspectors(Inspectors) ->
 gen_asn_probe_loggers(Loggers) ->
     [gen_logger_pdu(LConf) || LConf <- Loggers].
 
+gen_logger_pdu({logger, bmonitor_logger_rrd2, _Cfg}) ->
+    {loggerRrd2, 
+        {'LoggerRrd2',
+            atom_to_list(bmonitor_logger_rrd),
+            "hello"
+        }
+    };
 gen_logger_pdu({logger, bmonitor_logger_rrd, Cfg}) ->
     {loggerRrd, 
         {'LoggerRrd',
