@@ -78,7 +78,7 @@ generate_standard_snmp_target(_Args) ->
                     privkey     = "undefined",
                     privproto   = "AES",
                     engine_id   = "AAAAAAAAAAAA",
-                    method = get,
+                    method      = get,
                     retries = 1,
                     oids = [
                         {"sysName", "1.3.6.1.2.1.1.5.0"},
@@ -115,9 +115,7 @@ generate_standard_snmp_target(_Args) ->
                timeout = 2000,
 
                properties = [
-                             {"status", "UNKNOWN"},
-                             {"sysName", "undefined"},
-                             {"sysLocation", "undefined"}
+                    {"status", "UNKNOWN"}
                ],
                forward_properties = ["sysName", "sysLocation"],
 
@@ -137,12 +135,22 @@ generate_standard_snmp_target(_Args) ->
                     privkey     = "undefined",
                     privproto   = "AES",
                     engine_id   = "AAAAAAAAAAAA",
-                    method = get,
-                    retries = 1,
-                    oids = [
-                        {"sysName", "1.3.6.1.2.1.1.5.0"},
-                        {"sysLocation", "1.3.6.1.2.1.1.6.0"}
-                    ]
+                    method      = {walk_table, [
+                        ?IF_INDEX,
+                        ?IF_DESCR,
+                        ?IF_IN_OCTETS,
+                        ?IF_IN_UCASTPKTS,
+                        ?IF_IN_NUCASTPKTS,
+                        ?IF_IN_DISCARDS,
+                        ?IF_IN_ERRORS,
+                        ?IF_OUT_OCTETS,
+                        ?IF_OUT_UCASTPKTS,
+                        ?IF_OUT_NUCASTPKTS,
+                        ?IF_OUT_DISCARDS,
+                        ?IF_OUT_ERRORS
+                    ]},
+                    retries     = 1,
+                    oids        = []
                },
 
                inspectors = [

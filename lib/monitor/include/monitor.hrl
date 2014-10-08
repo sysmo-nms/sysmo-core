@@ -46,10 +46,20 @@
 
 -record(probe_return, {
     status          = 'UNKNOWN' :: 'OK' | 'UNKNOWN' | 'WARNING' | 'CRITICAL',
-    original_reply  = undefined :: string(),
-    timestamp       = undefined :: integer(),
+    % used by inspector status set
+
+    original_reply  = "undefined" :: string(),
+    % used by the text logger
+ 
+    timestamp       = 0         :: integer(),
     key_vals        = []        :: [{string(), any()}],
-    is_event        = false     :: true | false % used by monitor_logger_events app
+    % used by inspector property set/get 
+ 
+    reply_tuple     = undefined :: any(),
+    % used by the rrd logger/walk table
+ 
+    is_event        = false     :: true | false %
+    % used by monitor_logger_events app
 }).
 
 -record(probe, {

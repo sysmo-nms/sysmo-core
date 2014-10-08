@@ -38,7 +38,7 @@ init(_Conf, _Target, _Probe) ->
     {ok, nostate}.
 
 log(State, _ProbeReturn) ->
-    io:format("log ~p~n",[?MODULE]),
+    io:format("log ~p ~p~n",[?MODULE, _ProbeReturn]),
     {ok, State}.
 
 
