@@ -154,10 +154,10 @@ generate_standard_snmp_target(_Args) ->
                             % set the return properties as a list
                             %  of {indexN,  IF_DESCR}
                             {
-                                "index<MACRO>",  % The key element
-                                2,               % the place in the return of the macro to replace
-                                3                % the place in oid tuple of the value
-                            } % now property set must understand that
+                                "index",         % The head key element
+                                2,               % The element appended to head wich form Key
+                                3                % the place in oid tuple of the value Val
+                            }
                         ]
                     },
                     retries     = 1,

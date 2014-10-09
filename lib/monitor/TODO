@@ -1,12 +1,15 @@
 1 bug when adding a target with a probe wich is instantly fail (client or server?)
 2 make snmpman work
-3 remove #rrd_config.update_regexps, #rrd_config.file_path
+3 make nagios plugins work
 4 clenup asn messages, remove query keep extendedQuery
 5 cleanup/document monitor_commander,
 6 cleanup/document monitor_master,
 7 general code cleanup/refactor/test (eunit/dializer)
+8 job scheduler (alertes ...)
+
 
 // later
+- remove #rrd_config.update_regexps, #rrd_config.file_path
 - tref() is {A, _Ref} when A is systime + delay, the timestamp of the execution
 fun.
 - get the time a probe might get informations to initialize timer on the

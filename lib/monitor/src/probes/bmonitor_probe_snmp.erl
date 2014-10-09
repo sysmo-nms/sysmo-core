@@ -39,8 +39,7 @@
     agent,
     oids,
     request_oids,
-    method,
-    macro_rx
+    method
 }).
 
 info() -> {ok, "snmp get and walk module"}.
@@ -91,14 +90,12 @@ init(Target, Probe) ->
             snmpman:register_element(AgentName, SnmpArgs)
     end,
 
-    {ok, Rx} = re:compile("<MACRO>"),
     {ok,
         #state{
             agent           = AgentName,
             oids            = Oids,
             request_oids    = [Oid || {_, Oid} <- Oids],
-            method          = Method,
-            macro_rx        = Rx
+            method          = Method
         }
     }.
 
@@ -159,7 +156,7 @@ exec(#state{method = {walk_table, Table, PropRet}} = State) ->
             {ok, State, PR};
         {ok, {table, SnmpReply}} ->
             KV  = [{"status",'OK'},{"sys_latency", MicroSec2 - MicroSec1}],
-            KV2 = set_walk_prop_ret(PropRet, SnmpReply, [], State#state.macro_rx),
+            KV2 = set_walk_prop_ret(PropRet, SnmpReply, []),
             PR = #probe_return{
                 timestamp       = MicroSec2,
                 reply_tuple     = SnmpReply,
@@ -174,19 +171,20 @@ exec(#state{method = {walk_table, Table, PropRet}} = State) ->
 %% UTILS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % @private
-set_walk_prop_ret([], _, KV, _) ->
+set_walk_prop_ret([], _, KV) ->
     KV;
-set_walk_prop_ret([{MacStr, MacElement, RepElement}|T], SnmpReply, KV, Rx) ->
-    KV2 = set_walk_prop_ret_replace(MacStr,MacElement,RepElement, SnmpReply, [], Rx),
-    set_walk_prop_ret(T, SnmpReply, lists:concat([KV, KV2]), Rx).
+set_walk_prop_ret([{MacStr, MacElement, RepElement}|T], SnmpReply, KV) ->
+    KV2 = set_walk_prop_ret_replace(MacStr,MacElement,RepElement, SnmpReply, []),
+    set_walk_prop_ret(T, SnmpReply, lists:concat([KV, KV2])).
 
-set_walk_prop_ret_replace(_,_,_,[],K,_) -> K;
-set_walk_prop_ret_replace(MStr,MElem,MRep,[H|T],K, Rx) ->
+set_walk_prop_ret_replace(_,_,_,[],K) -> K;
+set_walk_prop_ret_replace(MStr,MElem,MRep,[H|T],K) ->
     MMacVal     = element(MElem,    H),
     MRepVal     = element(MRep,     H),
-    Key = re:replace(MStr, Rx, int_to_string(MMacVal), [{return,list}]),
+    %Key = re:replace(MStr, Rx, int_to_string(MMacVal), [{return,list}]),
+    Key = lists:concat([MStr, int_to_string(MMacVal)]),
     Kv = {Key, MRepVal},
-    set_walk_prop_ret_replace(MStr,MElem,MRep,T,[Kv|K], Rx).
+    set_walk_prop_ret_replace(MStr,MElem,MRep,T,[Kv|K]).
 
 
 % @private
