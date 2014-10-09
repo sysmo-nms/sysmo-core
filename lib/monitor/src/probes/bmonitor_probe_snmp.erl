@@ -39,7 +39,8 @@
     agent,
     oids,
     request_oids,
-    method
+    method,
+    macro_rx
 }).
 
 info() -> {ok, "snmp get and walk module"}.
@@ -90,12 +91,14 @@ init(Target, Probe) ->
             snmpman:register_element(AgentName, SnmpArgs)
     end,
 
+    {ok, Rx} = re:compile("<MACRO>"),
     {ok,
         #state{
             agent           = AgentName,
             oids            = Oids,
             request_oids    = [Oid || {_, Oid} <- Oids],
-            method          = Method
+            method          = Method,
+            macro_rx        = Rx
         }
     }.
 
@@ -131,7 +134,7 @@ exec(#state{method = get} = State) ->
             {ok, State, PR2}
     end;
 
-exec(#state{method = {walk_table, Table}} = State) ->
+exec(#state{method = {walk_table, Table, PropRet}} = State) ->
 
     Agent           = State#state.agent,
     %Request         = State#state.request_oids,
@@ -154,11 +157,14 @@ exec(#state{method = {walk_table, Table}} = State) ->
                 key_vals        = KV,
                 timestamp       = MicroSec2},
             {ok, State, PR};
-        {ok, SnmpReply} ->
+        {ok, {table, SnmpReply}} ->
+            KV  = [{"status",'OK'},{"sys_latency", MicroSec2 - MicroSec1}],
+            KV2 = set_walk_prop_ret(PropRet, SnmpReply, [], State#state.macro_rx),
             PR = #probe_return{
                 timestamp       = MicroSec2,
                 reply_tuple     = SnmpReply,
                 status          = 'OK',
+                key_vals        = lists:concat([KV,KV2]),
                 original_reply  = to_string(SnmpReply)
             },
             {ok, State, PR}
@@ -167,6 +173,22 @@ exec(#state{method = {walk_table, Table}} = State) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% UTILS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% @private
+set_walk_prop_ret([], _, KV, _) ->
+    KV;
+set_walk_prop_ret([{MacStr, MacElement, RepElement}|T], SnmpReply, KV, Rx) ->
+    KV2 = set_walk_prop_ret_replace(MacStr,MacElement,RepElement, SnmpReply, [], Rx),
+    set_walk_prop_ret(T, SnmpReply, lists:concat([KV, KV2]), Rx).
+
+set_walk_prop_ret_replace(_,_,_,[],K,_) -> K;
+set_walk_prop_ret_replace(MStr,MElem,MRep,[H|T],K, Rx) ->
+    MMacVal     = element(MElem,    H),
+    MRepVal     = element(MRep,     H),
+    Key = re:replace(MStr, Rx, int_to_string(MMacVal), [{return,list}]),
+    Kv = {Key, MRepVal},
+    set_walk_prop_ret_replace(MStr,MElem,MRep,T,[Kv|K], Rx).
+
+
 % @private
 eval_snmp_get_return({varbinds, VarBinds}, Oids) ->
     eval_snmp_return(VarBinds, Oids).
@@ -186,8 +208,12 @@ eval_snmp_return(VarBinds, Oids) ->
         key_vals        = [{"status", 'OK'} | KeyVals]
     }.
 
+int_to_string(Term) when is_integer(Term) ->
+    lists:flatten(io_lib:format("~p", [Term]));
+int_to_string(Term) -> Term.
+
 to_string(Term) ->
-    lists:flatten(io_lib:format("~p~n", [Term])).
+    lists:flatten(io_lib:format("~p", [Term])).
 
 sys_timestamp() ->
     {Meg, Sec, Micro} = os:timestamp(),

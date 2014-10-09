@@ -38,7 +38,7 @@
     privproto   = "AES"          :: string(),
     oids        = []            :: [any()],
     engine_id   = "undefined"   :: string(),
-    method      = get           :: get | {walk, any()},
+    method      = get           :: get | {walk, [string()], [tuple()]},
     retries     = 1             :: integer()
 }).
 

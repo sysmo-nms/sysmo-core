@@ -135,20 +135,31 @@ generate_standard_snmp_target(_Args) ->
                     privkey     = "undefined",
                     privproto   = "AES",
                     engine_id   = "AAAAAAAAAAAA",
-                    method      = {walk_table, [
-                        ?IF_INDEX,
-                        ?IF_DESCR,
-                        ?IF_IN_OCTETS,
-                        ?IF_IN_UCASTPKTS,
-                        ?IF_IN_NUCASTPKTS,
-                        ?IF_IN_DISCARDS,
-                        ?IF_IN_ERRORS,
-                        ?IF_OUT_OCTETS,
-                        ?IF_OUT_UCASTPKTS,
-                        ?IF_OUT_NUCASTPKTS,
-                        ?IF_OUT_DISCARDS,
-                        ?IF_OUT_ERRORS
-                    ]},
+                    method      = {walk_table,
+                        [
+                            ?IF_INDEX,
+                            ?IF_DESCR,
+                            ?IF_IN_OCTETS,
+                            ?IF_IN_UCASTPKTS,
+                            ?IF_IN_NUCASTPKTS,
+                            ?IF_IN_DISCARDS,
+                            ?IF_IN_ERRORS,
+                            ?IF_OUT_OCTETS,
+                            ?IF_OUT_UCASTPKTS,
+                            ?IF_OUT_NUCASTPKTS,
+                            ?IF_OUT_DISCARDS,
+                            ?IF_OUT_ERRORS
+                        ],
+                        [
+                            % set the return properties as a list
+                            %  of {indexN,  IF_DESCR}
+                            {
+                                "index<MACRO>",  % The key element
+                                2,               % the place in the return of the macro to replace
+                                3                % the place in oid tuple of the value
+                            } % now property set must understand that
+                        ]
+                    },
                     retries     = 1,
                     oids        = []
                },
