@@ -19,5 +19,5 @@ nchecks:
 snmpman:
 	@git clone git@github.com:ssbx/snmpman.git
 
-errdtools:
-	@git clone git@github.com:ssbx/errdtools.git
+errd:
+	@git clone git@github.com:ssbx/errd.git

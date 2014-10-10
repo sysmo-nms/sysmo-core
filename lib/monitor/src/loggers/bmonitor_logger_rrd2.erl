@@ -33,9 +33,44 @@
     dump/1
 ]).
 
-init(_Conf, _Target, _Probe) ->
-    io:format("init ~p~n",[?MODULE]),
+
+init(Conf, Target, _Probe) ->
+    ConfType = proplists:get_value(type, Conf),
+    TargetDir = Target#target.directory,
+    case ConfType of
+        snmp_table ->
+            % the return will be from a walk_table method
+            % get the create rrd string
+            RrdCreateStr    = proplists:get_value(rrd_create, Conf),
+            % get the list of index to file bind. Index is the second element
+            % of a table element returned by the walk_table method. It must
+            % uniquely identify the table row.
+            TIndexToRRDFile = proplists:get_value(table_index_to_rrd_file,Conf),
+            snmp_table_init_rrd_files(TargetDir, RrdCreateStr, TIndexToRRDFile),
+            ok;
+        _ ->
+            ok
+    end,
+
+    io:format("initttttttttttttt ~p ~p~n",[?MODULE, Conf]),
     {ok, nostate}.
+
+% @doc
+% Create rrdfiles for return sent from a walk_table method.
+% @end
+snmp_table_init_rrd_files(TargetDir, RrdCreateStr, IndexToFile) ->
+    {ok, Rx} = re:compile("<FILE>"),
+    Accum    = [],
+    RrdCreate = snmp_table_build_create(
+        TargetDir, RrdCreateStr, IndexToFile, Rx, Accum),
+    io:format("will send ~p to rrdtool ~n", [RrdCreate]).
+
+snmp_table_build_create(_,_,[],_,Acc) -> Acc;
+snmp_table_build_create(TDir,RrdCreate,[{_,File}|T],Rx,Acc) ->
+    FilePath = filename:join(TDir, File),
+    RrdCmd = re:replace(RrdCreate, Rx, FilePath, [{return, list}]),
+    snmp_table_build_create(TDir, RrdCreate, T, Rx, [RrdCmd|Acc]).
+
 
 log(State, _ProbeReturn) ->
     io:format("log ~p ~p~n",[?MODULE, _ProbeReturn]),

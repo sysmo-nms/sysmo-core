@@ -29,6 +29,28 @@
     generate_standard_snmp_target/1
 ]).
 
+% four RRAs from 100 hours to 10 years
+% RRA: (1*300)  * 1200 = 360000    seconds = 6000    minutes = 100   hours
+% RRA: (12*300) * 2400 = 8640000   seconds = 14400   minutes = 2400  hours = 100 days
+
+% RRA: (50*300) * 6400 = 96000000  seconds = 1600000 minutes = 26666 hours = 1111 days = 3 years
+% RRA: (118*300)* 8900 = 315060000 seconds = 5251000 minutes = 87516 hours = 3646 days = 10 years
+-define(RRD_ifPerf_CREATE,
+"create <FILE> --step 300 DS:octetsIn:COUNTER:650:U:U DS:octetsOut:COUNTER:650:U:U DS:ucastPkIn:COUNTER:650:U:U DS:nucastPkIn:COUNTER:650:U:U DS:errorsIn:COUNTER:650:U:U DS:ucastPkOut:COUNTER:650:U:U DS:nucastPkOut:COUNTER:650:U:U DS:errorsOut:COUNTER:650:U:U RRA:AVERAGE:0.5:1:1200 RRA:AVERAGE:0.5:12:2400"
+).
+-define(RRD_ifPerf_UPDATE,
+"update <FILE> --template octetsIn:octetsOut:ucastPkIn:nucastPkIn:errorsIn:ucastPkOut:nucastPkOut:errorsOut N:<OCTETS-IN>:<OCTETS-OUT>:<UCAST-IN>:<NUCAST-IN>:<ERRORS-IN>:<UCAST-OUT>:<NUCAST-OUT>:<ERRORS-OUT>"
+).
+-define(RRD_ifPerf_GRAPH,
+    [
+"DEF:oIn=<FILE>:octetsIn:AVERAGE DEF:oOut=<FILE>:octetsOut:AVERAGE LINE1:oIn#3465A4 LINE2:oOut#CC0000",
+"DEF:errIn=<FILE>:errorsIn:AVERAGE DEF:errOut=<FILE>:errorsOut:AVERAGE LINE1:errIn#3465A4 LINE2:errOut#CC0000",
+"DEF:ucastIn=<FILE>:ucastPkIn:AVERAGE DEF:ucastOut=<FILE>:ucastPkOut:AVERAGE DEF:nucastIn:=<FILE>:nucastPkIn:AVERAGE DEF:nucastOut:=<FILE>:nucastPkOut:AVERAGE LINE1:ucastIn#3465A4 LINE2:ucastOut#CC0000 LINE3:nucastIn#ff0000 LINE4:nucastOut#00ff00"
+    ]
+).
+
+
+
 generate_standard_snmp_target(_Args) ->
     {ok,
      #target{
@@ -174,8 +196,18 @@ generate_standard_snmp_target(_Args) ->
                [
                     #logger{
                         module = bmonitor_logger_rrd2, 
-                        conf = []
-                      }
+                        conf = [
+                            {type, snmp_table},
+                            {rrd_create, ?RRD_ifPerf_CREATE},
+                            {table_index_to_rrd_file, 
+                                [
+                                    {1,"index1.rrd"},
+                                    {2,"index2.rrd"},
+                                    {3,"index3.rrd"}
+                                ]
+                            }
+                        ]
+                    }
                ]
             }
  

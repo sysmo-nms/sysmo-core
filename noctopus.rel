@@ -14,7 +14,7 @@
         {supercast,     "2.0.0"},
         {noctopus,      "0.1.0"},
         {text_logger,   "0.1.0"},
-        {errdtools,     "0.1.0"},
+        {errd,          "0.1.0"},
         {monitor,       "0.1.0"},
         {snmpman,       "0.1.0"}
     ]

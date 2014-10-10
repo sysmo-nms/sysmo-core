@@ -24,12 +24,12 @@ init([]) ->
                     [snmpman_app]
                 },
                 {
-                    errdtools_app,
-                    {errdtools_app, start, [normal,[]]},
+                    errd_app,
+                    {errd_app, start, [normal,[]]},
                     permanent,
                     2000,
                     supervisor,
-                    [errdtools_app]
+                    [errd_app]
                 },
                 {
                     text_logger_app,

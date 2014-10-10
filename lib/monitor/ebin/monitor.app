@@ -51,7 +51,7 @@
                 monitor_probe_sup
             ]},
         {applications, 
-            [kernel, stdlib, mnesia, supercast, errdtools,
+            [kernel, stdlib, mnesia, supercast, errd,
                 text_logger, snmpman]
         },
         {start_phases, []},

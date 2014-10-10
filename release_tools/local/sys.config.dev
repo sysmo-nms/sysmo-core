@@ -144,14 +144,9 @@
             }
         ]
     },
-    {errdtools,
+    {errd,
         [
-            {rrdcached,         "/opt/rrdtool-1.4.9/bin/rrdcached"},
-            {rrdtool,           "/opt/rrdtool-1.4.9/bin/rrdtool"},
-            {listen_port,       9595},
-            {error_log_file,    "var/errdtools/errdtools.error.log"},
-            {log_file,          "var/errdtools/errdtools.log"},
-            {rrdcached_pid_file,"var/errdtools/rrdcached.pid"}
+            {rrdtool,           "/opt/rrdtool-1.4.9/bin/rrdtool"}
         ]
     }
 ].

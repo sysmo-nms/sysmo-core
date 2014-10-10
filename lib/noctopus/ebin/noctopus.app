@@ -17,7 +17,7 @@
             [
                 monitor,
                 snmpman,
-                errdtools,
+                errd,
                 text_logger,
                 supercast
             ]
