@@ -1,11 +1,6 @@
 ##################
 # MODULE MONITOR #
 ##################
-### NOW
-- service virtual check
-- mod_multiman: Manage multiple devices with identic configuration (screen
-scripts?)
-
 ### HIGH
 - add "Create web view" wizard using erlang/httpd CGI, with running templates
 examples for Python , PHP, Ruby. Create an server API accessible by the 
