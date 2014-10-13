@@ -80,11 +80,11 @@ exec(State) ->
             io:format("Other return status~p~n", [Any]),
             PR = evaluate_nagios_output(Evaluate, Stdout, Re, 'UNKNOWN')
     end,
-    {_, MicroSec2} = sys_timestamp(),
+    {Timest, MicroSec2} = sys_timestamp(),
     KV  = PR#probe_return.key_vals,
     KV2 = [{"sys_latency", MicroSec2 - MicroSec1} | KV],
     PR2 = PR#probe_return{
-        timestamp   = MicroSec2,
+        timestamp   = Timest,
         key_vals    = KV2
     },
     {ok, State, PR2}.

@@ -36,10 +36,13 @@
 % RRA: (50*300) * 6400 = 96000000  seconds = 1600000 minutes = 26666 hours = 1111 days = 3 years
 % RRA: (118*300)* 8900 = 315060000 seconds = 5251000 minutes = 87516 hours = 3646 days = 10 years
 -define(RRD_ifPerf_CREATE,
-"create <FILE> --step 300 DS:octetsIn:COUNTER:650:U:U DS:octetsOut:COUNTER:650:U:U DS:ucastPkIn:COUNTER:650:U:U DS:nucastPkIn:COUNTER:650:U:U DS:errorsIn:COUNTER:650:U:U DS:ucastPkOut:COUNTER:650:U:U DS:nucastPkOut:COUNTER:650:U:U DS:errorsOut:COUNTER:650:U:U RRA:AVERAGE:0.5:1:1200 RRA:AVERAGE:0.5:12:2400"
+" --step 300 --no-overwrite DS:octetsIn:COUNTER:650:U:U DS:octetsOut:COUNTER:650:U:U DS:ucastPkIn:COUNTER:650:U:U DS:nucastPkIn:COUNTER:650:U:U DS:errorsIn:COUNTER:650:U:U DS:ucastPkOut:COUNTER:650:U:U DS:nucastPkOut:COUNTER:650:U:U DS:errorsOut:COUNTER:650:U:U RRA:AVERAGE:0.5:1:1200 RRA:AVERAGE:0.5:12:2400"
 ).
 -define(RRD_ifPerf_UPDATE,
-"update <FILE> --template octetsIn:octetsOut:ucastPkIn:nucastPkIn:errorsIn:ucastPkOut:nucastPkOut:errorsOut N:<OCTETS-IN>:<OCTETS-OUT>:<UCAST-IN>:<NUCAST-IN>:<ERRORS-IN>:<UCAST-OUT>:<NUCAST-OUT>:<ERRORS-OUT>"
+"<FILE> --template octetsIn:octetsOut:ucastPkIn:nucastPkIn:errorsIn:ucastPkOut:nucastPkOut:errorsOut N:<OCTETS-IN>:<OCTETS-OUT>:<UCAST-IN>:<NUCAST-IN>:<ERRORS-IN>:<UCAST-OUT>:<NUCAST-OUT>:<ERRORS-OUT>"
+).
+-define(RRD_ifPerf_UPDATE_tpl,
+"--template octetsIn:octetsOut:ucastPkIn:nucastPkIn:errorsIn:ucastPkOut:nucastPkOut:errorsOut"
 ).
 -define(RRD_ifPerf_GRAPH,
     [
@@ -164,15 +167,15 @@ generate_standard_snmp_target(_Args) ->
                             ?IF_IN_OCTETS,
                             ?IF_IN_UCASTPKTS,
                             ?IF_IN_NUCASTPKTS,
-                            ?IF_IN_DISCARDS,
                             ?IF_IN_ERRORS,
                             ?IF_OUT_OCTETS,
                             ?IF_OUT_UCASTPKTS,
                             ?IF_OUT_NUCASTPKTS,
-                            ?IF_OUT_DISCARDS,
                             ?IF_OUT_ERRORS
                         ],
                         [
+                            % this set the property of the probe to have
+                            % up to date name of interface.
                             % set the return properties as a list
                             %  of {indexN,  IF_DESCR}
                             {
@@ -199,18 +202,32 @@ generate_standard_snmp_target(_Args) ->
                         conf = [
                             {type, snmp_table},
                             {rrd_create, ?RRD_ifPerf_CREATE},
-                            {table_index_to_rrd_file, 
+                            {row_index_to_rrd_file, 
                                 [
                                     {1,"index1.rrd"},
                                     {2,"index2.rrd"},
                                     {3,"index3.rrd"}
+                                ]
+                            },
+                            {rrd_update, ?RRD_ifPerf_UPDATE_tpl},
+                            {row_index_pos_to_rrd_template,
+                                % as defined in walk_table method 
+                                % (+ 1 for the atom table_row)
+                                [
+                                    4, %?IF_IN_OCTETS
+                                    8, %?IF_OUT_OCTETS
+                                    5, %?IF_IN_UCASTPKTS
+                                    6, %?IF_IN_NUCASTPKTS
+                                    7, %?IF_IN_ERRORS
+                                    9, %?IF_OUT_UCASTPKTS
+                                    10, %?IF_OUT_NUCASTPKTS
+                                    11  %?IF_OUT_ERRORS
                                 ]
                             }
                         ]
                     }
                ]
             }
- 
         ]
        }
     }.

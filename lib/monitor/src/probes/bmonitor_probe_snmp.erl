@@ -140,7 +140,7 @@ exec(#state{method = {walk_table, Table, PropRet}} = State) ->
 
     {_, MicroSec1}  = sys_timestamp(),
     Reply = snmpman:walk_table(Agent, Table),
-    {_, MicroSec2}  = sys_timestamp(),
+    {ReplyT, MicroSec2}  = sys_timestamp(),
 
     case Reply of
         {error, _Error} = R ->
@@ -152,13 +152,13 @@ exec(#state{method = {walk_table, Table, PropRet}} = State) ->
                 status          = S,
                 original_reply  = OR,
                 key_vals        = KV,
-                timestamp       = MicroSec2},
+                timestamp       = ReplyT},
             {ok, State, PR};
         {ok, {table, SnmpReply}} ->
             KV  = [{"status",'OK'},{"sys_latency", MicroSec2 - MicroSec1}],
             KV2 = set_walk_prop_ret(PropRet, SnmpReply, []),
             PR = #probe_return{
-                timestamp       = MicroSec2,
+                timestamp       = ReplyT,
                 reply_tuple     = SnmpReply,
                 status          = 'OK',
                 key_vals        = lists:concat([KV,KV2]),
