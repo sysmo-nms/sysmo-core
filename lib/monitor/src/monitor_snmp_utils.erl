@@ -210,6 +210,7 @@ generate_standard_snmp_target(_Args) ->
                                 ]
                             },
                             {rrd_update, ?RRD_ifPerf_UPDATE_tpl},
+                            {rrd_graph, ?RRD_ifPerf_GRAPH},
                             {row_index_pos_to_rrd_template,
                                 % as defined in walk_table method 
                                 % (+ 1 for the atom table_row)
@@ -220,8 +221,8 @@ generate_standard_snmp_target(_Args) ->
                                     6, %?IF_IN_NUCASTPKTS
                                     7, %?IF_IN_ERRORS
                                     9, %?IF_OUT_UCASTPKTS
-                                    10, %?IF_OUT_NUCASTPKTS
-                                    11  %?IF_OUT_ERRORS
+                                    10,%?IF_OUT_NUCASTPKTS
+                                    11 %?IF_OUT_ERRORS
                                 ]
                             }
                         ]

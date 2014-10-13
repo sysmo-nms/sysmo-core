@@ -33,17 +33,22 @@
     dump/1
 ]).
 
+-define(DEV_TMP_FILES, "/tmp/xmldump").
+
 -record(state, {
     type,
     rrd_update,
     row_index_to_tpl,
-    row_index_to_file
+    row_index_to_file,
+    %% for dump
+    target_id,
+    probe_name
 }).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% INIT (rrdcreate) %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-init(Conf, Target, _Probe) ->
+init(Conf, Target, Probe) ->
     ConfType        = proplists:get_value(type, Conf),
     case ConfType of
         snmp_table ->
@@ -66,7 +71,9 @@ init(Conf, Target, _Probe) ->
                     type                = ConfType,
                     rrd_update          = RrdUpdate,
                     row_index_to_file   = IndexesRrdPaths,
-                    row_index_to_tpl    = IndexesTpl
+                    row_index_to_tpl    = IndexesTpl,
+                    target_id           = Target#target.id,
+                    probe_name          = Probe#probe.name
                 }
             };
         _ ->
@@ -132,6 +139,39 @@ rrd_update_build_tpl([I|T], Row, Acc) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% DUMP (rrddump) %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-dump(State) ->
-    io:format("dump ~p~n",[?MODULE]),
-    {ignore, State}.
+dump(#state{row_index_to_file = RI} = State) ->
+    io:format("dump state is ~p~n",[State]),
+    FPath = dump_file(RI),
+    io:format("acc is ~p~n",[FPath]),
+    Archive = "blabla.zip",
+    Pdu = build_dump(State, FPath,Archive),
+    io:format("pdu is ~p~n",[Pdu]),
+    {ok, {pdu, Pdu}, State}.
+    %{ignore, State}.
+
+build_dump(State, FilePaths, Archive) ->
+    TId         = atom_to_list(State#state.target_id),
+    ProbeName   = atom_to_list(State#state.probe_name),
+    ProbeModule = atom_to_list(?MODULE),
+    {modMonitorPDU,
+        {fromServer,
+            {rrdProbeDump,
+                {'RrdProbeDump',
+                    TId,
+                    ProbeName,
+                    ProbeModule,
+                    [{'RrdIdToFile', I, F} || {I,F} <- FilePaths],
+                    Archive
+                }
+            }
+        }
+    }.
+
+dump_file(F) ->
+    dump_file(F,[]).
+dump_file([], Acc) -> Acc;
+dump_file([ {I,F} | T], Acc) ->
+    XmlFile = lists:concat([?DEV_TMP_FILES, I, ".xml"]),
+    io:format("will dump ~p to ~p~n",[F, XmlFile]),
+    errd:dump(F, XmlFile),
+    dump_file(T, [{I,XmlFile}|Acc]).

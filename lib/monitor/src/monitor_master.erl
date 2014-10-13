@@ -509,11 +509,20 @@ gen_asn_probe_inspectors(Inspectors) ->
 gen_asn_probe_loggers(Loggers) ->
     [gen_logger_pdu(LConf) || LConf <- Loggers].
 
-gen_logger_pdu({logger, bmonitor_logger_rrd2, _Cfg}) ->
+gen_logger_pdu({logger, bmonitor_logger_rrd2, Cfg}) ->
+    Type = proplists:get_value(type, Cfg),
+    RCreate = proplists:get_value(rrd_create, Cfg),
+    RUpdate = proplists:get_value(rrd_update, Cfg),
+    RGraphs = proplists:get_value(rrd_graph, Cfg),
+    Indexes = [I || {I,_} <- proplists:get_value(row_index_to_rrd_file, Cfg)],
     {loggerRrd2, 
         {'LoggerRrd2',
             atom_to_list(bmonitor_logger_rrd),
-            "hello"
+            atom_to_list(Type),
+            RCreate,
+            RUpdate,
+            RGraphs,
+            Indexes
         }
     };
 gen_logger_pdu({logger, bmonitor_logger_rrd, Cfg}) ->
