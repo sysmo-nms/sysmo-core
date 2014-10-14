@@ -199,6 +199,17 @@ RrdProbeDump ::= SEQUENCE {
     archive     PrintableString
 }
 
+RrdLoggerUpdate ::= SEQUENCE {
+    index   INTEGER,
+    update  PrintableString
+}
+
+RrdLoggerEvent ::= SEQUENCE {
+    target      TargetId,
+    probeName   PrintableString,
+    updates     SEQUENCE OF RrdLoggerUpdate
+}
+
 -- ProbeDump --
 ProbeDump   ::= SEQUENCE {
     target      TargetId,
@@ -410,7 +421,8 @@ MonitorPDU ::= CHOICE {
         monitorReply    [12] MonitorReply,
         getCheckReply   [13] GetCheckReply,
         extendedReplyMsg [20] ExtendedReplyMsg,
-        rrdProbeDump    [30] RrdProbeDump
+        rrdProbeDump    [30] RrdProbeDump,
+        rrdLoggerEvent  [35] RrdLoggerEvent
     },
     fromClient  [1] CHOICE {
         createTarget    [1] CreateTarget,

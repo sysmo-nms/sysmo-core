@@ -108,13 +108,28 @@ log(State, #probe_return{status = 'OK', reply_tuple = Rpl, timestamp = Ts} = _Pr
     RIndexFile = State#state.row_index_to_file,
     RIndexTpl  = State#state.row_index_to_tpl,
     RrdUpdate  = State#state.rrd_update,
-    {ok, _ClientUp} = rrd_update(RIndexFile, RIndexTpl, RrdUpdate, Rpl, Ts),
+    {ok, ClientUp} = rrd_update(RIndexFile, RIndexTpl, RrdUpdate, Rpl, Ts),
 
 
-    % TODO send a pdu to client using info of ClientUp
-    %
+    Pdu = build_rrd_event(State,ClientUp),
+    io:format("client up is ~p~n",[Pdu]),
 
-    {ok, State}.
+    {ok, Pdu, State}.
+
+build_rrd_event(State, ClientUp) ->
+    TId         = atom_to_list(State#state.target_id),
+    ProbeName   = atom_to_list(State#state.probe_name),
+    {modMonitorPDU,
+        {fromServer,
+            {rrdLoggerEvent,
+                {'RrdLoggerEvent',
+                    TId,
+                    ProbeName,
+                    [{'RrdLoggerUpdate', I, Up} || {I,Up} <- ClientUp]
+                }
+            }
+        }
+    }.
 
 rrd_update(RindexFile, RIndexTpl, RrdUpdate, Rpl, Ts) ->
     rrd_update(RindexFile, RIndexTpl, RrdUpdate, Rpl, Ts, []).
