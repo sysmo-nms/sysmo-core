@@ -22,9 +22,23 @@
 -module(supercast_app).
 -behaviour(application).
 
+-define(COMPRESSIBLE_MIME_TYPES, [
+                                    {"text", all},
+                                    {"application", "rtf"},
+                                    {"application", "msword"},
+                                    {"application", "postscript"},
+                                    {"application", "pdf"},
+                                    {"application", "x-dvi"},
+                                    {"application", "javascript"},
+                                    {"application", "x-javascript"},
+                                    {"application", "xml"}
+                                ]).
+
+
 -export([start/2, stop/1]).
 
 start(_Type, _Args) ->
+    configure_yaws(),
     {ok, AuthModule}    = application:get_env(supercast, auth_module),
     {ok, AcctrlMod}     = application:get_env(supercast, acctrl_module),
     {ok, TcpClientConf} = application:get_env(supercast, tcp_client),
@@ -36,6 +50,33 @@ start(_Type, _Args) ->
         {AcctrlMod, MainChannels},              % for supercast_mpd
         TcpClientConf,                          % for tcp_client_sup
         SslClientConf).                         % for ssl_client_sup
+
+configure_yaws() ->
+    {ok, YawsConf} = application:get_env(supercast, yaws_conf),
+    Port        = proplists:get_value(port, YawsConf),
+    LogDir      = proplists:get_value(logdir, YawsConf),
+    Listen      = proplists:get_value(listen, YawsConf),
+    CompLevel   = proplists:get_value(compression_level, YawsConf),
+    DocRoot     = proplists:get_value(docroot, YawsConf),
+
+    GcList = [
+        {id, "supercast"},
+        {logdir, LogDir}
+    ],
+    SConfList = [
+        {port, Port},
+        {servername, "supercast"},
+        {listen, Listen},
+        {docroot, DocRoot},
+        {deflate_options,
+            {deflate,
+                nolimit,CompLevel,-15,8,
+                default,false,?COMPRESSIBLE_MIME_TYPES
+            }
+        }
+    ],
+    {ok,Sc,Gc,_} = yaws_api:embedded_start_conf(DocRoot, SConfList, GcList),
+    yaws_api:setconf(Gc, Sc).
 
 stop(_State) ->
 	ok.

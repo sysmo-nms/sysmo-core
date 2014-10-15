@@ -6,19 +6,21 @@ ifeq ($(CYGW), CYGWIN)
     LOCAL_RELEASE  = windows-local-release
     export ERL     = /cygdrive/c/Program\ Files/erl5.10.4/bin/erl
     export ERLC    = /cygdrive/c/Program\ Files/erl5.10.4/bin/erlc -Werror
+    export ERLCY   = /cygdrive/c/Program\ Files/erl5.10.4/bin/erlc
     export ASNC    = /cygdrive/c/Program\ Files/erl5.10.4/bin/erlc -Werror -bber
 else
     RELEASE        = unix-release
     LOCAL_RELEASE  = unix-local-release
     export ERL     = /opt/erlang_otp_17.1/bin/erl
     export ERLC    = /opt/erlang_otp_17.1/bin/erlc -Werror
+    export ERLCY   = /opt/erlang_otp_17.1/bin/erlc
     export ASNC    = /opt/erlang_otp_17.1/bin/erlc -Werror -bber
 endif
 
 export MAKE        = /usr/bin/make
 export REL_NAME    = noctopus
 export REL_VERSION = 0.2.1
-export MODS = supercast monitor errd text_logger snmpman noctopus
+export MODS = supercast monitor errd text_logger snmpman noctopus yaws
 
 .PHONY: compile test doc clean var-clean rel-clean start \
 	unix-release unix-local-release windows-release windows-local-release
@@ -37,6 +39,8 @@ clean: var-clean crash-clean rel-clean
 
 var-clean:
 	rm -rf var/monitor/*/
+	rm -rf var/yaws/log/*
+	rm -rf var/yaws/docroot/*
 	rm -rf var/monitor/targets.dets
 	rm -rf var/monitor_events
 	rm -f var/snmp/snmpm_config_db
@@ -55,7 +59,6 @@ rel-clean:
 	rm -f $(REL_NAME).script
 	rm -f $(REL_NAME).boot
 	rm -f sys.config
-	rm -f var/httpd/8080_props.conf
 	rm -f $(REL_NAME).tar
 	rm -f $(REL_NAME)-$(REL_VERSION).tar.gz
 	rm -rf $(REL_NAME)-$(REL_VERSION).win32
@@ -103,9 +106,7 @@ ERL_UNTAR   = '\
 ##########################
 windows-local-release: compile $(REL_NAME).script
 	cp release_tools/local/sys.config.dev ./sys.config
-	cp release_tools/local/8080_props.conf.dev ./var/httpd/8080_props.conf
 	chmod -w sys.config
-	chmod -w var/httpd/8080_props.conf
 
 windows-release: var-clean rel-clean compile
 	@echo "Generating $(REL_NAME)-$(REL_VERSION).win32 directory"
@@ -121,7 +122,6 @@ windows-release: var-clean rel-clean compile
 	@cp release_tools/win32/register_noctopus_nt-service.bat.src $(TMP_DIR)/bin/register_noctopus_nt-service.bat
 	@cp release_tools/win32/erl.ini.src      $(TMP_DIR)/erts-5.10.4/bin/erl.ini.src
 	@cp release_tools/sys.config.src   $(TMP_DIR)/releases/$(REL_VERSION)/sys.config
-	@cp release_tools/8080_props.conf.src  $(TMP_DIR)/var/httpd/8080_props.conf
 	@mkdir $(TMP_DIR)/cfg
 	@touch $(TMP_DIR)/cfg/monitor.conf
 	@cp -r $(TMP_DIR) $(REL_NAME)-$(REL_VERSION).win32
@@ -132,9 +132,7 @@ windows-release: var-clean rel-clean compile
 #######################
 unix-local-release: compile $(REL_NAME).script
 	cp release_tools/local/sys.config.dev sys.config
-	cp release_tools/local/8080_props.conf.dev var/httpd/8080_props.conf
 	chmod -w sys.config
-	chmod -w var/httpd/8080_props.conf
 
 unix-release: var-clean rel-clean compile
 	@echo "Generating $(REL_NAME)-$(REL_VERSION).tar.gz"
@@ -148,7 +146,6 @@ unix-release: var-clean rel-clean compile
 	@cp release_tools/unix/noctopus $(TMP_DIR)/bin/
 	@cp release_tools/unix/install $(TMP_DIR)
 	@cp release_tools/sys.config.src $(TMP_DIR)/releases/$(REL_VERSION)/
-	@cp release_tools/8080_props.conf.src $(TMP_DIR)/var/httpd/
 	@mkdir $(TMP_DIR)/cfg
 	@touch $(TMP_DIR)/cfg/monitor.conf
 	@tar -czf $(REL_NAME)-$(REL_VERSION).tar.gz -C $(TMP_DIR) .

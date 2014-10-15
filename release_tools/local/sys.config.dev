@@ -45,6 +45,15 @@
                     {maxconn, 50},
                     {encoder, supercast_encoder_asn}
                 ]
+            },
+            {yaws_conf,
+                [
+                    {port, 9999},
+                    {logdir, "var/yaws/log"},
+                    {listen, {0,0,0,0}},
+                    {docroot, "var/yaws/docroot"},
+                    {compression_level, best_speed}
+                ]
             }
         ]
     },
@@ -118,21 +127,6 @@
             {debug,     none}
         ]
     },
-    {inets,
-        [
-            {services,
-                [
-                    {httpd,
-                        [
-            {proplist_file, "var/httpd/8080_props.conf"},
-            {debug,         disable},
-            {accept_timeout, 3000}
-                        ]
-                    }
-                ]
-            }
-        ]
-    },
     {snmpman, 
         [
             {java_node, 
@@ -147,6 +141,11 @@
     {errd,
         [
             {rrdtool,           "/opt/rrdtool-1.4.9/bin/rrdtool"}
+        ]
+    },
+    {yaws,
+        [
+            {embedded, true}
         ]
     }
 ].
