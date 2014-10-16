@@ -33,8 +33,6 @@
     dump/1
 ]).
 
--define(DEV_TMP_FILES, "/tmp/xmldump").
-
 -record(state, {
     type,
     rrd_update,
@@ -42,7 +40,8 @@
     row_index_to_file,
     %% for dump
     target_id,
-    probe_name
+    probe_name,
+    dump_dir
 }).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -50,6 +49,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 init(Conf, Target, Probe) ->
     ConfType        = proplists:get_value(type, Conf),
+    {ok, DumpDir}   = application:get_env(supercast, data_sync_dir),
     case ConfType of
         snmp_table ->
             % the return will be from a walk_table method
@@ -73,7 +73,8 @@ init(Conf, Target, Probe) ->
                     row_index_to_file   = IndexesRrdPaths,
                     row_index_to_tpl    = IndexesTpl,
                     target_id           = Target#target.id,
-                    probe_name          = Probe#probe.name
+                    probe_name          = Probe#probe.name,
+                    dump_dir            = DumpDir
                 }
             };
         _ ->
@@ -154,17 +155,17 @@ rrd_update_build_tpl([I|T], Row, Acc) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% DUMP (rrddump) %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-dump(#state{row_index_to_file = RI} = State) ->
-    io:format("dump state is ~p~n",[State]),
-    FPath = dump_file(RI),
-    io:format("acc is ~p~n",[FPath]),
-    Archive = "blabla.zip",
-    Pdu = build_dump(State, FPath,Archive),
+dump(#state{row_index_to_file = RI, dump_dir = DDir} = State) ->
+    Dir = lists:concat(["tmp-", generate_tmp_dir()]),
+    Dir2 = filename:join(DDir, Dir),
+    ok = file:make_dir(Dir2),
+    IndexToFile = dump_file(RI, Dir2),
+    Pdu         = build_dump(State, IndexToFile, Dir),
     io:format("pdu is ~p~n",[Pdu]),
     {ok, {pdu, Pdu}, State}.
     %{ignore, State}.
 
-build_dump(State, FilePaths, Archive) ->
+build_dump(State, FilePaths, Dir) ->
     TId         = atom_to_list(State#state.target_id),
     ProbeName   = atom_to_list(State#state.probe_name),
     ProbeModule = atom_to_list(?MODULE),
@@ -176,17 +177,23 @@ build_dump(State, FilePaths, Archive) ->
                     ProbeName,
                     ProbeModule,
                     [{'RrdIdToFile', I, F} || {I,F} <- FilePaths],
-                    Archive
+                    Dir
                 }
             }
         }
     }.
 
-dump_file(F) ->
-    dump_file(F,[]).
-dump_file([], Acc) -> Acc;
-dump_file([ {I,F} | T], Acc) ->
-    XmlFile = lists:concat([?DEV_TMP_FILES, I, ".xml"]),
-    io:format("will dump ~p to ~p~n",[F, XmlFile]),
-    errd:dump(F, XmlFile),
-    dump_file(T, [{I,XmlFile}|Acc]).
+dump_file(F, InDir) ->
+    dump_file(F,InDir, []).
+dump_file([], _, Acc) -> Acc;
+dump_file([ {I,F} | T], InDir, Acc) ->
+    XmlFile = lists:concat([I, ".xml"]),
+    XmlFilePath = filename:join(InDir, XmlFile),
+    io:format("will dump ~p to ~p~n",[F, XmlFilePath]),
+    errd:dump(F, XmlFilePath),
+    dump_file(T, InDir, [{I,XmlFile}|Acc]).
+
+generate_tmp_dir() ->
+    {_, Sec, Micro} = os:timestamp(),
+    Microsec = Sec * 1000000 + Micro,
+    Microsec.

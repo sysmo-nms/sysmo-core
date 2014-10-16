@@ -21,19 +21,7 @@
 % @private
 -module(supercast_app).
 -behaviour(application).
-
--define(COMPRESSIBLE_MIME_TYPES, [
-                                    {"text", all},
-                                    {"application", "rtf"},
-                                    {"application", "msword"},
-                                    {"application", "postscript"},
-                                    {"application", "pdf"},
-                                    {"application", "x-dvi"},
-                                    {"application", "javascript"},
-                                    {"application", "x-javascript"},
-                                    {"application", "xml"}
-                                ]).
-
+-include("../yaws/include/yaws.hrl").
 
 -export([start/2, stop/1]).
 
@@ -53,11 +41,11 @@ start(_Type, _Args) ->
 
 configure_yaws() ->
     {ok, YawsConf} = application:get_env(supercast, yaws_conf),
-    Port        = proplists:get_value(port, YawsConf),
+    {ok, DocRoot}  = application:get_env(supercast, data_sync_dir),
+    {ok, Port}     = application:get_env(supercast, data_port),
     LogDir      = proplists:get_value(logdir, YawsConf),
     Listen      = proplists:get_value(listen, YawsConf),
     CompLevel   = proplists:get_value(compression_level, YawsConf),
-    DocRoot     = proplists:get_value(docroot, YawsConf),
 
     GcList = [
         {id, "supercast"},
@@ -71,12 +59,13 @@ configure_yaws() ->
         {deflate_options,
             {deflate,
                 nolimit,CompLevel,-15,8,
-                default,false,?COMPRESSIBLE_MIME_TYPES
+                default,false,all
             }
         }
     ],
-    {ok,Sc,Gc,_} = yaws_api:embedded_start_conf(DocRoot, SConfList, GcList),
-    yaws_api:setconf(Gc, Sc).
+    {ok,[[Sc]],Gc,_} = yaws_api:embedded_start_conf(DocRoot, SConfList, GcList),
+    UpSc = ?sc_set_deflate(Sc, true),
+    yaws_api:setconf(Gc, [[UpSc]]).
 
 stop(_State) ->
 	ok.

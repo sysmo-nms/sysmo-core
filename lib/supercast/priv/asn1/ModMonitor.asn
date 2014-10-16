@@ -196,7 +196,7 @@ RrdProbeDump ::= SEQUENCE {
     probeName   PrintableString,
     probeModule PrintableString,
     indexes     SEQUENCE OF RrdIdToFile,
-    archive     PrintableString
+    path        PrintableString
 }
 
 RrdLoggerUpdate ::= SEQUENCE {

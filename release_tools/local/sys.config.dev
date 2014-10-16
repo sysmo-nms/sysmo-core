@@ -46,12 +46,13 @@
                     {encoder, supercast_encoder_asn}
                 ]
             },
+            {data_sync_dir, "var/yaws/docroot"},
+            {data_port,     8080},
+            {data_use_ssl,  true},
             {yaws_conf,
                 [
-                    {port, 9999},
                     {logdir, "var/yaws/log"},
                     {listen, {0,0,0,0}},
-                    {docroot, "var/yaws/docroot"},
                     {compression_level, best_speed}
                 ]
             }
