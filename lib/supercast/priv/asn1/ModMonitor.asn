@@ -187,8 +187,8 @@ RrdFileDump ::= SEQUENCE {
 
 
 RrdIdToFile ::= SEQUENCE {
-    index   INTEGER,
-    path    PrintableString
+    index    INTEGER,
+    fileName PrintableString
 }
 
 RrdProbeDump ::= SEQUENCE {

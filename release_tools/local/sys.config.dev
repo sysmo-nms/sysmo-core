@@ -48,7 +48,7 @@
             },
             {data_sync_dir, "var/yaws/docroot"},
             {data_port,     8080},
-            {data_use_ssl,  true},
+            {data_use_ssl,  false},
             {yaws_conf,
                 [
                     {logdir, "var/yaws/log"},
