@@ -67,8 +67,9 @@
                 tcp_listener
             ]},
         {applications, 
-            [kernel, stdlib, crypto, public_key, ssl]
+            [kernel, stdlib, crypto, public_key, ssl, yaws]
         },
+        {start_phases, []},
         {mod, {supercast_app, []}}
     ]
 }.

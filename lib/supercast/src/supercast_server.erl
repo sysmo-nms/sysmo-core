@@ -39,7 +39,9 @@
 
 -record(state, {
     auth_mod,
-    dispatch
+    dispatch,
+    data_port,
+    data_proto
 }).
  
 
@@ -69,15 +71,29 @@ handle_client_command(Mod, Msg, CState) ->
 % @private
 init({AuthModule, PduDispatch}) ->
     ?LOGS({"pdu_dispatch", PduDispatch}),
+    {ok, Port} = application:get_env(supercast, data_port),
+    {ok, DataSsl} = application:get_env(supercast, data_use_ssl),
+    case DataSsl of
+        true ->
+            DataProto = "https";
+        false ->
+            DataProto = "http"
+    end,
     {ok, #state{
         auth_mod = AuthModule,
-        dispatch = PduDispatch
+        dispatch = PduDispatch,
+        data_port = Port,
+        data_proto = DataProto
         }
     }.
 
 % @private
 handle_call(dump, _F, S) ->
     {reply, {ok, S}, S};
+
+handle_call({connect, CState}, _F, #state{data_port = Port, data_proto = Proto} = S) ->
+    R = send(CState, pdu(serverInfo, {"local", Port, Proto})),
+    {reply, R, S};
 
 handle_call({client_command, Key, Msg, CState}, _F, 
         #state{dispatch = Dispatch} = S) ->
@@ -119,7 +135,7 @@ code_change(_O, S, _E) ->
 % CLIENT CALL
 % @private
 handle_client_msg(connect, ClientState) ->
-    send(ClientState, pdu(authReq, ldap));
+    gen_server:call(?MODULE, {connect, ClientState});
 
 handle_client_msg(disconnect, ClientState) ->
     supercast_mpd:client_disconnect(ClientState);
@@ -201,11 +217,15 @@ handle_client_msg(
 
 % server PDUs
 % @private
-pdu(authReq, Type) ->
+pdu(serverInfo, {AuthType, DataPort, DataProto}) ->
     {modSupercastPDU, 
         {fromServer, 
-            {authReq, 
-                Type }}};
+            {serverInfo, 
+                {'ServerInfo',
+                    AuthType,
+                    DataPort,
+                    DataProto
+                }}}};
 
 pdu(authAck, {Groups, StaticChans}) ->
     StaticChansAsString = lists:foldl(fun(Atom, Accum) ->

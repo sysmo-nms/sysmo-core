@@ -1,36 +1,43 @@
-# Makefile 
+.PHONY: compile test doc clean
 
+# yaws special begin
+REQUIRE_YAWS = yaws/ebin/yaws.beam
+MODS2 = $(filter-out yaws, $(MODS))
+# yaws special end
 
-compile: recurse external_make
+compile: $(MODS2) $(REQUIRE_YAWS)
+	@for i in $(MODS2); do $(MAKE) -C $$i; done
 
-all: compile doc test local-release www
+test: $(MODS2)
+	@for i in $(MODS2); do $(MAKE) -C $$i test; done
 
-recurse: snmpman
-	@for i in $(MODS); do cd $$i; $(MAKE) compile; cd ../; done
+doc: $(MODS2)
+	@for i in $(MODS2); do $(MAKE) -C $$i doc; done
 
-test: snmpman
-	@for i in $(MODS); do cd $$i; $(MAKE) test;  cd ../; done
+clean: $(MODS2)
+	@for i in $(MODS2); do $(MAKE) -C $$i clean; done
 
-doc: snmpman
-	@for i in $(MODS); do cd $$i; $(MAKE) doc;  cd ../; done
-
-clean: external_clean
-	@for i in $(MODS); do cd $$i; $(MAKE) clean;  cd ../; done
-
-
-
-EXTERNAL = nchecks
-external_update: snmpman
-	cd $(EXTERNAL); git pull
-
-external_make: $(EXTERNAL) snmpman
-	@cd $(EXTERNAL); make
-
-external_clean: $(EXTERNAL)
-	@cd $(EXTERNAL); make clean
 
 nchecks:
 	@git clone git@github.com:ssbx/nchecks.git
 
 snmpman:
 	@git clone git@github.com:ssbx/snmpman.git
+
+errd:
+	@git clone git@github.com:ssbx/errd.git
+
+# yaws special begin
+$(REQUIRE_YAWS): yaws
+$(REQUIRE_YAWS): ERLC = $(ERLCY)
+$(REQUIRE_YAWS):
+	cd yaws; \
+		git checkout tags/yaws-1.98; \
+		autoreconf -fi; \
+		./configure --disable-pam; \
+		make
+
+yaws: 
+	@git clone git@github.com:klacke/yaws.git
+
+

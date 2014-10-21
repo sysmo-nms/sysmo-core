@@ -107,10 +107,10 @@ probe_info(TargetId, Probe) ->
 id_used(Id) ->
     gen_server:call(?MASTER_CHAN, {id_used, Id}).
 
--spec probe_activity(Target::atom(), Probe::#probe{}, Return::#probe_return{}) ->
+-spec probe_activity(TargetId::atom(), Probe::#probe{}, Return::#probe_return{}) ->
     ok.
-probe_activity(Target, Probe, Return) ->
-    gen_server:cast(?MASTER_CHAN, {probe_activity, Target, Probe, Return}).
+probe_activity(TargetId, Probe, Return) ->
+    gen_server:cast(?MASTER_CHAN, {probe_activity, TargetId, Probe, Return}).
 
 
 
@@ -119,8 +119,6 @@ probe_activity(Target, Probe, Return) ->
 %%----------------------------------------------------------------------------
 init([ProbeModules, _ConfFile]) ->
     {ok, Table} = init_database(),
-    %P2  = load_db_conf(Table),
-    %?LOG(P2),
     P   = extract_probes_info(ProbeModules),
     %{ok, Targets} = load_targets_conf_from_file(ConfFile),
     {ok, Targets} = load_targets_conf_from_dets(Table),
@@ -158,33 +156,6 @@ init_database() ->
             dets:close(N),
             dets:open_file(DetsFile)
     end.
-%%----------------------------------------------------------------------------
-%% SELF API CALLS
-%%----------------------------------------------------------------------------
-% handle_call({chan_update, #target{id = Id, global_perm = Perm} = Target}, _F, 
-%         #state{chans = C} = S) ->
-%     case lists:keyfind(Id, 2, C) of
-%         false ->    % did not exist insert
-%             supercast_channel:emit(?MASTER_CHAN, {Perm,
-%                 pdu(targetInfo, Target)}),
-%             {reply, ok, S#state{
-%                     chans = [Target | C]
-%                 }
-%             };
-%         _ -> % exist update
-%             supercast_channel:emit(?MASTER_CHAN, {Perm,
-%                 pdu(targetInfo, Target)}),
-%             {reply, ok, 
-%                 S#state{
-%                     chans = lists:keyreplace(Id, 2, C, Target)
-%                 }
-%             }
-%     end;
-% 
-% handle_call({chan_del, #target{id = Id, global_perm = Perm}}, _F, 
-%         #state{chans = C} = S) ->
-%     supercast_channel:emit(?MASTER_CHAN, {Perm, pdu(targetDelete, Id)}),
-%     {reply, ok, S#state{chans = lists:keydelete(Id, 2, C)}};
 
 %%----------------------------------------------------------------------------
 %% SUPERCAST_CHANNEL BEHAVIOUR CALLS
@@ -245,25 +216,11 @@ handle_call(dump_dets, _F, S) ->
     {reply, ok, S}.
 
 insert_probe(Probe, Target) ->
+    {ok, Pid} = monitor_probe_sup:new({Target, Probe}),
+    P2 = Probe#probe{pid = Pid},
     Probes = Target#target.probes,
-    Id = get_free_probe_id(Probes),
-    P1 = Probe#probe{id = Id},
-    T1 = Target#target{probes = [P1|Probes]},
-    {ok, Pid} = monitor_probe_sup:new({Target, P1}),
-    P2 = P1#probe{pid = Pid},
-    T2 = T1#target{probes = [P2|Probes]},
+    T2 = Target#target{probes = [P2|Probes]},
     {P2, T2}.
-
-get_free_probe_id(Probes) ->
-    Ids = [P#probe.id || P <- Probes],
-    get_free_probe_id(0, Ids).
-get_free_probe_id(N, Ids) ->
-    case lists:member(N, Ids) of
-        true ->
-            get_free_probe_id(N + 1, Ids);
-        false ->
-            N
-    end.
 
 emit_wide(Target) ->
     Perm        = Target#target.global_perm,
@@ -314,10 +271,10 @@ handle_cast({probe_info, TargetId, NewProbe}, S) ->
     NS = S#state{chans = NewChans},
     {noreply, NS};
 
-handle_cast({probe_activity, Target, Probe, Return}, S) ->
-    monitor_event_manager:notify({probe_activity, Target, Probe, Return}),
+handle_cast({probe_activity, TargetId, Probe, Return}, S) ->
+    monitor_event_manager:notify({probe_activity, TargetId, Probe, Return}),
     Pdu = pdu(probeActivity, {
-        Target#target.id,
+        TargetId,
         Probe#probe.name,
         none,
         Return#probe_return.original_reply,
@@ -345,27 +302,16 @@ code_change(_O, S, _E) ->
 %% UTILS    
 %%----------------------------------------------------------------------------
 update_info_chan(Target, Probe) ->
-    %Target  = lists:keyfind(TargetId, 2, Chans),
-
     TProperties     = Target#target.properties,
     PProperties     = Probe#probe.properties,
     PForward        = Probe#probe.forward_properties,
 
-    {ok, NewTProp} = probe_property_forward(TProperties, PProperties, PForward),
-
-    case NewTProp of
-        TProperties ->
-            % nothing to do
-            ok;
-        _ ->
-            % nenerate apropriate pdu
-            ok
-    end,
+    {ok, NewTProp} = 
+        probe_property_forward(TProperties, PProperties, PForward),
 
 
     Probes  = Target#target.probes,
-    PrId    = Probe#probe.id,
-    % TODO use #probe.name instead of #probe.id
+    PrId    = Probe#probe.name,
     NProbes = lists:keystore(PrId, 2, Probes, Probe),
     NTarget = Target#target{
         probes      = NProbes,
@@ -416,6 +362,7 @@ load_targets_conf([T|Targets], TargetsState) ->
     load_targets_conf(Targets, [T2|TargetsState]).
     
 load_target_conf(Target) ->
+    io:format("ninit probes?"),
     ok              = init_target_dir(Target),
     {ok, Target2}   = init_probes(Target),
     Target2.
@@ -488,7 +435,7 @@ pdu(targetInfoDelete, Id) ->
                     [],
                     delete}}}};
 
-pdu(probeInfo, {InfoType, Id, 
+pdu(probeInfo, {InfoType, TargetId, 
         #probe{
             permissions         = #perm_conf{read = R, write = W},
             monitor_probe_conf  = ProbeConf,
@@ -500,8 +447,7 @@ pdu(probeInfo, {InfoType, Id,
         {fromServer,
             {probeInfo,
                 {'ProbeInfo',
-                    atom_to_list(Id),
-                    Probe#probe.id,
+                    atom_to_list(TargetId),
                     atom_to_list(Probe#probe.name),
                     Descr,
                     Info,
@@ -546,11 +492,11 @@ gen_asn_probe_conf(Conf) when is_record(Conf, ncheck_probe_conf) ->
     #ncheck_probe_conf{executable = Exe, args = Args} = Conf,
     lists:flatten([Exe, " ", [[A, " ", B, " "] || {A, B} <- Args]]);
 
-gen_asn_probe_conf(Conf) when is_record(Conf, nagios_plugin_conf) ->
-    #nagios_plugin_conf{executable = Exe, args = Args} = Conf,
+gen_asn_probe_conf(Conf) when is_record(Conf, nagios_probe_conf) ->
+    #nagios_probe_conf{executable = Exe, args = Args} = Conf,
     lists:flatten([Exe, " ", [[A, " ", B, " "] || {A, B} <- Args]]);
 
-gen_asn_probe_conf(Conf) when is_record(Conf, snmp_conf) ->
+gen_asn_probe_conf(Conf) when is_record(Conf, snmp_probe_conf) ->
     lists:flatten(io_lib:format("~p", [Conf])).
 
 gen_asn_probe_inspectors(Inspectors) ->
@@ -563,6 +509,22 @@ gen_asn_probe_inspectors(Inspectors) ->
 gen_asn_probe_loggers(Loggers) ->
     [gen_logger_pdu(LConf) || LConf <- Loggers].
 
+gen_logger_pdu({logger, bmonitor_logger_rrd2, Cfg}) ->
+    Type = proplists:get_value(type, Cfg),
+    RCreate = proplists:get_value(rrd_create, Cfg),
+    RUpdate = proplists:get_value(rrd_update, Cfg),
+    RGraphs = proplists:get_value(rrd_graph, Cfg),
+    Indexes = [I || {I,_} <- proplists:get_value(row_index_to_rrd_file, Cfg)],
+    {loggerRrd2, 
+        {'LoggerRrd2',
+            atom_to_list(bmonitor_logger_rrd),
+            atom_to_list(Type),
+            RCreate,
+            RUpdate,
+            RGraphs,
+            Indexes
+        }
+    };
 gen_logger_pdu({logger, bmonitor_logger_rrd, Cfg}) ->
     {loggerRrd, 
         {'LoggerRrd',

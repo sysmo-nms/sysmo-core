@@ -33,6 +33,7 @@
                 monitor_event_logger,
                 monitor_event_manager,
                 monitor_event_handler,
+                monitor_snmp_utils,
                 bmonitor_inspector_property_set,
                 bmonitor_inspector_status_set,
                 bmonitor_logger_rrd,
@@ -50,8 +51,8 @@
                 monitor_probe_sup
             ]},
         {applications, 
-            [kernel, stdlib, mnesia, supercast, monitor_logger_rrd,
-                monitor_logger_text, monitor_events, snmp]
+            [kernel, stdlib, mnesia, supercast, errd,
+                text_logger, snmpman]
         },
         {start_phases, []},
         {mod, {monitor_app, []}}

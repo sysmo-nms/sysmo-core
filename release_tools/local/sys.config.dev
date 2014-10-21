@@ -45,6 +45,16 @@
                     {maxconn, 50},
                     {encoder, supercast_encoder_asn}
                 ]
+            },
+            {data_sync_dir, "var/yaws/docroot"},
+            {data_port,     8080},
+            {data_use_ssl,  false},
+            {yaws_conf,
+                [
+                    {logdir, "var/yaws/log"},
+                    {listen, {0,0,0,0}},
+                    {compression_level, best_speed}
+                ]
             }
         ]
     },
@@ -64,12 +74,7 @@
             }
         ]
     },
-    {monitor_logger_rrd,
-        [
-            {command,   "rrdtool - "}
-        ]
-    },
-    {monitor_logger_text,
+    {text_logger,
         [
             {dump_size,             100}
         ]
@@ -123,30 +128,25 @@
             {debug,     none}
         ]
     },
-    {inets,
-        [
-            {services,
-                [
-                    {httpd,
-                        [
-            {proplist_file, "var/httpd/8080_props.conf"},
-            {debug,         disable},
-            {accept_timeout, 3000}
-                        ]
-                    }
-                ]
-            }
-        ]
-    },
     {snmpman, 
         [
             {java_node, 
                 [
                     {java_com,
-"/usr/lib64/java/bin/java -cp lib/snmpman/java_bin/:lib/snmpman/java_lib/OtpErlang.jar:lib/snmpman/java_lib/snmp4j-2.3.1.jar: org.noctopusNms.snmpm.Snmpman >> var/snmpman4j.log 2>&1 &"
+"/usr/lib64/java/bin/java -cp lib/snmpman/java_bin/:lib/snmpman/java_lib/OtpErlang.jar:lib/snmpman/java_lib/snmp4j-2.3.1.jar: io.noctopus.snmpm.Snmpman >> var/snmpman4j.log var/engineID.conf 2>&1 &"
                     }
                 ]
             }
+        ]
+    },
+    {errd,
+        [
+            {rrdtool,           "/opt/rrdtool-1.4.9/bin/rrdtool"}
+        ]
+    },
+    {yaws,
+        [
+            {embedded, true}
         ]
     }
 ].

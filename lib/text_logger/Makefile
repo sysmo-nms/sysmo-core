@@ -24,6 +24,3 @@ clean:
 	rm -f doc/*.css
 	rm -f doc/edoc-info
 	rm -f priv/asn1/build/*
-
-start: compile
-	erl -pa ebin -eval 'application:start(monitor_logger_rrd), monitor_logger_rrd:exec("create dd.rrd")'

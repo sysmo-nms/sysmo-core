@@ -23,6 +23,7 @@
 -behaviour(supercast_commander).
 -behaviour(gen_server).
 -include("include/monitor.hrl").
+-include("include/monitor_snmp.hrl").
 -include_lib("kernel/include/file.hrl").
 -export([
     start_link/0,
@@ -186,14 +187,117 @@ handle_cast({{simulateCheck, {_, QueryId, Check, Args}}, CState}, S) ->
     end;
 
 handle_cast({{extendedQueryMsg, 
-        {_, _QueryId, {snmpElementInfoQuery, _Query}}}, _CState}, S) ->
+        {_, QueryId, {snmpElementInfoQuery, Query}}}, CState}, S) ->
+    handle_snmpElementInfoQuery(QueryId, CState, Query),
     {noreply, S};
+
+handle_cast({{extendedQueryMsg, 
+        {_, QueryId, {snmpUpdateElementQuery, Query}}}, CState}, S) ->
+    handle_snmpUpdateElementQuery(QueryId, CState, Query),
+    {noreply, S};
+
 
 handle_cast(R, S) ->
     error_logger:info_msg(
         "unknown cast for command ~p ~p ~p~n", [?MODULE, ?LINE, R]
     ),
     {noreply, S}.
+
+handle_snmpUpdateElementQuery(_QueryId, _CState, Query) ->
+    {ok, Target} = monitor_snmp_utils:generate_standard_snmp_target(Query),
+    monitor_master:create_target(Target),
+    io:format("update element query ~p~n", [Query]).
+
+handle_snmpElementInfoQuery(QueryId, CState, {
+        _,
+        {_, IpVer, Ip},
+        Port,
+        Timeout,
+        SnmpVer,
+        _Community,
+        _SecLevel,
+        _SecName,
+        _AuthProto,
+        _AuthKey,
+        _PrivProto,
+        _PrivKey} = Args) ->
+    
+    BeginPdu = pdu(extendedReplyMsgString, {QueryId, true, false, "begin"}),
+    send(CState, BeginPdu),
+    case SnmpVer of
+        "3"  ->
+            case snmpman:discovery(Ip, IpVer, Port, Timeout) of
+                {ok, EngineId} ->
+                    Pdu = pdu(extendedReplyMsgString, {QueryId, true, false, EngineId}),
+                    send(CState, Pdu),
+                    case monitor_snmp_utils:walk_system(Args, EngineId) of
+                        {ok, System} ->
+                            Pdu2 = pdu(extendedReplyMsgWalkSystem, {QueryId, true, false, System}),
+                            send(CState, Pdu2),
+                            case monitor_snmp_utils:walk_ifTable(Args, EngineId) of
+                                {ok, Val} ->
+                                    Pdu3 = pdu(extendedReplyMsgWalkIfTable, {QueryId, true, true, Val}),
+                                    send(CState, Pdu3);
+                                {error, Reason} ->
+                                    Pdu3 = pdu(extendedReplyMsgString, {QueryId, false, true, Reason}),
+                                    send(CState, Pdu3)
+                            end;
+                        {error, Reason} ->
+                            Pdu2 = pdu(extendedReplyMsgString, {QueryId, false, true, Reason}),
+                            send(CState, Pdu2)
+                        end;
+                {error, Reason} ->
+                    Pdu = pdu(extendedReplyMsgString, {QueryId, false, true, Reason}),
+                    send(CState, Pdu)
+            end;
+        "2c" -> 
+            EngineId = "AAAAAAAAAAAA",
+            Pdu = pdu(extendedReplyMsgString, {QueryId, true, false, EngineId}),
+            send(CState, Pdu),
+            case monitor_snmp_utils:walk_system(Args, EngineId) of
+                {ok, System} ->
+                    Pdu2 = pdu(extendedReplyMsgWalkSystem, {QueryId, true, false, System}),
+                    send(CState, Pdu2),
+                    case monitor_snmp_utils:walk_ifTable(Args, EngineId) of
+                        {ok, Val} ->
+                            io:format("~p~n",[Val]),
+                            Pdu3 = pdu(extendedReplyMsgWalkIfTable, {QueryId, true, true, Val}),
+                            send(CState, Pdu3);
+                        {error, Reason} ->
+                            Pdu3 = pdu(extendedReplyMsgString, {QueryId, false, true, Reason}),
+                            send(CState, Pdu3)
+                    end;
+                {error, Reason} ->
+                    Pdu2 = pdu(extendedReplyMsgString, {QueryId, false, true, Reason}),
+                    send(CState, Pdu2)
+            end;
+
+        "1"  ->
+            EngineId = "AAAAAAAAAAAA",
+            Pdu = pdu(extendedReplyMsgString, {QueryId, true, false, EngineId}),
+            send(CState, Pdu),
+            case monitor_snmp_utils:walk_system(Args, EngineId) of
+                {ok, System} ->
+                    Pdu2 = pdu(extendedReplyMsgWalkSystem, {QueryId, true, false, System}),
+                    send(CState, Pdu2),
+                    case monitor_snmp_utils:walk_ifTable(Args, EngineId) of
+                        {ok, Val} ->
+                            Pdu3 = pdu(extendedReplyMsgWalkIfTable, {QueryId, true, true, Val}),
+                            send(CState, Pdu3);
+                        {error, Reason} ->
+                            Pdu3 = pdu(extendedReplyMsgString, {QueryId, false, true, Reason}),
+                            send(CState, Pdu3)
+                    end;
+                {error, Reason} ->
+                    Pdu2 = pdu(extendedReplyMsgString, {QueryId, false, true, Reason}),
+                    send(CState, Pdu2)
+            end;
+
+        _    -> 
+            Pdu = pdu(extendedReplyMsgString, {QueryId, false, true, "Unknown SNMP version"}),
+            send(CState, Pdu)
+    end.
+
 
 
 %%----------------------------------------------------------------------------
@@ -471,6 +575,54 @@ generate_id(Head) ->
 send(#client_state{module = CMod} = CState, Msg) ->
     CMod:send(CState, Msg).
 
+build_ifTable([], Acc) ->
+    lists:reverse(Acc);
+build_ifTable([H|T], Acc) ->
+    {table_row, IfIndex, IfDescr, IfType, IfMtu, IfSpeed, IfPhysAddress,
+        IfAdminStatus, IfOperStatus, IfLastChange} = H,
+    TableRow = {'SnmpInterfaceInfo', IfIndex, IfDescr, IfType, IfMtu,
+        IfSpeed, IfPhysAddress, IfAdminStatus, IfOperStatus, IfLastChange},
+    build_ifTable(T, [TableRow|Acc]).
+
+pdu(extendedReplyMsgWalkIfTable, {QueryId, Status, Last, Info}) ->
+    {table, TableRows} = Info,
+    IfTable = build_ifTable(TableRows, []),
+    pdu(extendedReplyMsg, {QueryId, Status, Last, {snmpInterfacesInfo, IfTable}});
+
+pdu(extendedReplyMsgWalkSystem, {QueryId, Status, Last, Info}) ->
+    {varbinds, Varbinds} = Info,
+    {_,_,_,SysDescr}        = lists:keyfind(?SYS_DESCR,         2, Varbinds),
+    {_,_,_,SysObjectId}     = lists:keyfind(?SYS_OBJECTID,      2, Varbinds),
+    {_,_,_,SysUpTime}       = lists:keyfind(?SYS_UPTIME,        2, Varbinds),
+    {_,_,_,SysContact}      = lists:keyfind(?SYS_CONTACT,       2, Varbinds),
+    {_,_,_,SysName}         = lists:keyfind(?SYS_NAME,          2, Varbinds),
+    {_,_,_,SysLocation}     = lists:keyfind(?SYS_LOCATION,      2, Varbinds),
+    {_,_,_,SysServices}     = lists:keyfind(?SYS_SERVICES,      2, Varbinds),
+    {_,_,_,SysORLastChange} = lists:keyfind(?SYS_ORLAST_CHANGE, 2, Varbinds),
+
+    InfoTuple = {snmpSystemInfo, {'SnmpSystemInfo', 
+                    SysDescr, SysObjectId, SysUpTime, SysContact,
+                    SysName, SysLocation, SysServices, SysORLastChange}},
+    pdu(extendedReplyMsg, {QueryId, Status, Last, InfoTuple});
+
+pdu(extendedReplyMsgString, {QueryId, Status, Last, InfoAtom}) when is_atom(InfoAtom) ->
+    Info = atom_to_list(InfoAtom),
+    pdu(extendedReplyMsg, {QueryId, Status, Last, {string, Info}});
+
+pdu(extendedReplyMsgString, {QueryId, Status, Last, Info}) ->
+    pdu(extendedReplyMsg, {QueryId, Status, Last, {string, Info}});
+
+pdu(extendedReplyMsg, {QueryId, Status, Last, Info}) ->
+    {modMonitorPDU,
+        {fromServer,
+            {extendedReplyMsg,
+                {'ExtendedReplyMsg',
+                    QueryId,
+                    Status,
+                    Last,
+                    Info
+                }}}};
+ 
 pdu(getCheckReply, {QueryId, Status, Infos}) ->
     {modMonitorPDU,
         {fromServer,

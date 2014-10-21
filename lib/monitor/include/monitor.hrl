@@ -20,43 +20,76 @@
     eval_perfs  = false         :: false | true
 }).
 
--record(nagios_plugin_conf, {
+-record(nagios_probe_conf, {
     executable  = undefined             :: string(),
     args        = []                    :: [{any(), any()}],
     eval_perfs  = false                 :: false | true
 }).
 
+-record(snmp_probe_conf, {
+    port        = 161           :: integer(),
+    version     = "v2"          :: string(), % "1" | "2c" | "3"
+    seclevel    = "noAuthNoPriv" :: string(), % "authPriv", "authNoPriv", "noAuthNoPriv"
+    community   = "none"        :: string(),
+    usm_user    = "undefined"   :: string(),
+    authkey     = none          :: none | string(),
+    authproto   = "SHA"          :: string(),
+    privkey     = none          :: none | string(),
+    privproto   = "AES"          :: string(),
+    oids        = []            :: [any()],
+    engine_id   = "undefined"   :: string(),
+    method      = get           :: get | {walk, [string()], [tuple()]},
+    retries     = 1             :: integer()
+}).
+
+
+
 -record(probe_return, {
     status          = 'UNKNOWN' :: 'OK' | 'UNKNOWN' | 'WARNING' | 'CRITICAL',
-    original_reply  = undefined :: string(),
-    timestamp       = undefined :: integer(),
+    % used by inspector status set
+
+    original_reply  = "undefined" :: string(),
+    % used by the text logger
+ 
+    timestamp       = 0         :: integer(),
     key_vals        = []        :: [{string(), any()}],
-    is_event        = false     :: true | false % used by monitor_logger_events app
+    % used by inspector property set/get 
+ 
+    reply_tuple     = undefined :: any(),
+    % used by the rrd logger/walk table
+ 
+    is_event        = false     :: true | false %
+    % used by monitor_logger_events app
 }).
 
 -record(probe, {
-    id                  = undefined     :: integer(), % unique in a target
-    pid                 = undefined     :: undefined | pid(),
     name                = undefined     :: atom(),
+    pid                 = undefined     :: undefined | pid(),
     description         = ""            :: string(),
     info                = ""            :: string(),
     permissions         = #perm_conf{}  :: #perm_conf{},
+    timeout             = 5             :: integer(), % seconds
+    status              = 'UNKNOWN'     :: 'UNKNOWN' | atom(),
+    step                = 5000          :: integer(), % milliseconds
+
+    properties          = []            :: [{string(), any()}],
+    % forward properties is a list of properties wich will be propagated
+    % to the target.
+    forward_properties  = []            :: [string()],
+
+    parents             = []            :: [atom()],
+    active              = true          :: true | false,
+
     monitor_probe_mod   = undefined     :: undefined | module(),
     monitor_probe_conf  = undefined     :: [any()],
-    status              = 'UNKNOWN'     :: 'UNKNOWN' | atom(),
-    timeout             = 5             :: integer(), % seconds
-    step                = 300           :: integer(), % seconds
     inspectors          = []            :: [#inspector{}],
-    loggers             = []            :: [#logger{}],
-    parents             = []            :: [atom()],
-    properties          = []            :: [{string(), any()}],
-    forward_properties  = []            :: [string()],
-    active              = true          :: true | false
+    loggers             = []            :: [#logger{}]
 }).
 
 -record(target, {
     id          = undefined     :: atom(),
     ip          = undefined     :: string(),
+    ip_version  = undefined     :: string(),
     global_perm = #perm_conf{
         read        =   ["admin"],
         write       =   ["admin"]
@@ -73,38 +106,6 @@
     probe = []          :: [#probe{}]
 }).
 
--record(ps_state, {
-    target,
-    name,
-    probe,
-    step,
-    timeout,
-    tref,
-    last_check,
-    check_state         = stopped   :: ready | running | stopped,
-    check_flag          = normal    :: normal | force | random,
-    nego_parents        = [],
-    nego_return,
-    parents             = [] :: {atom(), atom()},   % {pidName, status}
-    childs              = [],   %dynamicaly added
-    inspectors_state    = [],
-    loggers_state       = [],
-    probe_state        = []
-}).
-
--record(snmp_conf, {
-    port        = 161           :: integer(),
-    version     = v2            :: v2 | v3,
-    seclevel    = none          :: none | auth | enc,
-    community   = "none"        :: string(),
-    authkey     = none          :: none | string(),
-    authalgo    = none          :: none | 'hmac-md5' | 'hmac-sha1',
-    enckey      = none          :: none | string(),
-    encalgo     = none          :: none | des | aes,
-    oids        = []            :: [any()],
-    method      = get           :: get | {walk, any()}
-}).
-
 
 % RRD related. The max line accpeted by rrdtool is reached with
 % a 48 ports switch. It is why we need to break rrd databases
@@ -114,6 +115,13 @@
     macro   = ""                :: string()
 }).
 
+-record(rrd_config2, {
+    file,
+    create,
+    update,
+    graphs,
+    binds
+}).
 -record(rrd_config, {
     file    = ""                :: string(),
     create  = ""                :: string(),

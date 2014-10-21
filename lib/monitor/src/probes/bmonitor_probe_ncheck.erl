@@ -75,11 +75,11 @@ exec(State) ->
                 original_reply  = Stdout
             }
     end,
-    {_, MicroSec2} = sys_timestamp(),
+    {Timest, MicroSec2} = sys_timestamp(),
     KV  = PR#probe_return.key_vals,
     KV2 = [{"sys_latency", MicroSec2 - MicroSec1} | KV],
     PR2 = PR#probe_return{
-        timestamp   = MicroSec2,
+        timestamp   = Timest,
         key_vals    = KV2
     },
     {ok, State, PR2}.

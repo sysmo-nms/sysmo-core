@@ -64,12 +64,7 @@
             }
         ]
     },
-    {monitor_logger_rrd,
-        [
-            {command,   "rrdtool - "}
-        ]
-    },
-    {monitor_logger_text,
+    {text_logger,
         [
             {dump_size,             100}
         ]

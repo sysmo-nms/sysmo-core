@@ -21,7 +21,7 @@
 % @private
 -module(monitor_templates).
 -include("include/monitor.hrl").
--include("../snmp_manager/include/snmp_manager.hrl").
+-include("../snmpman/include/snmpman.hrl").
 
 -export([
     generate_standard_probe/3,
@@ -65,7 +65,6 @@ generate_perf_probe(_ProbeId, _Target, _Conf) ->
 generate_icmpProbe(ProbeId, Target) ->
     {ok, 
         #probe{
-            id          = 0,
             name        = ProbeId,
             description = "icmp:Echo request",
             info        = "
@@ -122,7 +121,6 @@ generate_sysLocNameProbe(ProbeId, Target, Community) ->
     Community = proplists:get_value("snmp_ro", Target#target.properties),
     {ok, 
         #probe{
-            id          = 1,
             name        = ProbeId,
             description = "snmp:sysName sysLocation",
             info        = "
@@ -131,7 +129,7 @@ generate_sysLocNameProbe(ProbeId, Target, Community) ->
             ",
             permissions = Target#target.global_perm,
             monitor_probe_mod   = bmonitor_probe_snmp,
-            monitor_probe_conf  = #snmp_conf{
+            monitor_probe_conf  = #snmp_probe_conf{
                 port        = 161,
                 version     = v2,
                 community   = Community,
@@ -186,7 +184,6 @@ generate_ifPerfProbe(ProbeId, Target, Community, TmpAgent) ->
     {QueryOids, RrdConf}   = generate_conf(Ifs3),
     {ok,
         #probe{
-            id          = 2,
             name        = ProbeId,
             description = "snmp:ifTable performances",
             info        = "
@@ -195,7 +192,7 @@ generate_ifPerfProbe(ProbeId, Target, Community, TmpAgent) ->
             ",
             permissions = Target#target.global_perm,
             monitor_probe_mod   = bmonitor_probe_snmp,
-            monitor_probe_conf  = #snmp_conf{
+            monitor_probe_conf  = #snmp_probe_conf{
                 port        = 161,
                 version     = v2,
                 community   = Community,

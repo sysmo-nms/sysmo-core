@@ -1,4 +1,4 @@
--module(monitor_logger_text).
+-module(text_logger).
 -behaviour(gen_server).
 -include_lib("kernel/include/file.hrl").
 
@@ -35,7 +35,7 @@ dump(Pid) ->
 
 
 init(FileName) ->
-    {ok, DumpSize} = application:get_env(monitor_logger_text, dump_size),
+    {ok, DumpSize} = application:get_env(text_logger, dump_size),
     file:write_file(FileName, <<>>, [append]),
     {ok, Newline} = re:compile("\n+"),
     {ok, Spaces}  = re:compile(" +"),

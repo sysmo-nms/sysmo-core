@@ -54,8 +54,7 @@
     reset_family/1,
     synchronize_parents/1,
     synchronize_childs/1,
-    launch/1,           % from monitor_probe_sup:parents_sync/0
-    take_of/2
+    launch/1           % from monitor_probe_sup:parents_sync/0
 ]).
 
 %-record(parent, {
@@ -63,6 +62,23 @@
     %status,
     %last_check
 %}).
+
+-record(state, {
+    target_id,
+    name,
+    probe,
+    tref,   %
+    last_check,
+    check_state         = stopped   :: ready | running | stopped,
+    check_flag          = normal    :: normal | force | random,
+    nego_parents        = [],
+    nego_return,
+    parents             = [] :: {atom(), atom()},   % {pidName, status}
+    childs              = [],   %dynamicaly added
+    inspectors_state    = [],
+    loggers_state       = [],
+    probe_state         = []
+}).
 
 -define(OK,         'OK').
 -define(CRITICAL,   'CRITICAL').
@@ -136,22 +152,17 @@ init([Target, Probe]) ->
     {ok, ProbeInitState}    = init_probe(Target, UProbe),
     {ok, InspectInitState}  = init_inspectors(Target, UProbe),
     {ok, LoggersInitState}  = init_loggers(Target, UProbe),
-    PSState = #ps_state{
+    PSState = #state{
+        target_id           = Target#target.id,
         name                = UProbe#probe.name,
-        target              = Target,
         probe               = UProbe,
-        step                = UProbe#probe.step,
-        timeout             = UProbe#probe.timeout,
-
-    %    parents             = ProbeParents,
-    %    childs              = [],
  
         probe_state         = ProbeInitState ,
         inspectors_state    = InspectInitState,
         loggers_state       = LoggersInitState
     },
-    {ok, TRef} = initiate_start_sequence(ProbeInitState, UProbe, random),
-    {ok, 'RUNNING', PSState#ps_state{tref=TRef}, hibernate}.
+    {ok, TRef} = initiate_start_sequence(UProbe#probe.step, random),
+    {ok, 'RUNNING', PSState#state{tref=TRef}, hibernate}.
 
 'RUNNING'(_Event, SName, SData) ->
     {next_state, SName, SData}.
@@ -159,55 +170,63 @@ init([Target, Probe]) ->
 % GEN_CHANNEL event
 handle_event({probe_return, NewProbeState, ProbeReturn}, SName, SData) ->
     % UPDATE probe_state
-    SData1  = SData#ps_state{probe_state       = NewProbeState},
+    SData1  = SData#state{probe_state       = NewProbeState},
 
     % INSPECT, update probe and inspectors_state,
-    Probe        = SData1#ps_state.probe,
-    InspectState = SData1#ps_state.inspectors_state,
+    Probe        = SData1#state.probe,
+    InspectState = SData1#state.inspectors_state,
     {ok, NewInspectState, ModifiedProbe} = 
         inspect(InspectState, Probe, ProbeReturn),
-    SData2  = SData1#ps_state{probe             = ModifiedProbe},
-    SData3  = SData2#ps_state{inspectors_state  = NewInspectState},
+    SData2  = SData1#state{probe             = ModifiedProbe},
+    SData3  = SData2#state{inspectors_state  = NewInspectState},
 
     % NOTIFY
-    Target  = SData3#ps_state.target,
-    notify(ProbeReturn, Target, Probe, ModifiedProbe),
+    TargetId  = SData3#state.target_id,
+    notify(ProbeReturn, TargetId, Probe, ModifiedProbe),
 
     % LOG, update loggers_state,
-    LoggersState            = SData3#ps_state.loggers_state,
+    LoggersState            = SData3#state.loggers_state,
     {ok, NewLoggersState}   = log_return(LoggersState, ProbeReturn),
-    SData4 = SData3#ps_state{loggers_state = NewLoggersState},
+    SData4 = SData3#state{loggers_state = NewLoggersState},
 
     % LAUNCH
-    PS      = SData4#ps_state.probe_state,
-    P       = SData4#ps_state.probe,
-    {ok, TRef} = initiate_start_sequence(PS, P, normal),
+    _PS      = SData4#state.probe_state,
+    P       = SData4#state.probe,
+    {ok, TRef} = initiate_start_sequence(P#probe.step, normal),
 
-    {next_state, SName, SData4#ps_state{tref=TRef}, hibernate};
+    {next_state, SName, SData4#state{tref=TRef}, hibernate};
 
 handle_event({emit_pdu, Pdu}, SName, SData) ->
-    Probe       = SData#ps_state.probe,
+    Probe       = SData#state.probe,
     ChanName    = Probe#probe.name,
     Perms       = Probe#probe.permissions,
     supercast_channel:emit(ChanName, {Perms, Pdu}),
     {next_state, SName, SData};
 
 handle_event({sync_request, CState}, SName, SData) ->
-    Probe   = SData#ps_state.probe,
+    Probe   = SData#state.probe,
     Name    = Probe#probe.name,
-    LStates = SData#ps_state.loggers_state,
+    LStates = SData#state.loggers_state,
     {ok, Pdus, NewLStates} = log_dump(LStates),
     ok      = supercast_channel:unicast(CState, Pdus),
     ok      = supercast_channel:subscribe(Name, CState),
-    SData1  = SData#ps_state{loggers_state = NewLStates},
+    SData1  = SData#state{loggers_state = NewLStates},
     {next_state, SName, SData1}.
 
 handle_sync_event(get_perms, _From, SName, SData) ->
-    Probe = SData#ps_state.probe,
+    Probe = SData#state.probe,
     Perms = Probe#probe.permissions,
     {reply, Perms, SName, SData}.
 
-handle_info(_Info, SName, SData) ->
+handle_info(take_of, SName, SData) ->
+    #state{
+       probe_state = ProbeState,
+       probe = #probe{monitor_probe_mod = Mod}
+    } = SData,
+    take_of(self(), Mod, ProbeState),
+    {next_state, SName, SData};
+
+handle_info(_, SName, SData) ->
     {next_state, SName, SData}.
 
 terminate(_Reason, _SName, _SData) ->
@@ -277,8 +296,8 @@ log_dump([LoggerState|LState], PduAcc, NLogState) ->
             log_dump(LState, PduAcc,       [{Mod, State2}|NLogState])
     end.
     
-%-spec log_dump(#ps_state{}) -> any().
-%log_dump(#ps_state{probe = Probe} = PSState) ->
+%-spec log_dump(#state{}) -> any().
+%log_dump(#state{probe = Probe} = PSState) ->
     %L = [Mod:dump(PSState) || 
             %#logger{module = Mod} <- Probe#probe.loggers],
     %L2 = lists:filter(fun(Element) ->
@@ -338,27 +357,25 @@ inspect([IState|IStates], NIStates, PR, OP, MP) ->
 %% PROBE LAUNCH %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec initiate_start_sequence(
-        ProbeState  ::any(),
-        Probe       ::#probe{},
-        Step        :: normal | random | now | integer()
+        Step        :: integer(),
+        Mode        :: normal | random | now
     ) -> any().
-initiate_start_sequence(ProbeState, Probe, random) ->
-    Step    = random:uniform(Probe#probe.step),
-    initiate_start_sequence(ProbeState, Probe, Step);
-initiate_start_sequence(ProbeState, Probe, normal) ->
-    Step    = Probe#probe.step,
-    initiate_start_sequence(ProbeState, Probe, Step);
-initiate_start_sequence(ProbeState, Probe, now) ->
-    Step    = 0,
-    initiate_start_sequence(ProbeState, Probe, Step);
-initiate_start_sequence(ProbeState, Probe, Step) ->
-    timer:apply_after(Step * 1000,   ?MODULE, take_of, [ProbeState, Probe]).
+initiate_start_sequence(Step, random) ->
+    Step2   = random:uniform(Step),
+    initiate_start_sequence(Step2);
+initiate_start_sequence(Step, normal) ->
+    initiate_start_sequence(Step);
+initiate_start_sequence(_, now) ->
+    initiate_start_sequence(0).
 
-take_of(ProbeState, Probe) ->
-    Mod     = Probe#probe.monitor_probe_mod,
-    Pid     = Probe#probe.pid,
-    {ok, ProbeState2, Return}  = Mod:exec(ProbeState),
-    gen_fsm:send_all_state_event(Pid, {probe_return, ProbeState2, Return}).
+initiate_start_sequence(Step) ->
+    timer:send_after(Step * 1000, take_of).
+
+take_of(Parent, Mod, ProbeState) ->
+    erlang:spawn(fun() ->
+        {ok, ProbeState2, Return}  = Mod:exec(ProbeState),
+        gen_fsm:send_all_state_event(Parent, {probe_return, ProbeState2, Return})
+    end).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -367,26 +384,24 @@ take_of(ProbeState, Probe) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% monitor_master and supercast_channel NOTIFY %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-notify(ProbeReturn, Target, OriginalProbe, NewProbe) ->
-    ok = notify_subscribers(ProbeReturn, Target, NewProbe),
-    ok = notify_master(Target, OriginalProbe, NewProbe, ProbeReturn).
+notify(ProbeReturn, TargetId, OriginalProbe, NewProbe) ->
+    ok = notify_subscribers(ProbeReturn, TargetId, NewProbe),
+    ok = notify_master(TargetId, OriginalProbe, NewProbe, ProbeReturn).
 
-notify_subscribers(ProbeReturn, Target, Probe) ->
+notify_subscribers(ProbeReturn, TargetId, Probe) ->
     ChanName = ProbeName = Probe#probe.name,
-    Perms       = Probe#probe.permissions,
-    TargetId    = Target#target.id,
-    Pdu         = monitor_pdu:probe_return({ProbeReturn, TargetId, ProbeName}),
+    Perms    = Probe#probe.permissions,
+    Pdu      = monitor_pdu:probe_return({ProbeReturn, TargetId, ProbeName}),
     supercast_channel:emit(ChanName, {Perms, Pdu}).
 
-notify_master(Target, OriginalProbe, Probe, ProbeReturn) ->
+notify_master(TargetId, OriginalProbe, Probe, ProbeReturn) ->
     case notify_master_required(OriginalProbe, Probe) of
         true  ->
-            TargetId    = Target#target.id,
             monitor_master:probe_info(TargetId, Probe);
         false -> ok
     end,
     % ACTIVITY allways called:
-    monitor_master:probe_activity(Target, Probe, ProbeReturn).
+    monitor_master:probe_activity(TargetId, Probe, ProbeReturn).
     
 
 notify_master_required(Orig, Modified) ->

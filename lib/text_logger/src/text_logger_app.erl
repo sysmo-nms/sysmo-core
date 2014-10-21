@@ -19,30 +19,16 @@
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 % @private
--module(monitor_logger_rrd_sup).
--behaviour(supervisor).
+-module(text_logger_app).
+-behaviour(application).
 
 -export([
-    start_link/0
+    start/2,
+    stop/1
 ]).
--export([init/1]).
 
-start_link() ->
-    supervisor:start_link({local, ?MODULE}, ?MODULE, []).
+start(_Type, _Args) ->
+    text_logger_sup:start_link().
 
-init([]) ->
-    {ok, 
-        {
-            {one_for_one, 10, 60},
-            [
-                {
-                    monitor_logger_rrd,
-                    {monitor_logger_rrd, start_link, []},
-                    permanent,
-                    2000,
-                    worker,
-                    [monitor_logger_rrd]
-                }
-            ]
-        }
-    }.
+stop(_State) ->
+	ok.

@@ -20,7 +20,6 @@
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 -module(bmonitor_probe_snmp).
 -behaviour(beha_monitor_probe).
--include_lib("snmp/include/snmp_types.hrl").
 -include("include/monitor.hrl").
 
 %% beha_monitor_probe exports
@@ -30,11 +29,16 @@
     info/0
 ]).
 
+-record(varbind, {
+    oid,
+    type,
+    value
+}).
+
 -record(state, {
     agent,
     oids,
     request_oids,
-    timeout,
     method
 }).
 
@@ -45,58 +49,64 @@ init(Target, Probe) ->
     TargetName  = Target#target.id,
     AgentName   = atom_to_list(TargetName),
 
-    TargetIp    = Target#target.ip,
-    {ok, Ip}    = inet:parse_address(TargetIp),
-
     Conf        = Probe#probe.monitor_probe_conf,
-    Port        = Conf#snmp_conf.port,
-    Version     = Conf#snmp_conf.version,
-    Community   = Conf#snmp_conf.community,
-    Oids        = Conf#snmp_conf.oids,
-    Method      = Conf#snmp_conf.method,
+    Method      = Conf#snmp_probe_conf.method,
+    Oids        = Conf#snmp_probe_conf.oids,
 
-    case snmp_manager:agent_registered(AgentName) of
+
+    case snmpman:element_registered(AgentName) of
         true  -> ok;
         false ->
+            Ip    = Target#target.ip,
+            IpVer = Target#target.ip_version,
+
+            Port        = Conf#snmp_probe_conf.port,
+            Version     = Conf#snmp_probe_conf.version,
+            SecLevel    = Conf#snmp_probe_conf.seclevel,
+            Community   = Conf#snmp_probe_conf.community,
+            AuthKey     = Conf#snmp_probe_conf.authkey,
+            AuthProto   = Conf#snmp_probe_conf.authproto,
+            PrivKey     = Conf#snmp_probe_conf.privkey,
+            PrivProto   = Conf#snmp_probe_conf.privproto,
+            EngineId    = Conf#snmp_probe_conf.engine_id,
+            Retries     = Conf#snmp_probe_conf.retries,
+            Timeout     = Probe#probe.timeout,
             SnmpArgs = [
-                {engine_id, "none"},
-                {address,   Ip},
-                {port  ,    Port},
-                {version,   Version},
-                {community, Community}
+                {ip_address,    Ip},
+                {ip_version,    IpVer},
+                {timeout,       Timeout},
+                {port  ,        Port},
+                {snmp_version,  Version},
+                {security_level,SecLevel},
+                {community,     Community},
+                {auth_key,      AuthKey},
+                {auth_proto,    AuthProto},
+                {priv_key,      PrivKey},
+                {priv_proto,    PrivProto},
+                {engine_id,     EngineId},
+                {retries,       Retries}
+
             ],
-            snmp_manager:register_agent(AgentName, SnmpArgs)
+            snmpman:register_element(AgentName, SnmpArgs)
     end,
 
-    {ok, #state{
+    {ok,
+        #state{
             agent           = AgentName,
             oids            = Oids,
             request_oids    = [Oid || {_, Oid} <- Oids],
-            timeout         = Probe#probe.timeout * 1000,
             method          = Method
         }
     }.
 
-exec(State) ->
+exec(#state{method = get} = State) ->
 
     Agent           = State#state.agent,
     Request         = State#state.request_oids,
     Oids            = State#state.oids,
-    Timeout         = State#state.timeout,
-    Method          = State#state.method,
 
     {_, MicroSec1}  = sys_timestamp(),
-    % TODO use snmp_manager:bulk_walk
-    case Method of
-        get ->
-            Reply   = snmp_manager:sync_get(Agent, Request, Timeout);
-        {walk, WOids} ->
-            ReplyT   = [
-                snmp_manager:sync_walk_bulk(Agent, Oid) ||
-                    Oid <- WOids],
-            Reply = {ok, lists:flatten(ReplyT)}
-    end,
-
+    Reply = snmpman:get(Agent, Request),
     {_, MicroSec2}  = sys_timestamp(),
 
     case Reply of
@@ -111,39 +121,83 @@ exec(State) ->
                 key_vals        = KV,
                 timestamp       = MicroSec2},
             {ok, State, PR};
-        {ok, SnmpReply, _Remaining} ->
-            PR      = eval_snmp_get_return(SnmpReply, Oids),
-            KV      = PR#probe_return.key_vals,
-            KV2     = [{"sys_latency", MicroSec2 - MicroSec1} | KV],
-            PR2     = PR#probe_return{
-                timestamp = MicroSec2,
-                key_vals  = KV2},
-            {ok, State, PR2};
         {ok, SnmpReply} ->
-            PR      = eval_snmp_walk_return(SnmpReply, Oids),
-            KV      = PR#probe_return.key_vals,
-            KV2     = [{"sys_latency", MicroSec2 - MicroSec1} | KV],
-            PR2     = PR#probe_return{
+            PR  = eval_snmp_get_return(SnmpReply, Oids),
+            KV  = PR#probe_return.key_vals,
+            KV2 = [{"sys_latency", MicroSec2 - MicroSec1} | KV],
+            PR2 = PR#probe_return{
                 timestamp = MicroSec2,
                 key_vals  = KV2},
             {ok, State, PR2}
+    end;
+
+exec(#state{method = {walk_table, Table, PropRet}} = State) ->
+
+    Agent           = State#state.agent,
+    %Request         = State#state.request_oids,
+    %Oids            = State#state.oids,
+    %Method          = State#state.method,
+
+    {_, MicroSec1}  = sys_timestamp(),
+    Reply = snmpman:walk_table(Agent, Table),
+    {ReplyT, MicroSec2}  = sys_timestamp(),
+
+    case Reply of
+        {error, _Error} = R ->
+            error_logger:info_msg("snmp fail ~p ~p ~p", [?MODULE, ?LINE, R]),
+            KV = [{"status",'CRITICAL'},{"sys_latency",MicroSec2 - MicroSec1}],
+            OR = to_string(R),
+            S  = 'CRITICAL',
+            PR = #probe_return{
+                status          = S,
+                original_reply  = OR,
+                key_vals        = KV,
+                timestamp       = ReplyT},
+            {ok, State, PR};
+        {ok, {table, SnmpReply}} ->
+            KV  = [{"status",'OK'},{"sys_latency", MicroSec2 - MicroSec1}],
+            KV2 = set_walk_prop_ret(PropRet, SnmpReply, []),
+            PR = #probe_return{
+                timestamp       = ReplyT,
+                reply_tuple     = SnmpReply,
+                status          = 'OK',
+                key_vals        = lists:concat([KV,KV2]),
+                original_reply  = to_string(SnmpReply)
+            },
+            {ok, State, PR}
     end.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% UTILS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % @private
-eval_snmp_get_return({noError, _, VarBinds}, Oids) ->
+set_walk_prop_ret([], _, KV) ->
+    KV;
+set_walk_prop_ret([{MacStr, MacElement, RepElement}|T], SnmpReply, KV) ->
+    KV2 = set_walk_prop_ret_replace(MacStr,MacElement,RepElement, SnmpReply, []),
+    set_walk_prop_ret(T, SnmpReply, lists:concat([KV, KV2])).
+
+set_walk_prop_ret_replace(_,_,_,[],K) -> K;
+set_walk_prop_ret_replace(MStr,MElem,MRep,[H|T],K) ->
+    MMacVal     = element(MElem,    H),
+    MRepVal     = element(MRep,     H),
+    %Key = re:replace(MStr, Rx, int_to_string(MMacVal), [{return,list}]),
+    Key = lists:concat([MStr, int_to_string(MMacVal)]),
+    Kv = {Key, MRepVal},
+    set_walk_prop_ret_replace(MStr,MElem,MRep,T,[Kv|K]).
+
+
+% @private
+eval_snmp_get_return({varbinds, VarBinds}, Oids) ->
     eval_snmp_return(VarBinds, Oids).
 
-eval_snmp_walk_return(VarBinds, Oids) ->
-    OidsN = [{K, lists:droplast(O)} || {K, O} <- Oids],
-    eval_snmp_return(VarBinds, OidsN).
+%eval_snmp_walk_return(VarBinds, Oids) ->
+    %OidsN = [{K, lists:droplast(O)} || {K, O} <- Oids],
+    %eval_snmp_return(VarBinds, OidsN).
 
 eval_snmp_return(VarBinds, Oids) ->
-    FilteredVarBinds = filter_varbinds(VarBinds),
     KeyVals = [
-        {Key, (lists:keyfind(Oid, 2, FilteredVarBinds))#varbind.value} || 
+        {Key, (lists:keyfind(Oid, 2, VarBinds))#varbind.value} || 
         {Key, Oid} <- Oids
     ],
     #probe_return{
@@ -152,20 +206,12 @@ eval_snmp_return(VarBinds, Oids) ->
         key_vals        = [{"status", 'OK'} | KeyVals]
     }.
 
-filter_varbinds(VarBinds) ->
-    lists:filter(
-    fun(X) ->
-        case X of
-            {varbind, _, _, _, _} -> true;
-            _ -> 
-                error_logger:info_msg("~p ~p Unknown varbind: ~p~n",
-                    [?MODULE, ?LINE, X]),
-                false
-        end
-    end, VarBinds).
+int_to_string(Term) when is_integer(Term) ->
+    lists:flatten(io_lib:format("~p", [Term]));
+int_to_string(Term) -> Term.
 
 to_string(Term) ->
-    lists:flatten(io_lib:format("~p~n", [Term])).
+    lists:flatten(io_lib:format("~p", [Term])).
 
 sys_timestamp() ->
     {Meg, Sec, Micro} = os:timestamp(),
