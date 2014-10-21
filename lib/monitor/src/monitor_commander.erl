@@ -260,6 +260,7 @@ handle_snmpElementInfoQuery(QueryId, CState, {
                     send(CState, Pdu2),
                     case monitor_snmp_utils:walk_ifTable(Args, EngineId) of
                         {ok, Val} ->
+                            io:format("~p~n",[Val]),
                             Pdu3 = pdu(extendedReplyMsgWalkIfTable, {QueryId, true, true, Val}),
                             send(CState, Pdu3);
                         {error, Reason} ->

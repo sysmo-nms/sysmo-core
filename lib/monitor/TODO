@@ -1,21 +1,26 @@
-1 make snmpman work
-2 remove #probe.id
-3 remove #rrd_config.update_regexps, #rrd_config.file_path
-4 clenup asn messages, remove query keep extendedQuery
-5 cleanup/document monitor_commander,
-6 cleanup/document monitor_master,
-7 general code cleanup/refactor/test (eunit/dializer)
+1 bug when adding a target with a probe wich is instantly fail (client or server?)
+2 make snmpman/rrdtool work (second tcp connexion for .rrds)
+3 make nagios plugins work (including .rrds)
+4 local actions
+5 general code cleanup/refactor/test (eunit/dializer)
+    - cleanup/document monitor_commander,
+    - cleanup/document monitor_master,
+    - remove #rrd_config.update_regexps, #rrd_config.file_path
+    - clenup asn messages, remove query keep extendedQuery
+
+// next
+6 job scheduler (events/alerts/server actions)
+7 template system
+    - for probes
+    - for snmp
+    - events (scheduler/alerts)
+
 
 // later
 - tref() is {A, _Ref} when A is systime + delay, the timestamp of the execution
-fun.
+fun. Or, set a probe property "expected launch" value.
 - get the time a probe might get informations to initialize timer on the
 client at connexion time. If not, the client will only be initialized with
 the first reception of a probe message (deducing the time using the probe
 specific properties step and timeout).
 - only send messages to ifs_mpd when "clients > 0".
-
-// later
-- probe dependencies
-- composed service
-

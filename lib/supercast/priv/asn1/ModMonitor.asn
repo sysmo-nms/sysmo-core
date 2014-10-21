@@ -60,6 +60,7 @@ Bind        ::= SEQUENCE {
     macro       PrintableString
 }
 Graph       ::= PrintableString
+
 RrdConfig   ::= SEQUENCE {
     file    PrintableString,
     create  PrintableString,
@@ -70,6 +71,15 @@ RrdConfig   ::= SEQUENCE {
 LoggerRrd   ::= SEQUENCE {
     module  ErlangModule,
     config  SEQUENCE OF RrdConfig
+}
+
+LoggerRrd2   ::= SEQUENCE {
+    module      ErlangModule,
+    type        PrintableString,
+    rrdCreate   PrintableString,
+    rrdUpdate   PrintableString,
+    rrdGraphs   SEQUENCE OF PrintableString,
+    indexes     SEQUENCE OF INTEGER
 }
 
 -- Text --
@@ -87,7 +97,8 @@ LoggerEvents ::= SEQUENCE {
 Logger  ::= CHOICE {
     loggerRrd       [0] LoggerRrd,
     loggerText      [1] LoggerText,
-    loggerEvents    [2] LoggerEvents
+    loggerEvents    [2] LoggerEvents,
+    loggerRrd2      [3] LoggerRrd2
 }
 Loggers     ::= SEQUENCE OF Logger
 
@@ -101,7 +112,6 @@ FileData        ::= OCTET STRING
 
 ProbeInfo   ::= SEQUENCE {
     channel     TargetId,
-    probeId     ProbeId,
     name        ProbeName,
     descr       PrintableString,
     info        PrintableString,
@@ -167,13 +177,37 @@ EventProbeDump  ::= SEQUENCE {
     events      SEQUENCE OF ProbeEvent
 }
 
--- RrdProbeDump --
 RrdFileDump ::= SEQUENCE {
     target      TargetId,
     probeName   PrintableString,
     probeModule PrintableString,
     fileId      PrintableString,
     bin         FileData
+}
+
+
+RrdIdToFile ::= SEQUENCE {
+    index    INTEGER,
+    fileName PrintableString
+}
+
+RrdProbeDump ::= SEQUENCE {
+    target      TargetId,
+    probeName   PrintableString,
+    probeModule PrintableString,
+    indexes     SEQUENCE OF RrdIdToFile,
+    path        PrintableString
+}
+
+RrdLoggerUpdate ::= SEQUENCE {
+    index   INTEGER,
+    update  PrintableString
+}
+
+RrdLoggerEvent ::= SEQUENCE {
+    target      TargetId,
+    probeName   PrintableString,
+    updates     SEQUENCE OF RrdLoggerUpdate
 }
 
 -- ProbeDump --
@@ -183,6 +217,7 @@ ProbeDump   ::= SEQUENCE {
     probeModule PrintableString,
     binaryData  FileData  
 }
+
 
 ProbeFetch  ::= SEQUENCE {
     channel     TargetId,
@@ -385,7 +420,9 @@ MonitorPDU ::= CHOICE {
         probeEventMsg   [11] ProbeEvent,
         monitorReply    [12] MonitorReply,
         getCheckReply   [13] GetCheckReply,
-        extendedReplyMsg [20] ExtendedReplyMsg
+        extendedReplyMsg [20] ExtendedReplyMsg,
+        rrdProbeDump    [30] RrdProbeDump,
+        rrdLoggerEvent  [35] RrdLoggerEvent
     },
     fromClient  [1] CHOICE {
         createTarget    [1] CreateTarget,

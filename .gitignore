@@ -31,11 +31,11 @@ lib/errd/ebin/*
 *.win32
 lib/supercast/include/ModSupercast.hrl
 lib/supercast/include/ModMonitor.hrl
-!var/httpd/docroot/wiki_base.html
 sys.config
-var/httpd/8080_props.conf
 noctopus.tar
 *.plt
 lib/nchecks
 lib/snmpman
 var/engineID.conf
+var/yaws/docroot/*
+var/yaws/log/*

@@ -2,7 +2,7 @@
 % Copyright (C) 2012 <Sébastien Serre sserre.bx@gmail.com>
 % 
 % Enms is a Network Management System aimed to manage and monitor SNMP
-% monitor_logger_texts, monitor network hosts and services, provide a consistent
+% text_loggers, monitor network hosts and services, provide a consistent
 % documentation system and tools to help network professionals
 % to have a wide perspective of the networks they manage.
 % 
@@ -18,26 +18,26 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
-{application, monitor_logger_text,
+{application, text_logger,
     [
-        {description, "bmonitor_logger_text utils"},
+        {description, "btext_logger utils"},
         {vsn, "0.1.0"},
         {modules, 
             [
-                monitor_logger_text_app,
-                monitor_logger_text_sup,
-                monitor_logger_text
+                text_logger_app,
+                text_logger_sup,
+                text_logger
             ]
         },
         {registered, 
             [
-                monitor_logger_text_sup
+                text_logger_sup
             ]
         },
         {applications, 
             [kernel, stdlib]
         },
         {start_phases, []},
-        {mod, {monitor_logger_text_app, []}}
+        {mod, {text_logger_app, []}}
     ]
 }.

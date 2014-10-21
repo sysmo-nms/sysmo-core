@@ -19,16 +19,34 @@
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 % @private
--module(monitor_events_app).
--behaviour(application).
+-module(text_logger_sup).
+-behaviour(supervisor).
 
 -export([
-    start/2,
-    stop/1
+    start_link/0,
+    start_logger/1
 ]).
+-export([init/1]).
 
-start(_Type, _Args) ->
-    monitor_events_sup:start_link().
+start_link() ->
+    supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
-stop(_State) ->
-    ok.
+start_logger(Arg) ->
+    supervisor:start_child(?MODULE, [Arg]).
+
+init([]) ->
+    {ok, 
+        {
+            {simple_one_for_one, 10, 60},
+            [
+                {
+                    text_logger,
+                    {text_logger, start_link, []},
+                    permanent,
+                    2000,
+                    worker,
+                    [text_logger]
+                }
+            ]
+        }
+    }.

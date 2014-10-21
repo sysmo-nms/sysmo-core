@@ -51,8 +51,8 @@
                 monitor_probe_sup
             ]},
         {applications, 
-            [kernel, stdlib, mnesia, supercast, monitor_logger_rrd,
-                monitor_logger_text, monitor_events, snmpman]
+            [kernel, stdlib, mnesia, supercast, errd,
+                text_logger, snmpman]
         },
         {start_phases, []},
         {mod, {monitor_app, []}}

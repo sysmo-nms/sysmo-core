@@ -38,7 +38,7 @@
     privproto   = "AES"          :: string(),
     oids        = []            :: [any()],
     engine_id   = "undefined"   :: string(),
-    method      = get           :: get | {walk, any()},
+    method      = get           :: get | {walk, [string()], [tuple()]},
     retries     = 1             :: integer()
 }).
 
@@ -46,30 +46,44 @@
 
 -record(probe_return, {
     status          = 'UNKNOWN' :: 'OK' | 'UNKNOWN' | 'WARNING' | 'CRITICAL',
-    original_reply  = undefined :: string(),
-    timestamp       = undefined :: integer(),
+    % used by inspector status set
+
+    original_reply  = "undefined" :: string(),
+    % used by the text logger
+ 
+    timestamp       = 0         :: integer(),
     key_vals        = []        :: [{string(), any()}],
-    is_event        = false     :: true | false % used by monitor_logger_events app
+    % used by inspector property set/get 
+ 
+    reply_tuple     = undefined :: any(),
+    % used by the rrd logger/walk table
+ 
+    is_event        = false     :: true | false %
+    % used by monitor_logger_events app
 }).
 
 -record(probe, {
-    id                  = undefined     :: integer(), % unique in a target
-    pid                 = undefined     :: undefined | pid(),
     name                = undefined     :: atom(),
+    pid                 = undefined     :: undefined | pid(),
     description         = ""            :: string(),
     info                = ""            :: string(),
     permissions         = #perm_conf{}  :: #perm_conf{},
+    timeout             = 5             :: integer(), % seconds
+    status              = 'UNKNOWN'     :: 'UNKNOWN' | atom(),
+    step                = 5000          :: integer(), % milliseconds
+
+    properties          = []            :: [{string(), any()}],
+    % forward properties is a list of properties wich will be propagated
+    % to the target.
+    forward_properties  = []            :: [string()],
+
+    parents             = []            :: [atom()],
+    active              = true          :: true | false,
+
     monitor_probe_mod   = undefined     :: undefined | module(),
     monitor_probe_conf  = undefined     :: [any()],
-    status              = 'UNKNOWN'     :: 'UNKNOWN' | atom(),
-    timeout             = 5             :: integer(), % seconds
-    step                = 300           :: integer(), % seconds
     inspectors          = []            :: [#inspector{}],
-    loggers             = []            :: [#logger{}],
-    parents             = []            :: [atom()],
-    properties          = []            :: [{string(), any()}],
-    forward_properties  = []            :: [string()],
-    active              = true          :: true | false
+    loggers             = []            :: [#logger{}]
 }).
 
 -record(target, {
@@ -92,24 +106,6 @@
     probe = []          :: [#probe{}]
 }).
 
--record(ps_state, {
-    target,
-    name,
-    probe,
-    step,
-    timeout,
-    tref,
-    last_check,
-    check_state         = stopped   :: ready | running | stopped,
-    check_flag          = normal    :: normal | force | random,
-    nego_parents        = [],
-    nego_return,
-    parents             = [] :: {atom(), atom()},   % {pidName, status}
-    childs              = [],   %dynamicaly added
-    inspectors_state    = [],
-    loggers_state       = [],
-    probe_state        = []
-}).
 
 % RRD related. The max line accpeted by rrdtool is reached with
 % a 48 ports switch. It is why we need to break rrd databases

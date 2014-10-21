@@ -29,6 +29,31 @@
     generate_standard_snmp_target/1
 ]).
 
+% four RRAs from 100 hours to 10 years
+% RRA: (1*300)  * 1200 = 360000    seconds = 6000    minutes = 100   hours
+% RRA: (12*300) * 2400 = 8640000   seconds = 14400   minutes = 2400  hours = 100 days
+
+% RRA: (50*300) * 6400 = 96000000  seconds = 1600000 minutes = 26666 hours = 1111 days = 3 years
+% RRA: (118*300)* 8900 = 315060000 seconds = 5251000 minutes = 87516 hours = 3646 days = 10 years
+-define(RRD_ifPerf_CREATE,
+" --step 300 --no-overwrite DS:octetsIn:COUNTER:650:U:U DS:octetsOut:COUNTER:650:U:U DS:ucastPkIn:COUNTER:650:U:U DS:nucastPkIn:COUNTER:650:U:U DS:errorsIn:COUNTER:650:U:U DS:ucastPkOut:COUNTER:650:U:U DS:nucastPkOut:COUNTER:650:U:U DS:errorsOut:COUNTER:650:U:U RRA:AVERAGE:0.5:1:1200 RRA:AVERAGE:0.5:12:2400"
+).
+-define(RRD_ifPerf_UPDATE,
+"<FILE> --template octetsIn:octetsOut:ucastPkIn:nucastPkIn:errorsIn:ucastPkOut:nucastPkOut:errorsOut N:<OCTETS-IN>:<OCTETS-OUT>:<UCAST-IN>:<NUCAST-IN>:<ERRORS-IN>:<UCAST-OUT>:<NUCAST-OUT>:<ERRORS-OUT>"
+).
+-define(RRD_ifPerf_UPDATE_tpl,
+"--template octetsIn:octetsOut:ucastPkIn:nucastPkIn:errorsIn:ucastPkOut:nucastPkOut:errorsOut"
+).
+-define(RRD_ifPerf_GRAPH,
+    [
+"DEF:oIn=<FILE>:octetsIn:AVERAGE DEF:oOut=<FILE>:octetsOut:AVERAGE LINE1:oIn#3465A4 LINE2:oOut#CC0000",
+"DEF:errIn=<FILE>:errorsIn:AVERAGE DEF:errOut=<FILE>:errorsOut:AVERAGE LINE1:errIn#3465A4 LINE2:errOut#CC0000",
+"DEF:ucastIn=<FILE>:ucastPkIn:AVERAGE DEF:ucastOut=<FILE>:ucastPkOut:AVERAGE DEF:nucastIn:=<FILE>:nucastPkIn:AVERAGE DEF:nucastOut:=<FILE>:nucastPkOut:AVERAGE LINE1:ucastIn#3465A4 LINE2:ucastOut#CC0000 LINE3:nucastIn#ff0000 LINE4:nucastOut#00ff00"
+    ]
+).
+
+
+
 generate_standard_snmp_target(_Args) ->
     {ok,
      #target{
@@ -36,20 +61,36 @@ generate_standard_snmp_target(_Args) ->
         ip = "192.168.0.5",
         ip_version = "v4",
         global_perm = #perm_conf{read = ["admin"], write = ["admin"]},
+        directory = "var/monitor/jojo17",
         properties = [
-            {"ip", "192.168.0.5"},
-            {"staticName", "jojo17"},
+            {"ip",          "192.168.0.5"},
+            {"ipVersion",   "v4"},
+            {"staticName",  "jojo17"},
             {"sysLocation", "undefined"},
-            {"sysName", "undefined"},
-            {"dnsName", "undefined"}
+            {"sysName",     "undefined"},
+            {"dnsName",     "undefined"}
         ],
         probes = [
             #probe{
-               id = 0,
                name = 'jojoprobe',
                description = "jojojojojo",
                info = "jojojojojo",
                permissions = #perm_conf{read = ["admin"], write = ["admin"]},
+               status = 'UNKNOWN',
+               step    = 5,
+               timeout = 2000,
+
+               properties = [
+                             {"status", "UNKNOWN"},
+                             {"sysName", "undefined"},
+                             {"sysLocation", "undefined"}
+               ],
+               forward_properties = ["sysName", "sysLocation"],
+
+               parents = [],
+               active = true,
+
+                
                monitor_probe_mod  = bmonitor_probe_snmp,
                monitor_probe_conf = #snmp_probe_conf{
                     port        = 161,
@@ -62,16 +103,14 @@ generate_standard_snmp_target(_Args) ->
                     privkey     = "undefined",
                     privproto   = "AES",
                     engine_id   = "AAAAAAAAAAAA",
-                    method = get,
+                    method      = get,
+                    retries = 1,
                     oids = [
                         {"sysName", "1.3.6.1.2.1.1.5.0"},
                         {"sysLocation", "1.3.6.1.2.1.1.6.0"}
-                    ],
-                    retries = 1
+                    ]
                },
-               status = 'UNKNOWN',
-               timeout = 2000,
-               step    = 5,
+
                inspectors = [
                             #inspector{
                                module = bmonitor_inspector_status_set, 
@@ -83,22 +122,114 @@ generate_standard_snmp_target(_Args) ->
                               }
 
                            ],
-               loggers = [
-                          #logger{
-                             module = bmonitor_logger_text, 
-                             conf = []
-                            }
-                         ],
+               loggers = 
+               [
+                    #logger{
+                        module = bmonitor_logger_text, 
+                        conf = []
+                      }
+               ]
+            },
+            #probe{
+               name = 'jojoprobe2',
+               description = "jujujuju",
+               info = "jojojojojo",
+               permissions = #perm_conf{read = ["admin"], write = ["admin"]},
+               status = 'UNKNOWN',
+               step    = 5,
+               timeout = 2000,
+
                properties = [
-                             {"status", "UNKNOWN"},
-                             {"sysName", "undefined"},
-                             {"sysLocation", "undefined"}
-                            ],
-               forward_properties = ["status", "sysName", "sysLocation"],
-               active = true
+                    {"status", "UNKNOWN"}
+               ],
+               forward_properties = ["sysName", "sysLocation"],
+
+               parents = [],
+               active = true,
+
+                
+               monitor_probe_mod  = bmonitor_probe_snmp,
+               monitor_probe_conf = #snmp_probe_conf{
+                    port        = 161,
+                    version     = "2c",
+                    seclevel    = "noAuthNoPriv",
+                    community   = "public",
+                    usm_user    = "undefined",
+                    authkey     = "undefined",
+                    authproto   = "SHA",
+                    privkey     = "undefined",
+                    privproto   = "AES",
+                    engine_id   = "AAAAAAAAAAAA",
+                    method      = {walk_table,
+                        [
+                            ?IF_INDEX,
+                            ?IF_DESCR,
+                            ?IF_IN_OCTETS,
+                            ?IF_IN_UCASTPKTS,
+                            ?IF_IN_NUCASTPKTS,
+                            ?IF_IN_ERRORS,
+                            ?IF_OUT_OCTETS,
+                            ?IF_OUT_UCASTPKTS,
+                            ?IF_OUT_NUCASTPKTS,
+                            ?IF_OUT_ERRORS
+                        ],
+                        [
+                            % this set the property of the probe to have
+                            % up to date name of interface.
+                            % set the return properties as a list
+                            %  of {indexN,  IF_DESCR}
+                            {
+                                "index",         % The head key element
+                                2,               % The element appended to head wich form Key
+                                3                % the place in oid tuple of the value Val
+                            }
+                        ]
+                    },
+                    retries     = 1,
+                    oids        = []
+               },
+
+               inspectors = [
+                            #inspector{
+                               module = bmonitor_inspector_status_set, 
+                               conf = []
+                              }
+                           ],
+               loggers = 
+               [
+                    #logger{
+                        module = bmonitor_logger_rrd2, 
+                        conf = [
+                            {type, snmp_table},
+                            {rrd_create, ?RRD_ifPerf_CREATE},
+                            {row_index_to_rrd_file, 
+                                [
+                                    {1,"index1.rrd"},
+                                    {2,"index2.rrd"},
+                                    {3,"index3.rrd"}
+                                ]
+                            },
+                            {rrd_update, ?RRD_ifPerf_UPDATE_tpl},
+                            {rrd_graph, ?RRD_ifPerf_GRAPH},
+                            {row_index_pos_to_rrd_template,
+                                % as defined in walk_table method 
+                                % (+ 1 for the atom table_row)
+                                [
+                                    4, %?IF_IN_OCTETS
+                                    8, %?IF_OUT_OCTETS
+                                    5, %?IF_IN_UCASTPKTS
+                                    6, %?IF_IN_NUCASTPKTS
+                                    7, %?IF_IN_ERRORS
+                                    9, %?IF_OUT_UCASTPKTS
+                                    10,%?IF_OUT_NUCASTPKTS
+                                    11 %?IF_OUT_ERRORS
+                                ]
+                            }
+                        ]
+                    }
+               ]
             }
-        ],
-        directory = "var/monitor/jojo17"
+        ]
        }
     }.
 
