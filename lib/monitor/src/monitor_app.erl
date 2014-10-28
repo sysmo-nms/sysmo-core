@@ -32,8 +32,7 @@ start(_Type, _Args) ->
     mnesia:create_schema([node()]),
     application:start(mnesia),
     {ok, ProbeModules} = application:get_env(monitor, probe_modules),
-    {ok, ConfFile    } = application:get_env(monitor, config_file),
-    monitor_sup:start_link(ProbeModules, ConfFile).
+    monitor_sup:start_link(ProbeModules).
 
 stop(_State) ->
     ok.

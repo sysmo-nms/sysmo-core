@@ -48,7 +48,6 @@
 }).
 
 -record(state, {
-    tpl_dir,
     var_dir,
     check_db_ref,
     replies_waiting = [] :: [#reply{}],
@@ -77,13 +76,11 @@ handle_command(Command, CState) ->
 %%----------------------------------------------------------------------------
 init([]) -> 
     random:seed(erlang:now()),
-    {ok, TplDir}   = application:get_env(monitor, templates_dir),
     {ok, VarDir}   = application:get_env(monitor, targets_data_dir),
     {ok, CheckDir} = application:get_env(monitor, check_dir),
     {ok, DetsRef}  = init_check_info_database(VarDir),
     generate_check_infos(CheckDir, DetsRef),
     State = #state{
-        tpl_dir=TplDir,
         var_dir=VarDir,
         check_db_ref=DetsRef,
         check_dir=filename:absname(CheckDir)
@@ -128,19 +125,11 @@ handle_cast({{createSimpleProbe, _ = Com}, CState}, S) ->
     spawn(?MODULE, handle_create_probe, [Com, CheckDir, CState, Name]),
     {noreply, S};
 
-% this guard catch non snmp targets with no templates
 handle_cast({{createTarget,
         {_, _, _, _, "undefined", "undefined", "undefined", _} = Command}, 
     CState}, S) ->
     VarDir = S#state.var_dir,
     {ok, ReplyPdu} = handle_create_target(Command, VarDir),
-    send(CState, ReplyPdu),
-    {noreply, S};
-
-handle_cast({{createTarget, Command}, CState}, S) ->
-    TplDir          = S#state.tpl_dir,
-    VarDir          = S#state.var_dir,
-    {ok, ReplyPdu}  = handle_create_target(Command, TplDir, VarDir),
     send(CState, ReplyPdu),
     {noreply, S};
 
@@ -416,48 +405,6 @@ handle_create_target(Command, VarDir) ->
     monitor_master:create_target(Target),
     {ok, pdu(monitorReply, {QueryId, true, atom_to_list(TargetId)})}.
 
-handle_create_target(Command, TplDir, VarDir) ->
-    {'CreateTarget',
-        IpAdd,
-        PermConf,
-        _,
-        _,
-        _,
-        Template,
-        QueryId
-    } = Command,
-    {ok, TargTemp}      = get_template(TplDir, Template),
-    {ok, TargetId}      = generate_id("target-"),
-    {ok, PermRecord}    = generate_perm_conf(PermConf),
-    {ok, TargetDir}     = generate_target_dir(VarDir, TargetId),
-    {ok, Prop}          = generate_properties(Command),
-
-    Target1 = TargTemp#target{
-        id          = TargetId,
-        ip          = IpAdd,
-        properties  = Prop,
-        global_perm = PermRecord,
-        directory   = TargetDir
-    },
-    Probes  = [generate_probe(PFun, Target1) || PFun <- Target1#target.probes],
-    Target2 = Target1#target{probes = Probes},
-
-    case lists:keyfind(error, 1, Probes) of
-        {error, Reason} ->
-            RString = lists:flatten(io_lib:format("~p",[Reason])),
-            {ok, pdu(monitorReply, {QueryId, false, RString})};
-        false ->
-            monitor_master:create_target(Target2),
-            {ok, pdu(monitorReply, {QueryId, true, "Success"})}
-    end.
-
-get_template(TplDir, Template) ->
-    File                = filename:flatten([Template, ".tpl.erl"]),
-    TplFile             = filename:join([TplDir, File]),
-    {ok, [TargTemp]}    = file:consult(TplFile),
-    {ok, TargTemp}.
-
-
 generate_perm_conf({_, Read, Write}) ->
     {ok, #perm_conf{read = Read, write = Write}}.
 
@@ -481,16 +428,6 @@ generate_properties({_, IpAdd, _, Name, SnmpV2ro, SnmpV2rw, _, _}) ->
         {"dnsName",     "undefined"},
         {"hostname",    "undefined"}
     ]}.
-    
-generate_probe(PFun, Target) ->
-    {function, Mod, Fun}    = PFun,
-    {ok, ProbeId}           = generate_id("probe-"),
-
-    case erlang:apply(Mod, Fun, [ProbeId, Target]) of
-        {ok, PRec}  -> PRec;
-        Other       -> {error, Other}
-    end.
-
 
 
 

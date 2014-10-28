@@ -22,14 +22,14 @@
 -module(monitor_sup).
 -behaviour(supervisor).
 
--export([start_link/2]).
+-export([start_link/1]).
 -export([init/1]).
 
-start_link(ProbeModules, ConfigFile) ->
+start_link(ProbeModules) ->
     supervisor:start_link({local, ?MODULE}, ?MODULE, 
-            [ProbeModules, ConfigFile]).
+            [ProbeModules]).
 
-init([ProbeModules, ConfigFile]) ->
+init([ProbeModules]) ->
     {ok, 
         {
             {one_for_one, 1, 60},
@@ -60,7 +60,7 @@ init([ProbeModules, ConfigFile]) ->
                 },
                 {
                     monitor_master,
-                    {monitor_master, start_link, [ProbeModules, ConfigFile]},
+                    {monitor_master, start_link, [ProbeModules]},
                     permanent,
                     2000,
                     worker,

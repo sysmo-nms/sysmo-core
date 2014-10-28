@@ -42,7 +42,7 @@
 
 % API
 -export([
-    start_link/2,
+    start_link/1,
     probe_info/2,
     probe_activity/3,
     create_target/1,
@@ -61,9 +61,9 @@
 -define(MASTER_CHAN, 'target-MasterChan').
 
 
--spec start_link(ProbeModules::[tuple()], ConfFile::string()) -> {ok, pid()}.
-start_link(PMods, CFile) ->
-    gen_server:start_link({local, ?MASTER_CHAN}, ?MODULE, [PMods, CFile], []).
+-spec start_link(ProbeModules::[tuple()]) -> {ok, pid()}.
+start_link(PMods) ->
+    gen_server:start_link({local, ?MASTER_CHAN}, ?MODULE, [PMods], []).
 
 dump() ->
     gen_server:call(?MASTER_CHAN, dump_dets).
@@ -117,7 +117,7 @@ probe_activity(TargetId, Probe, Return) ->
 %%----------------------------------------------------------------------------
 %% GEN_SERVER CALLBACKS
 %%----------------------------------------------------------------------------
-init([ProbeModules, _ConfFile]) ->
+init([ProbeModules]) ->
     {ok, Table} = init_database(),
     P   = extract_probes_info(ProbeModules),
     %{ok, Targets} = load_targets_conf_from_file(ConfFile),

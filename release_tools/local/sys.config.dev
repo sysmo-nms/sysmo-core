@@ -60,8 +60,7 @@
     },
     {monitor,
         [
-            {config_file,           "cfg/monitor.conf"},
-            {templates_dir,         "cfg/monitor_templates"},
+            {rrds_dir,              "cfg/rrds"},
             {targets_data_dir,      "var/monitor"},
             {events_dir,            "var/monitor_events"},
             {master_chan_read_perm, ["admin"]},
