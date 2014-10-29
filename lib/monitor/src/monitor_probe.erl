@@ -20,7 +20,7 @@
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 % @doc
 % @end
--module(monitor_probe_fsm).
+-module(monitor_probe).
 -behaviour(gen_fsm).
 -behaviour(supercast_channel).
 -include("include/monitor.hrl").
@@ -36,7 +36,7 @@
     sync_request/2
 ]).
 
-% gen_fsm
+% gen
 -export([
     init/1,
     handle_event/3, 
@@ -391,7 +391,7 @@ notify(ProbeReturn, TargetId, OriginalProbe, NewProbe) ->
 notify_subscribers(ProbeReturn, TargetId, Probe) ->
     ChanName = ProbeName = Probe#probe.name,
     Perms    = Probe#probe.permissions,
-    Pdu      = monitor_pdu:probe_return({ProbeReturn, TargetId, ProbeName}),
+    Pdu      = probe_return({ProbeReturn, TargetId, ProbeName}),
     supercast_channel:emit(ChanName, {Perms, Pdu}).
 
 notify_master(TargetId, OriginalProbe, Probe, ProbeReturn) ->
@@ -426,5 +426,36 @@ notify_master_required(Orig, Modified) ->
 init_random() ->
     <<A:32, B:32, C:32>> = crypto:rand_bytes(12),
     random:seed({A,B,C}).
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+probe_return({
+        #probe_return{ 
+            status      = Status,
+            original_reply = OriginalReply,
+            timestamp   = Timestamp,
+            key_vals    = KeyVals
+        },
+        ChannelId, ProbeId}) ->
+    {modMonitorPDU,
+        {fromServer,
+            {probeReturn,
+                {'ProbeReturn',
+                    atom_to_list(ChannelId),
+                    atom_to_list(ProbeId),
+                    atom_to_list(Status),
+                    OriginalReply,
+                    Timestamp,
+                    make_key_values(KeyVals)
+                }}}}.
+
+make_key_values(K) ->
+    make_key_values(K, []).
+make_key_values([], S) ->
+    S;
+make_key_values([{K,V} | T], S) when is_list(V) ->
+    make_key_values(T, [{'Property', K, V} | S]);
+make_key_values([{K,V} | T], S) when is_integer(V) ->
+    make_key_values(T, [{'Property', K, integer_to_list(V)} | S]);
+make_key_values([{K,V} | T], S) when is_float(V) ->
+    make_key_values(T, [{'Property', K, float_to_list(V, [{decimals, 10}])} | S]);
+make_key_values([{K,V} | T], S) when is_atom(V) ->
+    make_key_values(T, [{'Property', K, atom_to_list(V)} | S]).

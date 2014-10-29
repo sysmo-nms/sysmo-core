@@ -122,13 +122,7 @@ generate_standard_snmp_target(_Args) ->
                               }
 
                            ],
-               loggers = 
-               [
-                    #logger{
-                        module = bmonitor_logger_text, 
-                        conf = []
-                      }
-               ]
+               loggers = []
             },
             #probe{
                name = 'jojoprobe2',

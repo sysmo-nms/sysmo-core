@@ -22,34 +22,17 @@
 -module(monitor_sup).
 -behaviour(supervisor).
 
--export([start_link/2]).
+-export([start_link/0]).
 -export([init/1]).
 
-start_link(ProbeModules, ConfigFile) ->
-    supervisor:start_link({local, ?MODULE}, ?MODULE, 
-            [ProbeModules, ConfigFile]).
+start_link() ->
+    supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
-init([ProbeModules, ConfigFile]) ->
+init([]) ->
     {ok, 
         {
             {one_for_one, 1, 60},
             [
-                {
-                    monitor_event_logger,
-                    {monitor_event_logger, start_link, []},
-                    permanent,
-                    2000,
-                    worker,
-                    [monitor_event_logger]
-                },
-                {
-                    monitor_event_manager,
-                    {monitor_event_manager, start_link, []},
-                    permanent,
-                    2000,
-                    worker,
-                    [monitor_event_manager]
-                },
                 {
                     monitor_probe_sup,
                     {monitor_probe_sup, start_link, []},
@@ -60,7 +43,7 @@ init([ProbeModules, ConfigFile]) ->
                 },
                 {
                     monitor_master,
-                    {monitor_master, start_link, [ProbeModules, ConfigFile]},
+                    {monitor_master, start_link, []},
                     permanent,
                     2000,
                     worker,

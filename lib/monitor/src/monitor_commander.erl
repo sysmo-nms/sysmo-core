@@ -28,7 +28,6 @@
 -export([
     start_link/0,
     handle_command/2,
-    get_check_infos/1,
     spawn_exec/2,
     handle_create_probe/4
 ]).
@@ -79,14 +78,12 @@ init([]) ->
     random:seed(erlang:now()),
     {ok, TplDir}   = application:get_env(monitor, templates_dir),
     {ok, VarDir}   = application:get_env(monitor, targets_data_dir),
-    {ok, CheckDir} = application:get_env(monitor, check_dir),
     {ok, DetsRef}  = init_check_info_database(VarDir),
-    generate_check_infos(CheckDir, DetsRef),
     State = #state{
         tpl_dir=TplDir,
         var_dir=VarDir,
         check_db_ref=DetsRef,
-        check_dir=filename:absname(CheckDir)
+        check_dir= ""
     },
     {ok, State}.
 
@@ -359,9 +356,7 @@ handle_create_probe(Command, CheckDir, CState, Name) ->
             {inspector, bmonitor_inspector_status_set, []},
             {inspector, bmonitor_inspector_property_set, ["status"]}
         ],
-        loggers = [
-            {logger, bmonitor_logger_text, []}
-        ]
+        loggers = []
     },
 
     % Test if the command is well formed. Only check the return status wich
@@ -518,31 +513,6 @@ spawn_exec({QueryId, CState}, {File, Args}) ->
         % error in the check execution
     %end,
     send(CState, pdu(monitorReply, {QueryId, true, Rep})).
-
-generate_check_infos(CheckDir, DetsRef) ->
-    spawn(?MODULE, get_check_infos, [{CheckDir, DetsRef}]).
-
-get_check_infos({CheckDir, DetsRef}) ->
-    {ok, Files} = file:list_dir(CheckDir),
-    {ok, Re}    = re:compile("^ncheck_.*"),
-    ChecksBin = lists:filter(fun(F) ->
-        case re:run(F, Re) of
-            {match, _}  -> true;
-            nomatch     -> false
-        end
-    end, Files),
-    FilesName   = [filename:join(CheckDir, File) || File <- ChecksBin],
-    Infos = get_check_infos(FilesName, []),
-    lists:foreach(fun(X) ->
-        dets:insert(DetsRef, X)
-    end, Infos).
-get_check_infos([], Infos) ->
-    Infos;
-get_check_infos([File|Files], Infos) ->
-    erlang:open_port({spawn_executable, File},
-        [exit_status, stderr_to_stdout, {args, ["-show-xml-check-def"]}]),
-    {_ExitStatus, Data} = get_port_reply(),
-    get_check_infos(Files, [{File, Data}|Infos]).
 
 get_port_reply() ->
     get_port_reply("").

@@ -18,7 +18,6 @@
                 monitor,
                 snmpman,
                 errd,
-                text_logger,
                 supercast
             ]
         },

@@ -42,7 +42,7 @@
 
 % API
 -export([
-    start_link/2,
+    start_link/0,
     probe_info/2,
     probe_activity/3,
     create_target/1,
@@ -53,7 +53,6 @@
 -record(state, {
     chans,
     perm,
-    probe_modules,
     db
 }).
 
@@ -61,9 +60,9 @@
 -define(MASTER_CHAN, 'target-MasterChan').
 
 
--spec start_link(ProbeModules::[tuple()], ConfFile::string()) -> {ok, pid()}.
-start_link(PMods, CFile) ->
-    gen_server:start_link({local, ?MASTER_CHAN}, ?MODULE, [PMods, CFile], []).
+-spec start_link() -> {ok, pid()}.
+start_link() ->
+    gen_server:start_link({local, ?MASTER_CHAN}, ?MODULE, [], []).
 
 dump() ->
     gen_server:call(?MASTER_CHAN, dump_dets).
@@ -89,11 +88,11 @@ sync_request(PidName, CState) ->
 
 
 %%----------------------------------------------------------------------------
-%% monitor_probe_fsm API
+%% monitor_probe API
 %%----------------------------------------------------------------------------
 -spec probe_info(TargetId::atom(), Probe::#probe{}) -> ok.
 % @doc
-% Called by a monitor_probe_fsm when information must be forwarded
+% Called by a monitor_probe when information must be forwarded
 % to subscribers of 'target-MasterChan' concerning the probe.
 % @end
 probe_info(TargetId, Probe) ->
@@ -117,9 +116,8 @@ probe_activity(TargetId, Probe, Return) ->
 %%----------------------------------------------------------------------------
 %% GEN_SERVER CALLBACKS
 %%----------------------------------------------------------------------------
-init([ProbeModules, _ConfFile]) ->
+init([]) ->
     {ok, Table} = init_database(),
-    P   = extract_probes_info(ProbeModules),
     %{ok, Targets} = load_targets_conf_from_file(ConfFile),
     {ok, Targets} = load_targets_conf_from_dets(Table),
     {ok, #state{
@@ -128,7 +126,6 @@ init([ProbeModules, _ConfFile]) ->
                 read    = ["admin", "wheel"],
                 write   = ["admin"]
             },
-            probe_modules = P,
             db          = Table
         }
     }.
@@ -190,7 +187,6 @@ handle_call({create_probe, TargetId, Probe}, _F, S) ->
                     Perm = NProbe#probe.permissions,
                     supercast_channel:emit(?MASTER_CHAN, {Perm, ProbeInfoPdu}),
                     dets:insert(Table, NTarget),
-                    monitor_event_manager:notify({create_probe, NTarget}),
                     {reply, ok, S};
                 _ ->
                     {reply, {error, "Key error"}, S}
@@ -200,7 +196,6 @@ handle_call({create_probe, TargetId, Probe}, _F, S) ->
 handle_call({create_target, Target}, _F, S) ->
     Target2 = load_target_conf(Target),
     emit_wide(Target2),
-    monitor_event_manager:notify({new_target, Target2}),
     dets:insert(S#state.db, Target2),
 
     Targets = S#state.chans,
@@ -243,13 +238,10 @@ emit_wide(Target) ->
 %%----------------------------------------------------------------------------
 handle_cast({sync_request, CState}, State) ->
     Chans   = State#state.chans,
-    PMods   = State#state.probe_modules,
     % I want this client to receive my messages,
     supercast_channel:subscribe(?MASTER_CHAN, CState),
-    PMList  = [pdu(probeModInfo, Probe) || Probe <- PMods],
     % gen_dump_pdus will filter based on CState permissions
-    PDumps  = gen_dump_pdus(CState, Chans),
-    Pdus    = lists:append(PMList, PDumps),
+    Pdus = gen_dump_pdus(CState, Chans),
     supercast_channel:unicast(CState, Pdus),
     {noreply, State};
 
@@ -257,7 +249,6 @@ handle_cast({sync_request, CState}, State) ->
 %% SELF API CASTS
 %%----------------------------------------------------------------------------
 handle_cast({probe_info, TargetId, NewProbe}, S) ->
-    monitor_event_manager:notify({probe_info, TargetId, NewProbe}),
     Chans       = S#state.chans,
     Perms       = NewProbe#probe.permissions,
     Target      = lists:keyfind(TargetId, 2, Chans),
@@ -272,7 +263,6 @@ handle_cast({probe_info, TargetId, NewProbe}, S) ->
     {noreply, NS};
 
 handle_cast({probe_activity, TargetId, Probe, Return}, S) ->
-    monitor_event_manager:notify({probe_activity, TargetId, Probe, Return}),
     Pdu = pdu(probeActivity, {
         TargetId,
         Probe#probe.name,
@@ -390,14 +380,6 @@ init_target_dir(Target) ->
         Other ->
             {error, Other}
     end.
-
-extract_probes_info(ProbeModules) ->
-    lists:foldl(
-        fun(PMod, Acc) ->
-            {ok, Info} = PMod:info(),
-            [{PMod, Info} | Acc] 
-        end, 
-    [], ProbeModules).
 
 %%----------------------------------------------------------------------------
 %% PDU BUILD
@@ -525,6 +507,7 @@ gen_logger_pdu({logger, bmonitor_logger_rrd2, Cfg}) ->
             Indexes
         }
     };
+
 gen_logger_pdu({logger, bmonitor_logger_rrd, Cfg}) ->
     {loggerRrd, 
         {'LoggerRrd',

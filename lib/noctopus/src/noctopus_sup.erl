@@ -32,14 +32,6 @@ init([]) ->
                     [errd_app]
                 },
                 {
-                    text_logger_app,
-                    {text_logger_app, start, [normal,[]]},
-                    permanent,
-                    2000,
-                    supervisor,
-                    [text_logger_app]
-                },
-                {
                     monitor_app,
                     {monitor_app, start, [normal,[]]},
                     permanent,

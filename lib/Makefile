@@ -17,10 +17,6 @@ doc: $(MODS2)
 clean: $(MODS2)
 	@for i in $(MODS2); do $(MAKE) -C $$i clean; done
 
-
-nchecks:
-	@git clone git@github.com:ssbx/nchecks.git
-
 snmpman:
 	@git clone git@github.com:ssbx/snmpman.git
 
@@ -39,5 +35,3 @@ $(REQUIRE_YAWS):
 
 yaws: 
 	@git clone git@github.com:klacke/yaws.git
-
-

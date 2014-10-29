@@ -65,18 +65,12 @@
             {targets_data_dir,      "var/monitor"},
             {events_dir,            "var/monitor_events"},
             {master_chan_read_perm, ["admin"]},
-            {check_dir,             "lib/nchecks/bin"},
             {probe_modules,
                 [
                     bmonitor_probe_nagios,
                     bmonitor_probe_snmp
                 ]
             }
-        ]
-    },
-    {text_logger,
-        [
-            {dump_size,             100}
         ]
     },
     {kernel,
