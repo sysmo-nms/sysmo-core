@@ -25,7 +25,7 @@
 -module(beha_monitor_logger).
 -include("include/monitor.hrl").
 
--callback init(Conf::any(), Target::#target{}, Probe::#probe{}) ->
+-callback log_init(Conf::any(), Target::#target{}, Probe::#probe{}) ->
     {ok, State::any()}.
 % @doc
 % Is called at initialisation stage. Must return a State wich will be used

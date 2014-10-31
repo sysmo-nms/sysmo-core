@@ -47,38 +47,16 @@
     'RUNNING'/3
 ]).
 
-
-% local api
--export([
-    freeze/1,
-    reset_family/1,
-    synchronize_parents/1,
-    synchronize_childs/1,
-    launch/1           % from monitor_probe_sup:parents_sync/0
-]).
-
-%-record(parent, {
-    %name,
-    %status,
-    %last_check
-%}).
-
 -record(state, {
     target_id,
     name,
     probe,
     tref,   %
-    last_check,
-    check_state         = stopped   :: ready | running | stopped,
-    check_flag          = normal    :: normal | force | random,
-    nego_parents        = [],
-    nego_return,
-    parents             = [] :: {atom(), atom()},   % {pidName, status}
-    childs              = [],   %dynamicaly added
     inspectors_state    = [],
     loggers_state       = [],
     probe_state         = []
 }).
+
 
 -define(OK,         'OK').
 -define(CRITICAL,   'CRITICAL').
@@ -86,7 +64,7 @@
 -define(UNKNOWN,    'UNKNOWN').
 -define(HALT,       'UNKNOWN').
 
-% fsm behaviour
+
 start_link({Target, #probe{name = Name} = Probe}) ->
     gen_fsm:start_link({local, Name}, ?MODULE, [Target, Probe], []).
 
@@ -94,49 +72,9 @@ start_link({Target, #probe{name = Name} = Probe}) ->
 get_perms(PidName) ->
     gen_fsm:sync_send_all_state_event(PidName, get_perms).
 
+% supercast_channel behaviour
 sync_request(PidName, CState) ->
     gen_fsm:send_all_state_event(PidName, {sync_request, CState}).
-
-% FSM funs
-%%
-%% from monitor_probe_sup
-%%
--spec freeze(pid()) -> ok.
-% @doc
-% Called by monitor_probe_sup before parents init. This function
-% every actions and put the probe in 'INITIALIZE' state. If the state
-% of the probe was 'WAITING-REPLY' put the probe in 
-% 'INITIALIZE-WAITING-REPLY' state.
-% @end
-freeze(PidName) ->
-    gen_fsm:sync_send_all_state_event(PidName, freeze).
-
--spec reset_family(pid()) -> ok.
-reset_family(PidName) ->
-    gen_fsm:sync_send_all_state_event(PidName, reset_family).
-
--spec synchronize_parents(pid()) -> ok.
-% @doc
-% The probe MUST be in 'INITIALIZE' state to execute this function.
-% Called by monitor_probe_sup after freeze/1.
-% @end
-synchronize_parents(PidName) ->
-    gen_fsm:sync_send_all_state_event(PidName, synchronize_parents).
-
-synchronize_childs(PidName) ->
-    gen_fsm:sync_send_all_state_event(PidName, synchronize_childs).
-
-
-
--spec launch(pid()) -> ok.
-% @doc
-% Start the probe. The probe MUST be in 'INITIALIZE' state to execute
-% this function. Put the probe in 'SLEEPING-STEP' state with a random
-% start from 0 to #probe.step.
-% @end
-launch(PidName) ->
-    gen_fsm:send_event(PidName, launch).
-
 
 
 init([Target, Probe]) ->
@@ -145,10 +83,6 @@ init([Target, Probe]) ->
         pid     = self()
     },
 
-
-    %Parents                 = UProbe#probe.parents,
-    %ProbeParents            = [#parent{name = Parent} || Parent <- Parents],
-
     {ok, ProbeInitState}    = init_probe(Target, UProbe),
     {ok, InspectInitState}  = init_inspectors(Target, UProbe),
     {ok, LoggersInitState}  = init_loggers(Target, UProbe),
@@ -156,7 +90,6 @@ init([Target, Probe]) ->
         target_id           = Target#target.id,
         name                = UProbe#probe.name,
         probe               = UProbe,
- 
         probe_state         = ProbeInitState ,
         inspectors_state    = InspectInitState,
         loggers_state       = LoggersInitState
@@ -260,7 +193,7 @@ init_loggers(_Target, _Probe, [], LoggersState) ->
 init_loggers(Target, Probe, [Logger|Loggers], LoggersState) ->
     Mod             = Logger#logger.module,
     Conf            = Logger#logger.conf,
-    {ok, State}     = Mod:init(Conf, Target, Probe),
+    {ok, State}     = Mod:log_init(Conf, Target, Probe),
     LoggersState2   = lists:keystore(Mod, 1, LoggersState, {Mod, State}),
     init_loggers(Target, Probe, Loggers, LoggersState2).
     

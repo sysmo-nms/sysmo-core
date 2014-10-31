@@ -28,7 +28,7 @@
 -include("include/monitor.hrl").
 
 -export([
-    init/3,
+    log_init/3,
     log/2,
     dump/1
 ]).
@@ -39,7 +39,7 @@
     probe_name
 }).
 
-init(Conf, Target, Probe) ->
+log_init(Conf, Target, Probe) ->
     TargetId    = Target#target.id,
     ProbeId     = Probe#probe.name,
     Dir         = Target#target.directory,

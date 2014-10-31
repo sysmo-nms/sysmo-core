@@ -28,7 +28,7 @@
 -include("include/monitor.hrl").
 
 -export([
-    init/3,
+    log_init/3,
     log/2,
     dump/1
 ]).
@@ -47,7 +47,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% INIT (rrdcreate) %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-init(Conf, Target, Probe) ->
+log_init(Conf, Target, Probe) ->
     ConfType        = proplists:get_value(type, Conf),
     {ok, DumpDir}   = application:get_env(supercast, data_sync_dir),
     case ConfType of
