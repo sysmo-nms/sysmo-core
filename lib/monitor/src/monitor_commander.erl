@@ -201,7 +201,7 @@ handle_cast(R, S) ->
     {noreply, S}.
 
 handle_snmpUpdateElementQuery(_QueryId, _CState, Query) ->
-    {ok, Target} = monitor_snmp_utils:generate_standard_snmp_target(Query),
+    {ok, Target} = monitor_helper_snmp:generate_standard_snmp_target(Query),
     monitor_master:create_target(Target),
     io:format("update element query ~p~n", [Query]).
 
@@ -227,11 +227,11 @@ handle_snmpElementInfoQuery(QueryId, CState, {
                 {ok, EngineId} ->
                     Pdu = pdu(extendedReplyMsgString, {QueryId, true, false, EngineId}),
                     send(CState, Pdu),
-                    case monitor_snmp_utils:walk_system(Args, EngineId) of
+                    case monitor_helper_snmp:walk_system(Args, EngineId) of
                         {ok, System} ->
                             Pdu2 = pdu(extendedReplyMsgWalkSystem, {QueryId, true, false, System}),
                             send(CState, Pdu2),
-                            case monitor_snmp_utils:walk_ifTable(Args, EngineId) of
+                            case monitor_helper_snmp:walk_ifTable(Args, EngineId) of
                                 {ok, Val} ->
                                     Pdu3 = pdu(extendedReplyMsgWalkIfTable, {QueryId, true, true, Val}),
                                     send(CState, Pdu3);
@@ -251,11 +251,11 @@ handle_snmpElementInfoQuery(QueryId, CState, {
             EngineId = "AAAAAAAAAAAA",
             Pdu = pdu(extendedReplyMsgString, {QueryId, true, false, EngineId}),
             send(CState, Pdu),
-            case monitor_snmp_utils:walk_system(Args, EngineId) of
+            case monitor_helper_snmp:walk_system(Args, EngineId) of
                 {ok, System} ->
                     Pdu2 = pdu(extendedReplyMsgWalkSystem, {QueryId, true, false, System}),
                     send(CState, Pdu2),
-                    case monitor_snmp_utils:walk_ifTable(Args, EngineId) of
+                    case monitor_helper_snmp:walk_ifTable(Args, EngineId) of
                         {ok, Val} ->
                             io:format("~p~n",[Val]),
                             Pdu3 = pdu(extendedReplyMsgWalkIfTable, {QueryId, true, true, Val}),
@@ -273,11 +273,11 @@ handle_snmpElementInfoQuery(QueryId, CState, {
             EngineId = "AAAAAAAAAAAA",
             Pdu = pdu(extendedReplyMsgString, {QueryId, true, false, EngineId}),
             send(CState, Pdu),
-            case monitor_snmp_utils:walk_system(Args, EngineId) of
+            case monitor_helper_snmp:walk_system(Args, EngineId) of
                 {ok, System} ->
                     Pdu2 = pdu(extendedReplyMsgWalkSystem, {QueryId, true, false, System}),
                     send(CState, Pdu2),
-                    case monitor_snmp_utils:walk_ifTable(Args, EngineId) of
+                    case monitor_helper_snmp:walk_ifTable(Args, EngineId) of
                         {ok, Val} ->
                             Pdu3 = pdu(extendedReplyMsgWalkIfTable, {QueryId, true, true, Val}),
                             send(CState, Pdu3);

@@ -19,7 +19,7 @@
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 % @private
--module(monitor_snmp_utils).
+-module(monitor_helper_snmp).
 -include("include/monitor.hrl").
 -include("include/monitor_snmp.hrl").
 -export([

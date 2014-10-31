@@ -491,7 +491,7 @@ gen_logger_pdu({logger, bmonitor_logger_rrd2, Cfg}) ->
     Indexes = [I || {I,_} <- proplists:get_value(row_index_to_rrd_file, Cfg)],
     {loggerRrd2, 
         {'LoggerRrd2',
-            atom_to_list(bmonitor_logger_rrd),
+            atom_to_list(bmonitor_logger_rrd2),
             atom_to_list(Type),
             RCreate,
             RUpdate,
@@ -500,32 +500,11 @@ gen_logger_pdu({logger, bmonitor_logger_rrd2, Cfg}) ->
         }
     };
 
-gen_logger_pdu({logger, bmonitor_logger_rrd, Cfg}) ->
-    {loggerRrd, 
-        {'LoggerRrd',
-            atom_to_list(bmonitor_logger_rrd),
-            gen_rrd_configs(Cfg)
-        }
-    };
 gen_logger_pdu({logger, bmonitor_logger_text, Cfg}) ->
     {loggerText, 
         {'LoggerText', 
             atom_to_list(bmonitor_logger_text), 
             to_string(Cfg)}}.
-
-gen_rrd_configs(Cfg) ->
-    gen_rrd_configs(Cfg, []).
-gen_rrd_configs([], Ret) ->
-    Ret;
-gen_rrd_configs([H|T], Ret) ->
-    Conf = {'RrdConfig',
-        H#rrd_config.file,
-        H#rrd_config.create,
-        H#rrd_config.update,
-        H#rrd_config.graphs,
-        [{'Bind', Repl, Macro} || {Repl, Macro} <- H#rrd_config.binds]
-    },
-    gen_rrd_configs(T, [Conf | Ret]).
 
 gen_dump_pdus(CState, Targets) ->
     FTargets    = supercast:filter(CState, [{Perm, Target} ||
