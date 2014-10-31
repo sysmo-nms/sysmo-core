@@ -446,14 +446,6 @@ pdu(probeInfo, {InfoType, TargetId,
                     InfoType}}}},
     P;
 
-pdu(probeModInfo,  {ProbeName, ProbeInfo}) ->
-    {modMonitorPDU,
-        {fromServer,
-            {probeModInfo,
-                {'ProbeModuleInfo',
-                    atom_to_list(ProbeName),
-                    ProbeInfo }}}};
-
 pdu(probeActivity, {TargetId, ProbeName, PState, Msg, ReturnStatus, Time}) ->
     {modMonitorPDU,
         {fromServer,
@@ -534,10 +526,6 @@ gen_rrd_configs([H|T], Ret) ->
         [{'Bind', Repl, Macro} || {Repl, Macro} <- H#rrd_config.binds]
     },
     gen_rrd_configs(T, [Conf | Ret]).
-
-%gen_asn_probe_properties(Properties) ->
-    %[{'Property', Key, Value} 
-        %|| {Key,Value} <- Properties].
 
 gen_dump_pdus(CState, Targets) ->
     FTargets    = supercast:filter(CState, [{Perm, Target} ||
