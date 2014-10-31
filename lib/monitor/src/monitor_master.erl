@@ -44,7 +44,6 @@
 -export([
     start_link/0,
     probe_info/2,
-    probe_activity/3,
     create_target/1,
     create_probe/2,
     id_used/1
@@ -105,11 +104,6 @@ probe_info(TargetId, Probe) ->
 % @end
 id_used(Id) ->
     gen_server:call(?MASTER_CHAN, {id_used, Id}).
-
--spec probe_activity(TargetId::atom(), Probe::#probe{}, Return::#probe_return{}) ->
-    ok.
-probe_activity(TargetId, Probe, Return) ->
-    gen_server:cast(?MASTER_CHAN, {probe_activity, TargetId, Probe, Return}).
 
 
 
@@ -231,8 +225,6 @@ emit_wide(Target) ->
     end, PduProbes).
 
 
-
-
 %%----------------------------------------------------------------------------
 %% SUPERCAST_CHANNEL BEHAVIOUR CASTS
 %%----------------------------------------------------------------------------
@@ -241,8 +233,11 @@ handle_cast({sync_request, CState}, State) ->
     % I want this client to receive my messages,
     supercast_channel:subscribe(?MASTER_CHAN, CState),
     % gen_dump_pdus will filter based on CState permissions
-    Pdus = gen_dump_pdus(CState, Chans),
+    {Pdus, Probes} = gen_dump_pdus(CState, Chans),
     supercast_channel:unicast(CState, Pdus),
+    lists:foreach(fun(X) ->
+        monitor_probe:triggered_return(X, CState)
+    end, Probes),
     {noreply, State};
 
 %%----------------------------------------------------------------------------
@@ -261,18 +256,6 @@ handle_cast({probe_info, TargetId, NewProbe}, S) ->
     supercast_channel:emit(?MASTER_CHAN, {Perms, Pdu}),
     NS = S#state{chans = NewChans},
     {noreply, NS};
-
-handle_cast({probe_activity, TargetId, Probe, Return}, S) ->
-    Pdu = pdu(probeActivity, {
-        TargetId,
-        Probe#probe.name,
-        none,
-        Return#probe_return.original_reply,
-        Return#probe_return.status,
-        Return#probe_return.timestamp
-    }),
-    supercast_channel:emit(?MASTER_CHAN, {Probe#probe.permissions, Pdu}),
-    {noreply, S};
 
 handle_cast(_R, S) ->
     {noreply, S}.
@@ -317,7 +300,6 @@ update_info_chan(Target, Probe) ->
             Pdu         = pdu(targetInfo, NTarget),
             supercast_channel:emit(?MASTER_CHAN, {TargetPerm, Pdu})
     end,
-    %NChans  = lists:keystore(TargetId, 2, Chans, NTarget),
     {ok, NTarget}.
 
 probe_property_forward(TProperties, _, []) ->
@@ -341,9 +323,9 @@ load_targets_conf_from_dets(Table) ->
     load_targets_conf(TargetsConf, TargetsState).
 
 %load_targets_conf_from_file(TargetsConfFile) ->
-    %{ok, TargetsConf}  = file:consult(TargetsConfFile),
-    %TargetsState = [],
-    %load_targets_conf(TargetsConf, TargetsState).
+%    {ok, TargetsConf}  = file:consult(TargetsConfFile),
+%    TargetsState = [],
+%    load_targets_conf(TargetsConf, TargetsState).
 
 load_targets_conf([], TargetsState) ->
     {ok, TargetsState};
@@ -444,20 +426,7 @@ pdu(probeInfo, {InfoType, TargetId,
                     gen_asn_probe_properties(Probe#probe.properties),
                     gen_asn_probe_active(Probe#probe.active),
                     InfoType}}}},
-    P;
-
-pdu(probeActivity, {TargetId, ProbeName, PState, Msg, ReturnStatus, Time}) ->
-    {modMonitorPDU,
-        {fromServer,
-            {probeActivity,
-                {'ProbeActivity',
-                    atom_to_list(TargetId),
-                    atom_to_list(ProbeName),
-                    Time,
-                    atom_to_list(PState),
-                    atom_to_list(ReturnStatus),
-                    Msg}}}}.
-
+    P.
 
 gen_asn_probe_active(true)  -> 1;
 gen_asn_probe_active(false) -> 0.
@@ -512,16 +481,22 @@ gen_dump_pdus(CState, Targets) ->
     TargetsPDUs = [pdu(targetInfo, Target) || Target <- FTargets],
     ProbesDefs  = [{TId, Probes} ||
         #target{id = TId, probes = Probes} <- FTargets],
-    gen_dump_pdus(CState, TargetsPDUs, [], ProbesDefs).
-gen_dump_pdus(_, TargetsPDUs, ProbesPDUs, []) ->
-    lists:append(TargetsPDUs, ProbesPDUs);
-gen_dump_pdus(CState, TargetsPDUs, ProbesPDUs, [{TId, Probes}|T]) ->
+    gen_dump_pdus(CState, TargetsPDUs, [], [], ProbesDefs).
+gen_dump_pdus(_, TargetsPDUs, ProbesPDUs, ProbesFiltered, []) ->
+    {lists:append(TargetsPDUs, ProbesPDUs), ProbesFiltered};
+gen_dump_pdus(CState, TargetsPDUs, ProbesPDUs, PFList, [{TId, Probes}|T]) ->
     ProbesThings  = [{Perm, Probe} || 
         #probe{permissions = Perm} = Probe <- Probes],
     AllowedThings = supercast:filter(CState, ProbesThings),
+    PFListN = [PName || #probe{name = PName} <- Probes],
     Result = [pdu(probeInfo, {create, TId, Probe}) ||
         Probe <- AllowedThings],
-    gen_dump_pdus(CState, TargetsPDUs, lists:append(ProbesPDUs, Result), T).
+    gen_dump_pdus(
+        CState,
+        TargetsPDUs,
+        lists:append(ProbesPDUs, Result),
+        lists:append(PFListN,PFList),
+        T).
 
 to_string(Term) ->
     lists:flatten(io_lib:format("~p", [Term])).

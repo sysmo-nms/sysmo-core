@@ -116,16 +116,6 @@ ProbeEvent      ::= SEQUENCE {
     userOwner   PrintableString
 }
 
--- ProbeActivity 
-ProbeActivity ::= SEQUENCE {
-    target      TargetId,
-    probeName   PrintableString,
-    timestamp   MicroSecond,
-    state       PrintableString,
-    returnStatus PrintableString,
-    textual     PrintableString
-}
-
 -- ProbeReturn 
 ProbeReturn ::= SEQUENCE {
     target          TargetId,
@@ -133,9 +123,9 @@ ProbeReturn ::= SEQUENCE {
     status          ProbeStatus,
     originalReply   PrintableString,
     timestamp       MicroSecond,
-    keysVals        Properties
+    keysVals        Properties,
+    nextReturn      MicroSecond
 }
-
 
 RrdIdToFile ::= SEQUENCE {
     index    INTEGER,
@@ -338,7 +328,6 @@ MonitorPDU ::= CHOICE {
         targetInfo      [1] TargetInfo,
         probeInfo       [2] ProbeInfo,
         probeDump       [4] ProbeDump,
-        probeActivity   [7] ProbeActivity,
         probeReturn     [8] ProbeReturn,
         monitorReply    [12] MonitorReply,
         getCheckReply   [13] GetCheckReply,
