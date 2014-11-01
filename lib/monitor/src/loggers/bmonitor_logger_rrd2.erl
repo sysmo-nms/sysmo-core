@@ -104,7 +104,12 @@ snmp_table_build_create(RrdCreate,[{_,File}|T],Acc) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% LOG (rrdupdate) %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-log(State, #probe_return{status = 'OK', reply_tuple = Rpl, timestamp = Ts} = _ProbeReturn) ->
+log(State, #probe_return{reply_tuple = ignore} = _ProbeReturn) ->
+    ClientUp = [{I, ""} || {I,_} <- State#state.row_index_to_file],
+    Pdu = build_rrd_event(State, ClientUp),
+    {ok, Pdu, State};
+
+log(State, #probe_return{reply_tuple = Rpl, timestamp = Ts} = _ProbeReturn) ->
 
     RIndexFile = State#state.row_index_to_file,
     RIndexTpl  = State#state.row_index_to_tpl,
@@ -122,11 +127,11 @@ build_rrd_event(State, ClientUp) ->
     ProbeName   = atom_to_list(State#state.probe_name),
     {modMonitorPDU,
         {fromServer,
-            {rrdLoggerEvent,
-                {'RrdLoggerEvent',
+            {loggerRrdEvent,
+                {'LoggerRrdEvent',
                     TId,
                     ProbeName,
-                    [{'RrdLoggerUpdate', I, Up} || {I,Up} <- ClientUp]
+                    [{'LoggerRrdUpdate', I, Up} || {I,Up} <- ClientUp]
                 }
             }
         }
@@ -171,12 +176,12 @@ build_dump(State, FilePaths, Dir) ->
     ProbeModule = atom_to_list(?MODULE),
     {modMonitorPDU,
         {fromServer,
-            {rrdProbeDump,
-                {'RrdProbeDump',
+            {loggerRrdDump,
+                {'LoggerRrdDump',
                     TId,
                     ProbeName,
                     ProbeModule,
-                    [{'RrdIdToFile', I, F} || {I,F} <- FilePaths],
+                    [{'LoggerRrdIdToFile', I, F} || {I,F} <- FilePaths],
                     Dir
                 }
             }

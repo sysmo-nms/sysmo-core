@@ -1,6 +1,10 @@
 ModMonitor DEFINITIONS IMPLICIT TAGS ::=
 BEGIN
 
+IMPORTS
+    LoggerRrdDump  FROM MonitorLoggerRrd
+    LoggerRrdEvent FROM MonitorLoggerRrd;
+
 -- BASIC TYPES --
 QueryId         ::= INTEGER
 ErlangModule    ::= PrintableString
@@ -127,40 +131,6 @@ ProbeReturn ::= SEQUENCE {
     nextReturn      MicroSecond
 }
 
-RrdIdToFile ::= SEQUENCE {
-    index    INTEGER,
-    fileName PrintableString
-}
-
-RrdProbeDump ::= SEQUENCE {
-    target      TargetId,
-    probeName   PrintableString,
-    probeModule PrintableString,
-    indexes     SEQUENCE OF RrdIdToFile,
-    path        PrintableString
-}
-
-RrdLoggerUpdate ::= SEQUENCE {
-    index   INTEGER,
-    update  PrintableString
-}
-
-RrdLoggerEvent ::= SEQUENCE {
-    target      TargetId,
-    probeName   PrintableString,
-    updates     SEQUENCE OF RrdLoggerUpdate
-}
-
--- ProbeDump --
-ProbeDump   ::= SEQUENCE {
-    target      TargetId,
-    probeName   PrintableString,
-    probeModule PrintableString,
-    binaryData  FileData  
-}
-
-
--- complete avec le monitor.hrl records finaux
 TargetInfo  ::= SEQUENCE {
     channel     TargetId,
     properties  Properties,
@@ -327,13 +297,14 @@ MonitorPDU ::= CHOICE {
     fromServer  [0] CHOICE {
         targetInfo      [1] TargetInfo,
         probeInfo       [2] ProbeInfo,
-        probeDump       [4] ProbeDump,
-        probeReturn     [8] ProbeReturn,
-        monitorReply    [12] MonitorReply,
-        getCheckReply   [13] GetCheckReply,
-        extendedReplyMsg [20] ExtendedReplyMsg,
-        rrdProbeDump    [30] RrdProbeDump,
-        rrdLoggerEvent  [35] RrdLoggerEvent
+        probeReturn     [3] ProbeReturn,
+
+        monitorReply    [10] MonitorReply,
+        getCheckReply   [11] GetCheckReply,
+        extendedReplyMsg [12] ExtendedReplyMsg,
+
+        loggerRrdDump   [20] LoggerRrdDump,
+        loggerRrdEvent  [21] LoggerRrdEvent
     },
     fromClient  [1] CHOICE {
         createTarget    [1] CreateTarget,

@@ -1,0 +1,30 @@
+MonitorLoggerRrd DEFINITIONS IMPLICIT TAGS ::=
+BEGIN
+
+LoggerRrdIdToFile ::= SEQUENCE {
+    index    INTEGER,
+    fileName PrintableString
+}
+
+LoggerRrdUpdate ::= SEQUENCE {
+    index   INTEGER,
+    update  PrintableString
+}
+
+-- sync 
+LoggerRrdDump ::= SEQUENCE {
+    target      PrintableString,
+    probeName   PrintableString,
+    probeModule PrintableString,
+    indexes     SEQUENCE OF LoggerRrdIdToFile,
+    path        PrintableString
+}
+
+-- regular events
+LoggerRrdEvent ::= SEQUENCE {
+    target      PrintableString,
+    probeName   PrintableString,
+    updates     SEQUENCE OF LoggerRrdUpdate
+}
+
+END

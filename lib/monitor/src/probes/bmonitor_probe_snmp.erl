@@ -151,6 +151,7 @@ exec(#state{method = {walk_table, Table, PropRet}} = State) ->
             PR = #probe_return{
                 status          = S,
                 original_reply  = OR,
+                reply_tuple     = ignore,
                 key_vals        = KV,
                 timestamp       = ReplyT},
             {ok, State, PR};
