@@ -41,17 +41,9 @@
     code_change/3
 ]).
 
--record(reply, {
-    id,
-    client_state
-}).
-
 -record(state, {
-    tpl_dir,
-    var_dir,
-    check_db_ref,
-    replies_waiting = [] :: [#reply{}],
-    check_dir
+    data_dir,
+    check_db_ref
 }).
 
 -define(DETS_CHECK_INFO, check_infos_db).
@@ -76,14 +68,11 @@ handle_command(Command, CState) ->
 %%----------------------------------------------------------------------------
 init([]) -> 
     random:seed(erlang:now()),
-    {ok, TplDir}   = application:get_env(monitor, templates_dir),
-    {ok, VarDir}   = application:get_env(monitor, targets_data_dir),
-    {ok, DetsRef}  = init_check_info_database(VarDir),
+    {ok, DataDir}  = application:get_env(monitor, targets_data_dir),
+    {ok, DetsRef}  = init_check_info_database(DataDir),
     State = #state{
-        tpl_dir=TplDir,
-        var_dir=VarDir,
-        check_db_ref=DetsRef,
-        check_dir= ""
+        data_dir=DataDir,
+        check_db_ref=DetsRef
     },
     {ok, State}.
 
@@ -119,27 +108,27 @@ handle_call(_R, _F, S) ->
 %%----------------------------------------------------------------------------
 %%----------------------------------------------------------------------------
 
-handle_cast({{createSimpleProbe, _ = Com}, CState}, S) ->
-    CheckDir    = S#state.check_dir,
-    {ok, Name}  = generate_id("probe-"),
-    spawn(?MODULE, handle_create_probe, [Com, CheckDir, CState, Name]),
-    {noreply, S};
+%handle_cast({{createSimpleProbe, _ = Com}, CState}, S) ->
+    %CheckDir    = S#state.check_dir,
+    %{ok, Name}  = generate_id("probe-"),
+    %spawn(?MODULE, handle_create_probe, [Com, CheckDir, CState, Name]),
+    %{noreply, S};
 
 % this guard catch non snmp targets with no templates
 handle_cast({{createTarget,
         {_, _, _, _, "undefined", "undefined", "undefined", _} = Command}, 
     CState}, S) ->
-    VarDir = S#state.var_dir,
+    VarDir = S#state.data_dir,
     {ok, ReplyPdu} = handle_create_target(Command, VarDir),
     send(CState, ReplyPdu),
     {noreply, S};
 
-handle_cast({{createTarget, Command}, CState}, S) ->
-    TplDir          = S#state.tpl_dir,
-    VarDir          = S#state.var_dir,
-    {ok, ReplyPdu}  = handle_create_target(Command, TplDir, VarDir),
-    send(CState, ReplyPdu),
-    {noreply, S};
+% handle_cast({{createTarget, Command}, CState}, S) ->
+%     TplDir          = S#state.tpl_dir,
+%     VarDir          = S#state.data_dir,
+%     {ok, ReplyPdu}  = handle_create_target(Command, TplDir, VarDir),
+%     send(CState, ReplyPdu),
+%     {noreply, S};
 
 handle_cast({{query, {_, QueryId, "getChecksInfo"}}, CState}, S) ->
     DbRef = S#state.check_db_ref,
@@ -160,28 +149,28 @@ handle_cast({{query, {_, QueryId, Other}}, CState}, S) ->
     ),
     {noreply, S};
 
-handle_cast({{simulateCheck, {_, QueryId, Check, Args}}, CState}, S) ->
-    Path = filename:join(S#state.check_dir, Check),
-
-    % 1 lauch command
-    % 2 fill #state.replies_waiting
-    % 3 wait for reply somewere
- 
-    case filename:pathtype(Path) of
-        relative ->
-            % do not allow relative paths
-            error_logger:info_msg(
-            "~p ~p: warning ~p is not a relative path. siulateCheck from ~p~n",
-            [?MODULE, ?LINE, Path, CState]),
-            % TODO reply error to client and close connexion to mitigate DOS
-            {noreply, S};
-        _ ->
-            PortArgs = [
-                lists:flatten(io_lib:format("--~s=~s", [Flag, Val]))
-            || {_, Flag, Val} <- Args],
-            spawn(?MODULE, spawn_exec, [{QueryId, CState}, {Path, PortArgs}]),
-            {noreply, S}
-    end;
+% handle_cast({{simulateCheck, {_, QueryId, Check, Args}}, CState}, S) ->
+%     Path = filename:join(S#state.check_dir, Check),
+% 
+%     % 1 lauch command
+%     % 2 fill #state.replies_waiting
+%     % 3 wait for reply somewere
+%  
+%     case filename:pathtype(Path) of
+%         relative ->
+%             % do not allow relative paths
+%             error_logger:info_msg(
+%             "~p ~p: warning ~p is not a relative path. siulateCheck from ~p~n",
+%             [?MODULE, ?LINE, Path, CState]),
+%             % TODO reply error to client and close connexion to mitigate DOS
+%             {noreply, S};
+%         _ ->
+%             PortArgs = [
+%                 lists:flatten(io_lib:format("--~s=~s", [Flag, Val]))
+%             || {_, Flag, Val} <- Args],
+%             spawn(?MODULE, spawn_exec, [{QueryId, CState}, {Path, PortArgs}]),
+%             {noreply, S}
+%     end;
 
 handle_cast({{extendedQueryMsg, 
         {_, QueryId, {snmpElementInfoQuery, Query}}}, CState}, S) ->
@@ -411,47 +400,47 @@ handle_create_target(Command, VarDir) ->
     monitor_master:create_target(Target),
     {ok, pdu(monitorReply, {QueryId, true, atom_to_list(TargetId)})}.
 
-handle_create_target(Command, TplDir, VarDir) ->
-    {'CreateTarget',
-        IpAdd,
-        PermConf,
-        _,
-        _,
-        _,
-        Template,
-        QueryId
-    } = Command,
-    {ok, TargTemp}      = get_template(TplDir, Template),
-    {ok, TargetId}      = generate_id("target-"),
-    {ok, PermRecord}    = generate_perm_conf(PermConf),
-    {ok, TargetDir}     = generate_target_dir(VarDir, TargetId),
-    {ok, Prop}          = generate_properties(Command),
+% handle_create_target(Command, TplDir, VarDir) ->
+%     {'CreateTarget',
+%         IpAdd,
+%         PermConf,
+%         _,
+%         _,
+%         _,
+%         Template,
+%         QueryId
+%     } = Command,
+%     {ok, TargTemp}      = get_template(TplDir, Template),
+%     {ok, TargetId}      = generate_id("target-"),
+%     {ok, PermRecord}    = generate_perm_conf(PermConf),
+%     {ok, TargetDir}     = generate_target_dir(VarDir, TargetId),
+%     {ok, Prop}          = generate_properties(Command),
+% 
+%     Target1 = TargTemp#target{
+%         id          = TargetId,
+%         ip          = IpAdd,
+%         properties  = Prop,
+%         global_perm = PermRecord,
+%         directory   = TargetDir
+%     },
+%     Probes  = [generate_probe(PFun, Target1) || PFun <- Target1#target.probes],
+%     Target2 = Target1#target{probes = Probes},
+% 
+%     case lists:keyfind(error, 1, Probes) of
+%         {error, Reason} ->
+%             RString = lists:flatten(io_lib:format("~p",[Reason])),
+%             {ok, pdu(monitorReply, {QueryId, false, RString})};
+%         false ->
+%             monitor_master:create_target(Target2),
+%             {ok, pdu(monitorReply, {QueryId, true, "Success"})}
+%     end.
 
-    Target1 = TargTemp#target{
-        id          = TargetId,
-        ip          = IpAdd,
-        properties  = Prop,
-        global_perm = PermRecord,
-        directory   = TargetDir
-    },
-    Probes  = [generate_probe(PFun, Target1) || PFun <- Target1#target.probes],
-    Target2 = Target1#target{probes = Probes},
-
-    case lists:keyfind(error, 1, Probes) of
-        {error, Reason} ->
-            RString = lists:flatten(io_lib:format("~p",[Reason])),
-            {ok, pdu(monitorReply, {QueryId, false, RString})};
-        false ->
-            monitor_master:create_target(Target2),
-            {ok, pdu(monitorReply, {QueryId, true, "Success"})}
-    end.
-
-get_template(TplDir, Template) ->
-    File                = filename:flatten([Template, ".tpl.erl"]),
-    TplFile             = filename:join([TplDir, File]),
-    {ok, [TargTemp]}    = file:consult(TplFile),
-    {ok, TargTemp}.
-
+% get_template(TplDir, Template) ->
+%     File                = filename:flatten([Template, ".tpl.erl"]),
+%     TplFile             = filename:join([TplDir, File]),
+%     {ok, [TargTemp]}    = file:consult(TplFile),
+%     {ok, TargTemp}.
+% 
 
 generate_perm_conf({_, Read, Write}) ->
     {ok, #perm_conf{read = Read, write = Write}}.
@@ -477,14 +466,14 @@ generate_properties({_, IpAdd, _, Name, SnmpV2ro, SnmpV2rw, _, _}) ->
         {"hostname",    "undefined"}
     ]}.
     
-generate_probe(PFun, Target) ->
-    {function, Mod, Fun}    = PFun,
-    {ok, ProbeId}           = generate_id("probe-"),
-
-    case erlang:apply(Mod, Fun, [ProbeId, Target]) of
-        {ok, PRec}  -> PRec;
-        Other       -> {error, Other}
-    end.
+% generate_probe(PFun, Target) ->
+%     {function, Mod, Fun}    = PFun,
+%     {ok, ProbeId}           = generate_id("probe-"),
+% 
+%     case erlang:apply(Mod, Fun, [ProbeId, Target]) of
+%         {ok, PRec}  -> PRec;
+%         Other       -> {error, Other}
+%     end.
 
 
 

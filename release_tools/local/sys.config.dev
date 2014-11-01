@@ -60,17 +60,8 @@
     },
     {monitor,
         [
-            {config_file,           "cfg/monitor.conf"},
-            {templates_dir,         "cfg/monitor_templates"},
             {targets_data_dir,      "var/monitor"},
-            {events_dir,            "var/monitor_events"},
-            {master_chan_read_perm, ["admin"]},
-            {probe_modules,
-                [
-                    bmonitor_probe_nagios,
-                    bmonitor_probe_snmp
-                ]
-            }
+            {master_chan_read_perm, ["admin"]}
         ]
     },
     {kernel,
