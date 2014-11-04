@@ -145,7 +145,7 @@ handle_event({probe_return, NewProbeState, ProbeReturn}, SName, SData) ->
         ModifiedProbe,
         NextMicroStart),
 
-    {next_state, SName, SData5, hibernate};
+    {next_state, SName, SData5};
 
 handle_event({emit_pdu, Pdu}, SName, SData) ->
     Probe       = SData#state.probe,
