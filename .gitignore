@@ -34,8 +34,6 @@ lib/supercast/include/ModMonitor.hrl
 sys.config
 noctopus.tar
 *.plt
-lib/nchecks
-lib/snmpman
 var/engineID.conf
 var/yaws/docroot/*
 var/yaws/log/*
