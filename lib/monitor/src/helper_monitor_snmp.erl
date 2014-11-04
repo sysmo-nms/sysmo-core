@@ -19,7 +19,7 @@
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 % @private
--module(monitor_helper_snmp).
+-module(helper_monitor_snmp).
 -include("include/monitor.hrl").
 -include("include/monitor_snmp.hrl").
 -export([
@@ -54,7 +54,13 @@
 
 
 
+% @doc
+% Two probes:
+% - SNMP if perfs,
+% - SNMP system infos
+% @end
 generate_standard_snmp_target(_Args) ->
+    io:format("generate standard_snmp_target: ~p~n",[_Args]),
     {ok,
      #target{
         id = 'jojo17',
@@ -288,7 +294,6 @@ walk_system(Args, EngineId) ->
                     Ret = Err
             end,
             snmpman:unregister_element(?TMP_ELEMENT),
-            io:format("ret : ~p~n",[Ret]),
             Ret;
         {error, Error} ->
             {error, Error}

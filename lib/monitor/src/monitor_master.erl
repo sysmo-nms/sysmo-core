@@ -201,7 +201,7 @@ handle_call(dump_dets, _F, S) ->
     TargetsConf = dets:foldr(fun(X, Acc) ->
         [X|Acc]
     end, [], Table),
-    ?LOG(TargetsConf),
+    io:format("dump_dets: ~p~n",[TargetsConf]),
     {reply, ok, S}.
 
 insert_probe(Probe, Target) ->
@@ -249,7 +249,6 @@ handle_cast({probe_info, TargetId, NewProbe}, S) ->
     Target      = lists:keyfind(TargetId, 2, Chans),
     {ok, NewTarg} = update_info_chan(Target, NewProbe),
     NewChans      = lists:keystore(TargetId, 2, Chans, NewTarg),
-    ?LOG('probe_info'),
     dets:insert(S#state.db, NewTarg),
 
     Pdu = pdu(probeInfo, {update, TargetId, NewProbe}),
@@ -334,7 +333,6 @@ load_targets_conf([T|Targets], TargetsState) ->
     load_targets_conf(Targets, [T2|TargetsState]).
     
 load_target_conf(Target) ->
-    io:format("ninit probes?"),
     ok              = init_target_dir(Target),
     {ok, Target2}   = init_probes(Target),
     Target2.

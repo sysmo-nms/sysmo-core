@@ -18,7 +18,8 @@
                 monitor,
                 snmpman,
                 errd,
-                supercast
+                supercast,
+                nchecks
             ]
         },
         {applications, 

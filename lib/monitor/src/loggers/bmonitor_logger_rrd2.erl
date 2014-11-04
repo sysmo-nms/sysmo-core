@@ -118,7 +118,6 @@ log(State, #probe_return{reply_tuple = Rpl, timestamp = Ts} = _ProbeReturn) ->
 
 
     Pdu = build_rrd_event(State,ClientUp),
-    io:format("client up is ~p~n",[Pdu]),
 
     {ok, Pdu, State}.
 
@@ -144,8 +143,7 @@ rrd_update([{Index, File}|Tail], RIndexTpl, RrdUpdate, Rpl, Ts, Acc) ->
     {value, Row, Rpl2} = lists:keytake(Index, 2, Rpl),
     TplString = rrd_update_build_tpl(RIndexTpl, Row, Ts),
     RrdCmd = lists:concat([File, " ", RrdUpdate, " ", TplString]),
-    Ret = errd:update(RrdCmd),
-    io:format("rrd update return is ~p~n",[Ret]),
+    errd:update(RrdCmd),
     rrd_update(Tail, RIndexTpl, RrdUpdate, Rpl2, Ts, [{Index,TplString}|Acc]).
 
 rrd_update_build_tpl([], _, Acc) -> Acc;
@@ -166,7 +164,6 @@ dump(#state{row_index_to_file = RI, dump_dir = DDir} = State) ->
     ok = file:make_dir(Dir2),
     IndexToFile = dump_file(RI, Dir2),
     Pdu         = build_dump(State, IndexToFile, Dir),
-    io:format("pdu is ~p~n",[Pdu]),
     {ok, {pdu, Pdu}, State}.
     %{ignore, State}.
 
@@ -194,7 +191,6 @@ dump_file([], _, Acc) -> Acc;
 dump_file([ {I,F} | T], InDir, Acc) ->
     XmlFile = lists:concat([I, ".xml"]),
     XmlFilePath = filename:join(InDir, XmlFile),
-    io:format("will dump ~p to ~p~n",[F, XmlFilePath]),
     errd:dump(F, XmlFilePath),
     dump_file(T, InDir, [{I,XmlFile}|Acc]).
 

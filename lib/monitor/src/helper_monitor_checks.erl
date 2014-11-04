@@ -1,4 +1,4 @@
--module(monitor_helper_checks).
+-module(helper_monitor_checks).
 -export([
     hello/0
 ]).

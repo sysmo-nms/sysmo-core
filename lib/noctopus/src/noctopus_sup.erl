@@ -32,6 +32,14 @@ init([]) ->
                     [errd_app]
                 },
                 {
+                    nchecks_app,
+                    {nchecks_app, start, [normal,[]]},
+                    permanent,
+                    2000,
+                    supervisor,
+                    [nchecks_app]
+                },
+                {
                     monitor_app,
                     {monitor_app, start, [normal,[]]},
                     permanent,
@@ -47,7 +55,6 @@ init([]) ->
                     supervisor,
                     [supercast_app]
                 }
-
             ]
         }
     }.

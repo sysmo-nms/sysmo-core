@@ -223,7 +223,7 @@ SnmpElementInfoQuery ::= SEQUENCE {
     v3PrivKey     PrintableString
 }
 
-SnmpUpdateElementQuery ::= SEQUENCE {
+SnmpElementCreateQuery ::= SEQUENCE {
     ip            IpInfo,
     port          INTEGER,
     timeout       INTEGER,
@@ -241,7 +241,7 @@ SnmpUpdateElementQuery ::= SEQUENCE {
 
 ExtendedQuery   ::= CHOICE {
     snmpElementInfoQuery    [0] SnmpElementInfoQuery,
-    snmpUpdateElementQuery  [1] SnmpUpdateElementQuery
+    snmpElementCreateQuery  [1] SnmpElementCreateQuery
 }
 
 ExtendedQueryMsg   ::= SEQUENCE {

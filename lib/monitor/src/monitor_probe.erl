@@ -106,10 +106,12 @@ init([Target, Probe]) ->
 
 % GEN_CHANNEL event
 handle_event({probe_return, NewProbeState, ProbeReturn}, SName, SData) ->
-    % UPDATE probe_state
-    SData1  = SData#state{probe_state       = NewProbeState},
+    % update #state.probe_state
+    SData1  = SData#state{probe_state = NewProbeState},
 
-    % INSPECT, update probe and inspectors_state,
+    % INSPECT,
+    % update #state.probe
+    % update #state.inspectors_state,
     Probe        = SData1#state.probe,
     InspectState = SData1#state.inspectors_state,
     {ok, NewInspectState, ModifiedProbe} = 
@@ -117,21 +119,33 @@ handle_event({probe_return, NewProbeState, ProbeReturn}, SName, SData) ->
     SData2  = SData1#state{probe             = ModifiedProbe},
     SData3  = SData2#state{inspectors_state  = NewInspectState},
 
-       % LOG, update loggers_state,
+    % LOG, update loggers_state,
+    % update #state.loggers_state
     LoggersState            = SData3#state.loggers_state,
     {ok, NewLoggersState}   = log_return(LoggersState, ProbeReturn),
     SData4 = SData3#state{loggers_state = NewLoggersState},
 
     % LAUNCH
-    P       = SData4#state.probe,
+    % update #state.tref
+    P = SData4#state.probe,
     {ok, {NextMicroStart,_} = TRef} = initiate_start_sequence(P#probe.step, normal),
+    SData5 = SData4#state{tref = TRef},
 
     % NOTIFY
-    TargetId  = SData3#state.target_id,
-    notify(ProbeReturn, TargetId, Probe, ModifiedProbe, NextMicroStart),
+    % maybe notify master
+    % if Old#state.properties   != New#sate.properties
+    % or
+    % if Old#state.status       != New#state.status
+    %
+    % notify all subscribers of 'target-MasterChan' anyway
+    notify(
+        ProbeReturn,
+        SData5#state.target_id,
+        Probe,
+        ModifiedProbe,
+        NextMicroStart),
 
-
-    {next_state, SName, SData4#state{tref=TRef}, hibernate};
+    {next_state, SName, SData5, hibernate};
 
 handle_event({emit_pdu, Pdu}, SName, SData) ->
     Probe       = SData#state.probe,

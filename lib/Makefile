@@ -23,6 +23,9 @@ snmpman:
 errd:
 	@git clone git@github.com:ssbx/errd.git
 
+nchecks:
+	@git clone -b java_version git@github.com:ssbx/nchecks.git
+
 # yaws special begin
 $(REQUIRE_YAWS): yaws
 $(REQUIRE_YAWS): ERLC = $(ERLCY)
