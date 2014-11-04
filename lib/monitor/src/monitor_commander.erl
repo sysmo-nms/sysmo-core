@@ -187,7 +187,7 @@ handle_cast({{extendedQueryMsg,
 
 handle_cast({{extendedQueryMsg, 
         {_, QueryId, {snmpElementCreateQuery, Query}}}, CState}, S) ->
-    handle_snmpElementCreateQuery(QueryId, CState, Query),
+    handle_snmpElementCreateQuery(QueryId, CState, Query, S),
     {noreply, S};
 
 
@@ -293,7 +293,7 @@ handle_create_target(Command, VarDir) ->
         _,
         QueryId
     } = Command,
-    {ok, TargetId}      = generate_id("target-"),
+    {ok, TargetId}      = monitor_master:generate_id("target-"),
     {ok, PermRecord}    = generate_perm_conf(PermConf),
     {ok, TargetDir}     = generate_target_dir(VarDir, TargetId),
     {ok, Prop}          = generate_properties(Command),
@@ -308,8 +308,8 @@ handle_create_target(Command, VarDir) ->
     {ok, pdu(monitorReply, {QueryId, true, atom_to_list(TargetId)})}.
 
 
-handle_snmpElementCreateQuery(_QueryId, _CState, Query) ->
-    {ok, Target} = helper_monitor_snmp:generate_standard_snmp_target(Query),
+handle_snmpElementCreateQuery(_QueryId, _CState, Query, State) ->
+    {ok, Target} = helper_monitor_snmp:generate_standard_snmp_target(Query, State#state.data_dir),
     monitor_master:create_target(Target).
 
 handle_snmpElementInfoQuery(QueryId, CState, {
@@ -519,18 +519,6 @@ get_port_reply(Data) ->
                 [?MODULE, ?LINE, _R]
             ),
             {4, Data}
-    end.
-
-generate_id(Head) ->
-    Int         = random:uniform(?RAND_RANGE),
-    RandId      = Int + ?RAND_MIN,
-    RandIdL     = io_lib:format("~p", [RandId]),
-    RandIdS     = lists:flatten(RandIdL),
-    RandIdF     = lists:concat([Head, RandIdS]),
-    ToAtom      = erlang:list_to_atom(RandIdF),
-    case monitor_master:id_used(ToAtom) of
-        false->  {ok, ToAtom};
-        true  -> generate_id(Head)
     end.
 
 send(#client_state{module = CMod} = CState, Msg) ->

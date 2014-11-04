@@ -26,7 +26,7 @@
     walk_ifTable/2,
     get_sysName/2,
     walk_system/2,
-    generate_standard_snmp_target/1
+    generate_standard_snmp_target/2
 ]).
 
 % four RRAs from 100 hours to 10 years
@@ -53,42 +53,72 @@
 ).
 
 
+generate_probe_id(List) ->
+    {ok, Id} = monitor_master:generate_id("probe-"),
+    case lists:member(Id, List) of
+        true ->
+            generate_probe_id(List);
+        false ->
+            Id
+    end.
 
 % @doc
 % Two probes:
 % - SNMP if perfs,
 % - SNMP system infos
 % @end
-generate_standard_snmp_target(_Args) ->
-    io:format("generate standard_snmp_target: ~p~n",[_Args]),
+generate_standard_snmp_target(Args, DataDir) ->
+    {'SnmpElementCreateQuery',
+        {'IpInfo', IpVersion, Ip},
+        Port,
+        Timeout,
+        SnmpVer,
+        Community,
+        V3SecLevel,
+        V3User,
+        V3AuthAlgo,
+        V3AuthKey,
+        V3PrivAlgo,
+        V3PrivKey,
+        EngineId,
+        IfSelection
+    } = Args,
+    {ok, TargetId} = monitor_master:generate_id("target-"),
+    P1 = generate_probe_id([]),
+    P2 = generate_probe_id([P1]),
+
+    TargetDir = filename:join(DataDir, TargetId),
+    io:format("generate standard_snmp_target: ~p ~p ~p ~p ~p~n",[Args, TargetId, P1, P2, TargetDir]),
+    io:format("generate standard_snmp_target didi: ~p ~p ~n",[IfSelection, V3User]),
+
     {ok,
-     #target{
-        id = 'jojo17',
-        ip = "192.168.0.5",
-        ip_version = "v4",
+    #target{
+        id = TargetId,
+        ip = Ip,
+        ip_version = IpVersion,
         global_perm = #perm_conf{read = ["admin"], write = ["admin"]},
-        directory = "var/monitor/jojo17",
+        directory = TargetDir,
         properties = [
-            {"ip",          "192.168.0.5"},
-            {"ipVersion",   "v4"},
-            {"staticName",  "jojo17"},
+            {"ip",          Ip},
+            {"ipVersion",   IpVersion},
+            {"staticName",  atom_to_list(TargetId)},
             {"sysLocation", "undefined"},
             {"sysName",     "undefined"},
             {"dnsName",     "undefined"}
         ],
         probes = [
             #probe{
-               name = 'jojoprobe',
-               description = "jojojojojo",
-               info = "jojojojojo",
+               name = P1,
+               description = "SNMP:System informations",
+               info = "Get sysName and sysLocation OID every 5 minutes",
                permissions = #perm_conf{read = ["admin"], write = ["admin"]},
                status = 'UNKNOWN',
                step    = 5,
-               timeout = 2000,
+               timeout = Timeout,
 
                properties = [
-                             {"status", "UNKNOWN"},
-                             {"sysName", "undefined"},
+                             {"status",      "UNKNOWN"},
+                             {"sysName",     "undefined"},
                              {"sysLocation", "undefined"}
                ],
                forward_properties = ["sysName", "sysLocation"],
@@ -99,16 +129,16 @@ generate_standard_snmp_target(_Args) ->
                 
                monitor_probe_mod  = bmonitor_probe_snmp,
                monitor_probe_conf = #snmp_probe_conf{
-                    port        = 161,
-                    version     = "2c",
-                    seclevel    = "noAuthNoPriv",
-                    community   = "public",
-                    usm_user    = "undefined",
-                    authkey     = "undefined",
-                    authproto   = "SHA",
-                    privkey     = "undefined",
-                    privproto   = "AES",
-                    engine_id   = "AAAAAAAAAAAA",
+                    port        = Port,
+                    version     = SnmpVer,
+                    seclevel    = V3SecLevel,
+                    community   = Community,
+                    usm_user    = V3User,
+                    authkey     = V3AuthKey,
+                    authproto   = V3AuthAlgo,
+                    privkey     = V3PrivKey,
+                    privproto   = V3PrivAlgo,
+                    engine_id   = EngineId,
                     method      = get,
                     retries = 1,
                     oids = [
@@ -131,13 +161,13 @@ generate_standard_snmp_target(_Args) ->
                loggers = []
             },
             #probe{
-               name = 'jojoprobe2',
-               description = "jujujuju",
-               info = "jojojojojo",
+               name = P2,
+               description = "SNMP:Interfaces performances",
+               info = "Get interfaces octets:in/out ucast:in/out nucast:in/out errors:in/out ",
                permissions = #perm_conf{read = ["admin"], write = ["admin"]},
                status = 'UNKNOWN',
                step    = 5,
-               timeout = 2000,
+               timeout = Timeout,
 
                properties = [
                     {"status", "UNKNOWN"}
@@ -150,16 +180,16 @@ generate_standard_snmp_target(_Args) ->
                 
                monitor_probe_mod  = bmonitor_probe_snmp,
                monitor_probe_conf = #snmp_probe_conf{
-                    port        = 161,
-                    version     = "2c",
-                    seclevel    = "noAuthNoPriv",
-                    community   = "public",
-                    usm_user    = "undefined",
-                    authkey     = "undefined",
-                    authproto   = "SHA",
-                    privkey     = "undefined",
-                    privproto   = "AES",
-                    engine_id   = "AAAAAAAAAAAA",
+                    port        = Port,
+                    version     = SnmpVer,
+                    seclevel    = V3SecLevel,
+                    community   = Community,
+                    usm_user    = V3User,
+                    authkey     = V3AuthKey,
+                    authproto   = V3AuthAlgo,
+                    privkey     = V3PrivKey,
+                    privproto   = V3PrivAlgo,
+                    engine_id   = EngineId,
                     method      = {walk_table,
                         [
                             ?IF_INDEX,

@@ -46,7 +46,8 @@
     probe_info/2,
     create_target/1,
     create_probe/2,
-    id_used/1
+
+    generate_id/1
 ]).
 
 -record(state, {
@@ -54,6 +55,12 @@
     perm,
     db
 }).
+
+% generate id range
+% 1 000 000 possible values
+-define(RAND_RANGE, 1000000).
+% but must be a minimum of 100000
+-define(RAND_MIN,   99999).
 
 -define(DETS_TARGETS, 'targets_db').
 -define(MASTER_CHAN, 'target-MasterChan').
@@ -66,6 +73,7 @@ start_link() ->
 dump() ->
     gen_server:call(?MASTER_CHAN, dump_dets).
 
+%% monitor_commander API
 -spec create_target(Target::#target{}) -> ok | {error, Info::string()}.
 create_target(Target) ->
     gen_server:call(?MASTER_CHAN, {create_target, Target}).
@@ -74,6 +82,19 @@ create_target(Target) ->
     -> ok | {error, string()}.
 create_probe(TargetId, Probe) ->
     gen_server:call(?MASTER_CHAN, {create_probe, TargetId, Probe}).
+
+-spec generate_id(Head::string()) -> atom().
+generate_id(Head) ->
+    Int         = random:uniform(?RAND_RANGE),
+    RandId      = Int + ?RAND_MIN,
+    RandIdL     = io_lib:format("~p", [RandId]),
+    RandIdS     = lists:flatten(RandIdL),
+    RandIdF     = lists:concat([Head, RandIdS]),
+    ToAtom      = erlang:list_to_atom(RandIdF),
+    case gen_server:call(?MASTER_CHAN, {id_used, ToAtom}) of
+        false->  {ok, ToAtom};
+        true  -> generate_id(Head)
+    end.
 
 %%----------------------------------------------------------------------------
 %% supercast_channel API
@@ -97,20 +118,12 @@ sync_request(PidName, CState) ->
 probe_info(TargetId, Probe) ->
     gen_server:cast(?MASTER_CHAN, {probe_info, TargetId, Probe}).
 
--spec id_used(Id::atom()) -> true | false.
-% @doc
-% Used by monitor_commander:generate_id to check the presence of a randomly
-% created id.
-% @end
-id_used(Id) ->
-    gen_server:call(?MASTER_CHAN, {id_used, Id}).
-
-
 
 %%----------------------------------------------------------------------------
 %% GEN_SERVER CALLBACKS
 %%----------------------------------------------------------------------------
 init([]) ->
+    random:seed(erlang:now()),
     {ok, Table} = init_database(),
     %{ok, Targets} = load_targets_conf_from_file(ConfFile),
     {ok, Targets} = load_targets_conf_from_dets(Table),
