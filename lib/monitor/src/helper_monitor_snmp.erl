@@ -316,7 +316,6 @@ walk_system(Args, EngineId) ->
             {engine_id, EngineId}
         ]) of
         ok ->
-            %{ok, {varbinds, VBs}} = snmpman:walk_tree(?TMP_ELEMENT, ?MIB2_SYSTEM),
             case snmpman:walk_tree(?TMP_ELEMENT, ?MIB2_SYSTEM) of
                 {ok, {varbinds, VBs}} ->
                     Ret = {ok, {varbinds, filter_system_info(VBs)}};
