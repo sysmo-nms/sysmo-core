@@ -35,5 +35,11 @@ sys.config
 noctopus.tar
 *.plt
 var/engineID.conf
+
+lib/yaws
+lib/errd
+lib/snmpman
+lib/nchecks
+
 var/yaws/docroot/*
 var/yaws/log/*
