@@ -39,8 +39,10 @@ clean: var-clean crash-clean rel-clean
 
 var-clean:
 	rm -rf var/monitor/*/
-	rm -rf var/yaws/log/*
-	rm -rf var/yaws/docroot/*
+	rm -rf var/yaws/log/*.log
+	rm -rf var/yaws/log/*.access
+	rm -rf var/yaws/log/*.auth
+	rm -rf var/yaws/docroot/*/
 	rm -rf var/monitor/targets.dets
 	rm -rf var/monitor_events
 	rm -f var/snmp/snmpm_config_db
