@@ -370,7 +370,13 @@ pdu(extendedReplyMsgWalkSystem, {QueryId, Status, Last, Info}) ->
     {_,_,_,SysName}         = lists:keyfind(?SYS_NAME,          2, Varbinds),
     {_,_,_,SysLocation}     = lists:keyfind(?SYS_LOCATION,      2, Varbinds),
     {_,_,_,SysServices}     = lists:keyfind(?SYS_SERVICES,      2, Varbinds),
-    {_,_,_,SysORLastChange} = lists:keyfind(?SYS_ORLAST_CHANGE, 2, Varbinds),
+
+    case lists:keyfind(?SYS_ORLAST_CHANGE, 2, Varbinds) of
+        {_,_,_,SysORLastChangeV} ->
+            SysORLastChange = SysORLastChangeV;
+        _ ->
+            SysORLastChange = "unknown"
+    end,
 
     InfoTuple = {snmpSystemInfo, {'SnmpSystemInfo', 
                     SysDescr, SysObjectId, SysUpTime, SysContact,
