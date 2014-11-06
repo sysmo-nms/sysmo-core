@@ -20,7 +20,7 @@
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 % @doc
 % @end
--module(monitor_probe_fsm).
+-module(monitor_probe).
 -behaviour(gen_fsm).
 -behaviour(supercast_channel).
 -include("include/monitor.hrl").
@@ -33,10 +33,11 @@
 % supercast_channel
 -export([
     get_perms/1,
-    sync_request/2
+    sync_request/2,
+    triggered_return/2
 ]).
 
-% gen_fsm
+% gen
 -export([
     init/1,
     handle_event/3, 
@@ -47,38 +48,16 @@
     'RUNNING'/3
 ]).
 
-
-% local api
--export([
-    freeze/1,
-    reset_family/1,
-    synchronize_parents/1,
-    synchronize_childs/1,
-    launch/1           % from monitor_probe_sup:parents_sync/0
-]).
-
-%-record(parent, {
-    %name,
-    %status,
-    %last_check
-%}).
-
 -record(state, {
     target_id,
     name,
     probe,
     tref,   %
-    last_check,
-    check_state         = stopped   :: ready | running | stopped,
-    check_flag          = normal    :: normal | force | random,
-    nego_parents        = [],
-    nego_return,
-    parents             = [] :: {atom(), atom()},   % {pidName, status}
-    childs              = [],   %dynamicaly added
     inspectors_state    = [],
     loggers_state       = [],
     probe_state         = []
 }).
+
 
 -define(OK,         'OK').
 -define(CRITICAL,   'CRITICAL').
@@ -86,7 +65,7 @@
 -define(UNKNOWN,    'UNKNOWN').
 -define(HALT,       'UNKNOWN').
 
-% fsm behaviour
+
 start_link({Target, #probe{name = Name} = Probe}) ->
     gen_fsm:start_link({local, Name}, ?MODULE, [Target, Probe], []).
 
@@ -94,60 +73,19 @@ start_link({Target, #probe{name = Name} = Probe}) ->
 get_perms(PidName) ->
     gen_fsm:sync_send_all_state_event(PidName, get_perms).
 
+% supercast_channel behaviour
 sync_request(PidName, CState) ->
     gen_fsm:send_all_state_event(PidName, {sync_request, CState}).
 
-% FSM funs
-%%
-%% from monitor_probe_sup
-%%
--spec freeze(pid()) -> ok.
-% @doc
-% Called by monitor_probe_sup before parents init. This function
-% every actions and put the probe in 'INITIALIZE' state. If the state
-% of the probe was 'WAITING-REPLY' put the probe in 
-% 'INITIALIZE-WAITING-REPLY' state.
-% @end
-freeze(PidName) ->
-    gen_fsm:sync_send_all_state_event(PidName, freeze).
-
--spec reset_family(pid()) -> ok.
-reset_family(PidName) ->
-    gen_fsm:sync_send_all_state_event(PidName, reset_family).
-
--spec synchronize_parents(pid()) -> ok.
-% @doc
-% The probe MUST be in 'INITIALIZE' state to execute this function.
-% Called by monitor_probe_sup after freeze/1.
-% @end
-synchronize_parents(PidName) ->
-    gen_fsm:sync_send_all_state_event(PidName, synchronize_parents).
-
-synchronize_childs(PidName) ->
-    gen_fsm:sync_send_all_state_event(PidName, synchronize_childs).
-
-
-
--spec launch(pid()) -> ok.
-% @doc
-% Start the probe. The probe MUST be in 'INITIALIZE' state to execute
-% this function. Put the probe in 'SLEEPING-STEP' state with a random
-% start from 0 to #probe.step.
-% @end
-launch(PidName) ->
-    gen_fsm:send_event(PidName, launch).
-
-
+% from master channel to update clients timeout
+triggered_return(PidName, CState) ->
+    gen_fsm:send_all_state_event(PidName, {triggered_return, CState}).
 
 init([Target, Probe]) ->
     init_random(),
     UProbe = Probe#probe{
         pid     = self()
     },
-
-
-    %Parents                 = UProbe#probe.parents,
-    %ProbeParents            = [#parent{name = Parent} || Parent <- Parents],
 
     {ok, ProbeInitState}    = init_probe(Target, UProbe),
     {ok, InspectInitState}  = init_inspectors(Target, UProbe),
@@ -156,7 +94,6 @@ init([Target, Probe]) ->
         target_id           = Target#target.id,
         name                = UProbe#probe.name,
         probe               = UProbe,
- 
         probe_state         = ProbeInitState ,
         inspectors_state    = InspectInitState,
         loggers_state       = LoggersInitState
@@ -169,10 +106,12 @@ init([Target, Probe]) ->
 
 % GEN_CHANNEL event
 handle_event({probe_return, NewProbeState, ProbeReturn}, SName, SData) ->
-    % UPDATE probe_state
-    SData1  = SData#state{probe_state       = NewProbeState},
+    % update #state.probe_state
+    SData1  = SData#state{probe_state = NewProbeState},
 
-    % INSPECT, update probe and inspectors_state,
+    % INSPECT,
+    % update #state.probe
+    % update #state.inspectors_state,
     Probe        = SData1#state.probe,
     InspectState = SData1#state.inspectors_state,
     {ok, NewInspectState, ModifiedProbe} = 
@@ -180,21 +119,33 @@ handle_event({probe_return, NewProbeState, ProbeReturn}, SName, SData) ->
     SData2  = SData1#state{probe             = ModifiedProbe},
     SData3  = SData2#state{inspectors_state  = NewInspectState},
 
-    % NOTIFY
-    TargetId  = SData3#state.target_id,
-    notify(ProbeReturn, TargetId, Probe, ModifiedProbe),
-
     % LOG, update loggers_state,
+    % update #state.loggers_state
     LoggersState            = SData3#state.loggers_state,
     {ok, NewLoggersState}   = log_return(LoggersState, ProbeReturn),
     SData4 = SData3#state{loggers_state = NewLoggersState},
 
     % LAUNCH
-    _PS      = SData4#state.probe_state,
-    P       = SData4#state.probe,
-    {ok, TRef} = initiate_start_sequence(P#probe.step, normal),
+    % update #state.tref
+    P = SData4#state.probe,
+    {ok, {NextMicroStart,_} = TRef} = initiate_start_sequence(P#probe.step, normal),
+    SData5 = SData4#state{tref = TRef},
 
-    {next_state, SName, SData4#state{tref=TRef}, hibernate};
+    % NOTIFY
+    % maybe notify master
+    % if Old#state.properties   != New#sate.properties
+    % or
+    % if Old#state.status       != New#state.status
+    %
+    % notify all subscribers of 'target-MasterChan' anyway
+    notify(
+        ProbeReturn,
+        SData5#state.target_id,
+        Probe,
+        ModifiedProbe,
+        NextMicroStart),
+
+    {next_state, SName, SData5};
 
 handle_event({emit_pdu, Pdu}, SName, SData) ->
     Probe       = SData#state.probe,
@@ -211,7 +162,26 @@ handle_event({sync_request, CState}, SName, SData) ->
     ok      = supercast_channel:unicast(CState, Pdus),
     ok      = supercast_channel:subscribe(Name, CState),
     SData1  = SData#state{loggers_state = NewLStates},
-    {next_state, SName, SData1}.
+    {next_state, SName, SData1};
+
+% Uniquely send to have client timeout counters in sync using tref()
+handle_event({triggered_return, CState}, SName, SData) ->
+    Probe   = SData#state.probe,
+    TargetId = SData#state.target_id,
+    {NMicro, _} = SData#state.tref,
+    Status  = Probe#probe.status,
+    PName   = Probe#probe.name,
+
+    PartialPr = #probe_return{ 
+        status          = Status,
+        original_reply  = "",
+        timestamp       = 0,
+        key_vals        = []
+    },
+
+    Pdu = probe_return({PartialPr, TargetId, PName, NMicro}),
+    supercast_channel:unicast(CState, [Pdu]),
+    {next_state, SName, SData}.
 
 handle_sync_event(get_perms, _From, SName, SData) ->
     Probe = SData#state.probe,
@@ -260,7 +230,7 @@ init_loggers(_Target, _Probe, [], LoggersState) ->
 init_loggers(Target, Probe, [Logger|Loggers], LoggersState) ->
     Mod             = Logger#logger.module,
     Conf            = Logger#logger.conf,
-    {ok, State}     = Mod:init(Conf, Target, Probe),
+    {ok, State}     = Mod:log_init(Conf, Target, Probe),
     LoggersState2   = lists:keystore(Mod, 1, LoggersState, {Mod, State}),
     init_loggers(Target, Probe, Loggers, LoggersState2).
     
@@ -295,18 +265,6 @@ log_dump([LoggerState|LState], PduAcc, NLogState) ->
         {ignore, State2} ->
             log_dump(LState, PduAcc,       [{Mod, State2}|NLogState])
     end.
-    
-%-spec log_dump(#state{}) -> any().
-%log_dump(#state{probe = Probe} = PSState) ->
-    %L = [Mod:dump(PSState) || 
-            %#logger{module = Mod} <- Probe#probe.loggers],
-    %L2 = lists:filter(fun(Element) ->
-        %case Element of
-            %ignore  -> false;
-            %_       -> true
-        %end
-    %end, L),
-    %L2.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -384,25 +342,22 @@ take_of(Parent, Mod, ProbeState) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% monitor_master and supercast_channel NOTIFY %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-notify(ProbeReturn, TargetId, OriginalProbe, NewProbe) ->
-    ok = notify_subscribers(ProbeReturn, TargetId, NewProbe),
-    ok = notify_master(TargetId, OriginalProbe, NewProbe, ProbeReturn).
+notify(ProbeReturn, TargetId, OriginalProbe, NewProbe, NextMicroStart) ->
+    ok = notify_subscribers(ProbeReturn, TargetId, NewProbe, NextMicroStart),
+    ok = notify_master(TargetId, OriginalProbe, NewProbe).
 
-notify_subscribers(ProbeReturn, TargetId, Probe) ->
-    ChanName = ProbeName = Probe#probe.name,
+notify_subscribers(ProbeReturn, TargetId, Probe, NextMicroStart) ->
+    ProbeName = Probe#probe.name,
     Perms    = Probe#probe.permissions,
-    Pdu      = monitor_pdu:probe_return({ProbeReturn, TargetId, ProbeName}),
-    supercast_channel:emit(ChanName, {Perms, Pdu}).
+    Pdu      = probe_return({ProbeReturn, TargetId, ProbeName, NextMicroStart}),
+    supercast_channel:emit('target-MasterChan', {Perms, Pdu}).
 
-notify_master(TargetId, OriginalProbe, Probe, ProbeReturn) ->
+notify_master(TargetId, OriginalProbe, Probe) ->
     case notify_master_required(OriginalProbe, Probe) of
         true  ->
             monitor_master:probe_info(TargetId, Probe);
         false -> ok
-    end,
-    % ACTIVITY allways called:
-    monitor_master:probe_activity(TargetId, Probe, ProbeReturn).
-    
+    end.
 
 notify_master_required(Orig, Modified) ->
     OriState    = Orig#probe.status,
@@ -426,5 +381,37 @@ notify_master_required(Orig, Modified) ->
 init_random() ->
     <<A:32, B:32, C:32>> = crypto:rand_bytes(12),
     random:seed({A,B,C}).
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+probe_return({
+        #probe_return{ 
+            status      = Status,
+            original_reply = OriginalReply,
+            timestamp   = Timestamp,
+            key_vals    = KeyVals
+        },
+        ChannelId, ProbeId, NextReturn}) ->
+    {modMonitorPDU,
+        {fromServer,
+            {probeReturn,
+                {'ProbeReturn',
+                    atom_to_list(ChannelId),
+                    atom_to_list(ProbeId),
+                    atom_to_list(Status),
+                    OriginalReply,
+                    Timestamp,
+                    make_key_values(KeyVals),
+                    NextReturn
+                }}}}.
+
+make_key_values(K) ->
+    make_key_values(K, []).
+make_key_values([], S) ->
+    S;
+make_key_values([{K,V} | T], S) when is_list(V) ->
+    make_key_values(T, [{'Property', K, V} | S]);
+make_key_values([{K,V} | T], S) when is_integer(V) ->
+    make_key_values(T, [{'Property', K, integer_to_list(V)} | S]);
+make_key_values([{K,V} | T], S) when is_float(V) ->
+    make_key_values(T, [{'Property', K, float_to_list(V, [{decimals, 10}])} | S]);
+make_key_values([{K,V} | T], S) when is_atom(V) ->
+    make_key_values(T, [{'Property', K, atom_to_list(V)} | S]).

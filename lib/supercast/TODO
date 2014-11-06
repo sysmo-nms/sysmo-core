@@ -6,8 +6,7 @@ block, but it vastly increase code complexity for supercast_logger,
 ssl/tcp_client and supercast_channel modules.
 
 # in the future
-- XML  encoder support,
-- JSON encoder support,
-- Websocket/secure Websocket support,
+- protobuff support
+- replace with rabbitmq?
 - Behaviour in a distributed environment with multiple supercast servers
 running?

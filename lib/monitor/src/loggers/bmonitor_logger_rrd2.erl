@@ -28,7 +28,7 @@
 -include("include/monitor.hrl").
 
 -export([
-    init/3,
+    log_init/3,
     log/2,
     dump/1
 ]).
@@ -47,7 +47,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% INIT (rrdcreate) %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-init(Conf, Target, Probe) ->
+log_init(Conf, Target, Probe) ->
     ConfType        = proplists:get_value(type, Conf),
     {ok, DumpDir}   = application:get_env(supercast, data_sync_dir),
     case ConfType of
@@ -104,7 +104,12 @@ snmp_table_build_create(RrdCreate,[{_,File}|T],Acc) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% LOG (rrdupdate) %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-log(State, #probe_return{status = 'OK', reply_tuple = Rpl, timestamp = Ts} = _ProbeReturn) ->
+log(State, #probe_return{reply_tuple = ignore} = _ProbeReturn) ->
+    ClientUp = [{I, ""} || {I,_} <- State#state.row_index_to_file],
+    Pdu = build_rrd_event(State, ClientUp),
+    {ok, Pdu, State};
+
+log(State, #probe_return{reply_tuple = Rpl, timestamp = Ts} = _ProbeReturn) ->
 
     RIndexFile = State#state.row_index_to_file,
     RIndexTpl  = State#state.row_index_to_tpl,
@@ -113,7 +118,6 @@ log(State, #probe_return{status = 'OK', reply_tuple = Rpl, timestamp = Ts} = _Pr
 
 
     Pdu = build_rrd_event(State,ClientUp),
-    io:format("client up is ~p~n",[Pdu]),
 
     {ok, Pdu, State}.
 
@@ -122,11 +126,11 @@ build_rrd_event(State, ClientUp) ->
     ProbeName   = atom_to_list(State#state.probe_name),
     {modMonitorPDU,
         {fromServer,
-            {rrdLoggerEvent,
-                {'RrdLoggerEvent',
+            {loggerRrdEvent,
+                {'LoggerRrdEvent',
                     TId,
                     ProbeName,
-                    [{'RrdLoggerUpdate', I, Up} || {I,Up} <- ClientUp]
+                    [{'LoggerRrdUpdate', I, Up} || {I,Up} <- ClientUp]
                 }
             }
         }
@@ -139,8 +143,7 @@ rrd_update([{Index, File}|Tail], RIndexTpl, RrdUpdate, Rpl, Ts, Acc) ->
     {value, Row, Rpl2} = lists:keytake(Index, 2, Rpl),
     TplString = rrd_update_build_tpl(RIndexTpl, Row, Ts),
     RrdCmd = lists:concat([File, " ", RrdUpdate, " ", TplString]),
-    Ret = errd:update(RrdCmd),
-    io:format("rrd update return is ~p~n",[Ret]),
+    errd:update(RrdCmd),
     rrd_update(Tail, RIndexTpl, RrdUpdate, Rpl2, Ts, [{Index,TplString}|Acc]).
 
 rrd_update_build_tpl([], _, Acc) -> Acc;
@@ -161,7 +164,6 @@ dump(#state{row_index_to_file = RI, dump_dir = DDir} = State) ->
     ok = file:make_dir(Dir2),
     IndexToFile = dump_file(RI, Dir2),
     Pdu         = build_dump(State, IndexToFile, Dir),
-    io:format("pdu is ~p~n",[Pdu]),
     {ok, {pdu, Pdu}, State}.
     %{ignore, State}.
 
@@ -171,12 +173,12 @@ build_dump(State, FilePaths, Dir) ->
     ProbeModule = atom_to_list(?MODULE),
     {modMonitorPDU,
         {fromServer,
-            {rrdProbeDump,
-                {'RrdProbeDump',
+            {loggerRrdDump,
+                {'LoggerRrdDump',
                     TId,
                     ProbeName,
                     ProbeModule,
-                    [{'RrdIdToFile', I, F} || {I,F} <- FilePaths],
+                    [{'LoggerRrdIdToFile', I, F} || {I,F} <- FilePaths],
                     Dir
                 }
             }
@@ -189,7 +191,6 @@ dump_file([], _, Acc) -> Acc;
 dump_file([ {I,F} | T], InDir, Acc) ->
     XmlFile = lists:concat([I, ".xml"]),
     XmlFilePath = filename:join(InDir, XmlFile),
-    io:format("will dump ~p to ~p~n",[F, XmlFilePath]),
     errd:dump(F, XmlFilePath),
     dump_file(T, InDir, [{I,XmlFile}|Acc]).
 

@@ -17,15 +17,14 @@ doc: $(MODS2)
 clean: $(MODS2)
 	@for i in $(MODS2); do $(MAKE) -C $$i clean; done
 
-
-nchecks:
-	@git clone git@github.com:ssbx/nchecks.git
-
 snmpman:
 	@git clone git@github.com:ssbx/snmpman.git
 
 errd:
 	@git clone git@github.com:ssbx/errd.git
+
+nchecks:
+	@git clone -b java_version git@github.com:ssbx/nchecks.git
 
 # yaws special begin
 $(REQUIRE_YAWS): yaws
@@ -39,5 +38,3 @@ $(REQUIRE_YAWS):
 
 yaws: 
 	@git clone git@github.com:klacke/yaws.git
-
-

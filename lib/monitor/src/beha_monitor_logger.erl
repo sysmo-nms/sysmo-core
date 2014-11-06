@@ -19,13 +19,13 @@
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 % @doc
-% The module implementing this behaviour is used by a monitor_probe_fsm
+% The module implementing this behaviour is used by a monitor_probe
 % to store values returned by the probes.
 % @end
 -module(beha_monitor_logger).
 -include("include/monitor.hrl").
 
--callback init(Conf::any(), Target::#target{}, Probe::#probe{}) ->
+-callback log_init(Conf::any(), Target::#target{}, Probe::#probe{}) ->
     {ok, State::any()}.
 % @doc
 % Is called at initialisation stage. Must return a State wich will be used
@@ -51,9 +51,9 @@
     {ok,        Pdu::tuple(), State::any()}   | 
     {ignore,    State::any()}.
 % @doc
-% Called by a monitor_probe_fsm on a subscribe request by a client. Must
+% Called by a monitor_probe on a subscribe request by a client. Must
 % return a binary form of the data logged or ignore if there is no need.
-% For synchronisation, the monitor_probe_fsm server will wait for a
+% For synchronisation, the monitor_probe server will wait for a
 % a responce. This function MUST return before some kind of timeout or it will
 % indefinitely block the probe server.
 % State return is a possibly modified State, Pdu is a tuple message 

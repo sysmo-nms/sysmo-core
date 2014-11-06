@@ -60,22 +60,9 @@
     },
     {monitor,
         [
-            {rrds_dir,              "cfg/rrds"},
-            {targets_data_dir,      "var/monitor"},
-            {events_dir,            "var/monitor_events"},
             {master_chan_read_perm, ["admin"]},
-            {check_dir,             "lib/nchecks/bin"},
-            {probe_modules,
-                [
-                    bmonitor_probe_nagios,
-                    bmonitor_probe_snmp
-                ]
-            }
-        ]
-    },
-    {text_logger,
-        [
-            {dump_size,             100}
+            {targets_data_dir,      "var/monitor"},
+            {rrd_templates_dir,     "cfg/rrds"}
         ]
     },
     {kernel,
@@ -132,7 +119,7 @@
             {java_node, 
                 [
                     {java_com,
-"/usr/lib64/java/bin/java -cp lib/snmpman/java_bin/:lib/snmpman/java_lib/OtpErlang.jar:lib/snmpman/java_lib/snmp4j-2.3.1.jar: io.noctopus.snmpm.Snmpman >> var/snmpman4j.log var/engineID.conf 2>&1 &"
+"/usr/lib64/java/bin/java -cp lib/snmpman/java_bin/:lib/snmpman/java_lib/OtpErlang.jar:lib/snmpman/java_lib/snmp4j-2.3.1.jar: io.noctopus.snmpm.Snmpman var/engineID.conf >> var/log/snmpman4j.log 2>&1 &"
                     }
                 ]
             }
@@ -146,6 +133,18 @@
     {yaws,
         [
             {embedded, true}
+        ]
+    },
+    {nchecks, 
+        [
+            {nagios_dir,"/opt/nagios-plugins-2.0.3/libexec"},
+            {java_node, 
+                [
+                    {java_com,
+"/usr/lib64/java/bin/java -cp lib/nchecks/java_bin/:lib/nchecks/java_lib/OtpErlang.jar io.noctopus.nchecks.NChecks >> var/log/nchecks.log 2>&1 &"
+                    }
+                ]
+            }
         ]
     }
 ].

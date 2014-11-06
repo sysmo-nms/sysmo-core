@@ -32,12 +32,12 @@ init([]) ->
                     [errd_app]
                 },
                 {
-                    text_logger_app,
-                    {text_logger_app, start, [normal,[]]},
+                    nchecks_app,
+                    {nchecks_app, start, [normal,[]]},
                     permanent,
                     2000,
                     supervisor,
-                    [text_logger_app]
+                    [nchecks_app]
                 },
                 {
                     monitor_app,
@@ -55,7 +55,6 @@ init([]) ->
                     supervisor,
                     [supercast_app]
                 }
-
             ]
         }
     }.

@@ -21,7 +21,6 @@
 % @private
 -module(monitor_app).
 -behaviour(application).
--include("include/monitor.hrl").
 
 -export([
     start/2,
@@ -31,8 +30,7 @@ start(_Type, _Args) ->
     application:stop(mnesia),
     mnesia:create_schema([node()]),
     application:start(mnesia),
-    {ok, ProbeModules} = application:get_env(monitor, probe_modules),
-    monitor_sup:start_link(ProbeModules).
+    monitor_sup:start_link().
 
 stop(_State) ->
     ok.

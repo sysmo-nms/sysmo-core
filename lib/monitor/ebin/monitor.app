@@ -24,20 +24,16 @@
         {vsn, "0.1.0"},
         {modules, [
                 monitor_app,
-                monitor_pdu,
                 monitor_commander,
                 monitor_master,
                 monitor_probe_sup,
                 monitor_probe,
                 monitor_sup,
-                monitor_event_logger,
-                monitor_event_manager,
-                monitor_event_handler,
-                monitor_snmp_utils,
+                monitor_helper_snmp,
+                monitor_helper_checks,
                 bmonitor_inspector_property_set,
                 bmonitor_inspector_status_set,
                 bmonitor_logger_rrd,
-                bmonitor_logger_text,
                 bmonitor_probe_nagios,
                 bmonitor_probe_ncheck,
                 bmonitor_probe_snmp
@@ -46,13 +42,10 @@
                 monitor_sup,
                 'target-MasterChan',
                 monitor_commander,
-                monitor_event_manager,
-                monitor_event_logger,
                 monitor_probe_sup
             ]},
         {applications, 
-            [kernel, stdlib, mnesia, supercast, errd,
-                text_logger, snmpman, ini]
+            [kernel, stdlib, mnesia, supercast, errd, snmpman, ini]
         },
         {start_phases, []},
         {mod, {monitor_app, []}}

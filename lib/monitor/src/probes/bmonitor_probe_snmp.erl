@@ -68,8 +68,8 @@ init(Target, Probe) ->
             AuthProto   = Conf#snmp_probe_conf.authproto,
             PrivKey     = Conf#snmp_probe_conf.privkey,
             PrivProto   = Conf#snmp_probe_conf.privproto,
-            EngineId    = Conf#snmp_probe_conf.engine_id,
             Retries     = Conf#snmp_probe_conf.retries,
+            UsmUser     = Conf#snmp_probe_conf.usm_user,
             Timeout     = Probe#probe.timeout,
             SnmpArgs = [
                 {ip_address,    Ip},
@@ -83,10 +83,10 @@ init(Target, Probe) ->
                 {auth_proto,    AuthProto},
                 {priv_key,      PrivKey},
                 {priv_proto,    PrivProto},
-                {engine_id,     EngineId},
-                {retries,       Retries}
-
+                {retries,       Retries},
+                {security_name, UsmUser}
             ],
+            io:format("should register element~p ~p", [AgentName, SnmpArgs]),
             snmpman:register_element(AgentName, SnmpArgs)
     end,
 
@@ -111,7 +111,7 @@ exec(#state{method = get} = State) ->
 
     case Reply of
         {error, _Error} = R ->
-            error_logger:info_msg("snmp fail ~p ~p ~p", [?MODULE, ?LINE, R]),
+            error_logger:info_msg("snmp fail ~p ~p ~p for agent ~p", [?MODULE, ?LINE, R, Agent]),
             KV = [{"status",'CRITICAL'},{"sys_latency",MicroSec2 - MicroSec1}],
             OR = to_string(R),
             S  = 'CRITICAL',
@@ -144,13 +144,14 @@ exec(#state{method = {walk_table, Table, PropRet}} = State) ->
 
     case Reply of
         {error, _Error} = R ->
-            error_logger:info_msg("snmp fail ~p ~p ~p", [?MODULE, ?LINE, R]),
+            error_logger:info_msg("snmp fail ~p ~p ~p for agent ~p", [?MODULE, ?LINE, R, Agent]),
             KV = [{"status",'CRITICAL'},{"sys_latency",MicroSec2 - MicroSec1}],
             OR = to_string(R),
             S  = 'CRITICAL',
             PR = #probe_return{
                 status          = S,
                 original_reply  = OR,
+                reply_tuple     = ignore,
                 key_vals        = KV,
                 timestamp       = ReplyT},
             {ok, State, PR};

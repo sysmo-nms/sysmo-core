@@ -26,10 +26,10 @@
 % GEN_SERVER
 -export([
     init/1,
-    handle_call/3, 
-    handle_cast/2, 
-    handle_info/2, 
-    terminate/2, 
+    handle_call/3,
+    handle_cast/2,
+    handle_info/2,
+    terminate/2,
     code_change/3,
     dump/0
 ]).
@@ -42,32 +42,38 @@
 
 % API
 -export([
-    start_link/1,
+    start_link/0,
     probe_info/2,
-    probe_activity/3,
     create_target/1,
     create_probe/2,
-    id_used/1
+
+    generate_id/1
 ]).
 
 -record(state, {
     chans,
     perm,
-    probe_modules,
     db
 }).
+
+% generate id range
+% 1 000 000 possible values
+-define(RAND_RANGE, 1000000).
+% but must be a minimum of 100000
+-define(RAND_MIN,   99999).
 
 -define(DETS_TARGETS, 'targets_db').
 -define(MASTER_CHAN, 'target-MasterChan').
 
 
--spec start_link(ProbeModules::[tuple()]) -> {ok, pid()}.
-start_link(PMods) ->
-    gen_server:start_link({local, ?MASTER_CHAN}, ?MODULE, [PMods], []).
+-spec start_link() -> {ok, pid()}.
+start_link() ->
+    gen_server:start_link({local, ?MASTER_CHAN}, ?MODULE, [], []).
 
 dump() ->
     gen_server:call(?MASTER_CHAN, dump_dets).
 
+%% monitor_commander API
 -spec create_target(Target::#target{}) -> ok | {error, Info::string()}.
 create_target(Target) ->
     gen_server:call(?MASTER_CHAN, {create_target, Target}).
@@ -76,6 +82,19 @@ create_target(Target) ->
     -> ok | {error, string()}.
 create_probe(TargetId, Probe) ->
     gen_server:call(?MASTER_CHAN, {create_probe, TargetId, Probe}).
+
+-spec generate_id(Head::string()) -> atom().
+generate_id(Head) ->
+    Int         = random:uniform(?RAND_RANGE),
+    RandId      = Int + ?RAND_MIN,
+    RandIdL     = io_lib:format("~p", [RandId]),
+    RandIdS     = lists:flatten(RandIdL),
+    RandIdF     = lists:concat([Head, RandIdS]),
+    ToAtom      = erlang:list_to_atom(RandIdF),
+    case gen_server:call(?MASTER_CHAN, {id_used, ToAtom}) of
+        false->  {ok, ToAtom};
+        true  -> generate_id(Head)
+    end.
 
 %%----------------------------------------------------------------------------
 %% supercast_channel API
@@ -89,37 +108,23 @@ sync_request(PidName, CState) ->
 
 
 %%----------------------------------------------------------------------------
-%% monitor_probe_fsm API
+%% monitor_probe API
 %%----------------------------------------------------------------------------
 -spec probe_info(TargetId::atom(), Probe::#probe{}) -> ok.
 % @doc
-% Called by a monitor_probe_fsm when information must be forwarded
+% Called by a monitor_probe when information must be forwarded
 % to subscribers of 'target-MasterChan' concerning the probe.
 % @end
 probe_info(TargetId, Probe) ->
     gen_server:cast(?MASTER_CHAN, {probe_info, TargetId, Probe}).
 
--spec id_used(Id::atom()) -> true | false.
-% @doc
-% Used by monitor_commander:generate_id to check the presence of a randomly
-% created id.
-% @end
-id_used(Id) ->
-    gen_server:call(?MASTER_CHAN, {id_used, Id}).
-
--spec probe_activity(TargetId::atom(), Probe::#probe{}, Return::#probe_return{}) ->
-    ok.
-probe_activity(TargetId, Probe, Return) ->
-    gen_server:cast(?MASTER_CHAN, {probe_activity, TargetId, Probe, Return}).
-
-
 
 %%----------------------------------------------------------------------------
 %% GEN_SERVER CALLBACKS
 %%----------------------------------------------------------------------------
-init([ProbeModules]) ->
+init([]) ->
+    random:seed(erlang:now()),
     {ok, Table} = init_database(),
-    P   = extract_probes_info(ProbeModules),
     %{ok, Targets} = load_targets_conf_from_file(ConfFile),
     {ok, Targets} = load_targets_conf_from_dets(Table),
     {ok, #state{
@@ -128,7 +133,6 @@ init([ProbeModules]) ->
                 read    = ["admin", "wheel"],
                 write   = ["admin"]
             },
-            probe_modules = P,
             db          = Table
         }
     }.
@@ -190,7 +194,6 @@ handle_call({create_probe, TargetId, Probe}, _F, S) ->
                     Perm = NProbe#probe.permissions,
                     supercast_channel:emit(?MASTER_CHAN, {Perm, ProbeInfoPdu}),
                     dets:insert(Table, NTarget),
-                    monitor_event_manager:notify({create_probe, NTarget}),
                     {reply, ok, S};
                 _ ->
                     {reply, {error, "Key error"}, S}
@@ -200,7 +203,6 @@ handle_call({create_probe, TargetId, Probe}, _F, S) ->
 handle_call({create_target, Target}, _F, S) ->
     Target2 = load_target_conf(Target),
     emit_wide(Target2),
-    monitor_event_manager:notify({new_target, Target2}),
     dets:insert(S#state.db, Target2),
 
     Targets = S#state.chans,
@@ -212,7 +214,7 @@ handle_call(dump_dets, _F, S) ->
     TargetsConf = dets:foldr(fun(X, Acc) ->
         [X|Acc]
     end, [], Table),
-    ?LOG(TargetsConf),
+    io:format("dump_dets: ~p~n",[TargetsConf]),
     {reply, ok, S}.
 
 insert_probe(Probe, Target) ->
@@ -236,53 +238,36 @@ emit_wide(Target) ->
     end, PduProbes).
 
 
-
-
 %%----------------------------------------------------------------------------
 %% SUPERCAST_CHANNEL BEHAVIOUR CASTS
 %%----------------------------------------------------------------------------
 handle_cast({sync_request, CState}, State) ->
     Chans   = State#state.chans,
-    PMods   = State#state.probe_modules,
     % I want this client to receive my messages,
     supercast_channel:subscribe(?MASTER_CHAN, CState),
-    PMList  = [pdu(probeModInfo, Probe) || Probe <- PMods],
     % gen_dump_pdus will filter based on CState permissions
-    PDumps  = gen_dump_pdus(CState, Chans),
-    Pdus    = lists:append(PMList, PDumps),
+    {Pdus, Probes} = gen_dump_pdus(CState, Chans),
     supercast_channel:unicast(CState, Pdus),
+    lists:foreach(fun(X) ->
+        monitor_probe:triggered_return(X, CState)
+    end, Probes),
     {noreply, State};
 
 %%----------------------------------------------------------------------------
 %% SELF API CASTS
 %%----------------------------------------------------------------------------
 handle_cast({probe_info, TargetId, NewProbe}, S) ->
-    monitor_event_manager:notify({probe_info, TargetId, NewProbe}),
     Chans       = S#state.chans,
     Perms       = NewProbe#probe.permissions,
     Target      = lists:keyfind(TargetId, 2, Chans),
     {ok, NewTarg} = update_info_chan(Target, NewProbe),
     NewChans      = lists:keystore(TargetId, 2, Chans, NewTarg),
-    ?LOG('probe_info'),
     dets:insert(S#state.db, NewTarg),
 
     Pdu = pdu(probeInfo, {update, TargetId, NewProbe}),
     supercast_channel:emit(?MASTER_CHAN, {Perms, Pdu}),
     NS = S#state{chans = NewChans},
     {noreply, NS};
-
-handle_cast({probe_activity, TargetId, Probe, Return}, S) ->
-    monitor_event_manager:notify({probe_activity, TargetId, Probe, Return}),
-    Pdu = pdu(probeActivity, {
-        TargetId,
-        Probe#probe.name,
-        none,
-        Return#probe_return.original_reply,
-        Return#probe_return.status,
-        Return#probe_return.timestamp
-    }),
-    supercast_channel:emit(?MASTER_CHAN, {Probe#probe.permissions, Pdu}),
-    {noreply, S};
 
 handle_cast(_R, S) ->
     {noreply, S}.
@@ -327,7 +312,6 @@ update_info_chan(Target, Probe) ->
             Pdu         = pdu(targetInfo, NTarget),
             supercast_channel:emit(?MASTER_CHAN, {TargetPerm, Pdu})
     end,
-    %NChans  = lists:keystore(TargetId, 2, Chans, NTarget),
     {ok, NTarget}.
 
 probe_property_forward(TProperties, _, []) ->
@@ -351,9 +335,9 @@ load_targets_conf_from_dets(Table) ->
     load_targets_conf(TargetsConf, TargetsState).
 
 %load_targets_conf_from_file(TargetsConfFile) ->
-    %{ok, TargetsConf}  = file:consult(TargetsConfFile),
-    %TargetsState = [],
-    %load_targets_conf(TargetsConf, TargetsState).
+%    {ok, TargetsConf}  = file:consult(TargetsConfFile),
+%    TargetsState = [],
+%    load_targets_conf(TargetsConf, TargetsState).
 
 load_targets_conf([], TargetsState) ->
     {ok, TargetsState};
@@ -362,7 +346,6 @@ load_targets_conf([T|Targets], TargetsState) ->
     load_targets_conf(Targets, [T2|TargetsState]).
     
 load_target_conf(Target) ->
-    io:format("ninit probes?"),
     ok              = init_target_dir(Target),
     {ok, Target2}   = init_probes(Target),
     Target2.
@@ -390,14 +373,6 @@ init_target_dir(Target) ->
         Other ->
             {error, Other}
     end.
-
-extract_probes_info(ProbeModules) ->
-    lists:foldl(
-        fun(PMod, Acc) ->
-            {ok, Info} = PMod:info(),
-            [{PMod, Info} | Acc] 
-        end, 
-    [], ProbeModules).
 
 %%----------------------------------------------------------------------------
 %% PDU BUILD
@@ -462,28 +437,7 @@ pdu(probeInfo, {InfoType, TargetId,
                     gen_asn_probe_properties(Probe#probe.properties),
                     gen_asn_probe_active(Probe#probe.active),
                     InfoType}}}},
-    P;
-
-pdu(probeModInfo,  {ProbeName, ProbeInfo}) ->
-    {modMonitorPDU,
-        {fromServer,
-            {probeModInfo,
-                {'ProbeModuleInfo',
-                    atom_to_list(ProbeName),
-                    ProbeInfo }}}};
-
-pdu(probeActivity, {TargetId, ProbeName, PState, Msg, ReturnStatus, Time}) ->
-    {modMonitorPDU,
-        {fromServer,
-            {probeActivity,
-                {'ProbeActivity',
-                    atom_to_list(TargetId),
-                    atom_to_list(ProbeName),
-                    Time,
-                    atom_to_list(PState),
-                    atom_to_list(ReturnStatus),
-                    Msg}}}}.
-
+    P.
 
 gen_asn_probe_active(true)  -> 1;
 gen_asn_probe_active(false) -> 0.
@@ -517,7 +471,7 @@ gen_logger_pdu({logger, bmonitor_logger_rrd2, Cfg}) ->
     Indexes = [I || {I,_} <- proplists:get_value(row_index_to_rrd_file, Cfg)],
     {loggerRrd2, 
         {'LoggerRrd2',
-            atom_to_list(bmonitor_logger_rrd),
+            atom_to_list(bmonitor_logger_rrd2),
             atom_to_list(Type),
             RCreate,
             RUpdate,
@@ -525,36 +479,12 @@ gen_logger_pdu({logger, bmonitor_logger_rrd2, Cfg}) ->
             Indexes
         }
     };
-gen_logger_pdu({logger, bmonitor_logger_rrd, Cfg}) ->
-    {loggerRrd, 
-        {'LoggerRrd',
-            atom_to_list(bmonitor_logger_rrd),
-            gen_rrd_configs(Cfg)
-        }
-    };
+
 gen_logger_pdu({logger, bmonitor_logger_text, Cfg}) ->
     {loggerText, 
         {'LoggerText', 
             atom_to_list(bmonitor_logger_text), 
             to_string(Cfg)}}.
-
-gen_rrd_configs(Cfg) ->
-    gen_rrd_configs(Cfg, []).
-gen_rrd_configs([], Ret) ->
-    Ret;
-gen_rrd_configs([H|T], Ret) ->
-    Conf = {'RrdConfig',
-        H#rrd_config.file,
-        H#rrd_config.create,
-        H#rrd_config.update,
-        H#rrd_config.graphs,
-        [{'Bind', Repl, Macro} || {Repl, Macro} <- H#rrd_config.binds]
-    },
-    gen_rrd_configs(T, [Conf | Ret]).
-
-%gen_asn_probe_properties(Properties) ->
-    %[{'Property', Key, Value} 
-        %|| {Key,Value} <- Properties].
 
 gen_dump_pdus(CState, Targets) ->
     FTargets    = supercast:filter(CState, [{Perm, Target} ||
@@ -562,16 +492,22 @@ gen_dump_pdus(CState, Targets) ->
     TargetsPDUs = [pdu(targetInfo, Target) || Target <- FTargets],
     ProbesDefs  = [{TId, Probes} ||
         #target{id = TId, probes = Probes} <- FTargets],
-    gen_dump_pdus(CState, TargetsPDUs, [], ProbesDefs).
-gen_dump_pdus(_, TargetsPDUs, ProbesPDUs, []) ->
-    lists:append(TargetsPDUs, ProbesPDUs);
-gen_dump_pdus(CState, TargetsPDUs, ProbesPDUs, [{TId, Probes}|T]) ->
+    gen_dump_pdus(CState, TargetsPDUs, [], [], ProbesDefs).
+gen_dump_pdus(_, TargetsPDUs, ProbesPDUs, ProbesFiltered, []) ->
+    {lists:append(TargetsPDUs, ProbesPDUs), ProbesFiltered};
+gen_dump_pdus(CState, TargetsPDUs, ProbesPDUs, PFList, [{TId, Probes}|T]) ->
     ProbesThings  = [{Perm, Probe} || 
         #probe{permissions = Perm} = Probe <- Probes],
     AllowedThings = supercast:filter(CState, ProbesThings),
+    PFListN = [PName || #probe{name = PName} <- Probes],
     Result = [pdu(probeInfo, {create, TId, Probe}) ||
         Probe <- AllowedThings],
-    gen_dump_pdus(CState, TargetsPDUs, lists:append(ProbesPDUs, Result), T).
+    gen_dump_pdus(
+        CState,
+        TargetsPDUs,
+        lists:append(ProbesPDUs, Result),
+        lists:append(PFListN,PFList),
+        T).
 
 to_string(Term) ->
     lists:flatten(io_lib:format("~p", [Term])).

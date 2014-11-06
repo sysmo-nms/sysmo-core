@@ -18,8 +18,8 @@
                 monitor,
                 snmpman,
                 errd,
-                text_logger,
-                supercast
+                supercast,
+                nchecks
             ]
         },
         {applications, 
