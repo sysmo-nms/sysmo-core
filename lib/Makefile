@@ -24,7 +24,8 @@ errd:
 	@git clone git@github.com:ssbx/errd.git
 
 nchecks:
-	@git clone -b java_version git@github.com:ssbx/nchecks.git
+	@git clone git@github.com:ssbx/nchecks.git
+	@cd nchecks; git checkout java_version
 
 # yaws special begin
 $(REQUIRE_YAWS): yaws
