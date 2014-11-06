@@ -43,3 +43,5 @@ lib/nchecks
 
 var/yaws/docroot/*
 var/yaws/log/*
+!var/yaws/docroot/INFO
+!var/yaws/log/INFO
