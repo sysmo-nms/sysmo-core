@@ -23,3 +23,6 @@ clean:
 	rm -f ebin/*.beam
 	rm -f src/ini_parser.erl
 	rm -f src/ini_lexer.erl
+
+start:
+	$(ERL) -pa ebin

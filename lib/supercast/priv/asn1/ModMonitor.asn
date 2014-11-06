@@ -235,7 +235,6 @@ SnmpElementCreateQuery ::= SEQUENCE {
     v3AuthKey     PrintableString,
     v3PrivAlgo    PrintableString,
     v3PrivKey     PrintableString,
-    engineId      PrintableString,
     ifSelection   SEQUENCE OF INTEGER
 }
 

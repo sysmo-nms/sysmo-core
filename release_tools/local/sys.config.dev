@@ -60,8 +60,9 @@
     },
     {monitor,
         [
+            {master_chan_read_perm, ["admin"]},
             {targets_data_dir,      "var/monitor"},
-            {master_chan_read_perm, ["admin"]}
+            {rrd_templates_dir,     "cfg/rrds"}
         ]
     },
     {kernel,

@@ -68,7 +68,6 @@ init(Target, Probe) ->
             AuthProto   = Conf#snmp_probe_conf.authproto,
             PrivKey     = Conf#snmp_probe_conf.privkey,
             PrivProto   = Conf#snmp_probe_conf.privproto,
-            EngineId    = Conf#snmp_probe_conf.engine_id,
             Retries     = Conf#snmp_probe_conf.retries,
             UsmUser     = Conf#snmp_probe_conf.usm_user,
             Timeout     = Probe#probe.timeout,
@@ -84,10 +83,8 @@ init(Target, Probe) ->
                 {auth_proto,    AuthProto},
                 {priv_key,      PrivKey},
                 {priv_proto,    PrivProto},
-                {engine_id,     EngineId},
                 {retries,       Retries},
                 {security_name, UsmUser}
-
             ],
             io:format("should register element~p ~p", [AgentName, SnmpArgs]),
             snmpman:register_element(AgentName, SnmpArgs)

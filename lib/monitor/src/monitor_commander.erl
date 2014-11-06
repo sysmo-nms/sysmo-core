@@ -131,13 +131,6 @@ handle_cast({{createTarget,
     send(CState, ReplyPdu),
     {noreply, S};
 
-% handle_cast({{createTarget, Command}, CState}, S) ->
-%     TplDir          = S#state.tpl_dir,
-%     VarDir          = S#state.data_dir,
-%     {ok, ReplyPdu}  = handle_create_target(Command, TplDir, VarDir),
-%     send(CState, ReplyPdu),
-%     {noreply, S};
-
 handle_cast({{query, {_, QueryId, "getChecksInfo"}}, CState}, S) ->
     DbRef = S#state.check_db_ref,
     Infos = dets:foldr(fun(X, Acc) ->
@@ -157,37 +150,14 @@ handle_cast({{query, {_, QueryId, Other}}, CState}, S) ->
     ),
     {noreply, S};
 
-% handle_cast({{simulateCheck, {_, QueryId, Check, Args}}, CState}, S) ->
-%     Path = filename:join(S#state.check_dir, Check),
-% 
-%     % 1 lauch command
-%     % 2 fill #state.replies_waiting
-%     % 3 wait for reply somewere
-%  
-%     case filename:pathtype(Path) of
-%         relative ->
-%             % do not allow relative paths
-%             error_logger:info_msg(
-%             "~p ~p: warning ~p is not a relative path. siulateCheck from ~p~n",
-%             [?MODULE, ?LINE, Path, CState]),
-%             % TODO reply error to client and close connexion to mitigate DOS
-%             {noreply, S};
-%         _ ->
-%             PortArgs = [
-%                 lists:flatten(io_lib:format("--~s=~s", [Flag, Val]))
-%             || {_, Flag, Val} <- Args],
-%             spawn(?MODULE, spawn_exec, [{QueryId, CState}, {Path, PortArgs}]),
-%             {noreply, S}
-%     end;
-
 handle_cast({{extendedQueryMsg, 
         {_, QueryId, {snmpElementInfoQuery, Query}}}, CState}, S) ->
-    handle_snmpElementInfoQuery(QueryId, CState, Query),
+    command_net_element_wizard:handle_snmpElementInfoQuery(QueryId, CState, Query),
     {noreply, S};
 
 handle_cast({{extendedQueryMsg, 
         {_, QueryId, {snmpElementCreateQuery, Query}}}, CState}, S) ->
-    handle_snmpElementCreateQuery(QueryId, CState, Query, S),
+    command_net_element_wizard:handle_snmpElementCreateQuery(QueryId, CState, Query, S#state.data_dir),
     {noreply, S};
 
 
@@ -308,158 +278,6 @@ handle_create_target(Command, VarDir) ->
     {ok, pdu(monitorReply, {QueryId, true, atom_to_list(TargetId)})}.
 
 
-handle_snmpElementCreateQuery(_QueryId, _CState, Query, State) ->
-    {ok, Target} = helper_monitor_snmp:generate_standard_snmp_target(Query, State#state.data_dir),
-    monitor_master:create_target(Target).
-
-handle_snmpElementInfoQuery(QueryId, CState, {
-        _,
-        {_, IpVer, Ip},
-        Port,
-        Timeout,
-        SnmpVer,
-        _Community,
-        _SecLevel,
-        _SecName,
-        _AuthProto,
-        _AuthKey,
-        _PrivProto,
-        _PrivKey} = Args) ->
-    
-    BeginPdu = pdu(extendedReplyMsgString, {QueryId, true, false, "begin"}),
-    send(CState, BeginPdu),
-    case SnmpVer of
-        "3"  ->
-            case snmpman:discovery(Ip, IpVer, Port, Timeout) of
-                {ok, EngineId} ->
-                    Pdu = pdu(extendedReplyMsgString, {QueryId, true, false, EngineId}),
-                    send(CState, Pdu),
-                    case helper_monitor_snmp:walk_system(Args, EngineId) of
-                        {ok, System} ->
-                            Pdu2 = pdu(extendedReplyMsgWalkSystem, {QueryId, true, false, System}),
-                            send(CState, Pdu2),
-                            case helper_monitor_snmp:walk_ifTable(Args, EngineId) of
-                                {ok, Val} ->
-                                    Pdu3 = pdu(extendedReplyMsgWalkIfTable, {QueryId, true, true, Val}),
-                                    send(CState, Pdu3);
-                                {error, Reason} ->
-                                    Pdu3 = pdu(extendedReplyMsgString, {QueryId, false, true, Reason}),
-                                    send(CState, Pdu3)
-                            end;
-                        {error, Reason} ->
-                            Pdu2 = pdu(extendedReplyMsgString, {QueryId, false, true, Reason}),
-                            send(CState, Pdu2)
-                        end;
-                {error, Reason} ->
-                    Pdu = pdu(extendedReplyMsgString, {QueryId, false, true, Reason}),
-                    send(CState, Pdu)
-            end;
-        "2c" -> 
-            EngineId = "AAAAAAAAAAAA",
-            Pdu = pdu(extendedReplyMsgString, {QueryId, true, false, EngineId}),
-            send(CState, Pdu),
-            case helper_monitor_snmp:walk_system(Args, EngineId) of
-                {ok, System} ->
-                    Pdu2 = pdu(extendedReplyMsgWalkSystem, {QueryId, true, false, System}),
-                    send(CState, Pdu2),
-                    case helper_monitor_snmp:walk_ifTable(Args, EngineId) of
-                        {ok, Val} ->
-                            Pdu3 = pdu(extendedReplyMsgWalkIfTable, {QueryId, true, true, Val}),
-                            send(CState, Pdu3);
-                        {error, Reason} ->
-                            Pdu3 = pdu(extendedReplyMsgString, {QueryId, false, true, Reason}),
-                            send(CState, Pdu3)
-                    end;
-                {error, Reason} ->
-                    Pdu2 = pdu(extendedReplyMsgString, {QueryId, false, true, Reason}),
-                    send(CState, Pdu2)
-            end;
-
-        "1"  ->
-            EngineId = "AAAAAAAAAAAA",
-            Pdu = pdu(extendedReplyMsgString, {QueryId, true, false, EngineId}),
-            send(CState, Pdu),
-            case helper_monitor_snmp:walk_system(Args, EngineId) of
-                {ok, System} ->
-                    Pdu2 = pdu(extendedReplyMsgWalkSystem, {QueryId, true, false, System}),
-                    send(CState, Pdu2),
-                    case helper_monitor_snmp:walk_ifTable(Args, EngineId) of
-                        {ok, Val} ->
-                            Pdu3 = pdu(extendedReplyMsgWalkIfTable, {QueryId, true, true, Val}),
-                            send(CState, Pdu3);
-                        {error, Reason} ->
-                            Pdu3 = pdu(extendedReplyMsgString, {QueryId, false, true, Reason}),
-                            send(CState, Pdu3)
-                    end;
-                {error, Reason} ->
-                    Pdu2 = pdu(extendedReplyMsgString, {QueryId, false, true, Reason}),
-                    send(CState, Pdu2)
-            end;
-
-        _    -> 
-            Pdu = pdu(extendedReplyMsgString, {QueryId, false, true, "Unknown SNMP version"}),
-            send(CState, Pdu)
-    end.
-
-
-
-% handle_create_target(Command, TplDir, VarDir) ->
-%     {'CreateTarget',
-%         IpAdd,
-%         PermConf,
-%         _,
-%         _,
-%         _,
-%         Template,
-%         QueryId
-%     } = Command,
-%     {ok, TargTemp}      = get_template(TplDir, Template),
-%     {ok, TargetId}      = generate_id("target-"),
-%     {ok, PermRecord}    = generate_perm_conf(PermConf),
-%     {ok, TargetDir}     = generate_target_dir(VarDir, TargetId),
-%     {ok, Prop}          = generate_properties(Command),
-% 
-%     Target1 = TargTemp#target{
-%         id          = TargetId,
-%         ip          = IpAdd,
-%         properties  = Prop,
-%         global_perm = PermRecord,
-%         directory   = TargetDir
-%     },
-%     Probes  = [generate_probe(PFun, Target1) || PFun <- Target1#target.probes],
-%     Target2 = Target1#target{probes = Probes},
-% 
-%     case lists:keyfind(error, 1, Probes) of
-%         {error, Reason} ->
-%             RString = lists:flatten(io_lib:format("~p",[Reason])),
-%             {ok, pdu(monitorReply, {QueryId, false, RString})};
-%         false ->
-%             monitor_master:create_target(Target2),
-%             {ok, pdu(monitorReply, {QueryId, true, "Success"})}
-%     end.
-
-% get_template(TplDir, Template) ->
-%     File                = filename:flatten([Template, ".tpl.erl"]),
-%     TplFile             = filename:join([TplDir, File]),
-%     {ok, [TargTemp]}    = file:consult(TplFile),
-%     {ok, TargTemp}.
-% 
-   
-% generate_probe(PFun, Target) ->
-%     {function, Mod, Fun}    = PFun,
-%     {ok, ProbeId}           = generate_id("probe-"),
-% 
-%     case erlang:apply(Mod, Fun, [ProbeId, Target]) of
-%         {ok, PRec}  -> PRec;
-%         Other       -> {error, Other}
-%     end.
-
-
-
-
-
-
-
 %%----------------------------------------------------------------------------
 %%----------------------------------------------------------------------------
 %% UTILS
@@ -524,62 +342,13 @@ get_port_reply(Data) ->
 send(#client_state{module = CMod} = CState, Msg) ->
     CMod:send(CState, Msg).
 
-build_ifTable([], Acc) ->
-    lists:reverse(Acc);
-build_ifTable([H|T], Acc) ->
-    {table_row, IfIndex, IfDescr, IfType, IfMtu, IfSpeed, IfPhysAddress,
-        IfAdminStatus, IfOperStatus, IfLastChange} = H,
-    TableRow = {'SnmpInterfaceInfo', IfIndex, IfDescr, IfType, IfMtu,
-        IfSpeed, IfPhysAddress, IfAdminStatus, IfOperStatus, IfLastChange},
-    build_ifTable(T, [TableRow|Acc]).
-
-
-
 
 %%----------------------------------------------------------------------------
 %%----------------------------------------------------------------------------
 %% PDUs
 %%----------------------------------------------------------------------------
 %%----------------------------------------------------------------------------
-pdu(extendedReplyMsgWalkIfTable, {QueryId, Status, Last, Info}) ->
-    {table, TableRows} = Info,
-    IfTable = build_ifTable(TableRows, []),
-    pdu(extendedReplyMsg, {QueryId, Status, Last, {snmpInterfacesInfo, IfTable}});
 
-pdu(extendedReplyMsgWalkSystem, {QueryId, Status, Last, Info}) ->
-    {varbinds, Varbinds} = Info,
-    {_,_,_,SysDescr}        = lists:keyfind(?SYS_DESCR,         2, Varbinds),
-    {_,_,_,SysObjectId}     = lists:keyfind(?SYS_OBJECTID,      2, Varbinds),
-    {_,_,_,SysUpTime}       = lists:keyfind(?SYS_UPTIME,        2, Varbinds),
-    {_,_,_,SysContact}      = lists:keyfind(?SYS_CONTACT,       2, Varbinds),
-    {_,_,_,SysName}         = lists:keyfind(?SYS_NAME,          2, Varbinds),
-    {_,_,_,SysLocation}     = lists:keyfind(?SYS_LOCATION,      2, Varbinds),
-    {_,_,_,SysServices}     = lists:keyfind(?SYS_SERVICES,      2, Varbinds),
-    {_,_,_,SysORLastChange} = lists:keyfind(?SYS_ORLAST_CHANGE, 2, Varbinds),
-
-    InfoTuple = {snmpSystemInfo, {'SnmpSystemInfo', 
-                    SysDescr, SysObjectId, SysUpTime, SysContact,
-                    SysName, SysLocation, SysServices, SysORLastChange}},
-    pdu(extendedReplyMsg, {QueryId, Status, Last, InfoTuple});
-
-pdu(extendedReplyMsgString, {QueryId, Status, Last, InfoAtom}) when is_atom(InfoAtom) ->
-    Info = atom_to_list(InfoAtom),
-    pdu(extendedReplyMsg, {QueryId, Status, Last, {string, Info}});
-
-pdu(extendedReplyMsgString, {QueryId, Status, Last, Info}) ->
-    pdu(extendedReplyMsg, {QueryId, Status, Last, {string, Info}});
-
-pdu(extendedReplyMsg, {QueryId, Status, Last, Info}) ->
-    {modMonitorPDU,
-        {fromServer,
-            {extendedReplyMsg,
-                {'ExtendedReplyMsg',
-                    QueryId,
-                    Status,
-                    Last,
-                    Info
-                }}}};
- 
 pdu(getCheckReply, {QueryId, Status, Infos}) ->
     {modMonitorPDU,
         {fromServer,
