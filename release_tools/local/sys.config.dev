@@ -127,7 +127,9 @@
     },
     {errd,
         [
-            {rrdtool,           "/opt/rrdtool-1.4.9/bin/rrdtool"}
+            {rrdtool,   "/opt/rrdtool-1.4.9/bin/rrdtool"},
+            {high_prio, normal},
+            {low_prio,  low}
         ]
     },
     {yaws,

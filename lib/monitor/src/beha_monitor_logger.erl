@@ -47,7 +47,7 @@
 % or {ok, State, Pdu} when Pdu will be sent to registered clients.
 % @end
 
--callback dump(State::any()) -> 
+-callback dump(State::any(), CSate::tuple()) -> 
     {ok,        Pdu::tuple(), State::any()}   | 
     {ignore,    State::any()}.
 % @doc

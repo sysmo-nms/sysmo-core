@@ -30,7 +30,7 @@
 -export([
     log_init/3,
     log/2,
-    dump/1
+    dump/2
 ]).
 
 -record(state, {
@@ -59,7 +59,7 @@ log(State, ProbeReturn) ->
     {ok, State}.
 
 
-dump(State) ->
+dump(State, _Caller) ->
     Rrds        = State#state.rrds,
     TargetId    = State#state.target_id,
     ProbeId     = State#state.probe_name,

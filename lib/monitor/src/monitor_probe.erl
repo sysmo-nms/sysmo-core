@@ -158,7 +158,7 @@ handle_event({sync_request, CState}, SName, SData) ->
     Probe   = SData#state.probe,
     Name    = Probe#probe.name,
     LStates = SData#state.loggers_state,
-    {ok, Pdus, NewLStates} = log_dump(LStates),
+    {ok, Pdus, NewLStates} = log_dump(LStates, CState),
     ok      = supercast_channel:unicast(CState, Pdus),
     ok      = supercast_channel:subscribe(Name, CState),
     SData1  = SData#state{loggers_state = NewLStates},
@@ -251,19 +251,19 @@ log_return([Logger|LoggersState],  ProbeReturn, LoggersStateAcc) ->
     LoggersStateAcc2 = lists:keystore(Mod,1,LoggersStateAcc, {Mod, NewState}),
     log_return(LoggersState, ProbeReturn, LoggersStateAcc2).
 
-log_dump(LoggersState) ->
+log_dump(LoggersState, CState) ->
     PduAcc      = [],
     NewLogState = [],
-    log_dump(LoggersState, PduAcc, NewLogState).
-log_dump([], Pdus, LogState) ->
+    log_dump(LoggersState, PduAcc, NewLogState, CState).
+log_dump([], Pdus, LogState, _) ->
     {ok, Pdus, LogState};
-log_dump([LoggerState|LState], PduAcc, NLogState) ->
+log_dump([LoggerState|LState], PduAcc, NLogState, CState) ->
     {Mod, State}        = LoggerState,
-    case Mod:dump(State) of
+    case Mod:dump(State, CState) of
         {ok, Pdu, State2} ->
-            log_dump(LState, [Pdu|PduAcc], [{Mod, State2}|NLogState]);
+            log_dump(LState, [Pdu|PduAcc], [{Mod, State2}|NLogState], CState);
         {ignore, State2} ->
-            log_dump(LState, PduAcc,       [{Mod, State2}|NLogState])
+            log_dump(LState, PduAcc,       [{Mod, State2}|NLogState], CState)
     end.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

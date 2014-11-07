@@ -30,7 +30,7 @@
 -export([
     log_init/3,
     log/2,
-    dump/1
+    dump/2
 ]).
 
 -record(state, {
@@ -158,14 +158,15 @@ rrd_update_build_tpl([I|T], Row, Acc) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% DUMP (rrddump) %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-dump(#state{row_index_to_file = RI, dump_dir = DDir} = State) ->
-    Dir = lists:concat(["tmp-", generate_tmp_dir()]),
-    Dir2 = filename:join(DDir, Dir),
-    ok = file:make_dir(Dir2),
-    IndexToFile = dump_file(RI, Dir2),
-    Pdu         = build_dump(State, IndexToFile, Dir),
-    {ok, {pdu, Pdu}, State}.
-    %{ignore, State}.
+dump(#state{row_index_to_file = RI, dump_dir = DDir} = State, Caller) ->
+    Dir     = lists:concat(["tmp-", generate_tmp_dir()]),
+    Path    = filename:join(DDir, Dir),
+
+    % BEGIN delayed dump
+    dump_delayed(Path, Dir, RI, State, Caller),
+    % END delayed dump
+
+    {ignore, State}.
 
 build_dump(State, FilePaths, Dir) ->
     TId         = atom_to_list(State#state.target_id),
@@ -185,14 +186,34 @@ build_dump(State, FilePaths, Dir) ->
         }
     }.
 
-dump_file(F, InDir) ->
-    dump_file(F,InDir, []).
-dump_file([], _, Acc) -> Acc;
-dump_file([ {I,F} | T], InDir, Acc) ->
-    XmlFile = lists:concat([I, ".xml"]),
-    XmlFilePath = filename:join(InDir, XmlFile),
-    errd:dump(F, XmlFilePath),
-    dump_file(T, InDir, [{I,XmlFile}|Acc]).
+dump_delayed(Path, Dir, RowIndex, State, Caller) ->
+    ok = file:make_dir(Path),
+    IndexToFile = dump_delayed_fill_dir(RowIndex, Path),
+    Pdu = build_dump(State, IndexToFile, Dir),
+    Fun = fun() ->
+        supercast_channel:unicast(Caller, [Pdu])
+    end,
+    errd:dump_delayed(Path, Fun).
+
+
+dump_delayed_fill_dir(RIndex, DirEx) ->
+    dump_delayed_fill_dir(RIndex, DirEx, []).
+dump_delayed_fill_dir([], _, Acc) -> Acc;
+dump_delayed_fill_dir([{I,F} | T], DirEx, Acc) ->
+    % F is /var/somthing/jojo1.rrd
+
+    % BaseName will be jojo1.rrd
+    BaseName    = filename:basename(F),
+
+    % DestFile will be /dest/dir/jojo1.rrd
+    DestFile    = filename:join(DirEx, BaseName),
+
+    % XmlFile will be jojo1.rrd.xml
+    XmlFile     = lists:concat([BaseName, ".xml"]),
+
+    file:copy(F, DestFile),
+    dump_delayed_fill_dir(T, DirEx, [{I,XmlFile}|Acc]).
+
 
 generate_tmp_dir() ->
     {_, Sec, Micro} = os:timestamp(),
