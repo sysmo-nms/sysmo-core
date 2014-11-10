@@ -119,7 +119,7 @@
             {java_node, 
                 [
                     {java_com,
-"/usr/lib64/java/bin/java -cp lib/snmpman/java_bin/:lib/snmpman/java_lib/OtpErlang.jar:lib/snmpman/java_lib/snmp4j-2.3.1.jar: io.noctopus.snmpm.Snmpman var/engineID.conf >> var/log/snmpman4j.log 2>&1 &"
+"/usr/lib64/java/bin/java -cp lib/snmpman/java_bin/:lib/snmpman/java_lib/OtpErlang.jar:lib/snmpman/java_lib/snmp4j-2.3.1.jar: -Djava.security.egd=file:/dev/./urandom io.noctopus.snmpm.Snmpman var/engineID.conf >> var/log/snmpman4j.log 2>&1 &"
                     }
                 ]
             }
@@ -128,8 +128,10 @@
     {errd,
         [
             {rrdtool,   "/opt/rrdtool-1.4.9/bin/rrdtool"},
-            {high_prio, normal},
-            {low_prio,  low}
+            {high_prio,     normal},
+            {high_timeout,  5000},
+            {low_prio,  low},
+            {low_timeout,   25000}
         ]
     },
     {yaws,
