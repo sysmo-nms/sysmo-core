@@ -15,6 +15,8 @@ else
     export ERLC    = /opt/erlang_otp_17.1/bin/erlc -Werror
     export ERLCY   = /opt/erlang_otp_17.1/bin/erlc
     export ASNC    = /opt/erlang_otp_17.1/bin/erlc -Werror -bber
+    export JAVA    = /opt/jdk1.8.0_25/bin/java
+    export JAVAC   = /opt/jdk1.8.0_25/bin/javac
 endif
 
 export MAKE        = /usr/bin/make
