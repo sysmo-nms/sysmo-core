@@ -63,25 +63,24 @@
 -define(RAND_MIN,   99999).
 
 -define(DETS_TARGETS, 'targets_db').
--define(MASTER_CHAN, 'target-MasterChan').
 
 
 -spec start_link() -> {ok, pid()}.
 start_link() ->
-    gen_server:start_link({local, ?MASTER_CHAN}, ?MODULE, [], []).
+    gen_server:start_link({local, ?MASTER_CHANNEL}, ?MODULE, [], []).
 
 dump() ->
-    gen_server:call(?MASTER_CHAN, dump_dets).
+    gen_server:call(?MASTER_CHANNEL, dump_dets).
 
 %% monitor_commander API
 -spec create_target(Target::#target{}) -> ok | {error, Info::string()}.
 create_target(Target) ->
-    gen_server:call(?MASTER_CHAN, {create_target, Target}).
+    gen_server:call(?MASTER_CHANNEL, {create_target, Target}).
 
 -spec create_probe(TargetId::atom(), Probe::#probe{}) 
     -> ok | {error, string()}.
 create_probe(TargetId, Probe) ->
-    gen_server:call(?MASTER_CHAN, {create_probe, TargetId, Probe}).
+    gen_server:call(?MASTER_CHANNEL, {create_probe, TargetId, Probe}).
 
 -spec generate_id(Head::string()) -> atom().
 generate_id(Head) ->
@@ -91,7 +90,7 @@ generate_id(Head) ->
     RandIdS     = lists:flatten(RandIdL),
     RandIdF     = lists:concat([Head, RandIdS]),
     ToAtom      = erlang:list_to_atom(RandIdF),
-    case gen_server:call(?MASTER_CHAN, {id_used, ToAtom}) of
+    case gen_server:call(?MASTER_CHANNEL, {id_used, ToAtom}) of
         false->  {ok, ToAtom};
         true  -> generate_id(Head)
     end.
@@ -113,10 +112,10 @@ sync_request(PidName, CState) ->
 -spec probe_info(TargetId::atom(), Probe::#probe{}) -> ok.
 % @doc
 % Called by a monitor_probe when information must be forwarded
-% to subscribers of 'target-MasterChan' concerning the probe.
+% to subscribers of ?MASTER_CHANNEL concerning the probe.
 % @end
 probe_info(TargetId, Probe) ->
-    gen_server:cast(?MASTER_CHAN, {probe_info, TargetId, Probe}).
+    gen_server:cast(?MASTER_CHANNEL, {probe_info, TargetId, Probe}).
 
 
 %%----------------------------------------------------------------------------
@@ -124,14 +123,16 @@ probe_info(TargetId, Probe) ->
 %%----------------------------------------------------------------------------
 init([]) ->
     random:seed(erlang:now()),
+    {ok, Read}  = application:get_env(monitor, master_chan_read_perm),
+    {ok, Write} = application:get_env(monitor, master_chan_write_perm),
     {ok, Table} = init_database(),
     %{ok, Targets} = load_targets_conf_from_file(ConfFile),
     {ok, Targets} = load_targets_conf_from_dets(Table),
     {ok, #state{
             chans = Targets,
             perm = #perm_conf{
-                read    = ["admin", "wheel"],
-                write   = ["admin"]
+                read    = Read,
+                write   = Write
             },
             db          = Table
         }
@@ -192,7 +193,7 @@ handle_call({create_probe, TargetId, Probe}, _F, S) ->
                     {NProbe, NTarget} = insert_probe(Probe, TargetRecord),
                     ProbeInfoPdu = pdu(probeInfo, {create, TargetAtom, NProbe}),
                     Perm = NProbe#probe.permissions,
-                    supercast_channel:emit(?MASTER_CHAN, {Perm, ProbeInfoPdu}),
+                    supercast_channel:emit(?MASTER_CHANNEL, {Perm, ProbeInfoPdu}),
                     dets:insert(Table, NTarget),
                     {reply, ok, S};
                 _ ->
@@ -227,14 +228,14 @@ insert_probe(Probe, Target) ->
 emit_wide(Target) ->
     Perm        = Target#target.global_perm,
     PduTarget   = pdu(targetInfo, Target),
-    supercast_channel:emit(?MASTER_CHAN, {Perm, PduTarget}),
+    supercast_channel:emit(?MASTER_CHANNEL, {Perm, PduTarget}),
 
     TId         = Target#target.id,
     Probes      = Target#target.probes,
     PduProbes   = [{ProbePerm, pdu(probeInfo, {create, TId, Probe})} || 
         #probe{permissions = ProbePerm} = Probe <- Probes],
     lists:foreach(fun(X) ->
-        supercast_channel:emit(?MASTER_CHAN, X)
+        supercast_channel:emit(?MASTER_CHANNEL, X)
     end, PduProbes).
 
 
@@ -244,7 +245,7 @@ emit_wide(Target) ->
 handle_cast({sync_request, CState}, State) ->
     Chans   = State#state.chans,
     % I want this client to receive my messages,
-    supercast_channel:subscribe(?MASTER_CHAN, CState),
+    supercast_channel:subscribe(?MASTER_CHANNEL, CState),
     % gen_dump_pdus will filter based on CState permissions
     {Pdus, Probes} = gen_dump_pdus(CState, Chans),
     supercast_channel:unicast(CState, Pdus),
@@ -265,7 +266,7 @@ handle_cast({probe_info, TargetId, NewProbe}, S) ->
     dets:insert(S#state.db, NewTarg),
 
     Pdu = pdu(probeInfo, {update, TargetId, NewProbe}),
-    supercast_channel:emit(?MASTER_CHAN, {Perms, Pdu}),
+    supercast_channel:emit(?MASTER_CHANNEL, {Perms, Pdu}),
     NS = S#state{chans = NewChans},
     {noreply, NS};
 
@@ -310,7 +311,7 @@ update_info_chan(Target, Probe) ->
             % update target properties state to the client
             TargetPerm  = NTarget#target.global_perm,
             Pdu         = pdu(targetInfo, NTarget),
-            supercast_channel:emit(?MASTER_CHAN, {TargetPerm, Pdu})
+            supercast_channel:emit(?MASTER_CHANNEL, {TargetPerm, Pdu})
     end,
     {ok, NTarget}.
 

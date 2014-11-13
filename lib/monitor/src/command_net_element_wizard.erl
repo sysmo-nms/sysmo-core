@@ -36,22 +36,22 @@ handle_snmpElementCreateQuery(_QueryId, _CState, Query, DataDir) ->
     monitor_master:create_target(Target).
 
 handle_snmpElementInfoQuery(QueryId, CState, Args) ->
-    BeginPdu = pdu(extendedReplyMsgString, {QueryId, true, false, "begin"}),
+    BeginPdu = pdu(extendedQueryFromServerString, {QueryId, true, false, "begin"}),
     send(CState, BeginPdu),
     case walk_system(Args) of
         {ok, System} ->
-            Pdu2 = pdu(extendedReplyMsgWalkSystem, {QueryId, true, false, System}),
+            Pdu2 = pdu(extendedQueryFromServerWalkSystem, {QueryId, true, false, System}),
             send(CState, Pdu2),
             case walk_ifTable(Args) of
                 {ok, Val} ->
-                    Pdu3 = pdu(extendedReplyMsgWalkIfTable, {QueryId, true, true, Val}),
+                    Pdu3 = pdu(extendedQueryFromServerWalkIfTable, {QueryId, true, true, Val}),
                     send(CState, Pdu3);
                 {error, Reason} ->
-                    Pdu3 = pdu(extendedReplyMsgString, {QueryId, false, true, Reason}),
+                    Pdu3 = pdu(extendedQueryFromServerString, {QueryId, false, true, Reason}),
                     send(CState, Pdu3)
             end;
         {error, Reason} ->
-            Pdu2 = pdu(extendedReplyMsgString, {QueryId, false, true, Reason}),
+            Pdu2 = pdu(extendedQueryFromServerString, {QueryId, false, true, Reason}),
             send(CState, Pdu2)
     end.
 
@@ -115,10 +115,10 @@ generate_standard_snmp_target(Args, DataDir) ->
                 #probe{
                     name = P1,
                     description = "SNMP:System informations",
-                    info = "Get sysName and sysLocation OID every 5 minutes",
+                    info = "Get sysName and sysLocation OID every 2 ours",
                     permissions = #perm_conf{read = ["admin"], write = ["admin"]},
                     status = 'UNKNOWN',
-                    step    = 5,
+                    step    = 10,
                     timeout = Timeout,
 
                     properties = [
@@ -167,10 +167,10 @@ generate_standard_snmp_target(Args, DataDir) ->
                 #probe{
                     name = P2,
                     description = "SNMP:Interfaces performances",
-                    info = "Get interfaces octets:in/out ucast:in/out nucast:in/out errors:in/out ",
+                    info = "Get interfaces octets:in/out ucast:in/out nucast:in/out errors:in/out every 5 minutes",
                     permissions = #perm_conf{read = ["admin"], write = ["admin"]},
                     status = 'UNKNOWN',
-                    step    = 5,
+                    step    = 10,
                     timeout = Timeout,
 
                     properties = [
@@ -356,12 +356,12 @@ get_rrd_template() ->
 %% PDUs
 %%----------------------------------------------------------------------------
 %%----------------------------------------------------------------------------
-pdu(extendedReplyMsgWalkIfTable, {QueryId, Status, Last, Info}) ->
+pdu(extendedQueryFromServerWalkIfTable, {QueryId, Status, Last, Info}) ->
     {table, TableRows} = Info,
     IfTable = build_ifTable(TableRows, []),
-    pdu(extendedReplyMsg, {QueryId, Status, Last, {snmpInterfacesInfo, IfTable}});
+    pdu(extendedQueryFromServer, {QueryId, Status, Last, {snmpInterfacesInfo, IfTable}});
 
-pdu(extendedReplyMsgWalkSystem, {QueryId, Status, Last, Info}) ->
+pdu(extendedQueryFromServerWalkSystem, {QueryId, Status, Last, Info}) ->
     {varbinds, Varbinds} = Info,
     {_,_,_,SysDescr}        = lists:keyfind(?SYS_DESCR,         2, Varbinds),
     {_,_,_,SysObjectId}     = lists:keyfind(?SYS_OBJECTID,      2, Varbinds),
@@ -381,20 +381,20 @@ pdu(extendedReplyMsgWalkSystem, {QueryId, Status, Last, Info}) ->
     InfoTuple = {snmpSystemInfo, {'SnmpSystemInfo', 
                     SysDescr, SysObjectId, SysUpTime, SysContact,
                     SysName, SysLocation, SysServices, SysORLastChange}},
-    pdu(extendedReplyMsg, {QueryId, Status, Last, InfoTuple});
+    pdu(extendedQueryFromServer, {QueryId, Status, Last, InfoTuple});
 
-pdu(extendedReplyMsgString, {QueryId, Status, Last, InfoAtom}) when is_atom(InfoAtom) ->
+pdu(extendedQueryFromServerString, {QueryId, Status, Last, InfoAtom}) when is_atom(InfoAtom) ->
     Info = atom_to_list(InfoAtom),
-    pdu(extendedReplyMsg, {QueryId, Status, Last, {string, Info}});
+    pdu(extendedQueryFromServer, {QueryId, Status, Last, {string, Info}});
 
-pdu(extendedReplyMsgString, {QueryId, Status, Last, Info}) ->
-    pdu(extendedReplyMsg, {QueryId, Status, Last, {string, Info}});
+pdu(extendedQueryFromServerString, {QueryId, Status, Last, Info}) ->
+    pdu(extendedQueryFromServer, {QueryId, Status, Last, {string, Info}});
 
-pdu(extendedReplyMsg, {QueryId, Status, Last, Info}) ->
+pdu(extendedQueryFromServer, {QueryId, Status, Last, Info}) ->
     {modMonitorPDU,
         {fromServer,
-            {extendedReplyMsg,
-                {'ExtendedReplyMsg',
+            {extendedQueryFromServer,
+                {'ExtendedQueryFromServer',
                     QueryId,
                     Status,
                     Last,

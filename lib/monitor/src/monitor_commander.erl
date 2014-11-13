@@ -149,12 +149,14 @@ handle_cast({{query, {_, QueryId, Other}}, CState}, S) ->
     ),
     {noreply, S};
 
-handle_cast({{extendedQueryMsg, 
+handle_cast({{extendedQueryFromClient, 
         {_, QueryId, {snmpElementInfoQuery, Query}}}, CState}, S) ->
+
+    %Perms = monitor_master:get_perms(
     command_net_element_wizard:handle_snmpElementInfoQuery(QueryId, CState, Query),
     {noreply, S};
 
-handle_cast({{extendedQueryMsg, 
+handle_cast({{extendedQueryFromClient, 
         {_, QueryId, {snmpElementCreateQuery, Query}}}, CState}, S) ->
     command_net_element_wizard:handle_snmpElementCreateQuery(QueryId, CState, Query, S#state.data_dir),
     {noreply, S};

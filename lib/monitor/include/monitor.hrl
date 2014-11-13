@@ -4,6 +4,8 @@
 
 -define(LOG(X), io:format("{~w, ~w}: DEBUG: ~p~n", [?MODULE, ?LINE, X])).
 
+-define(MASTER_CHANNEL, 'target-MasterChan').
+
 -record(inspector, {
     module,
     conf

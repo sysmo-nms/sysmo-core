@@ -1,9 +1,11 @@
-ModMonitor DEFINITIONS IMPLICIT TAGS ::=
+Monitor DEFINITIONS IMPLICIT TAGS ::=
 BEGIN
 
 IMPORTS
-    LoggerRrdDump  FROM MonitorLoggerRrd
-    LoggerRrdEvent FROM MonitorLoggerRrd;
+    LoggerRrdDump       FROM MonitorLoggerRrd
+    LoggerRrdEvent      FROM MonitorLoggerRrd
+    ExtendedQueryFromServer   FROM MonitorExtendedQuery
+    ExtendedQueryFromClient   FROM MonitorExtendedQuery;
 
 -- BASIC TYPES --
 QueryId         ::= INTEGER
@@ -206,88 +208,6 @@ GetCheckReply   ::= SEQUENCE {
 
 
 
--------------------------------------------------------------------------------
--- EXTENDED QUERY/REPLY
--------------------------------------------------------------------------------
-SnmpElementInfoQuery ::= SEQUENCE {
-    ip            IpInfo,
-    port          INTEGER,
-    timeout       INTEGER,
-    snmpVer       PrintableString,
-    community     PrintableString,
-    v3SecLevel    PrintableString,
-    v3User        PrintableString,
-    v3AuthAlgo    PrintableString,
-    v3AuthKey     PrintableString,
-    v3PrivAlgo    PrintableString,
-    v3PrivKey     PrintableString
-}
-
-SnmpElementCreateQuery ::= SEQUENCE {
-    ip            IpInfo,
-    port          INTEGER,
-    timeout       INTEGER,
-    snmpVer       PrintableString,
-    community     PrintableString,
-    v3SecLevel    PrintableString,
-    v3User        PrintableString,
-    v3AuthAlgo    PrintableString,
-    v3AuthKey     PrintableString,
-    v3PrivAlgo    PrintableString,
-    v3PrivKey     PrintableString,
-    ifSelection   SEQUENCE OF INTEGER
-}
-
-ExtendedQuery   ::= CHOICE {
-    snmpElementInfoQuery    [0] SnmpElementInfoQuery,
-    snmpElementCreateQuery  [1] SnmpElementCreateQuery
-}
-
-ExtendedQueryMsg   ::= SEQUENCE {
-    queryId     QueryId,
-    query       ExtendedQuery
-}
-
-ReplyChoice   ::= CHOICE {
-    string              [0] PrintableString,
-    snmpSystemInfo      [1] SnmpSystemInfo,
-    snmpInterfacesInfo  [2] SEQUENCE OF SnmpInterfaceInfo
-}
-
-ExtendedReplyMsg   ::= SEQUENCE {
-    queryId     QueryId,
-    status      BOOLEAN,
-    lastPdu     BOOLEAN,
-    reply       ReplyChoice
-}
-
-SnmpSystemInfo  ::= SEQUENCE {
-    sysDescr        PrintableString,
-    sysObjectId     PrintableString,
-    sysUpTime       PrintableString,
-    sysContact      PrintableString,
-    sysName         PrintableString,
-    sysLocation     PrintableString,
-    sysServices     INTEGER,
-    sysORLastChange PrintableString
-}
-
-SnmpInterfaceInfo ::= SEQUENCE {
-    ifIndex         INTEGER,
-    ifDescr         PrintableString,
-    ifType          INTEGER,
-    ifMTU           INTEGER,
-    ifSpeed         INTEGER,
-    ifPhysAddress   PrintableString,
-    ifAdminStatus   INTEGER,
-    ifOperStatus    INTEGER,
-    ifLastChange    PrintableString
-}
--------------------------------------------------------------------------------
--- EXTENDED QUERY/REPLY END
--------------------------------------------------------------------------------
-
-
 
 ---------------------------------------
 -- FULL PDU
@@ -300,7 +220,9 @@ MonitorPDU ::= CHOICE {
 
         monitorReply    [10] MonitorReply,
         getCheckReply   [11] GetCheckReply,
-        extendedReplyMsg [12] ExtendedReplyMsg,
+
+        -- extended query
+        extendedQueryFromServer [12] ExtendedQueryFromServer,
 
         loggerRrdDump   [20] LoggerRrdDump,
         loggerRrdEvent  [21] LoggerRrdEvent
@@ -309,11 +231,18 @@ MonitorPDU ::= CHOICE {
         createTarget    [1] CreateTarget,
         updateTarget    [2] UpdateTarget,
         deleteTarget    [3] DeleteTarget,
-        createSimpleProbe   [4] CreateSimpleProbe,
+
+        createSimpleProbe [4] CreateSimpleProbe,
         simulateCheck   [7] SimulateCheck,
+
         -- simple queries only include a QueryId
         query           [10] Query,
-        extendedQueryMsg [20] ExtendedQueryMsg
+
+        -- extended query
+        extendedQueryFromClient [20] ExtendedQueryFromClient
+
+        -- probes control
+
     }
 }
 

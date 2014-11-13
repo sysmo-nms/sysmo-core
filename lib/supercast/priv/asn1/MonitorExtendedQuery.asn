@@ -1,0 +1,118 @@
+MonitorExtendedQuery DEFINITIONS IMPLICIT TAGS ::=
+
+BEGIN
+
+IpInfo          ::= SEQUENCE {
+    version     PrintableString,
+    stringVal   PrintableString
+}
+
+
+-- ----------
+-- QUERIES --
+-- ----------
+SnmpElementInfoQuery ::= SEQUENCE {
+    ip            IpInfo,
+    port          INTEGER,
+    timeout       INTEGER,
+    snmpVer       PrintableString,
+    community     PrintableString,
+    v3SecLevel    PrintableString,
+    v3User        PrintableString,
+    v3AuthAlgo    PrintableString,
+    v3AuthKey     PrintableString,
+    v3PrivAlgo    PrintableString,
+    v3PrivKey     PrintableString
+}
+
+SnmpElementCreateQuery ::= SEQUENCE {
+    ip            IpInfo,
+    port          INTEGER,
+    timeout       INTEGER,
+    snmpVer       PrintableString,
+    community     PrintableString,
+    v3SecLevel    PrintableString,
+    v3User        PrintableString,
+    v3AuthAlgo    PrintableString,
+    v3AuthKey     PrintableString,
+    v3PrivAlgo    PrintableString,
+    v3PrivKey     PrintableString,
+    ifSelection   SEQUENCE OF INTEGER
+}
+
+QueryProbeForce ::= SEQUENCE {
+    foo [0] INTEGER,
+    bar [1] INTEGER
+}
+
+QueryProbeSuspend ::= SEQUENCE {
+    foo [0] INTEGER,
+    bar [1] INTEGER
+}
+
+QueryProbeStart ::= SEQUENCE {
+    foo [0] INTEGER,
+    bar [1] INTEGER
+}
+
+QueryProbeDelete ::= SEQUENCE {
+    probe [0] PrintableString
+}
+ExtendedQuery ::= CHOICE {
+    snmpElementInfoQuery    [0] SnmpElementInfoQuery,
+    snmpElementCreateQuery  [1] SnmpElementCreateQuery,
+
+    --probes control
+    queryProbeForce     [10] QueryProbeForce,
+    queryProbeSuspend   [11] QueryProbeSuspend,
+    queryProbeStart     [12] QueryProbeStart,
+    queryProbeDelete    [13] QueryProbeDelete
+
+}
+
+
+ExtendedQueryFromClient   ::= SEQUENCE {
+    queryId     INTEGER,
+    query       ExtendedQuery
+}
+
+-- ----------
+-- REPLIES --
+-- ----------
+SnmpSystemInfo  ::= SEQUENCE {
+    sysDescr        PrintableString,
+    sysObjectId     PrintableString,
+    sysUpTime       PrintableString,
+    sysContact      PrintableString,
+    sysName         PrintableString,
+    sysLocation     PrintableString,
+    sysServices     INTEGER,
+    sysORLastChange PrintableString
+}
+
+SnmpInterfaceInfo ::= SEQUENCE {
+    ifIndex         INTEGER,
+    ifDescr         PrintableString,
+    ifType          INTEGER,
+    ifMTU           INTEGER,
+    ifSpeed         INTEGER,
+    ifPhysAddress   PrintableString,
+    ifAdminStatus   INTEGER,
+    ifOperStatus    INTEGER,
+    ifLastChange    PrintableString
+}
+
+ReplyChoice   ::= CHOICE {
+    string              [0] PrintableString,
+    snmpSystemInfo      [1] SnmpSystemInfo,
+    snmpInterfacesInfo  [2] SEQUENCE OF SnmpInterfaceInfo
+}
+
+ExtendedQueryFromServer   ::= SEQUENCE {
+    queryId     INTEGER,
+    status      BOOLEAN,
+    lastPdu     BOOLEAN,
+    reply       ReplyChoice
+}
+
+END

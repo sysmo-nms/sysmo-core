@@ -137,7 +137,7 @@ handle_event({probe_return, NewProbeState, ProbeReturn}, SName, SData) ->
     % or
     % if Old#state.status       != New#state.status
     %
-    % notify all subscribers of 'target-MasterChan' anyway
+    % notify all subscribers of '?MASTER_CHANNEL' anyway
     notify(
         ProbeReturn,
         SData5#state.target_id,
@@ -350,7 +350,7 @@ notify_subscribers(ProbeReturn, TargetId, Probe, NextMicroStart) ->
     ProbeName = Probe#probe.name,
     Perms    = Probe#probe.permissions,
     Pdu      = probe_return({ProbeReturn, TargetId, ProbeName, NextMicroStart}),
-    supercast_channel:emit('target-MasterChan', {Perms, Pdu}).
+    supercast_channel:emit(?MASTER_CHANNEL, {Perms, Pdu}).
 
 notify_master(TargetId, OriginalProbe, Probe) ->
     case notify_master_required(OriginalProbe, Probe) of

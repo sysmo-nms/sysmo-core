@@ -7,8 +7,8 @@ NmsPDU DEFINITIONS IMPLICIT TAGS ::=
 BEGIN
 
 IMPORTS 
-    SupercastPDU    FROM ModSupercast
-    MonitorPDU      FROM ModMonitor;
+    SupercastPDU    FROM Supercast
+    MonitorPDU      FROM Monitor;
 
 PDU ::= CHOICE {
     modSupercastPDU [0] SupercastPDU,

@@ -87,7 +87,7 @@ init(Target, Probe) ->
                 {security_name, UsmUser}
             ],
             io:format("should register element~p ~p", [AgentName, SnmpArgs]),
-            snmpman:register_element(AgentName, SnmpArgs)
+            ok = snmpman:register_element(AgentName, SnmpArgs)
     end,
 
     {ok,
