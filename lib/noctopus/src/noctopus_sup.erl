@@ -40,6 +40,15 @@ init([]) ->
                     [nchecks_app]
                 },
                 {
+                    equartz_app,
+                    {equartz_app, start, [normal,[]]},
+                    permanent,
+                    2000,
+                    supervisor,
+                    [equartz_app]
+                },
+
+                {
                     monitor_app,
                     {monitor_app, start, [normal,[]]},
                     permanent,

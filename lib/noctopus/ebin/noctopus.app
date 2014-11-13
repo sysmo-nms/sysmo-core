@@ -19,7 +19,8 @@
                 snmpman,
                 errd,
                 supercast,
-                nchecks
+                nchecks,
+                equartz
             ]
         },
         {applications, 

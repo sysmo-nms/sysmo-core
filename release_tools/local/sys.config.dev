@@ -151,5 +151,17 @@
                 ]
             }
         ]
+    },
+    {equartz, 
+        [
+            {java_node, 
+                [
+                    {java_com,
+"/usr/lib64/java/bin/java -cp lib/equartz/:lib/equartz/java_bin/:lib/equartz/java_lib/* io.noctopus.equartz.EQuartz >> var/log/equartz.log 2>&1 &"
+                    }
+                ]
+            }
+        ]
     }
+
 ].

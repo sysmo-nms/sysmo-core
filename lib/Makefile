@@ -27,6 +27,9 @@ nchecks:
 	@git clone git@github.com:ssbx/nchecks.git
 	@cd nchecks; git checkout java_version
 
+equartz:
+	@git clone git@github.com:ssbx/equartz.git
+
 # yaws special begin
 $(REQUIRE_YAWS): yaws
 $(REQUIRE_YAWS): ERLC = $(ERLCY)
