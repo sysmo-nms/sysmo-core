@@ -56,9 +56,6 @@ clean:
 	rm -f doc/*.css
 	rm -f doc/edoc-info
 	rm -f priv/asn1/build/*
-	rm -f include/ModSupercast.hrl
-	rm -f include/ModMonitor.hrl
-	rm -f include/ModLocator.hrl
 
 clsupercast:
 	@$(ERL) -pa ebin -eval \
@@ -76,7 +73,6 @@ pdu: $(ASN_DEST)
 $(ASN_DEST): ebin/%.beam: priv/asn1/%.asn
 	$(ASNC) -o priv/asn1/build priv/asn1/$*.asn
 	@cp priv/asn1/build/$*.beam ebin
-	@if `test -e priv/asn1/build/$*.hrl`; then cp priv/asn1/build/$*.hrl include; fi
 
 
 # TEST
