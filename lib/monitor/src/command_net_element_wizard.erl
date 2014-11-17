@@ -97,11 +97,25 @@ generate_standard_snmp_target(Args, DataDir) ->
                       ],
     {ok,
      #target{
-        id = TargetId,
-        ip = Ip,
-        ip_version = IpVersion,
+        id          = TargetId,
+        ip          = Ip,
+        ip_version  = IpVersion,
         global_perm = #perm_conf{read = ["admin"], write = ["admin"]},
-        directory = TargetDir,
+        directory   = TargetDir,
+        sys_properties = [
+            {snmp_port,        Port},
+            {snmp_version,     SnmpVer},
+            {snmp_seclevel,    V3SecLevel},
+            {snmp_community,   Community},
+            {snmp_usm_user,    V3User},
+            {snmp_authkey,     V3AuthKey},
+            {snmp_authproto,   V3AuthAlgo},
+            {snmp_privkey,     V3PrivKey},
+            {snmp_privproto,   V3PrivAlgo},
+            {snmp_timeout,     Timeout},
+            {snmp_retries,     1},
+            {server_directory, TargetDir}
+        ],
         properties = [
             {"ip",          Ip},
             {"ipVersion",   IpVersion},
@@ -120,7 +134,6 @@ generate_standard_snmp_target(Args, DataDir) ->
                     status = 'UNKNOWN',
                     step    = 10,
                     timeout = Timeout,
-
                     properties = [
                         {"status",      "UNKNOWN"},
                         {"sysName",     "undefined"},

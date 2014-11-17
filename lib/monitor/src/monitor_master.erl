@@ -347,9 +347,56 @@ load_targets_conf([T|Targets], TargetsState) ->
     load_targets_conf(Targets, [T2|TargetsState]).
     
 load_target_conf(Target) ->
-    ok              = init_target_dir(Target),
+    Dir = proplists:get_value(server_directory, Target#target.sys_properties),
+    ok  = init_target_dir(Dir),
+    ok  = init_target_snmp_conf(Target),
+    ok              = init_target_jobs(Target#target.jobs),
     {ok, Target2}   = init_probes(Target),
     Target2.
+
+init_target_snmp_conf(Target) ->
+    SysProp = Target#target.sys_properties,
+    case proplists:get_value(snmp_version, SysProp) of
+        undefined   -> ok;
+        SnmpVersion ->
+            SnmpPort        = proplists:get_value(snmp_port,        SysProp),
+            SnmpSecLevel    = proplists:get_value(snmp_seclevel,    SysProp),
+            SnmpCommunity   = proplists:get_value(snmp_community,   SysProp),
+            SnmpUsmUser     = proplists:get_value(snmp_usm_user,    SysProp),
+            SnmpAuthKey     = proplists:get_value(snmp_authkey,     SysProp),
+            SnmpAuthProto   = proplists:get_value(snmp_authproto,   SysProp),
+            SnmpPrivKey     = proplists:get_value(snmp_privkey,     SysProp),
+            SnmpPrivProto   = proplists:get_value(snmp_privproto,   SysProp),
+            SnmpTimeout     = proplists:get_value(snmp_timeout,     SysProp),
+            SnmpRetries     = proplists:get_value(snmp_retries,     SysProp),
+
+            Props = Target#target.properties,
+            IpVersion = proplists:get_value("ipVersion", Props),
+            Ip        = proplists:get_value("ip",        Props),
+
+            SnmpArgs = [
+                {ip_address,        Ip},
+                {ip_version,        IpVersion},
+                {timeout,           SnmpTimeout},
+                {port,              SnmpPort},
+                {snmp_version,      SnmpVersion},
+                {security_level,    SnmpSecLevel},
+                {community,         SnmpCommunity},
+                {auth_key,          SnmpAuthKey},
+                {auth_proto,        SnmpAuthProto},
+                {priv_key,          SnmpPrivKey},
+                {priv_proto,        SnmpPrivProto},
+                {retries,           SnmpRetries},
+                {security_name,     SnmpUsmUser}
+            ],
+
+            AgentName = atom_to_list(Target#target.id),
+            snmpman:register_element(AgentName, SnmpArgs)
+    end.
+
+init_target_jobs(_Jobs) ->
+    ?LOG("hello jobs_conf"),
+    ok.
 
 init_probes(Target) ->
     ProbesOrig  = Target#target.probes,
@@ -364,8 +411,7 @@ init_probes(Target, [P|Probes], ProbesN) ->
     ProbesN2  = [NP|ProbesN],
     init_probes(Target, Probes, ProbesN2).
 
-init_target_dir(Target) ->
-    Dir = Target#target.directory,
+init_target_dir(Dir) ->
     case file:read_file_info(Dir) of
         {ok, _} ->
             ok;

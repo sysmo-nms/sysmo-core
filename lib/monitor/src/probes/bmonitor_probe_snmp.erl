@@ -45,51 +45,10 @@
 info() -> {ok, "snmp get and walk module"}.
 
 init(Target, Probe) ->
-
-    TargetName  = Target#target.id,
-    AgentName   = atom_to_list(TargetName),
-
+    AgentName   = atom_to_list(Target#target.id),
     Conf        = Probe#probe.monitor_probe_conf,
     Method      = Conf#snmp_probe_conf.method,
     Oids        = Conf#snmp_probe_conf.oids,
-
-
-    case snmpman:element_registered(AgentName) of
-        true  -> ok;
-        false ->
-            Ip    = Target#target.ip,
-            IpVer = Target#target.ip_version,
-
-            Port        = Conf#snmp_probe_conf.port,
-            Version     = Conf#snmp_probe_conf.version,
-            SecLevel    = Conf#snmp_probe_conf.seclevel,
-            Community   = Conf#snmp_probe_conf.community,
-            AuthKey     = Conf#snmp_probe_conf.authkey,
-            AuthProto   = Conf#snmp_probe_conf.authproto,
-            PrivKey     = Conf#snmp_probe_conf.privkey,
-            PrivProto   = Conf#snmp_probe_conf.privproto,
-            Retries     = Conf#snmp_probe_conf.retries,
-            UsmUser     = Conf#snmp_probe_conf.usm_user,
-            Timeout     = Probe#probe.timeout,
-            SnmpArgs = [
-                {ip_address,    Ip},
-                {ip_version,    IpVer},
-                {timeout,       Timeout},
-                {port  ,        Port},
-                {snmp_version,  Version},
-                {security_level,SecLevel},
-                {community,     Community},
-                {auth_key,      AuthKey},
-                {auth_proto,    AuthProto},
-                {priv_key,      PrivKey},
-                {priv_proto,    PrivProto},
-                {retries,       Retries},
-                {security_name, UsmUser}
-            ],
-            io:format("should register element~p ~p", [AgentName, SnmpArgs]),
-            ok = snmpman:register_element(AgentName, SnmpArgs)
-    end,
-
     {ok,
         #state{
             agent           = AgentName,

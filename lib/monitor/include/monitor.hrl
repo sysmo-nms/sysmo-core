@@ -35,9 +35,9 @@
     community   = "none"        :: string(),
     usm_user    = "undefined"   :: string(),
     authkey     = none          :: none | string(),
-    authproto   = "SHA"          :: string(),
+    authproto   = "SHA"         :: string(),
     privkey     = none          :: none | string(),
-    privproto   = "AES"          :: string(),
+    privproto   = "AES"         :: string(),
     oids        = []            :: [any()],
     method      = get           :: get | {walk, [string()], [tuple()]},
     retries     = 1             :: integer()
@@ -61,6 +61,10 @@
  
     is_event        = false     :: true | false %
     % used by monitor_logger_events app
+}).
+
+-record(job, {
+    prop
 }).
 
 -record(probe, {
@@ -95,8 +99,14 @@
         read        =   ["admin"],
         write       =   ["admin"]
     },
+    % sys_properties only accessible to users having write access
+    sys_properties = []         :: [{atom(), string()}],
+    % properties accessible to all users having read access
     properties  = []            :: [{any(), any()}],
+
     probes      = []            :: [#probe{}],
+    jobs        = []            :: [#job{}],
+
     directory   = ""            :: string()
 }).
 
