@@ -58,7 +58,7 @@ log_init(Conf, Target, Probe) ->
             % get the list of index to file bind. Index is the second element
             % of a table element returned by the walk_table method. It must
             % uniquely identify the table row.
-            TargetDir       = Target#target.directory,
+            TargetDir       = proplists:get_value(var_directory, Target#target.sys_properties),
             IndexesRrd      = proplists:get_value(row_index_to_rrd_file, Conf),
             IndexesRrdPaths = build_rrd_file_paths(TargetDir, IndexesRrd),
             snmp_table_init_rrd_files(RrdCreateStr, IndexesRrdPaths),

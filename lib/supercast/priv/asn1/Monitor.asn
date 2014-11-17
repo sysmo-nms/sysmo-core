@@ -2,23 +2,21 @@ Monitor DEFINITIONS IMPLICIT TAGS ::=
 BEGIN
 
 IMPORTS
-    LoggerRrdDump       FROM MonitorLoggerRrd
-    LoggerRrdEvent      FROM MonitorLoggerRrd
+    LoggerRrdDump             FROM MonitorLoggerRrd
+    LoggerRrdEvent            FROM MonitorLoggerRrd
     ExtendedQueryFromServer   FROM MonitorExtendedQuery
     ExtendedQueryFromClient   FROM MonitorExtendedQuery;
 
 -- BASIC TYPES --
-QueryId         ::= INTEGER
 ErlangModule    ::= PrintableString
 Second          ::= INTEGER
 MicroSecond     ::= INTEGER
 GroupName       ::= PrintableString (SIZE (0..50))
 TargetId        ::= PrintableString (SIZE (0..50))
-TargetInfoType  ::= ENUMERATED {create(0), delete(1), update(2)}
+InfoTargetType  ::= ENUMERATED {create(0), delete(1), update(2)}
 ProbeName       ::= PrintableString (SIZE (0..30))
 ProbeStatus     ::= PrintableString (SIZE (0..15))
-ProbeType       ::= ENUMERATED {fetch(0), status(1)}
-ProbeInfoType   ::= ENUMERATED {create(0), delete(1), update(2)}
+InfoProbeType   ::= ENUMERATED {create(0), delete(1), update(2)}
 
 IpInfo          ::= SEQUENCE {
     version     PrintableString,
@@ -63,34 +61,14 @@ LoggerRrd2   ::= SEQUENCE {
     indexes     SEQUENCE OF INTEGER
 }
 
--- Text --
-LoggerText  ::= SEQUENCE {
-    module  ErlangModule,
-    conf    PrintableString
-}
-
--- Events --
-LoggerEvents ::= SEQUENCE {
-    module  ErlangModule,
-    conf    PrintableString
-}
-
 Logger  ::= CHOICE {
-    loggerText      [1] LoggerText,
-    loggerEvents    [2] LoggerEvents,
     loggerRrd2      [3] LoggerRrd2
 }
+
 Loggers     ::= SEQUENCE OF Logger
 
--- ProbeInfo
-ProbeConf       ::= SEQUENCE {
-    name        ProbeName,
-    type        ProbeType
-}
-
-FileData        ::= OCTET STRING
-
-ProbeInfo   ::= SEQUENCE {
+-- InfoProbe
+InfoProbe   ::= SEQUENCE {
     channel     TargetId,
     name        ProbeName,
     descr       PrintableString,
@@ -105,21 +83,15 @@ ProbeInfo   ::= SEQUENCE {
     loggers     Loggers,
     properties  Properties,
     active      INTEGER,
-    infoType    ProbeInfoType
+    infoType    InfoProbeType
 }
 
--- ProbeEvent
-ProbeEvent      ::= SEQUENCE {
-    probeName   PrintableString,
-    eventId     INTEGER,
-    insertTs    MicroSecond,
-    ackTs       MicroSecond,
-    status      ProbeStatus,
-    textual     PrintableString,
-    ackNeeded   BOOLEAN,
-    ackValue    PrintableString,
-    groupOwner  PrintableString,
-    userOwner   PrintableString
+-- Target info
+InfoTarget  ::= SEQUENCE {
+    channel         TargetId,
+    properties      Properties,
+    sysProperties   Properties,
+    type            InfoTargetType
 }
 
 -- ProbeReturn 
@@ -133,116 +105,22 @@ ProbeReturn ::= SEQUENCE {
     nextReturn      MicroSecond
 }
 
-TargetInfo  ::= SEQUENCE {
-    channel     TargetId,
-    properties  Properties,
-    type        TargetInfoType
-}
-
----------------------------------------
--- FROM CLIENT
----------------------------------------
-CreateTarget    ::= SEQUENCE {
-    ipAdd       PrintableString,
-    permConf    PermConf,
-    staticName  PrintableString,
-    snmpv2ro    PrintableString,
-    snmpv2rw    PrintableString,
-    template    PrintableString,
-    queryId     QueryId
-}
-
-CreateSimpleProbe     ::= SEQUENCE {
-    target      TargetId,
-    name        PrintableString,
-    description PrintableString,
-    permConf    PermConf,
-    template    PrintableString,
-    timeout     INTEGER,
-    step        INTEGER,
-    flags       Properties,
-    exe         PrintableString,
-    queryId     QueryId
-}
-
-QueryType       ::= ENUMERATED {
-    getChecksInfo(0)
-}
-
-Query           ::= SEQUENCE {
-    queryId     QueryId,
-    query       PrintableString
-}
-
-Arg             ::= SEQUENCE {
-    flag        PrintableString,
-    value       PrintableString
-}
-
-SimulateCheck   ::= SEQUENCE {
-    queryId     QueryId,
-    executable  PrintableString,
-    args        SEQUENCE OF Arg
-}
-
--- TODO server API
-UpdateTarget    ::= SEQUENCE {
-    target      TargetId
-}
-
-DeleteTarget    ::= SEQUENCE {
-    target      TargetId
-}
-
-MonitorReply    ::= SEQUENCE {
-    queryId     QueryId,
-    status      BOOLEAN,
-    info        PrintableString
-}
-
-GetCheckReply   ::= SEQUENCE {
-    queryId     QueryId,
-    status      BOOLEAN,
-    infos       SEQUENCE OF OCTET STRING
-}
-
-
-
-
 ---------------------------------------
 -- FULL PDU
 ---------------------------------------
 MonitorPDU ::= CHOICE {
     fromServer  [0] CHOICE {
-        targetInfo      [1] TargetInfo,
-        probeInfo       [2] ProbeInfo,
+        infoTarget      [1] InfoTarget,
+        infoProbe       [2] InfoProbe,
         probeReturn     [3] ProbeReturn,
 
-        monitorReply    [10] MonitorReply,
-        getCheckReply   [11] GetCheckReply,
-
-        -- extended query
         extendedQueryFromServer [12] ExtendedQueryFromServer,
 
         loggerRrdDump   [20] LoggerRrdDump,
         loggerRrdEvent  [21] LoggerRrdEvent
     },
     fromClient  [1] CHOICE {
-        createTarget    [1] CreateTarget,
-        updateTarget    [2] UpdateTarget,
-        deleteTarget    [3] DeleteTarget,
-
-        createSimpleProbe [4] CreateSimpleProbe,
-        simulateCheck   [7] SimulateCheck,
-
-        -- simple queries only include a QueryId
-        query           [10] Query,
-
-        -- extended query
         extendedQueryFromClient [20] ExtendedQueryFromClient
-
-        -- probes control
-
     }
 }
 

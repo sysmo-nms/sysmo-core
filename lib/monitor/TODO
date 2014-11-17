@@ -1,6 +1,6 @@
 1 bug when adding a target with a probe wich is instantly fail (client or server?)
 #2 make snmpman/rrdtool work (second tcp connexion for .rrds)
-3 make nagios plugins work (including .rrds)
+#3 make nagios plugins work (including .rrds)
 4 local actions
 5 general code cleanup/refactor/test (eunit/dializer)
     - cleanup/document monitor_commander,

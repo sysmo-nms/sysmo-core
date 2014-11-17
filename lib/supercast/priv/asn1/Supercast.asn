@@ -26,10 +26,6 @@ AuthResp    ::= SEQUENCE {
     pass    PrintableString
 }
 
-Modules     ::= SEQUENCE OF Module
-Module      ::= PrintableString (SIZE (1..30))
-
-
 ServerInfo ::= SEQUENCE {
     authType    PrintableString,
     dataPort    INTEGER,

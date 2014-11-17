@@ -22,22 +22,7 @@
     eval_perfs  = false         :: false | true
 }).
 
--record(nagios_probe_conf, {
-    executable  = undefined             :: string(),
-    args        = []                    :: [{any(), any()}],
-    eval_perfs  = false                 :: false | true
-}).
-
 -record(snmp_probe_conf, {
-    port        = 161           :: integer(),
-    version     = "v2"          :: string(), % "1" | "2c" | "3"
-    seclevel    = "noAuthNoPriv" :: string(), % "authPriv", "authNoPriv", "noAuthNoPriv"
-    community   = "none"        :: string(),
-    usm_user    = "undefined"   :: string(),
-    authkey     = none          :: none | string(),
-    authproto   = "SHA"         :: string(),
-    privkey     = none          :: none | string(),
-    privproto   = "AES"         :: string(),
     oids        = []            :: [any()],
     method      = get           :: get | {walk, [string()], [tuple()]},
     retries     = 1             :: integer()
@@ -64,7 +49,18 @@
 }).
 
 -record(job, {
-    prop
+    % the name of the job is dynamicaly build using
+    % lists:concat([group,module,function,argument])
+    % ex: lists:concat(["daily3am", monitor_jobs,hello, target-1234])
+    name     = "undefined"      :: string(),
+    trigger  = "undefined"      :: string(),
+
+    module   = undefined        :: atom(),
+    function = undefined        :: atom(),
+    argument = "undefined"      :: string(),
+
+    info     = "undefined"      :: string(),
+    permissions = #perm_conf{}  :: #perm_conf{}
 }).
 
 -record(probe, {
@@ -93,21 +89,19 @@
 
 -record(target, {
     id          = undefined     :: atom(),
-    ip          = undefined     :: string(),
-    ip_version  = undefined     :: string(),
     global_perm = #perm_conf{
         read        =   ["admin"],
         write       =   ["admin"]
     },
+
     % sys_properties only accessible to users having write access
     sys_properties = []         :: [{atom(), string()}],
+
     % properties accessible to all users having read access
     properties  = []            :: [{any(), any()}],
 
     probes      = []            :: [#probe{}],
-    jobs        = []            :: [#job{}],
-
-    directory   = ""            :: string()
+    jobs        = []            :: [#job{}]
 }).
 
 -record(probe_set, {

@@ -5,8 +5,15 @@ ERLC        ?= erlc -Werror
 EPATH       += -pa ../supercast/ebin -pa ebin
 
 APP             = monitor
+
 MAIN            = $(wildcard src/*.erl)
 MAIN_DST        = $(patsubst src/%.erl, ebin/%.beam, $(MAIN))
+
+BEHAVIOURS		= $(wildcard src/behaviours/*.erl)
+BEHAVIOURS_DST  = $(patsubst src/behaviours/%.erl, ebin/%.beam, $(BEHAVIOURS))
+
+COMMANDS  		= $(wildcard src/commands/*.erl)
+COMMANDS_DST    = $(patsubst src/commands/%.erl, ebin/%.beam, $(COMMANDS))
 
 PROBES          = $(wildcard src/probes/*.erl)
 PROBES_DST      = $(patsubst src/probes/%.erl, ebin/%.beam, $(PROBES))
@@ -18,17 +25,9 @@ LOGGERS         = $(wildcard src/loggers/*.erl)
 LOGGERS_DST     = $(patsubst src/loggers/%.erl, ebin/%.beam, $(LOGGERS))
 
 INCLUDE         = $(wildcard include/*.hrl)
-PWD             = $(shell pwd)
 
-compile: $(MAIN_DST) $(PROBES_DST) $(INSPECTORS_DST) $(LOGGERS_DST)
+compile: $(BEHAVIOURS_DST) $(COMMANDS_DST) $(MAIN_DST) $(PROBES_DST) $(INSPECTORS_DST) $(LOGGERS_DST)
     
-nagios-plugins: 
-	cd priv/nagios/src/nagios-plugins       && \
-    ./configure --prefix=$(PWD)/priv/nagios && \
-    make                                    && \
-    make install
-    
-
 ebin/%.beam: src/%.erl $(INCLUDE)
 	$(ERLC) $(EPATH) -o ebin/ src/$*.erl
 
@@ -41,8 +40,12 @@ ebin/%.beam: src/inspectors/%.erl $(INCLUDE)
 ebin/%.beam: src/loggers/%.erl $(INCLUDE)
 	$(ERLC) $(EPATH) -o ebin/ src/loggers/$*.erl
 
-clean-nagios:
-	cd priv/nagios/src/nagios-plugins && make uninstall && make distclean
+ebin/%.beam: src/behaviours/%.erl $(INCLUDE)
+	$(ERLC) $(EPATH) -o ebin/ src/behaviours/$*.erl
+
+ebin/%.beam: src/commands/%.erl $(INCLUDE)
+	$(ERLC) $(EPATH) -o ebin/ src/commands/$*.erl
+
 
 clean:
 	rm -f ebin/*.beam

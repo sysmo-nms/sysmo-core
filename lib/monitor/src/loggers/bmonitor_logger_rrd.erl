@@ -42,7 +42,7 @@
 log_init(Conf, Target, Probe) ->
     TargetId    = Target#target.id,
     ProbeId     = Probe#probe.name,
-    Dir         = Target#target.directory,
+    Dir         = proplists:get_value(var_directory, Target#target.sys_properties),
     {ok, Rrds}  = update_rrd_record(Conf, Dir),
     ok          = create_file_if_needed(Rrds),
     State       = #state{

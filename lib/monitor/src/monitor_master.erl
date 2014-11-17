@@ -191,7 +191,7 @@ handle_call({create_probe, TargetId, Probe}, _F, S) ->
                     {reply, {error, Reason}, S};
                 [TargetRecord] ->
                     {NProbe, NTarget} = insert_probe(Probe, TargetRecord),
-                    ProbeInfoPdu = pdu(probeInfo, {create, TargetAtom, NProbe}),
+                    ProbeInfoPdu = pdu(infoProbe, {create, TargetAtom, NProbe}),
                     Perm = NProbe#probe.permissions,
                     supercast_channel:emit(?MASTER_CHANNEL, {Perm, ProbeInfoPdu}),
                     dets:insert(Table, NTarget),
@@ -227,12 +227,12 @@ insert_probe(Probe, Target) ->
 
 emit_wide(Target) ->
     Perm        = Target#target.global_perm,
-    PduTarget   = pdu(targetInfo, Target),
+    PduTarget   = pdu(infoTarget, Target),
     supercast_channel:emit(?MASTER_CHANNEL, {Perm, PduTarget}),
 
     TId         = Target#target.id,
     Probes      = Target#target.probes,
-    PduProbes   = [{ProbePerm, pdu(probeInfo, {create, TId, Probe})} || 
+    PduProbes   = [{ProbePerm, pdu(infoProbe, {create, TId, Probe})} || 
         #probe{permissions = ProbePerm} = Probe <- Probes],
     lists:foreach(fun(X) ->
         supercast_channel:emit(?MASTER_CHANNEL, X)
@@ -265,7 +265,7 @@ handle_cast({probe_info, TargetId, NewProbe}, S) ->
     NewChans      = lists:keystore(TargetId, 2, Chans, NewTarg),
     dets:insert(S#state.db, NewTarg),
 
-    Pdu = pdu(probeInfo, {update, TargetId, NewProbe}),
+    Pdu = pdu(infoProbe, {update, TargetId, NewProbe}),
     supercast_channel:emit(?MASTER_CHANNEL, {Perms, Pdu}),
     NS = S#state{chans = NewChans},
     {noreply, NS};
@@ -310,7 +310,7 @@ update_info_chan(Target, Probe) ->
         _ ->
             % update target properties state to the client
             TargetPerm  = NTarget#target.global_perm,
-            Pdu         = pdu(targetInfo, NTarget),
+            Pdu         = pdu(infoTarget, NTarget),
             supercast_channel:emit(?MASTER_CHANNEL, {TargetPerm, Pdu})
     end,
     {ok, NTarget}.
@@ -347,10 +347,10 @@ load_targets_conf([T|Targets], TargetsState) ->
     load_targets_conf(Targets, [T2|TargetsState]).
     
 load_target_conf(Target) ->
-    Dir = proplists:get_value(server_directory, Target#target.sys_properties),
+    Dir = proplists:get_value(var_directory, Target#target.sys_properties),
     ok  = init_target_dir(Dir),
     ok  = init_target_snmp_conf(Target),
-    ok              = init_target_jobs(Target#target.jobs),
+    ok  = init_target_jobs(Target#target.jobs),
     {ok, Target2}   = init_probes(Target),
     Target2.
 
@@ -394,9 +394,12 @@ init_target_snmp_conf(Target) ->
             snmpman:register_element(AgentName, SnmpArgs)
     end.
 
-init_target_jobs(_Jobs) ->
-    ?LOG("hello jobs_conf"),
-    ok.
+init_target_jobs([]) -> ok;
+init_target_jobs(
+        [#job{name=Name,trigger=Trigger,module=M,function=F,argument=A}|Jobs]
+            ) ->
+    ok = equartz:register_internal_job(Name,Trigger,{M,F,atom_to_list(A)}),
+    init_target_jobs(Jobs).
 
 init_probes(Target) ->
     ProbesOrig  = Target#target.probes,
@@ -424,40 +427,42 @@ init_target_dir(Dir) ->
 %%----------------------------------------------------------------------------
 %% PDU BUILD
 %%----------------------------------------------------------------------------
-pdu(targetInfo, #target{id=Id, properties=Prop}) ->
-    AsnProps = lists:foldl(fun({K,V}, Acc) ->
+pdu(infoTarget, #target{id=Id, properties=Prop}) ->
+    AsnProps = lists:foldl(fun({K,V}, Acc) -> 
         [{'Property', K, V} | Acc]
     end, [], Prop),
     {modMonitorPDU,
         {fromServer,
-            {targetInfo,
-                {'TargetInfo',
+            {infoTarget,
+                {'InfoTarget',
                     atom_to_list(Id),
                     AsnProps,
+                    [],
                     create}}}};
 
-pdu(targetInfoUpdate, #target{id=Id, properties=Prop}) ->
+pdu(infoTargetUpdate, #target{id=Id, properties=Prop}) ->
     AsnProps = lists:foldl(fun({K,V}, Acc) ->
         [{'Property', K, V} | Acc]
     end, [], Prop),
     {modMonitorPDU,
         {fromServer,
-            {targetInfo,
-                {'TargetInfo',
+            {infoTarget,
+                {'InfoTarget',
                     atom_to_list(Id),
                     AsnProps,
+                    [],
                     update}}}};
 
-pdu(targetInfoDelete, Id) ->
+pdu(infoTargetDelete, Id) ->
     {modMonitorPDU,
         {fromServer,
-            {targetInfo,
-                {'TargetInfo',
+            {infoTarget,
+                {'InfoTarget',
                     atom_to_list(Id),
                     [],
                     delete}}}};
 
-pdu(probeInfo, {InfoType, TargetId, 
+pdu(infoProbe, {InfoType, TargetId, 
         #probe{
             permissions         = #perm_conf{read = R, write = W},
             monitor_probe_conf  = ProbeConf,
@@ -467,8 +472,8 @@ pdu(probeInfo, {InfoType, TargetId,
     }) ->
     P = {modMonitorPDU,
         {fromServer,
-            {probeInfo,
-                {'ProbeInfo',
+            {infoProbe,
+                {'InfoProbe',
                     atom_to_list(TargetId),
                     atom_to_list(Probe#probe.name),
                     Descr,
@@ -488,14 +493,6 @@ pdu(probeInfo, {InfoType, TargetId,
 
 gen_asn_probe_active(true)  -> 1;
 gen_asn_probe_active(false) -> 0.
-
-gen_asn_probe_conf(Conf) when is_record(Conf, ncheck_probe_conf) ->
-    #ncheck_probe_conf{executable = Exe, args = Args} = Conf,
-    lists:flatten([Exe, " ", [[A, " ", B, " "] || {A, B} <- Args]]);
-
-gen_asn_probe_conf(Conf) when is_record(Conf, nagios_probe_conf) ->
-    #nagios_probe_conf{executable = Exe, args = Args} = Conf,
-    lists:flatten([Exe, " ", [[A, " ", B, " "] || {A, B} <- Args]]);
 
 gen_asn_probe_conf(Conf) when is_record(Conf, snmp_probe_conf) ->
     lists:flatten(io_lib:format("~p", [Conf])).
@@ -536,7 +533,7 @@ gen_logger_pdu({logger, bmonitor_logger_text, Cfg}) ->
 gen_dump_pdus(CState, Targets) ->
     FTargets    = supercast:filter(CState, [{Perm, Target} ||
         #target{global_perm = Perm} = Target <- Targets]),
-    TargetsPDUs = [pdu(targetInfo, Target) || Target <- FTargets],
+    TargetsPDUs = [pdu(infoTarget, Target) || Target <- FTargets],
     ProbesDefs  = [{TId, Probes} ||
         #target{id = TId, probes = Probes} <- FTargets],
     gen_dump_pdus(CState, TargetsPDUs, [], [], ProbesDefs).
@@ -547,7 +544,7 @@ gen_dump_pdus(CState, TargetsPDUs, ProbesPDUs, PFList, [{TId, Probes}|T]) ->
         #probe{permissions = Perm} = Probe <- Probes],
     AllowedThings = supercast:filter(CState, ProbesThings),
     PFListN = [PName || #probe{name = PName} <- Probes],
-    Result = [pdu(probeInfo, {create, TId, Probe}) ||
+    Result = [pdu(infoProbe, {create, TId, Probe}) ||
         Probe <- AllowedThings],
     gen_dump_pdus(
         CState,

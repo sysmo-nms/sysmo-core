@@ -22,6 +22,7 @@
 -module(command_net_element_wizard).
 -include("include/monitor.hrl").
 -include("include/monitor_snmp.hrl").
+-include("../equartz/include/equartz.hrl").
 -include_lib("kernel/include/file.hrl").
 
 -export([
@@ -55,6 +56,8 @@ handle_snmpElementInfoQuery(QueryId, CState, Args) ->
             send(CState, Pdu2)
     end.
 
+generate_probe_id() ->
+    generate_probe_id([]).
 generate_probe_id(List) ->
     {ok, Id} = monitor_master:generate_id("probe-"),
     case lists:member(Id, List) of
@@ -85,8 +88,8 @@ generate_standard_snmp_target(Args, DataDir) ->
         IfSelection
     } = Args,
     {ok, TargetId} = monitor_master:generate_id("target-"),
-    P1 = generate_probe_id([]),
-    P2 = generate_probe_id([P1]),
+
+    P = generate_probe_id(),
 
     {RrdCreate, RrdUpdate, RrdGraphs} = get_rrd_template(),
 
@@ -98,23 +101,20 @@ generate_standard_snmp_target(Args, DataDir) ->
     {ok,
      #target{
         id          = TargetId,
-        ip          = Ip,
-        ip_version  = IpVersion,
         global_perm = #perm_conf{read = ["admin"], write = ["admin"]},
-        directory   = TargetDir,
         sys_properties = [
-            {snmp_port,        Port},
-            {snmp_version,     SnmpVer},
-            {snmp_seclevel,    V3SecLevel},
-            {snmp_community,   Community},
-            {snmp_usm_user,    V3User},
-            {snmp_authkey,     V3AuthKey},
-            {snmp_authproto,   V3AuthAlgo},
-            {snmp_privkey,     V3PrivKey},
-            {snmp_privproto,   V3PrivAlgo},
-            {snmp_timeout,     Timeout},
-            {snmp_retries,     1},
-            {server_directory, TargetDir}
+            {snmp_port,     Port},
+            {snmp_version,  SnmpVer},
+            {snmp_seclevel, V3SecLevel},
+            {snmp_community,Community},
+            {snmp_usm_user, V3User},
+            {snmp_authkey,  V3AuthKey},
+            {snmp_authproto,V3AuthAlgo},
+            {snmp_privkey,  V3PrivKey},
+            {snmp_privproto,V3PrivAlgo},
+            {snmp_timeout,  Timeout},
+            {snmp_retries,  1},
+            {var_directory, TargetDir}
         ],
         properties = [
             {"ip",          Ip},
@@ -124,61 +124,30 @@ generate_standard_snmp_target(Args, DataDir) ->
             {"sysName",     "undefined"},
             {"dnsName",     "undefined"}
         ],
+        jobs   = [
+            #job{
+                name     = lists:concat(["daily3am-monitor_jobs-update_snmp_system_info-", TargetId]),
+                trigger  = ?CRON_EVERY20S,
+                module   = monitor_jobs,
+                function = update_snmp_system_info,
+                argument = TargetId,
+                info     = "Update the target sysInfo (sysName, sysLocation) of the target every days at 3am",
+                permissions = #perm_conf{read = ["admin"], write = ["admin"]}
+            },
+            #job{
+                name     = lists:concat(["daily4am-monitor_jobs-update_snmp_if_aliases-", TargetId]),
+                trigger  = ?CRON_DAILY4AM,
+                module   = monitor_jobs,
+                function = update_snmp_if_aliases,
+                argument = TargetId,
+                info     = "Update the target interfaces alliases of the target every days at 4am",
+                permissions = #perm_conf{read = ["admin"], write = ["admin"]}
+            }
+        ],
         probes = 
             [
                 #probe{
-                    name = P1,
-                    description = "SNMP:System informations",
-                    info = "Get sysName and sysLocation OID every 2 ours",
-                    permissions = #perm_conf{read = ["admin"], write = ["admin"]},
-                    status = 'UNKNOWN',
-                    step    = 10,
-                    timeout = Timeout,
-                    properties = [
-                        {"status",      "UNKNOWN"},
-                        {"sysName",     "undefined"},
-                        {"sysLocation", "undefined"}
-                    ],
-                    forward_properties = ["sysName", "sysLocation"],
-
-                    parents = [],
-                    active = true,
-
-                    monitor_probe_mod  = bmonitor_probe_snmp,
-                    monitor_probe_conf = 
-                        #snmp_probe_conf{
-                            port        = Port,
-                            version     = SnmpVer,
-                            seclevel    = V3SecLevel,
-                            community   = Community,
-                            usm_user    = V3User,
-                            authkey     = V3AuthKey,
-                            authproto   = V3AuthAlgo,
-                            privkey     = V3PrivKey,
-                            privproto   = V3PrivAlgo,
-                            method      = get,
-                            retries = 1,
-                            oids = [
-                                {"sysName", "1.3.6.1.2.1.1.5.0"},
-                                {"sysLocation", "1.3.6.1.2.1.1.6.0"}
-                            ]
-                        },
-
-                    inspectors = [
-                        #inspector{
-                            module = bmonitor_inspector_status_set, 
-                            conf = []
-                        },
-                        #inspector{
-                            module = bmonitor_inspector_property_set, 
-                            conf = ["sysName", "sysLocation"]
-                        }
-
-                    ],
-                    loggers = []
-                },
-                #probe{
-                    name = P2,
+                    name = P,
                     description = "SNMP:Interfaces performances",
                     info = "Get interfaces octets:in/out ucast:in/out nucast:in/out errors:in/out every 5 minutes",
                     permissions = #perm_conf{read = ["admin"], write = ["admin"]},
@@ -196,42 +165,20 @@ generate_standard_snmp_target(Args, DataDir) ->
 
                     monitor_probe_mod  = bmonitor_probe_snmp,
                     monitor_probe_conf = #snmp_probe_conf{
-                        port        = Port,
-                        version     = SnmpVer,
-                        seclevel    = V3SecLevel,
-                        community   = Community,
-                        usm_user    = V3User,
-                        authkey     = V3AuthKey,
-                        authproto   = V3AuthAlgo,
-                        privkey     = V3PrivKey,
-                        privproto   = V3PrivAlgo,
-                        method      = {walk_table,
-                            [
-                                ?IF_INDEX,
-                                ?IF_DESCR,
-                                ?IF_IN_OCTETS,
-                                ?IF_IN_UCASTPKTS,
-                                ?IF_IN_NUCASTPKTS,
-                                ?IF_IN_ERRORS,
-                                ?IF_OUT_OCTETS,
-                                ?IF_OUT_UCASTPKTS,
-                                ?IF_OUT_NUCASTPKTS,
-                                ?IF_OUT_ERRORS
-                            ],
-                            [
-                                % this set the property of the probe to have
-                                % up to date name of interface.
-                                % set the return properties as a list
-                                %  of {indexN,  IF_DESCR}
-                                {
-                                    "index",         % The head key element
-                                    2,               % The element appended to head wich form Key
-                                    3                % the place in oid tuple of the value Val
-                                }
-                            ]
-                        },
+                        method      = walk_table,
                         retries     = 1,
-                        oids        = []
+                        oids        = [
+                            ?IF_INDEX,
+                            ?IF_DESCR,
+                            ?IF_IN_OCTETS,
+                            ?IF_IN_UCASTPKTS,
+                            ?IF_IN_NUCASTPKTS,
+                            ?IF_IN_ERRORS,
+                            ?IF_OUT_OCTETS,
+                            ?IF_OUT_UCASTPKTS,
+                            ?IF_OUT_NUCASTPKTS,
+                            ?IF_OUT_ERRORS
+                        ]
                     },
 
                     inspectors = [
