@@ -1,4 +1,5 @@
 1 bug when adding a target with a probe wich is instantly fail (client or server?)
+2 equartz may call monitor_job:x/1 before monitor_master is initialized.
 #2 make snmpman/rrdtool work (second tcp connexion for .rrds)
 #3 make nagios plugins work (including .rrds)
 4 local actions
