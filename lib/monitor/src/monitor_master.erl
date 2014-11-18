@@ -43,9 +43,13 @@
 % API
 -export([
     start_link/0,
+
     probe_info/2,
+
     create_target/1,
     create_probe/2,
+
+    job_update_properties/2,
 
     generate_id/1
 ]).
@@ -74,6 +78,9 @@ dump() ->
 
 %% monitor_commander API
 -spec create_target(Target::#target{}) -> ok | {error, Info::string()}.
+% @doc
+% Called from monitor_commander.
+% @end
 create_target(Target) ->
     gen_server:call(?MASTER_CHANNEL, {create_target, Target}).
 
@@ -83,6 +90,9 @@ create_probe(TargetId, Probe) ->
     gen_server:call(?MASTER_CHANNEL, {create_probe, TargetId, Probe}).
 
 -spec generate_id(Head::string()) -> atom().
+% @doc
+% Called from monitor_commander.
+% @end
 generate_id(Head) ->
     Int         = random:uniform(?RAND_RANGE),
     RandId      = Int + ?RAND_MIN,
@@ -102,6 +112,7 @@ generate_id(Head) ->
 get_perms(PidName) ->
     gen_server:call(PidName, get_perms).
 
+-spec sync_request(PidName::atom(), CState::tuple()) ->  ok.
 sync_request(PidName, CState) ->
     gen_server:cast(PidName, {sync_request, CState}).
 
@@ -117,6 +128,17 @@ sync_request(PidName, CState) ->
 probe_info(TargetId, Probe) ->
     gen_server:cast(?MASTER_CHANNEL, {probe_info, TargetId, Probe}).
 
+%%----------------------------------------------------------------------------
+%% monitor_jobs API    
+%%----------------------------------------------------------------------------
+-spec job_update_properties(TargetId::atom(), Properties::[{string(),any()}]) ->
+    ok.
+% @doc
+% Called by various monitor_jobs functions to update target properties.
+% @end
+job_update_properties(TargetId, Properties) ->
+    gen_server:cast(?MASTER_CHANNEL,
+        {job_update_properties, TargetId, Properties}).
 
 %%----------------------------------------------------------------------------
 %% GEN_SERVER CALLBACKS
@@ -270,6 +292,24 @@ handle_cast({probe_info, TargetId, NewProbe}, S) ->
     NS = S#state{chans = NewChans},
     {noreply, NS};
 
+handle_cast({job_update_properties, TargetId, NewProp}, S) ->
+    Chans       = S#state.chans,
+    Target      = lists:keyfind(TargetId, 2, Chans),
+    TargetProp  = Target#target.properties,
+    TargetProp2 = merge_properties(TargetProp, NewProp),
+    case TargetProp2 of
+        TargetProp -> ok;
+        _ ->
+            % update dets
+            TargetX = Target#target{properties=TargetProp2},
+            dets:insert(S#state.db, TargetX),
+            %  update client side
+            Perm = TargetX#target.global_perm,
+            PduTarget = pdu(infoTarget, TargetX),
+            supercast_channel:emit(?MASTER_CHANNEL, {Perm, PduTarget})
+    end,
+    {noreply, S};
+
 handle_cast(_R, S) ->
     {noreply, S}.
 
@@ -287,6 +327,12 @@ code_change(_O, S, _E) ->
 %%----------------------------------------------------------------------------
 %% UTILS    
 %%----------------------------------------------------------------------------
+merge_properties(Props, []) -> Props;
+merge_properties(Props, [NewProp|NewProps]) ->
+    {Key, _} = NewProp,
+    Props2 = lists:keyreplace(Key, 1, Props, NewProp),
+    merge_properties(Props2, NewProps).
+
 update_info_chan(Target, Probe) ->
     TProperties     = Target#target.properties,
     PProperties     = Probe#probe.properties,

@@ -34,7 +34,12 @@
 
 handle_snmpElementCreateQuery(_QueryId, _CState, Query, DataDir) ->
     {ok, Target} = generate_standard_snmp_target(Query, DataDir),
-    monitor_master:create_target(Target).
+    monitor_master:create_target(Target),
+    JobsName = [J#job.name || J <- Target#target.jobs],
+    lists:foreach(fun(Job) ->
+        equartz:fire_now(Job)
+    end, JobsName),
+    ?LOG({"JOBS ARE: ", JobsName}).
 
 handle_snmpElementInfoQuery(QueryId, CState, Args) ->
     BeginPdu = pdu(extendedQueryFromServerString, {QueryId, true, false, "begin"}),
@@ -127,7 +132,8 @@ generate_standard_snmp_target(Args, DataDir) ->
         jobs   = [
             #job{
                 name     = lists:concat(["daily3am-monitor_jobs-update_snmp_system_info-", TargetId]),
-                trigger  = ?CRON_EVERY20S,
+                %trigger  = ?CRON_EVERY20S,
+                trigger  = ?CRON_DAILY4AM,
                 module   = monitor_jobs,
                 function = update_snmp_system_info,
                 argument = TargetId,
@@ -136,6 +142,7 @@ generate_standard_snmp_target(Args, DataDir) ->
             },
             #job{
                 name     = lists:concat(["daily4am-monitor_jobs-update_snmp_if_aliases-", TargetId]),
+                %trigger  = ?CRON_EVERY20S,
                 trigger  = ?CRON_DAILY4AM,
                 module   = monitor_jobs,
                 function = update_snmp_if_aliases,

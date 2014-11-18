@@ -21,6 +21,7 @@
 % @private
 -module(monitor_jobs).
 -include("include/monitor.hrl").
+-include("include/monitor_snmp.hrl").
 
 -export([
     update_snmp_system_info/1,
@@ -28,7 +29,113 @@
 ]).
 
 update_snmp_system_info(Target) ->
-    ?LOG({"update system info for: ", Target}).
+    {ok, {varbinds, Ret}} = snmpman:get(Target, [
+        ?SYS_DESCR,
+        ?SYS_OBJECTID,
+        ?SYS_CONTACT,
+        ?SYS_NAME,
+        ?SYS_LOCATION,
+        ?SYS_SERVICES
+    ]),
+    case lists:keyfind(?SYS_DESCR, 2, Ret) of
+        {_,_,_,SDescr} ->
+            P = [{"sysDescr", SDescr}];
+        _ ->
+            P = []
+    end,
+    case lists:keyfind(?SYS_OBJECTID, 2, Ret) of
+        {_,_,_,SOId} ->
+            P1 = [{"sysObjectId", SOId} | P];
+        _ ->
+            P1 = P
+    end,
+    case lists:keyfind(?SYS_CONTACT, 2, Ret) of
+        {_,_,_,SCont} ->
+            P2 = [{"sysContact", SCont} | P1];
+        _ ->
+            P2 = P1
+    end,
+    case lists:keyfind(?SYS_NAME, 2, Ret) of
+        {_,_,_,SName} ->
+            P3 = [{"sysName", SName} | P2];
+        _ ->
+            P3 = P2
+    end,
+    case lists:keyfind(?SYS_LOCATION, 2, Ret) of
+        {_,_,_,SLoc} ->
+            P4 = [{"sysLocation", SLoc} | P3];
+        _ ->
+            P4 = P3
+    end,
+    case lists:keyfind(?SYS_SERVICES, 2, Ret) of
+        {_,_,_,SServ} ->
+            PF = [{"sysServices", SServ} | P4];
+        _ ->
+            PF = P4
+    end,
+
+    TargetAtom = erlang:list_to_existing_atom(Target),
+    monitor_master:job_update_properties(TargetAtom, PF).
 
 update_snmp_if_aliases(Target) ->
-    ?LOG({"update if aliases for: ", Target}).
+    IfNames = snmpman:walk_table(Target, [
+        "1.3.6.1.2.1.2.2.1.1",
+        "1.3.6.1.2.1.2.2.1.2"
+    ]),
+    IfAliases = snmpman:walk_table(Target, [
+        "1.3.6.1.2.1.31.1.1.1.1",
+        "1.3.6.1.2.1.31.1.1.1.18"
+    ]),
+
+    case IfNames of
+        {ok, {table, Names}} -> 
+            P = build_if_names(Names);
+        _ ->
+            P = []
+    end,
+
+    case IfAliases of
+        {ok, {table, Aliases}} ->
+            P1 = build_if_aliases(Aliases, IfNames),
+            PF = lists:append([P,P1]);
+        _ ->
+            PF = P
+    end,
+
+    TargetAtom = erlang:list_to_existing_atom(Target),
+    monitor_master:job_update_properties(TargetAtom, PF).
+
+build_if_names(Rows) ->
+    build_if_names(Rows, []).
+build_if_names([], Acc) -> Acc;
+build_if_names([{table_row, _, []}|Rows], Acc) ->
+    build_if_names(Rows, Acc);
+build_if_names([{table_row, Index, Name}|Rows], Acc) ->
+    Key = lists:concat(["ifIndex",Index, "-ifName"]),
+    build_if_names(Rows, [{Key, Name}| Acc]).
+
+build_if_aliases(Rows, IfNames) ->
+    case IfNames of
+        {ok, {table, Names}} ->
+            build_if_aliases(Rows, Names, []);
+        _ ->
+            []
+    end.
+build_if_aliases([],_,Acc) -> Acc;
+build_if_aliases([{table_row, _, []}|Rows], Names, Acc) ->
+    build_if_aliases(Rows, Names, Acc);
+build_if_aliases([{table_row, Name, Alias}|Rows], Names, Acc) ->
+    case lists:keyfine(Name, 3, Names) of
+        false ->
+            build_if_aliases(Rows, Names, Acc);
+        {table_row, Index, _} ->
+            Key = lists:concat(["ifIndex", Index, "-ifAlias"]),
+            build_if_aliases(Rows, Names, [{Key,Alias}|Acc])
+    end.
+
+
+
+
+
+
+
