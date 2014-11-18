@@ -1,9 +1,6 @@
 - delayed sync included in supercast, require that every channel event is
 recognized by supercast.
-- lock on subscribe rationalize (channel,client,loggers) and document. Actualy
-a channel will block wile it is synchronizing a client. It is possible to not
-block, but it vastly increase code complexity for supercast_logger,
-ssl/tcp_client and supercast_channel modules.
+- replace atom() by string() for channel pid()
 
 # in the future
 - protobuff support
