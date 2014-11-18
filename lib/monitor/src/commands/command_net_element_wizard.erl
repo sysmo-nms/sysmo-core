@@ -132,8 +132,8 @@ generate_standard_snmp_target(Args, DataDir) ->
         jobs   = [
             #job{
                 name     = lists:concat(["daily3am-monitor_jobs-update_snmp_system_info-", TargetId]),
-                %trigger  = ?CRON_EVERY20S,
-                trigger  = ?CRON_DAILY4AM,
+                trigger  = ?CRON_EVERY20S,
+                %trigger  = ?CRON_DAILY4AM,
                 module   = monitor_jobs,
                 function = update_snmp_system_info,
                 argument = TargetId,
@@ -142,8 +142,8 @@ generate_standard_snmp_target(Args, DataDir) ->
             },
             #job{
                 name     = lists:concat(["daily4am-monitor_jobs-update_snmp_if_aliases-", TargetId]),
-                %trigger  = ?CRON_EVERY20S,
-                trigger  = ?CRON_DAILY4AM,
+                trigger  = ?CRON_EVERY20S,
+                %trigger  = ?CRON_DAILY4AM,
                 module   = monitor_jobs,
                 function = update_snmp_if_aliases,
                 argument = TargetId,

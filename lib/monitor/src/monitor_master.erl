@@ -55,9 +55,8 @@
 ]).
 
 -record(state, {
-    chans,
     perm,
-    db
+    dets_ref
 }).
 
 % generate id range
@@ -149,14 +148,11 @@ init([]) ->
     {ok, Write} = application:get_env(monitor, master_chan_write_perm),
     {ok, Table} = init_database(),
     %{ok, Targets} = load_targets_conf_from_file(ConfFile),
-    {ok, Targets} = load_targets_conf_from_dets(Table),
-    {ok, #state{
-            chans = Targets,
-            perm = #perm_conf{
-                read    = Read,
-                write   = Write
-            },
-            db          = Table
+    {ok, _Targets} = load_targets_conf_from_dets(Table),
+    {ok, 
+        #state{
+            perm = #perm_conf{read=Read,write=Write},
+            dets_ref = Table
         }
     }.
     
@@ -187,9 +183,10 @@ init_database() ->
 %%----------------------------------------------------------------------------
 %% SUPERCAST_CHANNEL BEHAVIOUR CALLS
 %%----------------------------------------------------------------------------
-handle_call({id_used, Id}, _F, #state{chans=Chans} = S) ->
-    TargetAtomList  = [Tid    || #target{id=Tid} <- Chans],
-    Probes          = [Probes || #target{probes=Probes} <- Chans],
+handle_call({id_used, Id}, _F, #state{dets_ref=DetsRef} = S) ->
+    Targets = get_all_targets(DetsRef),
+    TargetAtomList  = [Tid    || #target{id=Tid} <- Targets],
+    Probes          = [Probes || #target{probes=Probes} <- Targets],
     ProbeAtomList   = [PrId   || #probe{name=PrId} <- lists:flatten(Probes)],
     TotalAtomList   = lists:append(TargetAtomList, ProbeAtomList),
     Rep = lists:member(Id, TotalAtomList),
@@ -198,7 +195,7 @@ handle_call({id_used, Id}, _F, #state{chans=Chans} = S) ->
 handle_call(get_perms, _F, #state{perm = P} = S) ->
     {reply, P, S};
 
-handle_call({create_probe, TargetId, Probe}, _F, S) ->
+handle_call({create_probe, TargetId, Probe}, _F, #state{dets_ref=DetsRef}=S) ->
     % is targetId a valid atom?
     case (catch erlang:list_to_existing_atom(TargetId)) of
         {'EXIT', _} ->
@@ -207,8 +204,7 @@ handle_call({create_probe, TargetId, Probe}, _F, S) ->
             ),
             {reply, {error, Msg}, S};
         TargetAtom ->
-            Table = S#state.db,
-            case dets:lookup(Table, TargetAtom) of
+            case dets:lookup(DetsRef, TargetAtom) of
                 {error, Reason} ->
                     {reply, {error, Reason}, S};
                 [TargetRecord] ->
@@ -216,29 +212,28 @@ handle_call({create_probe, TargetId, Probe}, _F, S) ->
                     ProbeInfoPdu = pdu(infoProbe, {create, TargetAtom, NProbe}),
                     Perm = NProbe#probe.permissions,
                     supercast_channel:emit(?MASTER_CHANNEL, {Perm, ProbeInfoPdu}),
-                    dets:insert(Table, NTarget),
+                    dets:insert(DetsRef, NTarget),
                     {reply, ok, S};
                 _ ->
                     {reply, {error, "Key error"}, S}
             end
     end;
 
-handle_call({create_target, Target}, _F, S) ->
+handle_call({create_target, Target}, _F, #state{dets_ref = DetsRef} = S) ->
     Target2 = load_target_conf(Target),
     emit_wide(Target2),
-    dets:insert(S#state.db, Target2),
+    dets:insert(DetsRef, Target2),
+    {reply, ok, S};
 
-    Targets = S#state.chans,
-    S2      = S#state{chans = [Target2|Targets]},
-    {reply, ok, S2};
-
-handle_call(dump_dets, _F, S) ->
-    Table = S#state.db,
-    TargetsConf = dets:foldr(fun(X, Acc) ->
-        [X|Acc]
-    end, [], Table),
+handle_call(dump_dets, _F, #state{dets_ref=DetsRef} = S) ->
+    TargetsConf = get_all_targets(DetsRef),
     io:format("dump_dets: ~p~n",[TargetsConf]),
-    {reply, ok, S}.
+    {reply, {DetsRef, TargetsConf}, S}.
+
+get_all_targets(Table) ->
+    dets:foldr(fun(X, Acc) ->
+        [X|Acc]
+    end, [], Table).
 
 insert_probe(Probe, Target) ->
     {ok, Pid} = monitor_probe_sup:new({Target, Probe}),
@@ -264,49 +259,54 @@ emit_wide(Target) ->
 %%----------------------------------------------------------------------------
 %% SUPERCAST_CHANNEL BEHAVIOUR CASTS
 %%----------------------------------------------------------------------------
-handle_cast({sync_request, CState}, State) ->
-    Chans   = State#state.chans,
+handle_cast({sync_request, CState}, #state{dets_ref=DetsRef} = S) ->
+    % TODO beter use dets:match to directly filter targets for user perms
+    Targets = get_all_targets(DetsRef),
     % I want this client to receive my messages,
     supercast_channel:subscribe(?MASTER_CHANNEL, CState),
     % gen_dump_pdus will filter based on CState permissions
-    {Pdus, Probes} = gen_dump_pdus(CState, Chans),
+    {Pdus, Probes} = gen_dump_pdus(CState, Targets),
     supercast_channel:unicast(CState, Pdus),
     lists:foreach(fun(X) ->
         monitor_probe:triggered_return(X, CState)
     end, Probes),
-    {noreply, State};
+    {noreply, S};
 
 %%----------------------------------------------------------------------------
 %% SELF API CASTS
 %%----------------------------------------------------------------------------
-handle_cast({probe_info, TargetId, NewProbe}, S) ->
-    Chans       = S#state.chans,
-    Perms       = NewProbe#probe.permissions,
-    Target      = lists:keyfind(TargetId, 2, Chans),
-    {ok, NewTarg} = update_info_chan(Target, NewProbe),
-    NewChans      = lists:keystore(TargetId, 2, Chans, NewTarg),
-    dets:insert(S#state.db, NewTarg),
+handle_cast({probe_info, TargetId, NewProbe}, #state{dets_ref=DetsRef} = S) ->
+    case dets:lookup(DetsRef, TargetId) of
+        [] ->
+            {noreply, S};
+        [Target] ->
+            Perms = NewProbe#probe.permissions,
+            {ok, NewTarg} = update_target_from_probe_info(Target, NewProbe),
+            dets:insert(DetsRef, NewTarg),
+            Pdu = pdu(infoProbe, {update, TargetId, NewProbe}),
+            supercast_channel:emit(?MASTER_CHANNEL, {Perms, Pdu}),
+            {noreply, S}
+    end;
 
-    Pdu = pdu(infoProbe, {update, TargetId, NewProbe}),
-    supercast_channel:emit(?MASTER_CHANNEL, {Perms, Pdu}),
-    NS = S#state{chans = NewChans},
-    {noreply, NS};
-
-handle_cast({job_update_properties, TargetId, NewProp}, S) ->
-    Chans       = S#state.chans,
-    Target      = lists:keyfind(TargetId, 2, Chans),
-    TargetProp  = Target#target.properties,
-    TargetProp2 = merge_properties(TargetProp, NewProp),
-    case TargetProp2 of
-        TargetProp -> ok;
-        _ ->
-            % update dets
-            TargetX = Target#target{properties=TargetProp2},
-            dets:insert(S#state.db, TargetX),
-            %  update client side
-            Perm = TargetX#target.global_perm,
-            PduTarget = pdu(infoTarget, TargetX),
-            supercast_channel:emit(?MASTER_CHANNEL, {Perm, PduTarget})
+handle_cast({job_update_properties, TargetId, NewProp}, #state{dets_ref=DetsRef} = S) ->
+    case dets:lookup(DetsRef, TargetId) of
+        [] ->
+            nothing;
+        [Target] ->
+            TargetProp  = Target#target.properties,
+            TargetProp2 = merge_properties(TargetProp, NewProp),
+            case TargetProp2 of
+                TargetProp ->
+                    nothing;
+                _ ->
+                    % update dets
+                    NewTarget = Target#target{properties=TargetProp2},
+                    dets:insert(DetsRef, NewTarget),
+                    %  update client side
+                    PduTarget = pdu(infoTarget, NewTarget),
+                    Perm = NewTarget#target.global_perm,
+                    supercast_channel:emit(?MASTER_CHANNEL, {Perm, PduTarget})
+            end
     end,
     {noreply, S};
 
@@ -316,8 +316,8 @@ handle_cast(_R, S) ->
 handle_info(_, S) ->
     {noreply, S}.
 
-terminate(_R, #state{db = D}) ->
-    dets:close(D),
+terminate(_R, #state{dets_ref = DetsRef}) ->
+    dets:close(DetsRef),
     normal.
 
 code_change(_O, S, _E) ->
@@ -333,7 +333,7 @@ merge_properties(Props, [NewProp|NewProps]) ->
     Props2 = lists:keyreplace(Key, 1, Props, NewProp),
     merge_properties(Props2, NewProps).
 
-update_info_chan(Target, Probe) ->
+update_target_from_probe_info(Target, Probe) ->
     TProperties     = Target#target.properties,
     PProperties     = Probe#probe.properties,
     PForward        = Probe#probe.forward_properties,

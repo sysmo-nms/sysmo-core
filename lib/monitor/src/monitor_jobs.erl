@@ -29,6 +29,8 @@
 ]).
 
 update_snmp_system_info(Target) ->
+    % TODO assert monitor_master is ready, this job may fire once 
+    % equartz is ready, and trigger a job before monitor_master is ready.
     {ok, {varbinds, Ret}} = snmpman:get(Target, [
         ?SYS_DESCR,
         ?SYS_OBJECTID,
@@ -132,10 +134,3 @@ build_if_aliases([{table_row, Name, Alias}|Rows], Names, Acc) ->
             Key = lists:concat(["ifIndex", Index, "-ifAlias"]),
             build_if_aliases(Rows, Names, [{Key,Alias}|Acc])
     end.
-
-
-
-
-
-
-
