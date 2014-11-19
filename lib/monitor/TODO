@@ -15,7 +15,7 @@
     - for probes
     - for snmp
     - events (scheduler/alerts)
-
+8 use mnesia for monitor_master, listen for table events on monitor_store
 
 // later
 - tref() is {A, _Ref} when A is systime + delay, the timestamp of the execution
