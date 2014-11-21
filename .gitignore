@@ -41,6 +41,7 @@ lib/errd
 lib/snmpman
 lib/nchecks
 lib/equartz
+lib/pping
 
 var/yaws/docroot/*
 var/yaws/log/*

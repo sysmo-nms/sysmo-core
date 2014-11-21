@@ -30,6 +30,9 @@ nchecks:
 equartz:
 	@git clone git@github.com:ssbx/equartz.git
 
+pping:
+	@git clone git@github.com:ssbx/pping.git
+
 # yaws special begin
 $(REQUIRE_YAWS): yaws
 $(REQUIRE_YAWS): ERLC = $(ERLCY)
