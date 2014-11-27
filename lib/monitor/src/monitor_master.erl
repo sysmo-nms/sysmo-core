@@ -214,6 +214,7 @@ handle_call({create_probe, TargetId, Probe}, _F, #state{dets_ref=DetsRef}=S) ->
                     Perm = NProbe#probe.permissions,
                     supercast_channel:emit(?MASTER_CHANNEL, {Perm, ProbeInfoPdu}),
                     dets:insert(DetsRef, NTarget),
+                    monitor_data:write_probe(Probe),
                     {reply, ok, S};
                 _ ->
                     {reply, {error, "Key error"}, S}
@@ -225,6 +226,7 @@ handle_call({create_target, Target}, _F, #state{dets_ref = DetsRef} = S) ->
     Target2 = load_target_conf(Target),
     emit_wide(Target2),
     dets:insert(DetsRef, Target2),
+    monitor_data:write_target(Target2),
     {reply, ok, S};
 
 handle_call(dump_dets, _F, #state{dets_ref=DetsRef} = S) ->

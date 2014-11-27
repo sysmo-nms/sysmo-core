@@ -8,6 +8,10 @@
 -export([init/1]).
 
 start_link() ->
+    case mnesia:system_info(use_dir) of
+        false -> mnesia:create_schema([node()]);
+        true  -> ok
+    end,
     supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
 init([]) ->
@@ -15,6 +19,15 @@ init([]) ->
         {
             {one_for_all, 1, 6000},
             [
+
+                {
+                    mnesia_sup,
+                    {mnesia_sup, start, [normal,[]]},
+                    permanent,
+                    2000,
+                    supervisor,
+                    [mnesia_sup]
+                },
                 {
                     snmpman_app,
                     {snmpman_app, start, [normal,[]]},

@@ -22,7 +22,7 @@
 -module(bmonitor_probe_nchecks).
 -behaviour(beha_monitor_probe).
 -include("include/monitor.hrl").
--include_lib("xmerl/include/xmerl.hrl").
+-include("../nchecks/include/nchecks.hrl").
 
 -export([
     init/2,
@@ -48,14 +48,14 @@ init(Target, Probe) ->
     Conf        = Probe#probe.monitor_probe_conf,
     #nchecks_probe_conf{function = Funct, args = Args} = Conf,
 
-    % if "ip" is not defined in probe conf, use the target "ip" and
+    % if "host" is not defined in probe conf, use the target "ip" and
     % "ipVersion" property.
-    case proplists:lookup("ip", Args) of
+    case proplists:lookup("host", Args) of
         none ->
             Args1   = proplists:delete("ipVersion", Args),
-            TargIp  = proplists:lookup("ip", TargetProp),
+            TargIp  = proplists:get_value("ip", TargetProp),
             TargIpV = proplists:lookup("ipVersion", TargetProp),
-            NewProp = [TargIp, TargIpV],
+            NewProp = [{"host", TargIp}, TargIpV],
             NewArgs = lists:append([NewProp,Args1]);
         _ ->
             NewArgs = Args
@@ -68,11 +68,26 @@ init(Target, Probe) ->
     }.
 
 
-exec(#state{function = _Funct, args = _Args} = S) ->
-    {ok, S, 
-        #probe_return{
-            status = 'WARNING',
-            original_reply = "hello jojo",
-            timestamp = 456456
-        }
-    }.
+exec(#state{function = Funct, args = Args} = S) ->
+    case nchecks:Funct(Args) of
+        {error, Error} ->
+            ProbeReturn = #probe_return{
+                status      = 'ERROR',
+                original_reply = Error
+            };
+        {ok, Reply} ->
+            #nchecks_reply{
+               status=Status,performances=Perfs,reply_string=Str,timestamp=Ts
+            } = Reply,
+            ProbeReturn = #probe_return{
+                status          = erlang:list_to_atom(Status),
+                original_reply  = Str,
+                timestamp       = Ts,
+                key_vals        = Perfs
+            }
+    end,
+    {ok, S, ProbeReturn}.
+
+
+
+

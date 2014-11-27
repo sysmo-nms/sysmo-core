@@ -34,12 +34,12 @@ init([]) ->
             {one_for_one, 1, 60},
             [
                 {
-                    monitor_mnesia_mpd,
-                    {monitor_mnesia_mpd, start_link, []},
+                    monitor_data,
+                    {monitor_data, start_link, []},
                     permanent,
                     infinity,
                     supervisor,
-                    [monitor_mnesia_mpd]
+                    [monitor_data]
                 },
                 {
                     monitor_probe_sup,

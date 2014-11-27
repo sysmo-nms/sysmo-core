@@ -15,6 +15,7 @@
         },
         {included_applications, 
             [
+                mnesia,
                 monitor,
                 snmpman,
                 errd,
