@@ -34,7 +34,6 @@
                 bmonitor_inspector_property_set,
                 bmonitor_inspector_status_set,
                 bmonitor_logger_rrd,
-                bmonitor_probe_nagios,
                 bmonitor_probe_ncheck,
                 bmonitor_probe_snmp
             ]},

@@ -18,16 +18,47 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
-% @private
--module(monitor_app).
--behaviour(application).
+-module(monitor_mnesia_mpd).
+-behaviour(gen_server).
+%-behaviour(supercast_channel).
+-include("include/monitor.hrl").
 
+% GEN_SERVER
 -export([
-    start/2,
-    stop/1]).
+    init/1,
+    handle_call/3,
+    handle_cast/2,
+    handle_info/2,
+    terminate/2,
+    code_change/3
+]).
 
-start(_Type, _Args) ->
-    monitor_sup:start_link().
+% API
+-export([
+    start_link/0
+]).
 
-stop(_State) ->
-    ok.
+start_link() ->
+    mnesia:info(),
+    gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
+
+%%----------------------------------------------------------------------------
+%% GEN_SERVER CALLBACKS
+%%----------------------------------------------------------------------------
+init([]) ->
+    {ok, state}.
+    
+handle_call(_Call, _From, state) ->
+    {noreply, state}.
+
+handle_cast(_R, S) ->
+    {noreply, S}.
+
+handle_info(_, S) ->
+    {noreply, S}.
+
+terminate(_R, state) ->
+    normal.
+
+code_change(_O, S, _E) ->
+    {ok, S}.

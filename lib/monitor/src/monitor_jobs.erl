@@ -30,7 +30,7 @@
 
 update_snmp_system_info(Target) ->
     % TODO assert monitor_master is ready, this job may fire once 
-    % equartz is ready, and trigger a job before monitor_master is ready.
+    % equartz is ready, and trigger a job before monitor_master is.
     {ok, {varbinds, Ret}} = snmpman:get(Target, [
         ?SYS_DESCR,
         ?SYS_OBJECTID,
