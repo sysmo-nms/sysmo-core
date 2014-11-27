@@ -36,6 +36,11 @@
     eval_perfs
 }).
 
+-record(ncheck_probe_conf, {
+    executable  = undefined     :: string(),
+    args        = []            :: [{any(), any()}],
+    eval_perfs  = false         :: false | true
+}).
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

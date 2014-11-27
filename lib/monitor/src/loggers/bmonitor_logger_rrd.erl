@@ -39,6 +39,16 @@
     probe_name
 }).
 
+-record(rrd_config, {
+    file    = ""                :: string(),
+    create  = ""                :: string(),
+    update  = ""                :: string(),
+    graphs  = []                :: [string()],
+    binds   = []                :: [{string(), string()}], % {replacement, macro}
+    update_regexps = none       :: [any()],                % {key, re}
+    file_path = none            :: string()
+}).
+
 log_init(Conf, Target, Probe) ->
     TargetId    = Target#target.id,
     ProbeId     = Probe#probe.name,

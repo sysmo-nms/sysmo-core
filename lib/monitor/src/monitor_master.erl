@@ -197,6 +197,7 @@ handle_call(get_perms, _F, #state{perm = P} = S) ->
 
 handle_call({create_probe, TargetId, Probe}, _F, #state{dets_ref=DetsRef}=S) ->
     % is targetId a valid atom?
+    %dets:sync(DetsRef),
     case (catch erlang:list_to_existing_atom(TargetId)) of
         {'EXIT', _} ->
             Msg = lists:flatten(
@@ -220,6 +221,7 @@ handle_call({create_probe, TargetId, Probe}, _F, #state{dets_ref=DetsRef}=S) ->
     end;
 
 handle_call({create_target, Target}, _F, #state{dets_ref = DetsRef} = S) ->
+    % TODO check if id exist
     Target2 = load_target_conf(Target),
     emit_wide(Target2),
     dets:insert(DetsRef, Target2),
@@ -540,6 +542,8 @@ pdu(infoProbe, {InfoType, TargetId,
 gen_asn_probe_active(true)  -> 1;
 gen_asn_probe_active(false) -> 0.
 
+gen_asn_probe_conf(Conf) when is_record(Conf, nchecks_probe_conf) ->
+    lists:flatten(io_lib:format("~p", [Conf]));
 gen_asn_probe_conf(Conf) when is_record(Conf, snmp_probe_conf) ->
     lists:flatten(io_lib:format("~p", [Conf])).
 

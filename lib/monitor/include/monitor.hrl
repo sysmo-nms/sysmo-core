@@ -16,10 +16,9 @@
     conf
 }).
 
--record(ncheck_probe_conf, {
-    executable  = undefined     :: string(),
-    args        = []            :: [{any(), any()}],
-    eval_perfs  = false         :: false | true
+-record(nchecks_probe_conf, {
+    function                    :: atom(),
+    args        = []            :: [{string(), any()}]
 }).
 
 -record(snmp_probe_conf, {
@@ -60,7 +59,10 @@
     argument = "undefined"      :: string(),
 
     info     = "undefined"      :: string(),
-    permissions = #perm_conf{}  :: #perm_conf{}
+    permissions =   #perm_conf{
+                        read    = ["admin"],
+                        write   = ["admin"]
+                    }  :: #perm_conf{}
 }).
 
 -record(probe, {
@@ -68,10 +70,13 @@
     pid                 = undefined     :: undefined | pid(),
     description         = ""            :: string(),
     info                = ""            :: string(),
-    permissions         = #perm_conf{}  :: #perm_conf{},
+    permissions         =   #perm_conf{
+                                read    = ["admin"],
+                                write   = ["admin"]
+                            }  :: #perm_conf{},
     timeout             = 5             :: integer(), % seconds
     status              = 'UNKNOWN'     :: 'UNKNOWN' | atom(),
-    step                = 5000          :: integer(), % milliseconds
+    step                = 5             :: integer(), % seconds
 
     properties          = []            :: [{string(), any()}],
     % forward properties is a list of properties wich will be propagated
@@ -104,48 +109,15 @@
     jobs        = []            :: [#job{}]
 }).
 
--record(probe_set, {
-    name,
-    perm  = undefined   :: #perm_conf{},    % who is allowed to generate this
-                                            % set.
-    probe = []          :: [#probe{}]
-}).
-
-
-% RRD related. The max line accpeted by rrdtool is reached with
-% a 48 ports switch. It is why we need to break rrd databases
-% in little parts.
--record(rrd_binds, {
-    name    = ""                :: string(),
-    macro   = ""                :: string()
-}).
-
--record(rrd_config2, {
-    file,
-    create,
-    update,
-    graphs,
-    binds
-}).
--record(rrd_config, {
-    file    = ""                :: string(),
-    create  = ""                :: string(),
-    update  = ""                :: string(),
-    graphs  = []                :: [string()],
-    binds   = []                :: [{string(), string()}], % {replacement, macro}
-    update_regexps = none       :: [any()],                % {key, re}
-    file_path = none            :: string()
-}).
-
 % monitor_logger_events
--record(probe_event, {
-    id          = 0                 :: integer(),
-    insert_ts   = 0                 :: integer(),
-    ack_ts      = 0                 :: integer(),
-    status      = "undefined"       :: string(),
-    textual     = "undefined"       :: string(),
-    ack_needed  = true              :: true | false,
-    ack_value   = "undefined"       :: string(),
-    group_owner = "undefined"       :: string(),
-    user_owner  = "undefined"       :: string()
-}).
+% -record(probe_event, {
+%     id          = 0                 :: integer(),
+%     insert_ts   = 0                 :: integer(),
+%     ack_ts      = 0                 :: integer(),
+%     status      = "undefined"       :: string(),
+%     textual     = "undefined"       :: string(),
+%     ack_needed  = true              :: true | false,
+%     ack_value   = "undefined"       :: string(),
+%     group_owner = "undefined"       :: string(),
+%     user_owner  = "undefined"       :: string()
+% }).
