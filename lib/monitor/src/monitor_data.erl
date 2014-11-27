@@ -53,26 +53,38 @@ start_link() ->
 %%----------------------------------------------------------------------------
 init([]) ->
     init_tables(),
-    R = mnesia:subscribe({table, target, detailed}),
-    X = mnesia:subscribe({table, probe,  detailed}),
-    ?LOG({init, R,X}),
+    mnesia:subscribe({table, target, detailed}),
+    mnesia:subscribe({table, probe,  detailed}),
+    mnesia:subscribe({table, job,    detailed}),
     {ok, state}.
-    
+
 handle_call(_Call, _From, state) ->
     {noreply, state}.
 
 handle_cast(_R, S) ->
     {noreply, S}.
 
-handle_info({mnesia_table_event, {write, Table, NewRecord, _OldRecords, _ActivityId}}, S) ->
-    ?LOG({"handle_info write", Table, NewRecord}),
+
+handle_info({mnesia_table_event, {write, target, Target, [], _ActivityId}}, S) ->
+    handle_target_create(Target),
+    {noreply, S};
+handle_info({mnesia_table_event, {write, target, NewRecord, OldRecord, _ActivityId}}, S) ->
+    handle_target_update(NewRecord, OldRecord),
+    {noreply, S};
+handle_info({mnesia_table_event, {write, probe, NewRecord, [], _ActivityId}}, S) ->
+    ?LOG({"handle_info write", probe, NewRecord}),
+    % handle_probe_create
+    {noreply, S};
+handle_info({mnesia_table_event, {write, probe, NewRecord, _OldRecords, _ActivityId}}, S) ->
+    ?LOG({"handle_info write", probe, NewRecord}),
+    % handle_probe_update
     {noreply, S};
 handle_info({mnesia_table_event, {delete, Table, What, _OldRecords, _ActivityId}}, S) ->
     ?LOG({"handle_info delete ", Table, What}),
     {noreply, S};
 
 handle_info(_I, S) ->
-    ?LOG({"haldle info: ", _I}),
+    ?LOG({"handle info: ", _I}),
     {noreply, S}.
 
 terminate(_R, state) ->
@@ -81,6 +93,14 @@ terminate(_R, state) ->
 code_change(_O, S, _E) ->
     {ok, S}.
 
+% MNESIA events
+handle_target_create(#target{global_perm = Perm} = Target) ->
+    Pdu = infoTargetCreate(Target),
+    supercast_channel:emit(?MASTER_CHANNEL, {Perm, Pdu}).
+
+handle_target_update(_,_) -> ok.
+
+    
 
 
 % MNESIA init
@@ -146,3 +166,16 @@ write_probe(Probe) ->
 write_job(Job) ->
     mnesia:transaction(fun() -> mnesia:write(Job) end).
 
+% PDUS
+infoTargetCreate(#target{id=Id, properties=Prop}) ->
+    AsnProps = lists:foldl(fun({K,V}, Acc) -> 
+        [{'Property', K, V} | Acc]
+    end, [], Prop),
+    {modMonitorPDU,
+        {fromServer,
+            {infoTarget,
+                {'InfoTarget',
+                    atom_to_list(Id),
+                    AsnProps,
+                    [],
+                    create}}}}.

@@ -224,7 +224,7 @@ handle_call({create_probe, TargetId, Probe}, _F, #state{dets_ref=DetsRef}=S) ->
 handle_call({create_target, Target}, _F, #state{dets_ref = DetsRef} = S) ->
     % TODO check if id exist
     Target2 = load_target_conf(Target),
-    emit_wide(Target2),
+    %emit_wide(Target2),
     dets:insert(DetsRef, Target2),
     monitor_data:write_target(Target2),
     {reply, ok, S};
@@ -246,18 +246,18 @@ insert_probe(Probe, Target) ->
     T2 = Target#target{probes = [P2|Probes]},
     {P2, T2}.
 
-emit_wide(Target) ->
-    Perm        = Target#target.global_perm,
-    PduTarget   = pdu(infoTarget, Target),
-    supercast_channel:emit(?MASTER_CHANNEL, {Perm, PduTarget}),
-
-    TId         = Target#target.id,
-    Probes      = Target#target.probes,
-    PduProbes   = [{ProbePerm, pdu(infoProbe, {create, TId, Probe})} || 
-        #probe{permissions = ProbePerm} = Probe <- Probes],
-    lists:foreach(fun(X) ->
-        supercast_channel:emit(?MASTER_CHANNEL, X)
-    end, PduProbes).
+% emit_wide(Target) ->
+%     Perm        = Target#target.global_perm,
+%     PduTarget   = pdu(infoTarget, Target),
+%     supercast_channel:emit(?MASTER_CHANNEL, {Perm, PduTarget}),
+% 
+%     TId         = Target#target.id,
+%     Probes      = Target#target.probes,
+%     PduProbes   = [{ProbePerm, pdu(infoProbe, {create, TId, Probe})} || 
+%         #probe{permissions = ProbePerm} = Probe <- Probes],
+%     lists:foreach(fun(X) ->
+%         supercast_channel:emit(?MASTER_CHANNEL, X)
+%     end, PduProbes).
 
 
 %%----------------------------------------------------------------------------
