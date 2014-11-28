@@ -83,22 +83,18 @@ triggered_return(PidName, CState) ->
 
 init([Target, Probe]) ->
     init_random(),
-    UProbe = Probe#probe{
-        pid     = self()
-    },
-
-    {ok, ProbeInitState}    = init_probe(Target, UProbe),
-    {ok, InspectInitState}  = init_inspectors(Target, UProbe),
-    {ok, LoggersInitState}  = init_loggers(Target, UProbe),
+    {ok, ProbeInitState}    = init_probe(Target, Probe),
+    {ok, InspectInitState}  = init_inspectors(Target, Probe),
+    {ok, LoggersInitState}  = init_loggers(Target, Probe),
     PSState = #state{
         target_id           = Target#target.id,
-        name                = UProbe#probe.name,
-        probe               = UProbe,
+        name                = Probe#probe.name,
+        probe               = Probe,
         probe_state         = ProbeInitState ,
         inspectors_state    = InspectInitState,
         loggers_state       = LoggersInitState
     },
-    {ok, TRef} = initiate_start_sequence(UProbe#probe.step, random),
+    {ok, TRef} = initiate_start_sequence(Probe#probe.step, random),
     {ok, 'RUNNING', PSState#state{tref=TRef}, hibernate}.
 
 'RUNNING'(_Event, SName, SData) ->

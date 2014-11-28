@@ -240,11 +240,10 @@ get_all_targets(Table) ->
     end, [], Table).
 
 insert_probe(Probe, Target) ->
-    {ok, Pid} = monitor_probe_sup:new({Target, Probe}),
-    P2 = Probe#probe{pid = Pid},
+    monitor_probe_sup:new({Target, Probe}),
     Probes = Target#target.probes,
-    T2 = Target#target{probes = [P2|Probes]},
-    {P2, T2}.
+    T2 = Target#target{probes = [Probe|Probes]},
+    {Probe, T2}.
 
 % emit_wide(Target) ->
 %     Perm        = Target#target.global_perm,
@@ -459,9 +458,8 @@ init_probes(Target, [], ProbesNew) ->
     TargetNew = Target#target{probes = ProbesNew},
     {ok, TargetNew};
 init_probes(Target, [P|Probes], ProbesN) ->
-    {ok, Pid} = monitor_probe_sup:new({Target, P}),
-    NP        = P#probe{pid = Pid},
-    ProbesN2  = [NP|ProbesN],
+    monitor_probe_sup:new({Target, P}),
+    ProbesN2  = [P|ProbesN],
     init_probes(Target, Probes, ProbesN2).
 
 init_target_dir(Dir) ->

@@ -106,6 +106,10 @@ handle_target_update(_,_) -> ok.
 % MNESIA init
 init_tables() ->
     Tables = mnesia:system_info(tables),
+    DetsOpts = [
+        {auto_save, 5000}
+        %{keypos, 2}
+    ],
     case lists:member(target, Tables) of
         true -> ok;
         false ->
@@ -116,7 +120,7 @@ init_tables() ->
                     {disc_copies, [node()]},
                     {storage_properties,
                         [
-                            {dets, [{auto_save, 5000}]}
+                            {dets, DetsOpts}
                         ]
                     }
 
@@ -131,9 +135,10 @@ init_tables() ->
                 [
                     {attributes, record_info(fields, probe)},
                     {disc_copies, [node()]},
+                    {index, [belong_to]},
                     {storage_properties,
                         [
-                            {dets, [{auto_save, 5000}]}
+                            {dets, DetsOpts}
                         ]
                     }
                 ]
@@ -146,10 +151,11 @@ init_tables() ->
                 job,
                 [
                     {attributes, record_info(fields, job)},
+                    {index, [belong_to]},
                     {disc_copies, [node()]},
                     {storage_properties,
                         [
-                            {dets, [{auto_save, 5000}]}
+                            {dets, DetsOpts}
                         ]
                     }
                 ]

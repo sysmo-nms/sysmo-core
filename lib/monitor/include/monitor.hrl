@@ -52,6 +52,7 @@
     % lists:concat([group,module,function,argument])
     % ex: lists:concat(["daily3am", monitor_jobs,hello, target-1234])
     name     = "undefined"      :: string(),
+    belong_to = undefined       :: atom(),
     trigger  = "undefined"      :: string(),
 
     module   = undefined        :: atom(),
@@ -67,7 +68,8 @@
 
 -record(probe, {
     name                = undefined     :: atom(),
-    pid                 = undefined     :: undefined | pid(),
+    belong_to           = undefined     :: atom(),
+    %pid                 = undefined     :: undefined | pid(),
     description         = ""            :: string(),
     info                = ""            :: string(),
     permissions         =   #perm_conf{
