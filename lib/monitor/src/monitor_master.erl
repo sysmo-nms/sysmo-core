@@ -30,8 +30,7 @@
     handle_cast/2,
     handle_info/2,
     terminate/2,
-    code_change/3,
-    dump/0
+    code_change/3
 ]).
 
 % GEN_CHANNEL
@@ -49,14 +48,14 @@
     create_target/1,
     create_probe/1,
 
-    job_update_properties/2,
+    %job_update_properties/2,
 
-    generate_name/1
+    generate_name/1,
+    init_target/1
 ]).
 
 -record(state, {
-    perm,
-    dets_ref
+    perm
 }).
 
 % generate id range
@@ -73,9 +72,6 @@ start_link() ->
     gen_server:start_link(
       {via, supercast_registrar, {?MODULE, ?MASTER_CHANNEL}},
       ?MODULE, [], []).
-
-dump() ->
-    gen_server:call({via, supercast_registrar, ?MASTER_CHANNEL}, dump_dets).
 
 %% monitor_commander API
 -spec create_target(Target::#target{}) -> ok | {error, Info::string()}.
@@ -100,10 +96,11 @@ generate_name(Head) ->
     RandIdL     = io_lib:format("~p", [RandId]),
     RandIdS     = lists:flatten(RandIdL),
     Name        = lists:concat([Head, RandIdS]),
-    case gen_server:call({via, supercast_registrar, ?MASTER_CHANNEL}, {name_used, Name}) of
-        false->  {ok, Name};
-        true  -> generate_name(Head)
-    end.
+    Name.
+    %case gen_server:call({via, supercast_registrar, ?MASTER_CHANNEL}, {name_used, Name}) of
+        %false->  {ok, Name};
+        %true  -> generate_name(Head)
+    %end.
 
 %%----------------------------------------------------------------------------
 %% supercast_channel API
@@ -131,14 +128,14 @@ probe_info(TargetName, Probe) ->
 %%----------------------------------------------------------------------------
 %% monitor_jobs API    
 %%----------------------------------------------------------------------------
--spec job_update_properties(TargetId::atom(), Properties::[{string(),any()}]) ->
-    ok.
+%-spec job_update_properties(TargetId::atom(), Properties::[{string(),any()}]) ->
+%    ok.
 % @doc
 % Called by various monitor_jobs functions to update target properties.
 % @end
-job_update_properties(TargetId, Properties) ->
-    gen_server:cast({via, supercast_registrar, ?MASTER_CHANNEL},
-        {job_update_properties, TargetId, Properties}).
+%job_update_properties(TargetId, Properties) ->
+%    gen_server:cast({via, supercast_registrar, ?MASTER_CHANNEL},
+%        {job_update_properties, TargetId, Properties}).
 
 %%----------------------------------------------------------------------------
 %% GEN_SERVER CALLBACKS
@@ -147,149 +144,178 @@ init([]) ->
     random:seed(erlang:now()),
     {ok, Read}  = application:get_env(monitor, master_chan_read_perm),
     {ok, Write} = application:get_env(monitor, master_chan_write_perm),
-    {ok, Table} = init_database(),
+    %{ok, Table} = init_database(),
     %{ok, Targets} = load_targets_conf_from_file(ConfFile),
-    {ok, _Targets} = load_targets_conf_from_dets(Table),
+    %{ok, _Targets} = load_targets_conf_from_dets(Table),
+    {atomic, _} = init_targets(),
+    {atomic, _} = init_probes(),
+    {atomic, _} = init_jobs(),
     {ok, 
         #state{
-            perm = #perm_conf{read=Read,write=Write},
-            dets_ref = Table
+            perm = #perm_conf{read=Read,write=Write}
         }
     }.
     
-init_database() ->
-    {ok, VarDir} = application:get_env(monitor, targets_data_dir),
-    DetsFile     = filename:absname_join(VarDir, "targets.dets"),
-    case filelib:is_file(DetsFile) of
-        true  ->
-            case dets:is_dets_file(DetsFile) of
-                true ->
-                    dets:open_file(DetsFile);
-                false ->
-                    ok = file:delete(DetsFile),
-                    dets:open_file(DetsFile)
-            end;
-        false ->
-            {ok, N} = dets:open_file(?DETS_TARGETS, [
-                {file,   DetsFile},
-                {keypos, 2},
-                {ram_file, false},
-                {auto_save, 180000},
-                {type, set}
-            ]),
-            dets:close(N),
-            dets:open_file(DetsFile)
-    end.
+init_targets() ->
+    monitor_data:iterate_target_table(fun(Target,_) ->
+        monitor_snmp_utils:init_snmp_conf(Target)
+    end).
+
+init_probes() ->
+    monitor_data:iterate_probe_table(fun(X,_) ->
+        monitor_probe_sup:new(X)
+    end).
+
+init_jobs() ->
+    monitor_data:iterate_job_table(fun(X,_) ->
+        io:format("~p~n",[X])
+    end).
+
+% init_database() ->
+%     {ok, VarDir} = application:get_env(monitor, targets_data_dir),
+%     DetsFile     = filename:absname_join(VarDir, "targets.dets"),
+%     case filelib:is_file(DetsFile) of
+%         true  ->
+%             case dets:is_dets_file(DetsFile) of
+%                 true ->
+%                     dets:open_file(DetsFile);
+%                 false ->
+%                     ok = file:delete(DetsFile),
+%                     dets:open_file(DetsFile)
+%             end;
+%         false ->
+%             {ok, N} = dets:open_file(?DETS_TARGETS, [
+%                 {file,   DetsFile},
+%                 {keypos, 2},
+%                 {ram_file, false},
+%                 {auto_save, 180000},
+%                 {type, set}
+%             ]),
+%             dets:close(N),
+%             dets:open_file(DetsFile)
+%     end.
 
 %%----------------------------------------------------------------------------
 %% SUPERCAST_CHANNEL BEHAVIOUR CALLS
 %%----------------------------------------------------------------------------
-handle_call({name_used, Name}, _F, #state{dets_ref=DetsRef} = S) ->
-    Targets = get_all_targets(DetsRef),
-    TargetNameList  = [TargetName    || #target{name=TargetName} <- Targets],
-    Probes          = [Probes || #target{probes=Probes} <- Targets],
-    ProbeAtomList   = [PrId   || #probe{name=PrId} <- lists:flatten(Probes)],
-    TotalList       = lists:append(TargetNameList, ProbeAtomList),
-    Rep = lists:member(Name, TotalList),
-    {reply, Rep, S};
-
 handle_call(get_perms, _F, #state{perm = P} = S) ->
     {reply, P, S};
 
-handle_call({create_probe, Probe}, _F, #state{dets_ref=DetsRef}=S) ->
-    TargetId = Probe#probe.belong_to,
-    % is targetId a valid atom?
-    %dets:sync(DetsRef),
-    case dets:lookup(DetsRef, TargetId) of
-        {error, Reason} ->
-            {reply, {error, Reason}, S};
-        [TargetRecord] ->
-            {_NProbe, NTarget} = insert_probe(Probe, TargetRecord),
-            %supercast_channel:emit(?MASTER_CHANNEL, {Perm, ProbeInfoPdu}),
-            dets:insert(DetsRef, NTarget),
-            monitor_data:write_probe(Probe),
-            {reply, ok, S};
-        _ ->
-            {reply, {error, "Key error"}, S}
-    end;
+%%----------------------------------------------------------------------------
+%% OTHER CALLS
+%%----------------------------------------------------------------------------
+%handle_call({name_used, Name}, _F, #state{dets_ref=DetsRef} = S) ->
+    %Targets = get_all_targets(DetsRef),
+    %TargetNameList  = [TargetName    || #target{name=TargetName} <- Targets],
+    %Probes          = [Probes || #target{probes=Probes} <- Targets],
+    %ProbeAtomList   = [PrId   || #probe{name=PrId} <- lists:flatten(Probes)],
+    %TotalList       = lists:append(TargetNameList, ProbeAtomList),
+    %Rep = lists:member(Name, TotalList),
+    %{reply, Rep, S};
 
-handle_call({create_target, Target}, _F, #state{dets_ref = DetsRef} = S) ->
-    % TODO check if id exist
-    Target2 = load_target_conf(Target),
-    %emit_wide(Target2),
-    dets:insert(DetsRef, Target2),
-    monitor_data:write_target(Target2),
+
+handle_call({create_probe, Probe}, _F, S) ->
+    monitor_probe_sup:new(Probe),
+    monitor_data:write_probe(Probe),
     {reply, ok, S};
 
-handle_call(dump_dets, _F, #state{dets_ref=DetsRef} = S) ->
-    TargetsConf = get_all_targets(DetsRef),
-    io:format("dump_dets: ~p~n",[TargetsConf]),
-    {reply, {DetsRef, TargetsConf}, S}.
-
-get_all_targets(Table) ->
-    dets:foldr(fun(X, Acc) ->
-        [X|Acc]
-    end, [], Table).
-
-insert_probe(Probe, Target) ->
-    monitor_probe_sup:new({Target, Probe}),
-    Probes = Target#target.probes,
-    T2 = Target#target{probes = [Probe|Probes]},
-    {Probe, T2}.
+handle_call({create_target, Target}, _F, S) ->
+    % TODO check if id exist
+    init_target(Target),
+    %emit_wide(Target2),
+    %dets:insert(DetsRef, Target2),
+    monitor_data:write_target(Target),
+    {reply, ok, S}.
 
 %%----------------------------------------------------------------------------
 %% SUPERCAST_CHANNEL BEHAVIOUR CASTS
 %%----------------------------------------------------------------------------
-handle_cast({sync_request, CState}, #state{dets_ref=DetsRef} = S) ->
+handle_cast({sync_request, CState}, S) ->
     % TODO beter use dets:match to directly filter targets for user perms
-    Targets = get_all_targets(DetsRef),
+    %Targets = get_all_targets(DetsRef),
     % I want this client to receive my messages,
     supercast_channel:subscribe(?MASTER_CHANNEL, CState),
     % gen_dump_pdus will filter based on CState permissions
-    {Pdus, Probes} = gen_dump_pdus(CState, Targets),
-    supercast_channel:unicast(CState, Pdus),
-    lists:foreach(fun(X) ->
-        monitor_probe:triggered_return(X, CState)
-    end, Probes),
+    {atomic, _Targets} = monitor_data:iterate_target_table(fun(X,Acc) ->
+        #target{global_perm=Perm} = X,
+        case supercast:satisfy(CState, Perm) of
+            true    ->
+                [X|Acc];
+            false   ->
+                Acc
+        end
+    end),
+
+    {atomic, _Probes} = monitor_data:iterate_probe_table(fun(X,Acc) ->
+        #probe{permissions=Perm} = X,
+        case supercast:satisfy(CState, Perm) of
+            true    ->
+                [X|Acc];
+            false   ->
+                Acc
+        end
+    end),
+
+    {atomic, _Jobs} = monitor_data:iterate_job_table(fun(X,Acc) ->
+        #job{permissions=Perm} = X,
+        case supercast:satisfy(CState, Perm) of
+            true    ->
+                [X|Acc];
+            false   ->
+                Acc
+        end
+    end),
+
+
+    ?LOG({should_send, _Targets, _Probes, _Jobs}),
+    ?LOG({should_trigger_return, _Probes}),
+    %{Pdus, Probes} = gen_dump_pdus(CState, Targets),
+    %supercast_channel:unicast(CState, Pdus),
+    %lists:foreach(fun(X) ->
+    %    monitor_probe:triggered_return(X, CState)
+    %end, Probes),
+ 
     {noreply, S};
 
 %%----------------------------------------------------------------------------
 %% SELF API CASTS
 %%----------------------------------------------------------------------------
-handle_cast({probe_info, TargetName, NewProbe}, #state{dets_ref=DetsRef} = S) ->
-    case dets:lookup(DetsRef, TargetName) of
-        [] ->
-            {noreply, S};
-        [Target] ->
-            Perms = NewProbe#probe.permissions,
-            {ok, NewTarg} = update_target_from_probe_info(Target, NewProbe),
-            dets:insert(DetsRef, NewTarg),
-            Pdu = pdu(infoProbe, {update, TargetName, NewProbe}),
-            supercast_channel:emit(?MASTER_CHANNEL, {Perms, Pdu}),
-            {noreply, S}
-    end;
-
-handle_cast({job_update_properties, TargetId, NewProp}, #state{dets_ref=DetsRef} = S) ->
-    case dets:lookup(DetsRef, TargetId) of
-        [] ->
-            nothing;
-        [Target] ->
-            TargetProp  = Target#target.properties,
-            TargetProp2 = merge_properties(TargetProp, NewProp),
-            case TargetProp2 of
-                TargetProp ->
-                    nothing;
-                _ ->
-                    % update dets
-                    NewTarget = Target#target{properties=TargetProp2},
-                    dets:insert(DetsRef, NewTarget),
-                    %  update client side
-                    PduTarget = pdu(infoTarget, NewTarget),
-                    Perm = NewTarget#target.global_perm,
-                    supercast_channel:emit(?MASTER_CHANNEL, {Perm, PduTarget})
-            end
-    end,
+handle_cast({probe_info, _TargetName, NewProbe}, S) ->
+    io:format("probe info?"),
+    monitor_data:write_probe(NewProbe),
     {noreply, S};
+    %case dets:lookup(DetsRef, TargetName) of
+        %[] ->
+            %{noreply, S};
+        %[Target] ->
+            %Perms = NewProbe#probe.permissions,
+            %{ok, NewTarg} = update_target_from_probe_info(Target, NewProbe),
+            %dets:insert(DetsRef, NewTarg),
+            %Pdu = pdu(infoProbe, {update, TargetName, NewProbe}),
+            %supercast_channel:emit(?MASTER_CHANNEL, {Perms, Pdu}),
+    %end;
+
+%handle_cast({job_update_properties, TargetId, NewProp}, S) ->
+    %case dets:lookup(DetsRef, TargetId) of
+        %[] ->
+            %nothing;
+        %[Target] ->
+            %TargetProp  = Target#target.properties,
+            %TargetProp2 = merge_properties(TargetProp, NewProp),
+            %case TargetProp2 of
+                %TargetProp ->
+                    %nothing;
+                %_ ->
+                    %% update dets
+                    %NewTarget = Target#target{properties=TargetProp2},
+                    %dets:insert(DetsRef, NewTarget),
+                    %%  update client side
+                    %PduTarget = pdu(infoTarget, NewTarget),
+                    %Perm = NewTarget#target.global_perm,
+                    %supercast_channel:emit(?MASTER_CHANNEL, {Perm, PduTarget})
+            %end
+    %end,
+    %{noreply, S};
 
 handle_cast(_R, S) ->
     {noreply, S}.
@@ -297,8 +323,7 @@ handle_cast(_R, S) ->
 handle_info(_, S) ->
     {noreply, S}.
 
-terminate(_R, #state{dets_ref = DetsRef}) ->
-    dets:close(DetsRef),
+terminate(_R, _) ->
     normal.
 
 code_change(_O, S, _E) ->
@@ -308,290 +333,246 @@ code_change(_O, S, _E) ->
 %%----------------------------------------------------------------------------
 %% UTILS    
 %%----------------------------------------------------------------------------
-merge_properties(Props, []) -> Props;
-merge_properties(Props, [NewProp|NewProps]) ->
-    {Key, _} = NewProp,
-    Props2 = lists:keyreplace(Key, 1, Props, NewProp),
-    merge_properties(Props2, NewProps).
+%merge_properties(Props, []) -> Props;
+%merge_properties(Props, [NewProp|NewProps]) ->
+    %{Key, _} = NewProp,
+    %Props2 = lists:keyreplace(Key, 1, Props, NewProp),
+    %merge_properties(Props2, NewProps).
 
-update_target_from_probe_info(Target, Probe) ->
-    TProperties     = Target#target.properties,
-    PProperties     = Probe#probe.properties,
-    PForward        = Probe#probe.forward_properties,
+% update_target_from_probe_info(Target, Probe) ->
+%     TProperties     = Target#target.properties,
+%     PProperties     = Probe#probe.properties,
+%     PForward        = Probe#probe.forward_properties,
+% 
+%     {ok, NewTProp} = 
+%         probe_property_forward(TProperties, PProperties, PForward),
+% 
+% 
+%     Probes  = Target#target.probes,
+%     PrId    = Probe#probe.name,
+%     NProbes = lists:keystore(PrId, 2, Probes, Probe),
+%     NTarget = Target#target{
+%         probes      = NProbes,
+%         properties  = NewTProp
+%     },
+%     case NewTProp of
+%         TProperties ->
+%             % nothing to do
+%             ok;
+%         _ ->
+%             % update target properties state to the client
+%             TargetPerm  = NTarget#target.global_perm,
+%             Pdu         = pdu(infoTarget, NTarget),
+%             supercast_channel:emit(?MASTER_CHANNEL, {TargetPerm, Pdu})
+%     end,
+%     {ok, NTarget}.
 
-    {ok, NewTProp} = 
-        probe_property_forward(TProperties, PProperties, PForward),
-
-
-    Probes  = Target#target.probes,
-    PrId    = Probe#probe.name,
-    NProbes = lists:keystore(PrId, 2, Probes, Probe),
-    NTarget = Target#target{
-        probes      = NProbes,
-        properties  = NewTProp
-    },
-    case NewTProp of
-        TProperties ->
-            % nothing to do
-            ok;
-        _ ->
-            % update target properties state to the client
-            TargetPerm  = NTarget#target.global_perm,
-            Pdu         = pdu(infoTarget, NTarget),
-            supercast_channel:emit(?MASTER_CHANNEL, {TargetPerm, Pdu})
-    end,
-    {ok, NTarget}.
-
-probe_property_forward(TProperties, _, []) ->
-    {ok, TProperties};
-probe_property_forward(TProperties, PProperties, [P|Rest]) ->
-    case lists:keyfind(P, 1, PProperties) of
-        false ->
-            probe_property_forward(TProperties, PProperties, Rest);
-        {P, Val} ->
-            NTProperties = lists:keystore(P,1,TProperties, {P,Val}),
-            probe_property_forward(NTProperties, PProperties, Rest)
-    end.
+% probe_property_forward(TProperties, _, []) ->
+%     {ok, TProperties};
+% probe_property_forward(TProperties, PProperties, [P|Rest]) ->
+%     case lists:keyfind(P, 1, PProperties) of
+%         false ->
+%             probe_property_forward(TProperties, PProperties, Rest);
+%         {P, Val} ->
+%             NTProperties = lists:keystore(P,1,TProperties, {P,Val}),
+%             probe_property_forward(NTProperties, PProperties, Rest)
+%     end.
 
     
 
-load_targets_conf_from_dets(Table) ->
-    TargetsConf = dets:foldr(fun(X, Acc) ->
-        [X|Acc]
-    end, [], Table),
-    TargetsState = [],
-    load_targets_conf(TargetsConf, TargetsState).
+%load_targets_conf_from_dets(Table) ->
+%    TargetsConf = dets:foldr(fun(X, Acc) ->
+%        [X|Acc]
+%    end, [], Table),
+%    TargetsState = [],
+%    load_targets_conf(TargetsConf, TargetsState).
 
 %load_targets_conf_from_file(TargetsConfFile) ->
 %    {ok, TargetsConf}  = file:consult(TargetsConfFile),
 %    TargetsState = [],
 %    load_targets_conf(TargetsConf, TargetsState).
 
-load_targets_conf([], TargetsState) ->
-    {ok, TargetsState};
-load_targets_conf([T|Targets], TargetsState) ->
-    T2 = load_target_conf(T),
-    load_targets_conf(Targets, [T2|TargetsState]).
+%load_targets_conf([], TargetsState) ->
+    %{ok, TargetsState};
+%load_targets_conf([T|Targets], TargetsState) ->
+    %T2 = load_target_conf(T),
+    %load_targets_conf(Targets, [T2|TargetsState]).
     
-load_target_conf(Target) ->
+init_target(Target) ->
     Dir = proplists:get_value(var_directory, Target#target.sys_properties),
-    ok  = init_target_dir(Dir),
-    ok  = init_target_snmp_conf(Target),
-    ok  = init_target_jobs(Target#target.jobs),
-    {ok, Target2}   = init_probes(Target),
-    Target2.
-
-init_target_snmp_conf(Target) ->
-    SysProp = Target#target.sys_properties,
-    case proplists:get_value(snmp_version, SysProp) of
-        undefined   -> ok;
-        SnmpVersion ->
-            SnmpPort        = proplists:get_value(snmp_port,        SysProp),
-            SnmpSecLevel    = proplists:get_value(snmp_seclevel,    SysProp),
-            SnmpCommunity   = proplists:get_value(snmp_community,   SysProp),
-            SnmpUsmUser     = proplists:get_value(snmp_usm_user,    SysProp),
-            SnmpAuthKey     = proplists:get_value(snmp_authkey,     SysProp),
-            SnmpAuthProto   = proplists:get_value(snmp_authproto,   SysProp),
-            SnmpPrivKey     = proplists:get_value(snmp_privkey,     SysProp),
-            SnmpPrivProto   = proplists:get_value(snmp_privproto,   SysProp),
-            SnmpTimeout     = proplists:get_value(snmp_timeout,     SysProp),
-            SnmpRetries     = proplists:get_value(snmp_retries,     SysProp),
-
-            Props = Target#target.properties,
-            IpVersion = proplists:get_value("ipVersion", Props),
-            Ip        = proplists:get_value("ip",        Props),
-
-            SnmpArgs = [
-                {ip_address,        Ip},
-                {ip_version,        IpVersion},
-                {timeout,           SnmpTimeout},
-                {port,              SnmpPort},
-                {snmp_version,      SnmpVersion},
-                {security_level,    SnmpSecLevel},
-                {community,         SnmpCommunity},
-                {auth_key,          SnmpAuthKey},
-                {auth_proto,        SnmpAuthProto},
-                {priv_key,          SnmpPrivKey},
-                {priv_proto,        SnmpPrivProto},
-                {retries,           SnmpRetries},
-                {security_name,     SnmpUsmUser}
-            ],
-
-            snmpman:register_element(Target#target.name, SnmpArgs)
-    end.
-
-init_target_jobs([]) -> ok;
-init_target_jobs(
-        [#job{name=Name,trigger=Trigger,module=M,function=F,argument=A}|Jobs]
-            ) ->
-    ok = equartz:register_internal_job(Name,Trigger,{M,F,A}),
-    init_target_jobs(Jobs).
-
-init_probes(Target) ->
-    ProbesOrig  = Target#target.probes,
-    ProbesNew   = [],
-    init_probes(Target, ProbesOrig, ProbesNew).
-init_probes(Target, [], ProbesNew) ->
-    TargetNew = Target#target{probes = ProbesNew},
-    {ok, TargetNew};
-init_probes(Target, [P|Probes], ProbesN) ->
-    monitor_probe_sup:new({Target, P}),
-    ProbesN2  = [P|ProbesN],
-    init_probes(Target, Probes, ProbesN2).
-
-init_target_dir(Dir) ->
     case file:read_file_info(Dir) of
         {ok, _} ->
             ok;
         {error, enoent} ->
             file:make_dir(Dir);
         Other ->
-            {error, Other}
-    end.
+            exit({error, Other})
+    end,
+    ok  = monitor_snmp_utils:init_snmp_conf(Target).
+    %ok  = init_target_jobs(Target#target.jobs).
 
-%%----------------------------------------------------------------------------
+%init_target_jobs([]) -> ok;
+%init_target_jobs(
+        %[#job{name=Name,trigger=Trigger,module=M,function=F,argument=A}|Jobs]
+            %) ->
+    %ok = equartz:register_internal_job(Name,Trigger,{M,F,A}),
+    %init_target_jobs(Jobs).
+
+%init_probes(Target) ->
+    %ProbesOrig  = Target#target.probes,
+    %ProbesNew   = [],
+    %init_probes(Target, ProbesOrig, ProbesNew).
+%init_probes(Target, [], ProbesNew) ->
+    %TargetNew = Target#target{probes = ProbesNew},
+    %{ok, TargetNew};
+%init_probes(Target, [P|Probes], ProbesN) ->
+    %monitor_probe_sup:new({Target, P}),
+    %ProbesN2  = [P|ProbesN],
+    %init_probes(Target, Probes, ProbesN2).
+
+    %%----------------------------------------------------------------------------
 %% PDU BUILD
 %%----------------------------------------------------------------------------
-pdu(infoTarget, #target{name=Name, properties=Prop}) ->
-    AsnProps = lists:foldl(fun({K,V}, Acc) -> 
-        [{'Property', K, V} | Acc]
-    end, [], Prop),
-    {modMonitorPDU,
-        {fromServer,
-            {infoTarget,
-                {'InfoTarget',
-                    Name,
-                    AsnProps,
-                    [],
-                    create}}}};
+% pdu(infoTarget, #target{name=Name, properties=Prop}) ->
+%     AsnProps = lists:foldl(fun({K,V}, Acc) -> 
+%         [{'Property', K, V} | Acc]
+%     end, [], Prop),
+%     {modMonitorPDU,
+%         {fromServer,
+%             {infoTarget,
+%                 {'InfoTarget',
+%                     Name,
+%                     AsnProps,
+%                     [],
+%                     create}}}};
+% 
+% pdu(infoTargetUpdate, #target{name=Name, properties=Prop}) ->
+%     AsnProps = lists:foldl(fun({K,V}, Acc) ->
+%         [{'Property', K, V} | Acc]
+%     end, [], Prop),
+%     {modMonitorPDU,
+%         {fromServer,
+%             {infoTarget,
+%                 {'InfoTarget',
+%                     Name,
+%                     AsnProps,
+%                     [],
+%                     update}}}};
+% 
+% pdu(infoTargetDelete, Id) ->
+%     {modMonitorPDU,
+%         {fromServer,
+%             {infoTarget,
+%                 {'InfoTarget',
+%                     Id,
+%                     [],
+%                     delete}}}};
+% 
+% pdu(infoProbe, {InfoType, TargetName, 
+%         #probe{
+%             permissions         = #perm_conf{read = R, write = W},
+%             monitor_probe_conf  = ProbeConf,
+%             description         = Descr,
+%             info                = Info
+%         } = Probe
+%     }) ->
+%     P = {modMonitorPDU,
+%         {fromServer,
+%             {infoProbe,
+%                 {'InfoProbe',
+%                     TargetName,
+%                     Probe#probe.name,
+%                     Descr,
+%                     Info,
+%                     {'PermConf', R, W},
+%                     atom_to_list(Probe#probe.monitor_probe_mod),
+%                     gen_asn_probe_conf(ProbeConf),
+%                     Probe#probe.status,
+%                     Probe#probe.timeout,
+%                     Probe#probe.step,
+%                     gen_asn_probe_inspectors(Probe#probe.inspectors),
+%                     gen_asn_probe_loggers(Probe#probe.loggers),
+%                     gen_asn_probe_properties(Probe#probe.properties),
+%                     gen_asn_probe_active(Probe#probe.active),
+%                     InfoType}}}},
+%     P.
 
-pdu(infoTargetUpdate, #target{name=Name, properties=Prop}) ->
-    AsnProps = lists:foldl(fun({K,V}, Acc) ->
-        [{'Property', K, V} | Acc]
-    end, [], Prop),
-    {modMonitorPDU,
-        {fromServer,
-            {infoTarget,
-                {'InfoTarget',
-                    Name,
-                    AsnProps,
-                    [],
-                    update}}}};
+% gen_asn_probe_active(true)  -> 1;
+% gen_asn_probe_active(false) -> 0.
+% 
+% gen_asn_probe_conf(Conf) when is_record(Conf, nchecks_probe_conf) ->
+%     lists:flatten(io_lib:format("~p", [Conf]));
+% gen_asn_probe_conf(Conf) when is_record(Conf, snmp_probe_conf) ->
+%     lists:flatten(io_lib:format("~p", [Conf])).
+% 
+% gen_asn_probe_inspectors(Inspectors) ->
+%     [{
+%         'Inspector',
+%         atom_to_list(Module),
+%         lists:flatten(io_lib:format("~p", [Conf]))
+%     } || {_, Module, Conf} <- Inspectors].
+% 
+% gen_asn_probe_loggers(Loggers) ->
+%     [gen_logger_pdu(LConf) || LConf <- Loggers].
+% 
+% gen_logger_pdu({logger, bmonitor_logger_rrd2, Cfg}) ->
+%     Type = proplists:get_value(type, Cfg),
+%     RCreate = proplists:get_value(rrd_create, Cfg),
+%     RUpdate = proplists:get_value(rrd_update, Cfg),
+%     RGraphs = proplists:get_value(rrd_graph, Cfg),
+%     Indexes = [I || {I,_} <- proplists:get_value(row_index_to_rrd_file, Cfg)],
+%     {loggerRrd2, 
+%         {'LoggerRrd2',
+%             atom_to_list(bmonitor_logger_rrd2),
+%             atom_to_list(Type),
+%             RCreate,
+%             RUpdate,
+%             RGraphs,
+%             Indexes
+%         }
+%     };
+% 
+% gen_logger_pdu({logger, bmonitor_logger_text, Cfg}) ->
+%     {loggerText, 
+%         {'LoggerText', 
+%             atom_to_list(bmonitor_logger_text), 
+%             to_string(Cfg)}}.
 
-pdu(infoTargetDelete, Id) ->
-    {modMonitorPDU,
-        {fromServer,
-            {infoTarget,
-                {'InfoTarget',
-                    Id,
-                    [],
-                    delete}}}};
+% gen_dump_pdus(CState, Targets) ->
+%     FTargets    = supercast:filter(CState, [{Perm, Target} ||
+%         #target{global_perm = Perm} = Target <- Targets]),
+%     TargetsPDUs = [pdu(infoTarget, Target) || Target <- FTargets],
+%     ProbesDefs  = [{Name, Probes} ||
+%         #target{name=Name, probes = Probes} <- FTargets],
+%     gen_dump_pdus(CState, TargetsPDUs, [], [], ProbesDefs).
+% gen_dump_pdus(_, TargetsPDUs, ProbesPDUs, ProbesFiltered, []) ->
+%     {lists:append(TargetsPDUs, ProbesPDUs), ProbesFiltered};
+% gen_dump_pdus(CState, TargetsPDUs, ProbesPDUs, PFList, [{TId, Probes}|T]) ->
+%     ProbesThings  = [{Perm, Probe} || 
+%         #probe{permissions = Perm} = Probe <- Probes],
+%     AllowedThings = supercast:filter(CState, ProbesThings),
+%     PFListN = [PName || #probe{name = PName} <- Probes],
+%     Result = [pdu(infoProbe, {create, TId, Probe}) ||
+%         Probe <- AllowedThings],
+%     gen_dump_pdus(
+%         CState,
+%         TargetsPDUs,
+%         lists:append(ProbesPDUs, Result),
+%         lists:append(PFListN,PFList),
+%         T).
 
-pdu(infoProbe, {InfoType, TargetName, 
-        #probe{
-            permissions         = #perm_conf{read = R, write = W},
-            monitor_probe_conf  = ProbeConf,
-            description         = Descr,
-            info                = Info
-        } = Probe
-    }) ->
-    P = {modMonitorPDU,
-        {fromServer,
-            {infoProbe,
-                {'InfoProbe',
-                    TargetName,
-                    Probe#probe.name,
-                    Descr,
-                    Info,
-                    {'PermConf', R, W},
-                    atom_to_list(Probe#probe.monitor_probe_mod),
-                    gen_asn_probe_conf(ProbeConf),
-                    Probe#probe.status,
-                    Probe#probe.timeout,
-                    Probe#probe.step,
-                    gen_asn_probe_inspectors(Probe#probe.inspectors),
-                    gen_asn_probe_loggers(Probe#probe.loggers),
-                    gen_asn_probe_properties(Probe#probe.properties),
-                    gen_asn_probe_active(Probe#probe.active),
-                    InfoType}}}},
-    P.
-
-gen_asn_probe_active(true)  -> 1;
-gen_asn_probe_active(false) -> 0.
-
-gen_asn_probe_conf(Conf) when is_record(Conf, nchecks_probe_conf) ->
-    lists:flatten(io_lib:format("~p", [Conf]));
-gen_asn_probe_conf(Conf) when is_record(Conf, snmp_probe_conf) ->
-    lists:flatten(io_lib:format("~p", [Conf])).
-
-gen_asn_probe_inspectors(Inspectors) ->
-    [{
-        'Inspector',
-        atom_to_list(Module),
-        lists:flatten(io_lib:format("~p", [Conf]))
-    } || {_, Module, Conf} <- Inspectors].
-
-gen_asn_probe_loggers(Loggers) ->
-    [gen_logger_pdu(LConf) || LConf <- Loggers].
-
-gen_logger_pdu({logger, bmonitor_logger_rrd2, Cfg}) ->
-    Type = proplists:get_value(type, Cfg),
-    RCreate = proplists:get_value(rrd_create, Cfg),
-    RUpdate = proplists:get_value(rrd_update, Cfg),
-    RGraphs = proplists:get_value(rrd_graph, Cfg),
-    Indexes = [I || {I,_} <- proplists:get_value(row_index_to_rrd_file, Cfg)],
-    {loggerRrd2, 
-        {'LoggerRrd2',
-            atom_to_list(bmonitor_logger_rrd2),
-            atom_to_list(Type),
-            RCreate,
-            RUpdate,
-            RGraphs,
-            Indexes
-        }
-    };
-
-gen_logger_pdu({logger, bmonitor_logger_text, Cfg}) ->
-    {loggerText, 
-        {'LoggerText', 
-            atom_to_list(bmonitor_logger_text), 
-            to_string(Cfg)}}.
-
-gen_dump_pdus(CState, Targets) ->
-    FTargets    = supercast:filter(CState, [{Perm, Target} ||
-        #target{global_perm = Perm} = Target <- Targets]),
-    TargetsPDUs = [pdu(infoTarget, Target) || Target <- FTargets],
-    ProbesDefs  = [{Name, Probes} ||
-        #target{name=Name, probes = Probes} <- FTargets],
-    gen_dump_pdus(CState, TargetsPDUs, [], [], ProbesDefs).
-gen_dump_pdus(_, TargetsPDUs, ProbesPDUs, ProbesFiltered, []) ->
-    {lists:append(TargetsPDUs, ProbesPDUs), ProbesFiltered};
-gen_dump_pdus(CState, TargetsPDUs, ProbesPDUs, PFList, [{TId, Probes}|T]) ->
-    ProbesThings  = [{Perm, Probe} || 
-        #probe{permissions = Perm} = Probe <- Probes],
-    AllowedThings = supercast:filter(CState, ProbesThings),
-    PFListN = [PName || #probe{name = PName} <- Probes],
-    Result = [pdu(infoProbe, {create, TId, Probe}) ||
-        Probe <- AllowedThings],
-    gen_dump_pdus(
-        CState,
-        TargetsPDUs,
-        lists:append(ProbesPDUs, Result),
-        lists:append(PFListN,PFList),
-        T).
-
-to_string(Term) ->
-    lists:flatten(io_lib:format("~p", [Term])).
-
-gen_asn_probe_properties(K) ->
-    gen_asn_probe_properties(K, []).
-gen_asn_probe_properties([], S) ->
-    S;
-gen_asn_probe_properties([{K,V} | T], S) when is_list(V) ->
-    gen_asn_probe_properties(T, [{'Property', K, V} | S]);
-gen_asn_probe_properties([{K,V} | T], S) when is_integer(V) ->
-    gen_asn_probe_properties(T, [{'Property', K, integer_to_list(V)} | S]);
-gen_asn_probe_properties([{K,V} | T], S) when is_float(V) ->
-    gen_asn_probe_properties(T, [{'Property', K, float_to_list(V, [{decimals, 10}])} | S]);
-gen_asn_probe_properties([{K,V} | T], S) when is_atom(V) ->
-    gen_asn_probe_properties(T, [{'Property', K, atom_to_list(V)} | S]).
+% to_string(Term) ->
+%     lists:flatten(io_lib:format("~p", [Term])).
+% 
+% gen_asn_probe_properties(K) ->
+%     gen_asn_probe_properties(K, []).
+% gen_asn_probe_properties([], S) ->
+%     S;
+% gen_asn_probe_properties([{K,V} | T], S) when is_list(V) ->
+%     gen_asn_probe_properties(T, [{'Property', K, V} | S]);
+% gen_asn_probe_properties([{K,V} | T], S) when is_integer(V) ->
+%     gen_asn_probe_properties(T, [{'Property', K, integer_to_list(V)} | S]);
+% gen_asn_probe_properties([{K,V} | T], S) when is_float(V) ->
+%     gen_asn_probe_properties(T, [{'Property', K, float_to_list(V, [{decimals, 10}])} | S]);
+% gen_asn_probe_properties([{K,V} | T], S) when is_atom(V) ->
+%     gen_asn_probe_properties(T, [{'Property', K, atom_to_list(V)} | S]).

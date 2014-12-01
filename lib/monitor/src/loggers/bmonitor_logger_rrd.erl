@@ -28,7 +28,7 @@
 -include("include/monitor.hrl").
 
 -export([
-    log_init/3,
+    log_init/2,
     log/2,
     dump/2
 ]).
@@ -49,15 +49,15 @@
     file_path = none            :: string()
 }).
 
-log_init(Conf, Target, Probe) ->
-    TargetId    = Target#target.name,
+log_init(Conf, Probe) ->
     ProbeId     = Probe#probe.name,
+    Target      = monitor_data:get_target(Probe#probe.belong_to),
     Dir         = proplists:get_value(var_directory, Target#target.sys_properties),
     {ok, Rrds}  = update_rrd_record(Conf, Dir),
     ok          = create_file_if_needed(Rrds),
     State       = #state{
         rrds        = Rrds,
-        target_name   = TargetId,
+        target_name   = Probe#probe.belong_to,
         probe_name    = ProbeId
     },
     {ok, State}.

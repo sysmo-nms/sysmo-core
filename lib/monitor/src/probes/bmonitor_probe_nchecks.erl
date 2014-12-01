@@ -25,7 +25,7 @@
 -include("../nchecks/include/nchecks.hrl").
 
 -export([
-    init/2,
+    init/1,
     exec/1,
     info/0
 ]).
@@ -43,7 +43,8 @@
 info() ->
     {ok, "Noctopus checks"}.
 
-init(Target, Probe) ->
+init(Probe) ->
+    Target      = monitor_data:get_target(Probe#probe.belong_to),
     TargetProp  = Target#target.properties,
     Conf        = Probe#probe.monitor_probe_conf,
     #nchecks_probe_conf{function = Funct, args = Args} = Conf,

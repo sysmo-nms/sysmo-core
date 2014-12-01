@@ -59,11 +59,17 @@
 }).
 
 
+-record(probe_state, {
+    name,
+    target_name,
+    inspectors_state,
+    loggers_state,
+    exec_state
+}).
 
-start_link({Target, #probe{name = Name} = Probe}) ->
-    gen_fsm:start_link(
-        {via, supercast_registrar, {?MODULE, Name}},
-        ?MODULE, [Target, Probe], []).
+start_link(#probe{name = Name} = Probe) ->
+    gen_fsm:start_link({via, supercast_registrar, {?MODULE, Name}},
+        ?MODULE, Probe, []).
 
 % supercast_channel behaviour
 get_perms(PidName) ->
@@ -73,17 +79,33 @@ get_perms(PidName) ->
 sync_request(PidName, CState) ->
     gen_fsm:send_all_state_event({via, supercast_registrar, PidName}, {sync_request, CState}).
 
+
+
 % from master channel to update clients timeout
 triggered_return(PidName, CState) ->
     gen_fsm:send_all_state_event({via, supercast_registrar, PidName}, {triggered_return, CState}).
 
-init([Target, Probe]) ->
+
+
+
+init(Probe) ->
     init_random(),
-    {ok, ProbeInitState}    = init_probe(Target, Probe),
-    {ok, InspectInitState}  = monitor_inspector:init_all(Target, Probe),
-    {ok, LoggersInitState}  = init_loggers(Target, Probe),
+    %{ok, ProbeInitState}    = init_probe(Target, Probe),
+    %{ok, InspectInitState}  = monitor_inspector:init_all(Target, Probe),
+    %{ok, LoggersInitState}  = monitor_logger:init_all(Target,Probe),
+    {ok, ProbeInitState}    = init_probe(Probe),
+    {ok, InspectInitState}  = monitor_inspector:init_all(Probe),
+    {ok, LoggersInitState}  = monitor_logger:init_all(Probe),
+    PState = #probe_state{
+        name             = Probe#probe.name,
+        target_name      = Probe#probe.belong_to,
+        inspectors_state = InspectInitState,
+        loggers_state    = LoggersInitState,
+        exec_state       = ProbeInitState
+    },
+    monitor_data:set_probe_state(PState),
     PSState = #state{
-        target_name           = Target#target.name,
+        target_name         = Probe#probe.belong_to,
         name                = Probe#probe.name,
         probe               = Probe,
         probe_state         = ProbeInitState ,
@@ -113,8 +135,8 @@ handle_event({probe_return, NewProbeState, ProbeReturn}, SName, SData) ->
 
     % LOG, update loggers_state,
     % update #state.loggers_state
-    LoggersState            = SData3#state.loggers_state,
-    {ok, Pdus, NewLoggersState} = log_return(LoggersState, ProbeReturn),
+    LoggersState = SData3#state.loggers_state,
+    {ok, Pdus, NewLoggersState} = monitor_logger:log_all(LoggersState,ProbeReturn),
     emit_all(Probe#probe.name, Probe#probe.permissions, Pdus),
 
     SData4 = SData3#state{loggers_state = NewLoggersState},
@@ -145,7 +167,7 @@ handle_event({sync_request, CState}, SName, SData) ->
     Probe   = SData#state.probe,
     Name    = Probe#probe.name,
     LStates = SData#state.loggers_state,
-    {ok, Pdus, LState2} = log_dump(LStates, CState),
+    {ok, Pdus, LState2} = monitor_logger:dump_all(LStates, CState),
     ok  = supercast_channel:unicast(CState, Pdus),
     ok  = supercast_channel:subscribe(Name, CState),
     {next_state, SName, SData#state{loggers_state = LState2}};
@@ -194,31 +216,12 @@ code_change(_OldVsn, SName, SData, _Extra) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% PROBE %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-init_probe(Target, Probe) ->
-    Mod         = Probe#probe.monitor_probe_mod,
-    InitState   = Mod:init(Target, Probe),
+init_probe(Probe) ->
+    Mod       = Probe#probe.monitor_probe_mod,
+    InitState = Mod:init(Probe),
     InitState.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-emit_all(_, _, []) -> ok;
-emit_all(Name, Perm, [Pdu|T]) ->
-    supercast_channel:emit(Name,{Perm, Pdu}),
-    emit_all(Name,Perm,T).
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% LOGGERS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-init_loggers(Target,Probe) ->
-    monitor_logger:init_all(Target,Probe).
-
-log_return(LoggersState, ProbeReturn) ->
-    monitor_logger:log_all(LoggersState,ProbeReturn).
-
-log_dump(LoggersState, CState) ->
-    monitor_logger:dump_all(LoggersState, CState).
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% PROBE LAUNCH %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -250,9 +253,10 @@ take_of(Parent, Mod, ProbeState) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% monitor_master and supercast_channel NOTIFY %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-notify(ProbeReturn, TargetName, OriginalProbe, NewProbe, NextMicroStart) ->
+notify(ProbeReturn, TargetName, _OriginalProbe, NewProbe, NextMicroStart) ->
     ok = notify_subscribers(ProbeReturn, TargetName, NewProbe, NextMicroStart),
-    ok = notify_master(TargetName, OriginalProbe, NewProbe).
+    monitor_data:write_probe(NewProbe).
+    %ok = notify_master(TargetName, OriginalProbe, NewProbe).
 
 notify_subscribers(ProbeReturn, TargetName, Probe, NextMicroStart) ->
     ProbeName = Probe#probe.name,
@@ -260,32 +264,30 @@ notify_subscribers(ProbeReturn, TargetName, Probe, NextMicroStart) ->
     Pdu      = probe_return({ProbeReturn, TargetName, ProbeName, NextMicroStart}),
     supercast_channel:emit(?MASTER_CHANNEL, {Perms, Pdu}).
 
-notify_master(TargetName, OriginalProbe, Probe) ->
-    case notify_master_required(OriginalProbe, Probe) of
-        true  ->
-            monitor_master:probe_info(TargetName, Probe);
-        false -> ok
-    end.
 
-notify_master_required(Orig, Modified) ->
-    OriState    = Orig#probe.status,
-    ModState    = Modified#probe.status,
-    OriProp     = Orig#probe.properties,
-    ModProp     = Modified#probe.properties,
 
-    case OriState of
-        ModState ->
-            case OriProp of
-                ModProp -> false;
-                _       -> true
-            end;
-        _ ->
-            true
-    end.
+
+
+
+
+
+
+
+
+
+
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% UTILS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+emit_all(_, _, []) -> ok;
+emit_all(Name, Perm, [Pdu|T]) ->
+    supercast_channel:emit(Name,{Perm, Pdu}),
+    emit_all(Name,Perm,T).
+
+
 init_random() ->
     <<A:32, B:32, C:32>> = crypto:rand_bytes(12),
     random:seed({A,B,C}).

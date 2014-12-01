@@ -24,7 +24,8 @@
 -include("include/monitor.hrl").
 -export([
     'PDU-MonitorPDU-fromServer-infoTarget-create'/1,
-    'PDU-MonitorPDU-fromServer-infoProbe-create'/1
+    'PDU-MonitorPDU-fromServer-infoProbe-create'/1,
+    'PDU-MonitorPDU-fromServer-infoProbe-update'/1
 ]).
 
 'PDU-MonitorPDU-fromServer-infoTarget-create'(
@@ -41,6 +42,36 @@
                     AsnProps,
                     [],
                     create}}}}.
+
+'PDU-MonitorPDU-fromServer-infoProbe-update'(
+    #probe{
+        permissions         = #perm_conf{read = R, write = W},
+        monitor_probe_conf  = ProbeConf,
+        description         = Descr,
+        info                = Info
+    } = Probe) ->
+    {modMonitorPDU,
+        {fromServer,
+            {infoProbe,
+                {'InfoProbe',
+                    Probe#probe.belong_to,
+                    Probe#probe.name,
+                    Descr,
+                    Info,
+                    {'PermConf', R, W},
+                    atom_to_list(Probe#probe.monitor_probe_mod),
+                    gen_asn_probe_conf(ProbeConf),
+                    Probe#probe.status,
+                    Probe#probe.timeout,
+                    Probe#probe.step,
+                    gen_asn_probe_inspectors(Probe#probe.inspectors),
+                    gen_asn_probe_loggers(Probe#probe.loggers),
+                    gen_asn_probe_properties(Probe#probe.properties),
+                    gen_asn_probe_active(Probe#probe.active),
+                    create
+    }   }   }   }.
+
+
 
 'PDU-MonitorPDU-fromServer-infoProbe-create'(
     #probe{

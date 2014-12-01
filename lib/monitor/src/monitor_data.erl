@@ -40,7 +40,19 @@
 -export([
     write_target/1,
     write_probe/1,
-    write_job/1
+    write_job/1,
+
+    iterate_target_table/1,
+    iterate_probe_table/1,
+    iterate_job_table/1,
+
+    get_target/1,
+    get_probe/1,
+    get_job/1,
+
+    get_probe_state/1,
+    set_probe_state/1,
+    del_probe_state/1
 ]).
 
 start_link() ->
@@ -52,7 +64,8 @@ start_link() ->
 %% GEN_SERVER CALLBACKS
 %%----------------------------------------------------------------------------
 init([]) ->
-    init_tables(),
+    init_ets_tables(),
+    init_mnesia_tables(),
     mnesia:subscribe({table, target, detailed}),
     mnesia:subscribe({table, probe,  detailed}),
     mnesia:subscribe({table, job,    detailed}),
@@ -74,8 +87,11 @@ handle_info({mnesia_table_event, {write, target, NewTarget, OldTarget, _Activity
 handle_info({mnesia_table_event, {write, probe, Probe, [], _ActivityId}}, S) ->
     handle_probe_create(Probe),
     {noreply, S};
-handle_info({mnesia_table_event, {write, probe, NewProbe, OldProbe, _ActivityId}}, S) ->
-    handle_probe_update(NewProbe, OldProbe),
+handle_info({mnesia_table_event, {write, probe, Probe, [Probe], _ActivityId}}, S) ->
+    % same thing do nothing
+    {noreply, S};
+handle_info({mnesia_table_event, {write, probe, NewProbe, [_OldProbe], _ActivityId}}, S) ->
+    handle_probe_update(NewProbe, _OldProbe),
     {noreply, S};
 handle_info({mnesia_table_event, {delete, Table, What, _OldRecords, _ActivityId}}, S) ->
     ?LOG({"handle_info delete ", Table, What}),
@@ -96,20 +112,24 @@ handle_target_create(#target{global_perm = Perm} = Target) ->
     Pdu = monitor_pdu:'PDU-MonitorPDU-fromServer-infoTarget-create'(Target),
     supercast_channel:emit(?MASTER_CHANNEL, {Perm, Pdu}).
 
-handle_target_update(_,_) -> ok.
+handle_target_update(_,_) ->
+    ?LOG("target update"),
+    ok.
 
 
 handle_probe_create(#probe{permissions=Perm} = Probe) ->
     Pdu = monitor_pdu:'PDU-MonitorPDU-fromServer-infoProbe-create'(Probe),
     supercast_channel:emit(?MASTER_CHANNEL, {Perm, Pdu}).
 
-handle_probe_update(_,_) -> ok.
+handle_probe_update(#probe{permissions=Perm} = Probe,_) ->
+    Pdu = monitor_pdu:'PDU-MonitorPDU-fromServer-infoProbe-update'(Probe),
+    supercast_channel:emit(?MASTER_CHANNEL, {Perm, Pdu}).
 
     
 
 
 % MNESIA init
-init_tables() ->
+init_mnesia_tables() ->
     Tables = mnesia:system_info(tables),
     DetsOpts = [
         {auto_save, 5000}
@@ -175,3 +195,66 @@ write_probe(Probe) ->
 
 write_job(Job) ->
     mnesia:transaction(fun() -> mnesia:write(Job) end).
+
+% MNESIA iterate
+iterate_target_table(Fun) ->
+    Trans = fun() -> mnesia:foldl(Fun, [], target) end,
+    mnesia:transaction(Trans).
+
+iterate_probe_table(Fun) ->
+    Trans = fun() -> mnesia:foldl(Fun, [], probe) end,
+    mnesia:transaction(Trans).
+
+iterate_job_table(Fun) ->
+    Trans = fun() -> mnesia:foldl(Fun, [], job) end,
+    mnesia:transaction(Trans).
+
+% MNESIA get
+get_target(Key) ->
+    {atomic, T} =  mnesia:transaction(fun() -> 
+        case mnesia:read({target, Key}) of
+            [] -> undefined;
+            [V] -> V
+        end
+    end),
+    T.
+
+get_probe(Key) ->
+    {atomic, P} = mnesia:transaction(fun() -> 
+        case mnesia:read({probe, Key}) of
+            [] -> undefined;
+            [V] -> V
+        end
+    end),
+    P.
+
+
+get_job(Key) ->
+    {atomic, J} = mnesia:transaction(fun() -> 
+        case mnesia:read({job, Key}) of
+            [] -> undefined;
+            [V] -> V
+        end
+    end),
+    J.
+
+% ETS probes_states
+init_ets_tables() ->
+    ets:new(?PROBES_STATE,
+        [
+            set,
+            named_table,
+            public,
+            compressed,
+            {keypos, 2}
+        ]
+    ).
+
+get_probe_state(Key) ->
+    ets:lookup(?PROBES_STATE, Key).
+
+set_probe_state(State) ->
+    ets:insert(?PROBES_STATE, State).
+
+del_probe_state(Key) ->
+    ets:delete(?PROBES_STATE, Key).

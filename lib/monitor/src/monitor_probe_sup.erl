@@ -21,6 +21,7 @@
 % @private
 -module(monitor_probe_sup).
 -behaviour(supervisor).
+-include("include/monitor.hrl").
 
 -export([
     start_link/0,
@@ -32,8 +33,8 @@
 start_link() ->
     supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
-new({Target, Probe}) ->
-    supervisor:start_child(?MODULE, [{Target, Probe}]).
+new(Probe) ->
+    {ok, _} = supervisor:start_child(?MODULE, [Probe]).
 
 init([]) ->
     {ok, 

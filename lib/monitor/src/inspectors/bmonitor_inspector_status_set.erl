@@ -29,7 +29,7 @@
 
 -export([
     info/0,
-    init/3,
+    init/2,
     inspect/4
 ]).
 
@@ -41,7 +41,7 @@ words it set the status of the probe from the status of the probe_return
 without further inspection. This inspector should be the first called.",
     {ok, Info}.
 
-init(_Conf, _Target, _Probe) ->
+init(_Conf, _Probe) ->
     {ok, no_state}.
 
 inspect(State, ProbeReturn, _OrigProbe, ModifiedProbe) ->

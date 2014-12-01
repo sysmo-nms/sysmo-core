@@ -22,7 +22,7 @@
 -include("include/monitor.hrl").
 
 -export([
-    init_all/2,
+    init_all/1,
     inspect_all/3
 ]).
 
@@ -30,7 +30,7 @@
 % @doc
 % Must return an Info string, wich explain what does the inspector.
 % @end
--callback init(Conf::[any()], Target::#target{}, Probe::#probe{}) -> 
+-callback init(Conf::[any()], Probe::#probe{}) -> 
     {ok, State::any()}.
 % @doc
 % Called at the init stage. Must return a State value wich will be 
@@ -52,24 +52,24 @@
 % @end
 
 
--spec init_all(Target::#target{}, Probe::#probe{}) -> {ok, InspectorStates::[term()]}.
+-spec init_all(Probe::#probe{}) -> {ok, InspectorStates::[term()]}.
 % @doc
 % Used by the monitor_probe module to initialize all inspectors of a probe
 % and return a list of inspectors states.
 % @end
-init_all(Target, Probe) ->
+init_all(Probe) ->
     Inspectors  = Probe#probe.inspectors,
     States      = [],
-    init_inspectors(Target, Probe, Inspectors, States).
+    init_inspectors(Probe, Inspectors, States).
 
-init_inspectors(_, _, [], InspectStates) ->
+init_inspectors(_, [], InspectStates) ->
     {ok, InspectStates};
-init_inspectors(Target, Probe, [Inspector|Inspectors], InspectStates) ->
+init_inspectors(Probe, [Inspector|Inspectors], InspectStates) ->
     Mod                 = Inspector#inspector.module,
     Conf                = Inspector#inspector.conf,
-    {ok, InspReply}     = Mod:init(Conf, Target, Probe),
+    {ok, InspReply}     = Mod:init(Conf, Probe),
     NewInspectStates    = lists:keystore(Mod,1,InspectStates,{Mod,InspReply}),
-    init_inspectors(Target, Probe, Inspectors, NewInspectStates).
+    init_inspectors(Probe, Inspectors, NewInspectStates).
 
 -spec inspect_all(States::[term()], Probe::#probe{}, PR::#probe_return{}) ->
     {ok, NewInspectSates::[term()], NewProbe::#probe{}}.

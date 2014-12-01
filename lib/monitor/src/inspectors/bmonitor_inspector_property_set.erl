@@ -24,7 +24,7 @@
 
 
 -export([
-    init/3,
+    init/2,
     inspect/4,
     info/0
 ]).
@@ -42,7 +42,7 @@ If the key did not appear in the #probe_return.key_vals list, the inspector
 do nothing (if key_val exist, it will not be modified).",
     {ok, Info}.
 
-init(Conf, _Target, _Probe) ->
+init(Conf, _Probe) ->
     State = #state{binds = Conf},
     {ok, State}.
 

@@ -29,7 +29,7 @@
 
 -export([
     info/0,
-    init/3,
+    init/2,
     inspect/4
 ]).
 
@@ -40,7 +40,7 @@ info() ->
     If parent state are not newer, the status is set to UNKNOWN",
     {ok, Info}.
 
-init(_Conf, _Target, _Probe) ->
+init(_Conf, _Probe) ->
     {ok, no_state}.
 
 inspect(State, _ProbeReturn, _OrigProbe, ModifiedProbe) ->

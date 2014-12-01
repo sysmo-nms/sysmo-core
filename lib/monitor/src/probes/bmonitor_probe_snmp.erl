@@ -24,7 +24,7 @@
 
 %% monitor_probe exports
 -export([
-    init/2,
+    init/1,
     exec/1,
     info/0
 ]).
@@ -44,8 +44,8 @@
 
 info() -> {ok, "snmp get and walk module"}.
 
-init(Target, Probe) ->
-    AgentName   = Target#target.name,
+init(Probe) ->
+    AgentName   = Probe#probe.belong_to,
     Conf        = Probe#probe.monitor_probe_conf,
     Method      = Conf#snmp_probe_conf.method,
     Oids        = Conf#snmp_probe_conf.oids,

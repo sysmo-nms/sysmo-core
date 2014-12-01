@@ -26,12 +26,12 @@
 -include("include/monitor.hrl").
 
 -export([
-    init_all/2,
+    init_all/1,
     log_all/2,
     dump_all/2
 ]).
 
--callback log_init(Conf::any(), Target::#target{}, Probe::#probe{}) ->
+-callback log_init(Conf::any(), Probe::#probe{}) ->
     {ok, State::any()}.
 % @doc
 % Is called at initialisation stage. Must return a State wich will be used
@@ -66,22 +66,22 @@
 % wich will be encoded as is.
 % @end
 
--spec init_all(Target::#target{}, Probe::#probe{}) -> {ok, [term()]}.
+-spec init_all(Probe::#probe{}) -> {ok, [term()]}.
 % @doc
 % Used by monitor_probe to init all the loggers. Return their state.
 % @end
-init_all(Target, Probe) ->
+init_all(Probe) ->
     Loggers         = Probe#probe.loggers,
     LoggersState    = [],
-    init_loggers(Target, Probe, Loggers, LoggersState).
-init_loggers(_Target, _Probe, [], LoggersState) ->
+    init_loggers(Probe, Loggers, LoggersState).
+init_loggers(_Probe, [], LoggersState) ->
     {ok, LoggersState};
-init_loggers(Target, Probe, [Logger|Loggers], LoggersState) ->
+init_loggers(Probe, [Logger|Loggers], LoggersState) ->
     Mod             = Logger#logger.module,
     Conf            = Logger#logger.conf,
-    {ok, State}     = Mod:log_init(Conf, Target, Probe),
+    {ok, State}     = Mod:log_init(Conf, Probe),
     LoggersState2   = lists:keystore(Mod, 1, LoggersState, {Mod, State}),
-    init_loggers(Target, Probe, Loggers, LoggersState2).
+    init_loggers(Probe, Loggers, LoggersState2).
 
 -spec log_all(LoggersState::[term()], PR::#probe_return{}) ->
     {ok, Pdus::[term()], State::[term()]}.

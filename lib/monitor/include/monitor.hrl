@@ -6,6 +6,8 @@
 
 -define(MASTER_CHANNEL, "target-MasterChan").
 
+-define(PROBES_STATE, ets_probes_state).
+
 -record(inspector, {
     module,
     conf

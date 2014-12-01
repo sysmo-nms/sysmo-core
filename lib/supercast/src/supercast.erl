@@ -23,10 +23,17 @@
 
 -export([
     filter/2,
+    satisfy/2,
     mpd_state/0,
     server_state/0
 ]).
 
+
+satisfy(CState, Perm) ->
+    case supercast_acctrl_rbac:satisfy(read, [CState], Perm) of
+        {ok, []}        -> false;
+        {ok, [CState]}  -> true
+    end.
 
 -spec filter(#client_state{}, [{#perm_conf{}, any()}]) -> [any()].
 % @doc
@@ -34,19 +41,16 @@
 % that the client defined in #client_state{} is allowed to 'read'.
 % @end
 filter(CState, Things) ->
-    {ok, Acctrl} = gen_server:call(supercast_mpd, get_acctrl),
-    filter_things_tool(CState, Things, Acctrl).
+    filter_things(CState, Things, []).
 
-filter_things_tool(CState, Pdus, Acctrl) ->
-    filter_things_tool(CState, Pdus, Acctrl, []).
-filter_things_tool(_, [], _, R) ->
+filter_things(_, [], R) ->
     R;
-filter_things_tool(CState, [{Perm, Pdu}|T], Acctrl, R) ->
-    case Acctrl:satisfy(read, [CState], Perm) of
+filter_things(CState, [{Perm, Thing}|T], R) ->
+    case supercast_acctrl_rbac:satisfy(read, [CState], Perm) of
         {ok, []} ->
-            filter_things_tool(CState, T, Acctrl, R);
+            filter_things(CState, T, R);
         {ok, [CState]} ->
-            filter_things_tool(CState, T, Acctrl, [Pdu|R])
+            filter_things(CState, T, [Thing|R])
     end.
 
 -spec mpd_state() -> {ok, tuple()} | error.

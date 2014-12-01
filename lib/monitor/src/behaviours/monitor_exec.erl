@@ -28,7 +28,7 @@
 -module(monitor_exec).
 -include("include/monitor.hrl").
 
--callback init(Target::#target{}, Probe::#probe{}) ->
+-callback init(Probe::#probe{}) ->
     {ok, State::any()}.
 % @doc
 % Called at initialization stage. Must return a State value wich
