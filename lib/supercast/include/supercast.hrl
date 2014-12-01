@@ -26,6 +26,12 @@
     write   = []    :: [term()]
 }).
 
+-record(registered_chan, {
+    name,
+    pid,
+    module
+}).
+
 -record(chan, {
     id          = undefined :: atom(),
     perm        = undefined :: undefined | #perm_conf{}

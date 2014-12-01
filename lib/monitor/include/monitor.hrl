@@ -4,7 +4,7 @@
 
 -define(LOG(X), io:format("{~w, ~w}: DEBUG: ~p~n", [?MODULE, ?LINE, X])).
 
--define(MASTER_CHANNEL, 'target-MasterChan').
+-define(MASTER_CHANNEL, "target-MasterChan").
 
 -record(inspector, {
     module,
@@ -67,9 +67,8 @@
 }).
 
 -record(probe, {
-    name                = undefined     :: atom(),
-    belong_to           = undefined     :: atom(),
-    %pid                 = undefined     :: undefined | pid(),
+    name                = "undefined"     :: string(),
+    belong_to           = "undefined"     :: string(),
     description         = ""            :: string(),
     info                = ""            :: string(),
     permissions         =   #perm_conf{

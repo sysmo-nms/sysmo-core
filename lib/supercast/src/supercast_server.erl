@@ -168,20 +168,34 @@ handle_client_msg(
                             QueryId,
                             Channel
         }   }   }   }   }, CState) ->
-    case (catch erlang:list_to_existing_atom(Channel)) of
-        {'EXIT', _} ->
-            % not a registered atom, not a channel
+    case supercast_registrar:whereis_name(Channel) of
+        undefined ->
+            io:format("undefined?~p~n", [Channel]),
             send(CState, pdu(subscribeErr, {QueryId, Channel}));
-        Chan ->
-            % ok mean satisfy return ok for read the chan
-            case supercast_mpd:subscribe_stage1(Chan, CState) of
+        _ ->
+            case supercast_mpd:subscribe_stage1(Channel, CState) of
                 error ->
                     send(CState, pdu(subscribeErr, {QueryId, Channel}));
                 ok ->
                     send(CState, pdu(subscribeOk, {QueryId, Channel})),
-                    supercast_mpd:subscribe_stage2(Chan,CState)
+                    supercast_mpd:subscribe_stage2(Channel,CState)
             end
     end;
+%
+%     case (catch erlang:list_to_existing_atom(Channel)) of
+%         {'EXIT', _} ->
+%             % not a registered atom, not a channel
+%             send(CState, pdu(subscribeErr, {QueryId, Channel}));
+%         Chan ->
+%             % ok mean satisfy return ok for read the chan
+%             case supercast_mpd:subscribe_stage1(Chan, CState) of
+%                 error ->
+%                     send(CState, pdu(subscribeErr, {QueryId, Channel}));
+%                 ok ->
+%                     send(CState, pdu(subscribeOk, {QueryId, Channel})),
+%                     supercast_mpd:subscribe_stage2(Chan,CState)
+%             end
+%     end;
             
 handle_client_msg(
         {message, 

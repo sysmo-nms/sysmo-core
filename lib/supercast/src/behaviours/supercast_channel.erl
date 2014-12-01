@@ -124,19 +124,7 @@ unicast(CState, [Elem|Elems]) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % UTILS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec module_from_pid(PidName::atom()) -> error | atom().
+-spec module_from_pid(PidName::string()) -> error | atom().
 % @private
 module_from_pid(PidName) ->
-    case whereis(PidName) of
-        undefined ->
-            error;
-        Pid ->
-            ProcInfo    = erlang:process_info(Pid, [dictionary]),
-            case ProcInfo of
-                [{dictionary, L}] ->
-                    {'$initial_call', {Mod,_,_}} = lists:keyfind('$initial_call',1,L),
-                    Mod;
-                _ ->
-                    error
-            end
-    end.
+    supercast_registrar:which_module(PidName).

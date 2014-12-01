@@ -67,19 +67,21 @@
 
 
 start_link({Target, #probe{name = Name} = Probe}) ->
-    gen_fsm:start_link({local, Name}, ?MODULE, [Target, Probe], []).
+    gen_fsm:start_link(
+        {via, supercast_registrar, {?MODULE, Name}},
+        ?MODULE, [Target, Probe], []).
 
 % supercast_channel behaviour
 get_perms(PidName) ->
-    gen_fsm:sync_send_all_state_event(PidName, get_perms).
+    gen_fsm:sync_send_all_state_event({via, supercast_registrar, PidName}, get_perms).
 
 % supercast_channel behaviour
 sync_request(PidName, CState) ->
-    gen_fsm:send_all_state_event(PidName, {sync_request, CState}).
+    gen_fsm:send_all_state_event({via, supercast_registrar, PidName}, {sync_request, CState}).
 
 % from master channel to update clients timeout
 triggered_return(PidName, CState) ->
-    gen_fsm:send_all_state_event(PidName, {triggered_return, CState}).
+    gen_fsm:send_all_state_event({via, supercast_registrar, PidName}, {triggered_return, CState}).
 
 init([Target, Probe]) ->
     init_random(),
@@ -391,7 +393,7 @@ probe_return({
             {probeReturn,
                 {'ProbeReturn',
                     TargetName,
-                    atom_to_list(ProbeId),
+                    ProbeId,
                     atom_to_list(Status),
                     OriginalReply,
                     Timestamp,

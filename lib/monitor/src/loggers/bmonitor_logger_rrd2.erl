@@ -122,13 +122,12 @@ log(State, #probe_return{reply_tuple = Rpl, timestamp = Ts} = _ProbeReturn) ->
     {ok, Pdu, State}.
 
 build_rrd_event(State, ClientUp) ->
-    ProbeName   = atom_to_list(State#state.probe_name),
     {modMonitorPDU,
         {fromServer,
             {loggerRrdEvent,
                 {'LoggerRrdEvent',
                     State#state.target_name,
-                    ProbeName,
+                    State#state.probe_name,
                     [{'LoggerRrdUpdate', I, Up} || {I,Up} <- ClientUp]
                 }
             }
@@ -168,14 +167,13 @@ dump(#state{row_index_to_file = RI, dump_dir = DDir} = State, Caller) ->
     {ignore, State}.
 
 build_dump(State, FilePaths, Dir) ->
-    ProbeName   = atom_to_list(State#state.probe_name),
     ProbeModule = atom_to_list(?MODULE),
     {modMonitorPDU,
         {fromServer,
             {loggerRrdDump,
                 {'LoggerRrdDump',
                     State#state.target_name,
-                    ProbeName,
+                    State#state.probe_name,
                     ProbeModule,
                     [{'LoggerRrdIdToFile', I, F} || {I,F} <- FilePaths],
                     Dir

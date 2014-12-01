@@ -30,6 +30,15 @@ start_link(SrvConf, MpdConf, TcpClientConf, SslClientConf) ->
             [SrvConf, MpdConf, TcpClientConf, SslClientConf]).
 
 init([SrvConf, MpdConf, TcpClientConf, SslClientConf]) ->
+    SupercastRegistrar = {
+        supercast_registrar,
+        {supercast_registrar,start_link, []},
+        permanent,
+        2000,
+        worker,
+        [supercast_registrar]
+    },
+
     SupercastServer = {
         supercast_server,
         {supercast_server,start_link, [SrvConf]},
@@ -50,6 +59,6 @@ init([SrvConf, MpdConf, TcpClientConf, SslClientConf]) ->
     {ok,
         {
             {one_for_one, 1, 300},
-            [SupercastServer, SupercastMpdSup]
+            [SupercastRegistrar, SupercastServer, SupercastMpdSup]
         }
     }.

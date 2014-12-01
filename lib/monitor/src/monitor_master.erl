@@ -70,10 +70,12 @@
 
 -spec start_link() -> {ok, pid()}.
 start_link() ->
-    gen_server:start_link({local, ?MASTER_CHANNEL}, ?MODULE, [], []).
+    gen_server:start_link(
+      {via, supercast_registrar, {?MODULE, ?MASTER_CHANNEL}},
+      ?MODULE, [], []).
 
 dump() ->
-    gen_server:call(?MASTER_CHANNEL, dump_dets).
+    gen_server:call({via, supercast_registrar, ?MASTER_CHANNEL}, dump_dets).
 
 %% monitor_commander API
 -spec create_target(Target::#target{}) -> ok | {error, Info::string()}.
@@ -81,12 +83,12 @@ dump() ->
 % Called from monitor_commander.
 % @end
 create_target(Target) ->
-    gen_server:call(?MASTER_CHANNEL, {create_target, Target}).
+    gen_server:call({via, supercast_registrar, ?MASTER_CHANNEL}, {create_target, Target}).
 
 -spec create_probe(Probe::#probe{}) 
     -> ok | {error, string()}.
 create_probe(Probe) ->
-    gen_server:call(?MASTER_CHANNEL, {create_probe, Probe}).
+    gen_server:call({via, supercast_registrar, ?MASTER_CHANNEL}, {create_probe, Probe}).
 
 -spec generate_name(Head::string()) -> atom().
 % @doc
@@ -98,7 +100,7 @@ generate_name(Head) ->
     RandIdL     = io_lib:format("~p", [RandId]),
     RandIdS     = lists:flatten(RandIdL),
     Name        = lists:concat([Head, RandIdS]),
-    case gen_server:call(?MASTER_CHANNEL, {name_used, Name}) of
+    case gen_server:call({via, supercast_registrar, ?MASTER_CHANNEL}, {name_used, Name}) of
         false->  {ok, Name};
         true  -> generate_name(Head)
     end.
@@ -108,11 +110,11 @@ generate_name(Head) ->
 %%----------------------------------------------------------------------------
 -spec get_perms(PidName::atom()) -> {ok, PermConf::#perm_conf{}}.
 get_perms(PidName) ->
-    gen_server:call(PidName, get_perms).
+    gen_server:call({via, supercast_registrar, PidName}, get_perms).
 
 -spec sync_request(PidName::atom(), CState::tuple()) ->  ok.
 sync_request(PidName, CState) ->
-    gen_server:cast(PidName, {sync_request, CState}).
+    gen_server:cast({via, supercast_registrar, PidName}, {sync_request, CState}).
 
 
 %%----------------------------------------------------------------------------
@@ -124,7 +126,7 @@ sync_request(PidName, CState) ->
 % to subscribers of ?MASTER_CHANNEL concerning the probe.
 % @end
 probe_info(TargetName, Probe) ->
-    gen_server:cast(?MASTER_CHANNEL, {probe_info, TargetName, Probe}).
+    gen_server:cast({via, supercast_registrar, ?MASTER_CHANNEL}, {probe_info, TargetName, Probe}).
 
 %%----------------------------------------------------------------------------
 %% monitor_jobs API    
@@ -135,7 +137,7 @@ probe_info(TargetName, Probe) ->
 % Called by various monitor_jobs functions to update target properties.
 % @end
 job_update_properties(TargetId, Properties) ->
-    gen_server:cast(?MASTER_CHANNEL,
+    gen_server:cast({via, supercast_registrar, ?MASTER_CHANNEL},
         {job_update_properties, TargetId, Properties}).
 
 %%----------------------------------------------------------------------------
@@ -514,7 +516,7 @@ pdu(infoProbe, {InfoType, TargetName,
             {infoProbe,
                 {'InfoProbe',
                     TargetName,
-                    atom_to_list(Probe#probe.name),
+                    Probe#probe.name,
                     Descr,
                     Info,
                     {'PermConf', R, W},

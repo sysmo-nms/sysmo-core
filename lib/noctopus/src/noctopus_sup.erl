@@ -60,15 +60,6 @@ init([]) ->
                     supervisor,
                     [equartz_app]
                 },
-
-                {
-                    monitor_app,
-                    {monitor_app, start, [normal,[]]},
-                    permanent,
-                    2000,
-                    supervisor,
-                    [monitor_app]
-                },
                 {
                     supercast_app,
                     {supercast_app, start, [normal,[]]},
@@ -76,6 +67,14 @@ init([]) ->
                     2000,
                     supervisor,
                     [supercast_app]
+                },
+                {
+                    monitor_app,
+                    {monitor_app, start, [normal,[]]},
+                    permanent,
+                    2000,
+                    supervisor,
+                    [monitor_app]
                 }
             ]
         }
