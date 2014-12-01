@@ -66,7 +66,7 @@
 -spec get_chan_perms(pid()) -> error | any().
 % @private
 get_chan_perms(PidName) ->
-    case module_from_pid(PidName) of
+    case supercast_registrar:which_module(PidName) of
         error ->
             error;
         Mod ->
@@ -76,7 +76,7 @@ get_chan_perms(PidName) ->
 -spec synchronize(pid(), #client_state{}) -> error | ok.
 % @private
 synchronize(PidName, CState) ->
-    case module_from_pid(PidName) of
+    case supercast_registrar:which_module(PidName) of
         error ->
             error;
         Mod ->
@@ -120,11 +120,3 @@ unicast(CState, [Elem|Elems]) ->
     Mod = CState#client_state.module,
     Mod:send(CState, Elem),
     unicast(CState, Elems).
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% UTILS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec module_from_pid(PidName::string()) -> error | atom().
-% @private
-module_from_pid(PidName) ->
-    supercast_registrar:which_module(PidName).
