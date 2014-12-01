@@ -74,8 +74,8 @@ dump(State, _Caller) ->
     TargetId    = State#state.target_name,
     ProbeId     = State#state.probe_name,
 
-    TId         = atom_to_list(TargetId),
-    PId         = atom_to_list(ProbeId),
+    TId         = TargetId,
+    PId         = ProbeId,
     Mod         = atom_to_list(?MODULE),
 
     F = fun(CState) ->

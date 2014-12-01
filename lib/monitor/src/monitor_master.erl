@@ -440,7 +440,7 @@ init_target_jobs([]) -> ok;
 init_target_jobs(
         [#job{name=Name,trigger=Trigger,module=M,function=F,argument=A}|Jobs]
             ) ->
-    ok = equartz:register_internal_job(Name,Trigger,{M,F,atom_to_list(A)}),
+    ok = equartz:register_internal_job(Name,Trigger,{M,F,A}),
     init_target_jobs(Jobs).
 
 init_probes(Target) ->
@@ -499,7 +499,7 @@ pdu(infoTargetDelete, Id) ->
         {fromServer,
             {infoTarget,
                 {'InfoTarget',
-                    atom_to_list(Id),
+                    Id,
                     [],
                     delete}}}};
 
@@ -522,7 +522,7 @@ pdu(infoProbe, {InfoType, TargetName,
                     {'PermConf', R, W},
                     atom_to_list(Probe#probe.monitor_probe_mod),
                     gen_asn_probe_conf(ProbeConf),
-                    atom_to_list(Probe#probe.status),
+                    Probe#probe.status,
                     Probe#probe.timeout,
                     Probe#probe.step,
                     gen_asn_probe_inspectors(Probe#probe.inspectors),

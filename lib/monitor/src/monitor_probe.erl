@@ -59,12 +59,6 @@
 }).
 
 
--define(OK,         'OK').
--define(CRITICAL,   'CRITICAL').
--define(WARNING,    'WARNING').
--define(UNKNOWN,    'UNKNOWN').
--define(HALT,       'UNKNOWN').
-
 
 start_link({Target, #probe{name = Name} = Probe}) ->
     gen_fsm:start_link(
@@ -394,7 +388,7 @@ probe_return({
                 {'ProbeReturn',
                     TargetName,
                     ProbeId,
-                    atom_to_list(Status),
+                    Status,
                     OriginalReply,
                     Timestamp,
                     make_key_values(KeyVals),

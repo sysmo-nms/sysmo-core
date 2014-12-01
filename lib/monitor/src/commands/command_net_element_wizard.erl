@@ -158,7 +158,7 @@ generate_standard_snmp_target(Args, DataDir) ->
                     description = "SNMP:Interfaces performances",
                     info = "Get interfaces octets:in/out ucast:in/out nucast:in/out errors:in/out every 5 minutes",
                     permissions = #perm_conf{read = ["admin"], write = ["admin"]},
-                    status = 'UNKNOWN',
+                    status = "UNKNOWN",
                     step    = 10,
                     timeout = Timeout,
 

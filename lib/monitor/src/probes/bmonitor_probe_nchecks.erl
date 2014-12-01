@@ -72,7 +72,7 @@ exec(#state{function = Funct, args = Args} = S) ->
     case nchecks:Funct(Args) of
         {error, Error} ->
             ProbeReturn = #probe_return{
-                status      = 'ERROR',
+                status      = "ERROR",
                 original_reply = Error
             };
         {ok, Reply} ->
@@ -80,14 +80,10 @@ exec(#state{function = Funct, args = Args} = S) ->
                status=Status,performances=Perfs,reply_string=Str,timestamp=Ts
             } = Reply,
             ProbeReturn = #probe_return{
-                status          = erlang:list_to_atom(Status),
+                status          = Status,
                 original_reply  = Str,
                 timestamp       = Ts,
                 key_vals        = Perfs
             }
     end,
     {ok, S, ProbeReturn}.
-
-
-
-

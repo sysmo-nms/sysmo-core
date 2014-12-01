@@ -71,9 +71,9 @@ exec(#state{method = get} = State) ->
     case Reply of
         {error, _Error} = R ->
             error_logger:info_msg("snmp fail ~p ~p ~p for agent ~p", [?MODULE, ?LINE, R, Agent]),
-            KV = [{"status",'CRITICAL'},{"sys_latency",MicroSec2 - MicroSec1}],
+            KV = [{"status","CRITICAL"},{"sys_latency",MicroSec2 - MicroSec1}],
             OR = to_string(R),
-            S  = 'CRITICAL',
+            S  = "CRITICAL",
             PR = #probe_return{
                 status          = S,
                 original_reply  = OR,
@@ -101,9 +101,9 @@ exec(#state{method=walk_table, oids=Table} = State) ->
     case Reply of
         {error, _Error} = R ->
             error_logger:info_msg("snmp fail ~p ~p ~p for agent ~p", [?MODULE, ?LINE, R, Agent]),
-            KV = [{"status",'CRITICAL'},{"sys_latency",MicroSec2 - MicroSec1}],
+            KV = [{"status","CRITICAL"},{"sys_latency",MicroSec2 - MicroSec1}],
             OR = to_string(R),
-            S  = 'CRITICAL',
+            S  = "CRITICAL",
             PR = #probe_return{
                 status          = S,
                 original_reply  = OR,
@@ -112,11 +112,11 @@ exec(#state{method=walk_table, oids=Table} = State) ->
                 timestamp       = ReplyT},
             {ok, State, PR};
         {ok, {table, SnmpReply}} ->
-            KV  = [{"status",'OK'},{"sys_latency", MicroSec2 - MicroSec1}],
+            KV  = [{"status","OK"},{"sys_latency", MicroSec2 - MicroSec1}],
             PR = #probe_return{
                 timestamp       = ReplyT,
                 reply_tuple     = SnmpReply,
-                status          = 'OK',
+                status          = "OK",
                 key_vals        = KV,
                 original_reply  = to_string(SnmpReply)
             },
@@ -140,9 +140,9 @@ eval_snmp_return(VarBinds, Oids) ->
         {Key, Oid} <- Oids
     ],
     #probe_return{
-        status          = 'OK',
+        status          = "OK",
         original_reply  = to_string(VarBinds),
-        key_vals        = [{"status", 'OK'} | KeyVals]
+        key_vals        = [{"status", "OK"} | KeyVals]
     }.
 
 to_string(Term) ->

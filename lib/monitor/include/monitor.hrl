@@ -30,7 +30,8 @@
 
 
 -record(probe_return, {
-    status          = 'UNKNOWN' :: 'OK' | 'UNKNOWN' | 'WARNING' | 'CRITICAL',
+    status          = "UNKNOWN" :: string(),
+    % "OK" | "UNKNOWN" | "WARNING" | "CRITICAL" | "SHADED" | "PAUSED",
     % used by inspector status set
 
     original_reply  = "undefined" :: string(),
@@ -52,7 +53,7 @@
     % lists:concat([group,module,function,argument])
     % ex: lists:concat(["daily3am", monitor_jobs,hello, target-1234])
     name     = "undefined"      :: string(),
-    belong_to = undefined       :: atom(),
+    belong_to = undefined       :: string(),
     trigger  = "undefined"      :: string(),
 
     module   = undefined        :: atom(),
@@ -76,7 +77,7 @@
                                 write   = ["admin"]
                             }  :: #perm_conf{},
     timeout             = 5             :: integer(), % seconds
-    status              = 'UNKNOWN'     :: 'UNKNOWN' | atom(),
+    status              = "UNKNOWN"     :: string(),
     step                = 5             :: integer(), % seconds
 
     properties          = []            :: [{string(), any()}],
