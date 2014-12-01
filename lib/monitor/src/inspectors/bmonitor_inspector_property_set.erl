@@ -19,7 +19,7 @@
 % You should have received a copy of the GNU General Public License
 % along with Enms. If not, see <http://www.gnu.org/licenses/>.
 -module(bmonitor_inspector_property_set).
--behaviour(beha_monitor_inspector).
+-behaviour(monitor_inspector).
 -include("include/monitor.hrl").
 
 

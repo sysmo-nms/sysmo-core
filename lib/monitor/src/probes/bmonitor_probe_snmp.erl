@@ -19,10 +19,10 @@
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 -module(bmonitor_probe_snmp).
--behaviour(beha_monitor_probe).
+-behaviour(monitor_exec).
 -include("include/monitor.hrl").
 
-%% beha_monitor_probe exports
+%% monitor_probe exports
 -export([
     init/2,
     exec/1,

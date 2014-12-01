@@ -204,10 +204,8 @@ handle_call({create_probe, Probe}, _F, #state{dets_ref=DetsRef}=S) ->
         {error, Reason} ->
             {reply, {error, Reason}, S};
         [TargetRecord] ->
-            {NProbe, NTarget} = insert_probe(Probe, TargetRecord),
-            ProbeInfoPdu = pdu(infoProbe, {create, TargetId, NProbe}),
-            Perm = NProbe#probe.permissions,
-            supercast_channel:emit(?MASTER_CHANNEL, {Perm, ProbeInfoPdu}),
+            {_NProbe, NTarget} = insert_probe(Probe, TargetRecord),
+            %supercast_channel:emit(?MASTER_CHANNEL, {Perm, ProbeInfoPdu}),
             dets:insert(DetsRef, NTarget),
             monitor_data:write_probe(Probe),
             {reply, ok, S};
@@ -238,20 +236,6 @@ insert_probe(Probe, Target) ->
     Probes = Target#target.probes,
     T2 = Target#target{probes = [Probe|Probes]},
     {Probe, T2}.
-
-% emit_wide(Target) ->
-%     Perm        = Target#target.global_perm,
-%     PduTarget   = pdu(infoTarget, Target),
-%     supercast_channel:emit(?MASTER_CHANNEL, {Perm, PduTarget}),
-% 
-%     TId         = Target#target.id,
-%     Probes      = Target#target.probes,
-%     PduProbes   = [{ProbePerm, pdu(infoProbe, {create, TId, Probe})} || 
-%         #probe{permissions = ProbePerm} = Probe <- Probes],
-%     lists:foreach(fun(X) ->
-%         supercast_channel:emit(?MASTER_CHANNEL, X)
-%     end, PduProbes).
-
 
 %%----------------------------------------------------------------------------
 %% SUPERCAST_CHANNEL BEHAVIOUR CASTS

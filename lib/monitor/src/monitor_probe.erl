@@ -80,7 +80,7 @@ triggered_return(PidName, CState) ->
 init([Target, Probe]) ->
     init_random(),
     {ok, ProbeInitState}    = init_probe(Target, Probe),
-    {ok, InspectInitState}  = init_inspectors(Target, Probe),
+    {ok, InspectInitState}  = monitor_inspector:init_all(Target, Probe),
     {ok, LoggersInitState}  = init_loggers(Target, Probe),
     PSState = #state{
         target_name           = Target#target.name,
@@ -107,14 +107,16 @@ handle_event({probe_return, NewProbeState, ProbeReturn}, SName, SData) ->
     Probe        = SData1#state.probe,
     InspectState = SData1#state.inspectors_state,
     {ok, NewInspectState, ModifiedProbe} = 
-        inspect(InspectState, Probe, ProbeReturn),
+        monitor_inspector:inspect_all(InspectState, Probe, ProbeReturn),
     SData2  = SData1#state{probe             = ModifiedProbe},
     SData3  = SData2#state{inspectors_state  = NewInspectState},
 
     % LOG, update loggers_state,
     % update #state.loggers_state
     LoggersState            = SData3#state.loggers_state,
-    {ok, NewLoggersState}   = log_return(LoggersState, ProbeReturn),
+    {ok, Pdus, NewLoggersState} = log_return(LoggersState, ProbeReturn),
+    emit_all(Probe#probe.name, Probe#probe.permissions, Pdus),
+
     SData4 = SData3#state{loggers_state = NewLoggersState},
 
     % LAUNCH
@@ -139,22 +141,14 @@ handle_event({probe_return, NewProbeState, ProbeReturn}, SName, SData) ->
 
     {next_state, SName, SData5};
 
-handle_event({emit_pdu, Pdu}, SName, SData) ->
-    Probe       = SData#state.probe,
-    ChanName    = Probe#probe.name,
-    Perms       = Probe#probe.permissions,
-    supercast_channel:emit(ChanName, {Perms, Pdu}),
-    {next_state, SName, SData};
-
 handle_event({sync_request, CState}, SName, SData) ->
     Probe   = SData#state.probe,
     Name    = Probe#probe.name,
     LStates = SData#state.loggers_state,
-    {ok, Pdus, NewLStates} = log_dump(LStates, CState),
-    ok      = supercast_channel:unicast(CState, Pdus),
-    ok      = supercast_channel:subscribe(Name, CState),
-    SData1  = SData#state{loggers_state = NewLStates},
-    {next_state, SName, SData1};
+    {ok, Pdus, LState2} = log_dump(LStates, CState),
+    ok  = supercast_channel:unicast(CState, Pdus),
+    ok  = supercast_channel:subscribe(Name, CState),
+    {next_state, SName, SData#state{loggers_state = LState2}};
 
 % Uniquely send to have client timeout counters in sync using tref()
 handle_event({triggered_return, CState}, SName, SData) ->
@@ -207,101 +201,23 @@ init_probe(Target, Probe) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
+emit_all(_, _, []) -> ok;
+emit_all(Name, Perm, [Pdu|T]) ->
+    supercast_channel:emit(Name,{Perm, Pdu}),
+    emit_all(Name,Perm,T).
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOGGERS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-init_loggers(Target, Probe) ->
-    Loggers         = Probe#probe.loggers,
-    LoggersState    = [],
-    init_loggers(Target, Probe, Loggers, LoggersState).
-init_loggers(_Target, _Probe, [], LoggersState) ->
-    {ok, LoggersState};
-init_loggers(Target, Probe, [Logger|Loggers], LoggersState) ->
-    Mod             = Logger#logger.module,
-    Conf            = Logger#logger.conf,
-    {ok, State}     = Mod:log_init(Conf, Target, Probe),
-    LoggersState2   = lists:keystore(Mod, 1, LoggersState, {Mod, State}),
-    init_loggers(Target, Probe, Loggers, LoggersState2).
-    
+init_loggers(Target,Probe) ->
+    monitor_logger:init_all(Target,Probe).
+
 log_return(LoggersState, ProbeReturn) ->
-    LoggersStateAcc = [],
-    log_return(LoggersState, ProbeReturn, LoggersStateAcc).
-log_return([],  _ProbeReturn, LoggersStateAcc) ->
-    {ok, LoggersStateAcc};
-log_return([Logger|LoggersState],  ProbeReturn, LoggersStateAcc) ->
-    {Mod, State}     = Logger,
-    % loggers may return a Pdu to update the client state.
-    case Mod:log(State, ProbeReturn) of
-        {ok, NewState}      ->
-            ok;
-        {ok, Pdu, NewState} ->
-            gen_fsm:send_all_state_event(self(), {emit_pdu, Pdu})
-    end,
-    LoggersStateAcc2 = lists:keystore(Mod,1,LoggersStateAcc, {Mod, NewState}),
-    log_return(LoggersState, ProbeReturn, LoggersStateAcc2).
+    monitor_logger:log_all(LoggersState,ProbeReturn).
 
 log_dump(LoggersState, CState) ->
-    PduAcc      = [],
-    NewLogState = [],
-    log_dump(LoggersState, PduAcc, NewLogState, CState).
-log_dump([], Pdus, LogState, _) ->
-    {ok, Pdus, LogState};
-log_dump([LoggerState|LState], PduAcc, NLogState, CState) ->
-    {Mod, State}        = LoggerState,
-    case Mod:dump(State, CState) of
-        {ok, Pdu, State2} ->
-            log_dump(LState, [Pdu|PduAcc], [{Mod, State2}|NLogState], CState);
-        {ignore, State2} ->
-            log_dump(LState, PduAcc,       [{Mod, State2}|NLogState], CState)
-    end.
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% INSPECTORS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec init_inspectors(Target::#target{}, Probe::#probe{}) ->
-    {ok, InspectStates::[{atom(), any()}]}.
-init_inspectors(Target, Probe) ->
-    Inspectors  = Probe#probe.inspectors,
-    States      = [],
-    init_inspectors(Target, Probe, Inspectors, States).
-init_inspectors(_, _, [], InspectStates) ->
-    {ok, InspectStates};
-init_inspectors(Target, Probe, [Inspector|Inspectors], InspectStates) ->
-    Mod                 = Inspector#inspector.module,
-    Conf                = Inspector#inspector.conf,
-    {ok, InspReply}     = Mod:init(Conf, Target, Probe),
-    NewInspectStates    = lists:keystore(Mod,1,InspectStates,{Mod,InspReply}),
-    init_inspectors(Target, Probe, Inspectors, NewInspectStates).
-
--spec inspect(
-        InspectStates   :: [{atom(), any()}],
-        Probe           :: #probe{},
-        ProbeReturn     :: #probe_return{}
-    ) -> {ok, NewInspectStates::[{atom(), any()}], NewProbe::#probe{}}.
-inspect(InspectStates, Probe, ProbeReturn) ->
-    OrigProbe           = ModifiedProbe = Probe,
-    NewIStates          = [],
-    inspect(InspectStates, NewIStates, ProbeReturn, OrigProbe, ModifiedProbe).
-inspect([], NewInspectStates, _, _, ModifiedProbe) ->
-    {ok, NewInspectStates, ModifiedProbe};
-inspect([IState|IStates], NIStates, PR, OP, MP) ->
-    {Mod, State} = IState,
-    {ok, NState, MProbe} = Mod:inspect(State, PR, OP, MP),
-    NewNIStates = lists:keystore(Mod, 1, NIStates, {Mod, NState}),
-    inspect(IStates, NewNIStates, PR, OP, MProbe).
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
+    monitor_logger:dump_all(LoggersState, CState).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% PROBE LAUNCH %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

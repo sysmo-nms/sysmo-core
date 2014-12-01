@@ -24,7 +24,7 @@
 % To work a valid #rrd_def record must be givent at init conf input.
 % @end
 -module(bmonitor_logger_rrd2).
--behaviour(beha_monitor_logger).
+-behaviour(monitor_logger).
 -include("include/monitor.hrl").
 
 -export([

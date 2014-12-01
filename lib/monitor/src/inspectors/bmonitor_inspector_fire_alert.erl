@@ -23,7 +23,7 @@
 % ProbeServer to the return status of the probe return.
 % @end
 -module(bmonitor_inspector_fire_alert).
--behaviour(beha_monitor_inspector).
+-behaviour(monitor_inspector).
 -include("include/monitor.hrl").
 
 

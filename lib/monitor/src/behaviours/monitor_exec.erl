@@ -25,7 +25,7 @@
 % </p>
 % @end
 
--module(beha_monitor_probe).
+-module(monitor_exec).
 -include("include/monitor.hrl").
 
 -callback init(Target::#target{}, Probe::#probe{}) ->

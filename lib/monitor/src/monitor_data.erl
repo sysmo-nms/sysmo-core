@@ -68,16 +68,14 @@ handle_cast(_R, S) ->
 handle_info({mnesia_table_event, {write, target, Target, [], _ActivityId}}, S) ->
     handle_target_create(Target),
     {noreply, S};
-handle_info({mnesia_table_event, {write, target, NewRecord, OldRecord, _ActivityId}}, S) ->
-    handle_target_update(NewRecord, OldRecord),
+handle_info({mnesia_table_event, {write, target, NewTarget, OldTarget, _ActivityId}}, S) ->
+    handle_target_update(NewTarget, OldTarget),
     {noreply, S};
-handle_info({mnesia_table_event, {write, probe, NewRecord, [], _ActivityId}}, S) ->
-    ?LOG({"handle_info write", probe, NewRecord}),
-    % handle_probe_create
+handle_info({mnesia_table_event, {write, probe, Probe, [], _ActivityId}}, S) ->
+    handle_probe_create(Probe),
     {noreply, S};
-handle_info({mnesia_table_event, {write, probe, NewRecord, _OldRecords, _ActivityId}}, S) ->
-    ?LOG({"handle_info write", probe, NewRecord}),
-    % handle_probe_update
+handle_info({mnesia_table_event, {write, probe, NewProbe, OldProbe, _ActivityId}}, S) ->
+    handle_probe_update(NewProbe, OldProbe),
     {noreply, S};
 handle_info({mnesia_table_event, {delete, Table, What, _OldRecords, _ActivityId}}, S) ->
     ?LOG({"handle_info delete ", Table, What}),
@@ -100,6 +98,13 @@ handle_target_create(#target{global_perm = Perm} = Target) ->
 
 handle_target_update(_,_) -> ok.
 
+
+handle_probe_create(#probe{permissions=Perm} = Probe) ->
+    Pdu = monitor_pdu:'PDU-MonitorPDU-fromServer-infoProbe-create'(Probe),
+    supercast_channel:emit(?MASTER_CHANNEL, {Perm, Pdu}).
+
+handle_probe_update(_,_) -> ok.
+
     
 
 
@@ -108,7 +113,6 @@ init_tables() ->
     Tables = mnesia:system_info(tables),
     DetsOpts = [
         {auto_save, 5000}
-        %{keypos, 2}
     ],
     case lists:member(target, Tables) of
         true -> ok;

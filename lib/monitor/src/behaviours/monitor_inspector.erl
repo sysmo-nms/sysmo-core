@@ -18,8 +18,13 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
--module(beha_monitor_inspector).
+-module(monitor_inspector).
 -include("include/monitor.hrl").
+
+-export([
+    init_all/2,
+    inspect_all/3
+]).
 
 -callback info() -> {ok, Info::string()}.
 % @doc
@@ -45,3 +50,41 @@
 % preceding inspector.
 % Must return a possibly modified State and a possibly modified #probe{}.
 % @end
+
+
+-spec init_all(Target::#target{}, Probe::#probe{}) -> {ok, InspectorStates::[term()]}.
+% @doc
+% Used by the monitor_probe module to initialize all inspectors of a probe
+% and return a list of inspectors states.
+% @end
+init_all(Target, Probe) ->
+    Inspectors  = Probe#probe.inspectors,
+    States      = [],
+    init_inspectors(Target, Probe, Inspectors, States).
+
+init_inspectors(_, _, [], InspectStates) ->
+    {ok, InspectStates};
+init_inspectors(Target, Probe, [Inspector|Inspectors], InspectStates) ->
+    Mod                 = Inspector#inspector.module,
+    Conf                = Inspector#inspector.conf,
+    {ok, InspReply}     = Mod:init(Conf, Target, Probe),
+    NewInspectStates    = lists:keystore(Mod,1,InspectStates,{Mod,InspReply}),
+    init_inspectors(Target, Probe, Inspectors, NewInspectStates).
+
+-spec inspect_all(States::[term()], Probe::#probe{}, PR::#probe_return{}) ->
+    {ok, NewInspectSates::[term()], NewProbe::#probe{}}.
+% @doc
+% Used by the monitor_probe module to inspect a probe return via a list
+% of inspectors.
+% @end
+inspect_all(States, Probe, PR) ->
+    OrigProbe   = ModifiedProbe = Probe,
+    NewIStates  = [],
+    inspect(States, NewIStates, PR, OrigProbe, ModifiedProbe).
+inspect([], NewInspectStates, _, _, ModifiedProbe) ->
+    {ok, NewInspectStates, ModifiedProbe};
+inspect([IState|IStates], NIStates, PR, OP, MP) ->
+    {Mod, State} = IState,
+    {ok, NState, MProbe} = Mod:inspect(State, PR, OP, MP),
+    NewNIStates = lists:keystore(Mod, 1, NIStates, {Mod, NState}),
+    inspect(IStates, NewNIStates, PR, OP, MProbe).
