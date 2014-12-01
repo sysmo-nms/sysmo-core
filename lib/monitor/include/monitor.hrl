@@ -95,7 +95,7 @@
 }).
 
 -record(target, {
-    id          = undefined     :: atom(),
+    name        = "undefined"   :: string(),
     global_perm = #perm_conf{
         read        =   ["admin"],
         write       =   ["admin"]

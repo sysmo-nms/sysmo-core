@@ -49,7 +49,7 @@
 ]).
 
 -record(state, {
-    target_id,
+    target_name,
     name,
     probe,
     tref,   %
@@ -87,7 +87,7 @@ init([Target, Probe]) ->
     {ok, InspectInitState}  = init_inspectors(Target, Probe),
     {ok, LoggersInitState}  = init_loggers(Target, Probe),
     PSState = #state{
-        target_id           = Target#target.id,
+        target_name           = Target#target.name,
         name                = Probe#probe.name,
         probe               = Probe,
         probe_state         = ProbeInitState ,
@@ -136,7 +136,7 @@ handle_event({probe_return, NewProbeState, ProbeReturn}, SName, SData) ->
     % notify all subscribers of '?MASTER_CHANNEL' anyway
     notify(
         ProbeReturn,
-        SData5#state.target_id,
+        SData5#state.target_name,
         Probe,
         ModifiedProbe,
         NextMicroStart),
@@ -163,7 +163,7 @@ handle_event({sync_request, CState}, SName, SData) ->
 % Uniquely send to have client timeout counters in sync using tref()
 handle_event({triggered_return, CState}, SName, SData) ->
     Probe   = SData#state.probe,
-    TargetId = SData#state.target_id,
+    TargetName  = SData#state.target_name,
     {NMicro, _} = SData#state.tref,
     Status  = Probe#probe.status,
     PName   = Probe#probe.name,
@@ -175,7 +175,7 @@ handle_event({triggered_return, CState}, SName, SData) ->
         key_vals        = []
     },
 
-    Pdu = probe_return({PartialPr, TargetId, PName, NMicro}),
+    Pdu = probe_return({PartialPr, TargetName, PName, NMicro}),
     supercast_channel:unicast(CState, [Pdu]),
     {next_state, SName, SData}.
 
@@ -338,20 +338,20 @@ take_of(Parent, Mod, ProbeState) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% monitor_master and supercast_channel NOTIFY %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-notify(ProbeReturn, TargetId, OriginalProbe, NewProbe, NextMicroStart) ->
-    ok = notify_subscribers(ProbeReturn, TargetId, NewProbe, NextMicroStart),
-    ok = notify_master(TargetId, OriginalProbe, NewProbe).
+notify(ProbeReturn, TargetName, OriginalProbe, NewProbe, NextMicroStart) ->
+    ok = notify_subscribers(ProbeReturn, TargetName, NewProbe, NextMicroStart),
+    ok = notify_master(TargetName, OriginalProbe, NewProbe).
 
-notify_subscribers(ProbeReturn, TargetId, Probe, NextMicroStart) ->
+notify_subscribers(ProbeReturn, TargetName, Probe, NextMicroStart) ->
     ProbeName = Probe#probe.name,
     Perms    = Probe#probe.permissions,
-    Pdu      = probe_return({ProbeReturn, TargetId, ProbeName, NextMicroStart}),
+    Pdu      = probe_return({ProbeReturn, TargetName, ProbeName, NextMicroStart}),
     supercast_channel:emit(?MASTER_CHANNEL, {Perms, Pdu}).
 
-notify_master(TargetId, OriginalProbe, Probe) ->
+notify_master(TargetName, OriginalProbe, Probe) ->
     case notify_master_required(OriginalProbe, Probe) of
         true  ->
-            monitor_master:probe_info(TargetId, Probe);
+            monitor_master:probe_info(TargetName, Probe);
         false -> ok
     end.
 
@@ -385,12 +385,12 @@ probe_return({
             timestamp   = Timestamp,
             key_vals    = KeyVals
         },
-        ChannelId, ProbeId, NextReturn}) ->
+        TargetName, ProbeId, NextReturn}) ->
     {modMonitorPDU,
         {fromServer,
             {probeReturn,
                 {'ProbeReturn',
-                    atom_to_list(ChannelId),
+                    TargetName,
                     atom_to_list(ProbeId),
                     atom_to_list(Status),
                     OriginalReply,

@@ -47,11 +47,11 @@
     probe_info/2,
 
     create_target/1,
-    create_probe/2,
+    create_probe/1,
 
     job_update_properties/2,
 
-    generate_id/1
+    generate_name/1
 ]).
 
 -record(state, {
@@ -83,25 +83,24 @@ dump() ->
 create_target(Target) ->
     gen_server:call(?MASTER_CHANNEL, {create_target, Target}).
 
--spec create_probe(TargetId::atom(), Probe::#probe{}) 
+-spec create_probe(Probe::#probe{}) 
     -> ok | {error, string()}.
-create_probe(TargetId, Probe) ->
-    gen_server:call(?MASTER_CHANNEL, {create_probe, TargetId, Probe}).
+create_probe(Probe) ->
+    gen_server:call(?MASTER_CHANNEL, {create_probe, Probe}).
 
--spec generate_id(Head::string()) -> atom().
+-spec generate_name(Head::string()) -> atom().
 % @doc
 % Called from monitor_commander.
 % @end
-generate_id(Head) ->
+generate_name(Head) ->
     Int         = random:uniform(?RAND_RANGE),
     RandId      = Int + ?RAND_MIN,
     RandIdL     = io_lib:format("~p", [RandId]),
     RandIdS     = lists:flatten(RandIdL),
-    RandIdF     = lists:concat([Head, RandIdS]),
-    ToAtom      = erlang:list_to_atom(RandIdF),
-    case gen_server:call(?MASTER_CHANNEL, {id_used, ToAtom}) of
-        false->  {ok, ToAtom};
-        true  -> generate_id(Head)
+    Name        = lists:concat([Head, RandIdS]),
+    case gen_server:call(?MASTER_CHANNEL, {name_used, Name}) of
+        false->  {ok, Name};
+        true  -> generate_name(Head)
     end.
 
 %%----------------------------------------------------------------------------
@@ -119,13 +118,13 @@ sync_request(PidName, CState) ->
 %%----------------------------------------------------------------------------
 %% monitor_probe API
 %%----------------------------------------------------------------------------
--spec probe_info(TargetId::atom(), Probe::#probe{}) -> ok.
+-spec probe_info(TargetName::string(), Probe::#probe{}) -> ok.
 % @doc
 % Called by a monitor_probe when information must be forwarded
 % to subscribers of ?MASTER_CHANNEL concerning the probe.
 % @end
-probe_info(TargetId, Probe) ->
-    gen_server:cast(?MASTER_CHANNEL, {probe_info, TargetId, Probe}).
+probe_info(TargetName, Probe) ->
+    gen_server:cast(?MASTER_CHANNEL, {probe_info, TargetName, Probe}).
 
 %%----------------------------------------------------------------------------
 %% monitor_jobs API    
@@ -183,42 +182,35 @@ init_database() ->
 %%----------------------------------------------------------------------------
 %% SUPERCAST_CHANNEL BEHAVIOUR CALLS
 %%----------------------------------------------------------------------------
-handle_call({id_used, Id}, _F, #state{dets_ref=DetsRef} = S) ->
+handle_call({name_used, Name}, _F, #state{dets_ref=DetsRef} = S) ->
     Targets = get_all_targets(DetsRef),
-    TargetAtomList  = [Tid    || #target{id=Tid} <- Targets],
+    TargetNameList  = [TargetName    || #target{name=TargetName} <- Targets],
     Probes          = [Probes || #target{probes=Probes} <- Targets],
     ProbeAtomList   = [PrId   || #probe{name=PrId} <- lists:flatten(Probes)],
-    TotalAtomList   = lists:append(TargetAtomList, ProbeAtomList),
-    Rep = lists:member(Id, TotalAtomList),
+    TotalList       = lists:append(TargetNameList, ProbeAtomList),
+    Rep = lists:member(Name, TotalList),
     {reply, Rep, S};
 
 handle_call(get_perms, _F, #state{perm = P} = S) ->
     {reply, P, S};
 
-handle_call({create_probe, TargetId, Probe}, _F, #state{dets_ref=DetsRef}=S) ->
+handle_call({create_probe, Probe}, _F, #state{dets_ref=DetsRef}=S) ->
+    TargetId = Probe#probe.belong_to,
     % is targetId a valid atom?
     %dets:sync(DetsRef),
-    case (catch erlang:list_to_existing_atom(TargetId)) of
-        {'EXIT', _} ->
-            Msg = lists:flatten(
-                io_lib:format("Target ~s did not exist",[TargetId])
-            ),
-            {reply, {error, Msg}, S};
-        TargetAtom ->
-            case dets:lookup(DetsRef, TargetAtom) of
-                {error, Reason} ->
-                    {reply, {error, Reason}, S};
-                [TargetRecord] ->
-                    {NProbe, NTarget} = insert_probe(Probe, TargetRecord),
-                    ProbeInfoPdu = pdu(infoProbe, {create, TargetAtom, NProbe}),
-                    Perm = NProbe#probe.permissions,
-                    supercast_channel:emit(?MASTER_CHANNEL, {Perm, ProbeInfoPdu}),
-                    dets:insert(DetsRef, NTarget),
-                    monitor_data:write_probe(Probe),
-                    {reply, ok, S};
-                _ ->
-                    {reply, {error, "Key error"}, S}
-            end
+    case dets:lookup(DetsRef, TargetId) of
+        {error, Reason} ->
+            {reply, {error, Reason}, S};
+        [TargetRecord] ->
+            {NProbe, NTarget} = insert_probe(Probe, TargetRecord),
+            ProbeInfoPdu = pdu(infoProbe, {create, TargetId, NProbe}),
+            Perm = NProbe#probe.permissions,
+            supercast_channel:emit(?MASTER_CHANNEL, {Perm, ProbeInfoPdu}),
+            dets:insert(DetsRef, NTarget),
+            monitor_data:write_probe(Probe),
+            {reply, ok, S};
+        _ ->
+            {reply, {error, "Key error"}, S}
     end;
 
 handle_call({create_target, Target}, _F, #state{dets_ref = DetsRef} = S) ->
@@ -278,15 +270,15 @@ handle_cast({sync_request, CState}, #state{dets_ref=DetsRef} = S) ->
 %%----------------------------------------------------------------------------
 %% SELF API CASTS
 %%----------------------------------------------------------------------------
-handle_cast({probe_info, TargetId, NewProbe}, #state{dets_ref=DetsRef} = S) ->
-    case dets:lookup(DetsRef, TargetId) of
+handle_cast({probe_info, TargetName, NewProbe}, #state{dets_ref=DetsRef} = S) ->
+    case dets:lookup(DetsRef, TargetName) of
         [] ->
             {noreply, S};
         [Target] ->
             Perms = NewProbe#probe.permissions,
             {ok, NewTarg} = update_target_from_probe_info(Target, NewProbe),
             dets:insert(DetsRef, NewTarg),
-            Pdu = pdu(infoProbe, {update, TargetId, NewProbe}),
+            Pdu = pdu(infoProbe, {update, TargetName, NewProbe}),
             supercast_channel:emit(?MASTER_CHANNEL, {Perms, Pdu}),
             {noreply, S}
     end;
@@ -439,8 +431,7 @@ init_target_snmp_conf(Target) ->
                 {security_name,     SnmpUsmUser}
             ],
 
-            AgentName = atom_to_list(Target#target.id),
-            snmpman:register_element(AgentName, SnmpArgs)
+            snmpman:register_element(Target#target.name, SnmpArgs)
     end.
 
 init_target_jobs([]) -> ok;
@@ -475,7 +466,7 @@ init_target_dir(Dir) ->
 %%----------------------------------------------------------------------------
 %% PDU BUILD
 %%----------------------------------------------------------------------------
-pdu(infoTarget, #target{id=Id, properties=Prop}) ->
+pdu(infoTarget, #target{name=Name, properties=Prop}) ->
     AsnProps = lists:foldl(fun({K,V}, Acc) -> 
         [{'Property', K, V} | Acc]
     end, [], Prop),
@@ -483,12 +474,12 @@ pdu(infoTarget, #target{id=Id, properties=Prop}) ->
         {fromServer,
             {infoTarget,
                 {'InfoTarget',
-                    atom_to_list(Id),
+                    Name,
                     AsnProps,
                     [],
                     create}}}};
 
-pdu(infoTargetUpdate, #target{id=Id, properties=Prop}) ->
+pdu(infoTargetUpdate, #target{name=Name, properties=Prop}) ->
     AsnProps = lists:foldl(fun({K,V}, Acc) ->
         [{'Property', K, V} | Acc]
     end, [], Prop),
@@ -496,7 +487,7 @@ pdu(infoTargetUpdate, #target{id=Id, properties=Prop}) ->
         {fromServer,
             {infoTarget,
                 {'InfoTarget',
-                    atom_to_list(Id),
+                    Name,
                     AsnProps,
                     [],
                     update}}}};
@@ -510,7 +501,7 @@ pdu(infoTargetDelete, Id) ->
                     [],
                     delete}}}};
 
-pdu(infoProbe, {InfoType, TargetId, 
+pdu(infoProbe, {InfoType, TargetName, 
         #probe{
             permissions         = #perm_conf{read = R, write = W},
             monitor_probe_conf  = ProbeConf,
@@ -522,7 +513,7 @@ pdu(infoProbe, {InfoType, TargetId,
         {fromServer,
             {infoProbe,
                 {'InfoProbe',
-                    atom_to_list(TargetId),
+                    TargetName,
                     atom_to_list(Probe#probe.name),
                     Descr,
                     Info,
@@ -584,8 +575,8 @@ gen_dump_pdus(CState, Targets) ->
     FTargets    = supercast:filter(CState, [{Perm, Target} ||
         #target{global_perm = Perm} = Target <- Targets]),
     TargetsPDUs = [pdu(infoTarget, Target) || Target <- FTargets],
-    ProbesDefs  = [{TId, Probes} ||
-        #target{id = TId, probes = Probes} <- FTargets],
+    ProbesDefs  = [{Name, Probes} ||
+        #target{name=Name, probes = Probes} <- FTargets],
     gen_dump_pdus(CState, TargetsPDUs, [], [], ProbesDefs).
 gen_dump_pdus(_, TargetsPDUs, ProbesPDUs, ProbesFiltered, []) ->
     {lists:append(TargetsPDUs, ProbesPDUs), ProbesFiltered};

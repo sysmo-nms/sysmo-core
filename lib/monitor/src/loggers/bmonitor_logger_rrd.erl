@@ -35,7 +35,7 @@
 
 -record(state, {
     rrds,
-    target_id,
+    target_name,
     probe_name
 }).
 
@@ -50,14 +50,14 @@
 }).
 
 log_init(Conf, Target, Probe) ->
-    TargetId    = Target#target.id,
+    TargetId    = Target#target.name,
     ProbeId     = Probe#probe.name,
     Dir         = proplists:get_value(var_directory, Target#target.sys_properties),
     {ok, Rrds}  = update_rrd_record(Conf, Dir),
     ok          = create_file_if_needed(Rrds),
     State       = #state{
         rrds        = Rrds,
-        target_id   = TargetId,
+        target_name   = TargetId,
         probe_name    = ProbeId
     },
     {ok, State}.
@@ -71,7 +71,7 @@ log(State, ProbeReturn) ->
 
 dump(State, _Caller) ->
     Rrds        = State#state.rrds,
-    TargetId    = State#state.target_id,
+    TargetId    = State#state.target_name,
     ProbeId     = State#state.probe_name,
 
     TId         = atom_to_list(TargetId),

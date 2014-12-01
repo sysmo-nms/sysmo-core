@@ -39,7 +39,7 @@
     row_index_to_tpl,
     row_index_to_file,
     %% for dump
-    target_id,
+    target_name,
     probe_name,
     dump_dir
 }).
@@ -72,7 +72,7 @@ log_init(Conf, Target, Probe) ->
                     rrd_update          = RrdUpdate,
                     row_index_to_file   = IndexesRrdPaths,
                     row_index_to_tpl    = IndexesTpl,
-                    target_id           = Target#target.id,
+                    target_name         = Target#target.name,
                     probe_name          = Probe#probe.name,
                     dump_dir            = DumpDir
                 }
@@ -122,13 +122,12 @@ log(State, #probe_return{reply_tuple = Rpl, timestamp = Ts} = _ProbeReturn) ->
     {ok, Pdu, State}.
 
 build_rrd_event(State, ClientUp) ->
-    TId         = atom_to_list(State#state.target_id),
     ProbeName   = atom_to_list(State#state.probe_name),
     {modMonitorPDU,
         {fromServer,
             {loggerRrdEvent,
                 {'LoggerRrdEvent',
-                    TId,
+                    State#state.target_name,
                     ProbeName,
                     [{'LoggerRrdUpdate', I, Up} || {I,Up} <- ClientUp]
                 }
@@ -169,14 +168,13 @@ dump(#state{row_index_to_file = RI, dump_dir = DDir} = State, Caller) ->
     {ignore, State}.
 
 build_dump(State, FilePaths, Dir) ->
-    TId         = atom_to_list(State#state.target_id),
     ProbeName   = atom_to_list(State#state.probe_name),
     ProbeModule = atom_to_list(?MODULE),
     {modMonitorPDU,
         {fromServer,
             {loggerRrdDump,
                 {'LoggerRrdDump',
-                    TId,
+                    State#state.target_name,
                     ProbeName,
                     ProbeModule,
                     [{'LoggerRrdIdToFile', I, F} || {I,F} <- FilePaths],

@@ -40,8 +40,19 @@
 add_target(Name) ->
     {ok, DataDir} = application:get_env(monitor, targets_data_dir),
     Target = #target{
-        id = Name,
+        name = Name,
         sys_properties = [
+            {snmp_port,     161},
+            {snmp_version,  "2c"},
+            {snmp_seclevel, "noAuthNoPriv"},
+            {snmp_community,"public"},
+            {snmp_usm_user, "undefined"},
+            {snmp_authkey,  "undefined"},
+            {snmp_authproto,"MD5"},
+            {snmp_privkey,  "undefined"},
+            {snmp_privproto,"DES"},
+            {snmp_timeout,  5000},
+            {snmp_retries,  1},
             {var_directory, filename:join(DataDir, Name)}
         ],
         properties = [
@@ -59,7 +70,8 @@ add_target(Name) ->
 
 add_probe(icmp, Target, Name) ->
     Probe = #probe{
-        name = Name,
+        name        = Name,
+        belong_to   = Target,
         description = "ICMP:Echo presence",
         monitor_probe_mod = bmonitor_probe_nchecks,
         monitor_probe_conf = #nchecks_probe_conf{
@@ -73,12 +85,13 @@ add_probe(icmp, Target, Name) ->
             }
         ]
     },
-    monitor_master:create_probe(Target, Probe);
+    monitor_master:create_probe(Probe);
 
 add_probe(snmp, Target, Name) ->
     {RrdCreate, RrdUpdate, RrdGraphs} = get_rrd_template(),
     Probe = #probe{
-        name = Name,
+        name        = Name,
+        belong_to   = Target,
         description = "SNMP:Interfaces performances",
         monitor_probe_mod = bmonitor_probe_snmp,
 
@@ -149,7 +162,7 @@ add_probe(snmp, Target, Name) ->
             }
         ]
     },
-    monitor_master:create_probe(Target, Probe).
+    monitor_master:create_probe(Probe).
 
 add_job() -> ok.
 

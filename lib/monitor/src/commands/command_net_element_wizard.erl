@@ -92,20 +92,20 @@ generate_standard_snmp_target(Args, DataDir) ->
         V3PrivKey,
         IfSelection
     } = Args,
-    {ok, TargetId} = monitor_master:generate_id("target-"),
+    {ok, TargetName} = monitor_master:generate_name("target-"),
 
     P = generate_probe_id(),
 
     {RrdCreate, RrdUpdate, RrdGraphs} = get_rrd_template(),
 
-    TargetDir = filename:join(DataDir, TargetId),
+    TargetDir = filename:join(DataDir, TargetName),
     IfSelectionList = [
         {Index, lists:concat(["index", Index, ".rrd"])} 
         || Index <- IfSelection
                       ],
     {ok,
      #target{
-        id          = TargetId,
+        name        = TargetName,
         global_perm = #perm_conf{read = ["admin"], write = ["admin"]},
         sys_properties = [
             {snmp_port,     Port},
@@ -124,29 +124,29 @@ generate_standard_snmp_target(Args, DataDir) ->
         properties = [
             {"ip",          Ip},
             {"ipVersion",   IpVersion},
-            {"staticName",  atom_to_list(TargetId)},
+            {"staticName",  TargetName},
             {"sysLocation", "undefined"},
             {"sysName",     "undefined"},
             {"dnsName",     "undefined"}
         ],
         jobs   = [
             #job{
-                name     = lists:concat(["daily3am-monitor_jobs-update_snmp_system_info-", TargetId]),
+                name     = lists:concat(["daily3am-monitor_jobs-update_snmp_system_info-", TargetName]),
                 trigger  = ?CRON_EVERY20S,
                 %trigger  = ?CRON_DAILY4AM,
                 module   = monitor_jobs,
                 function = update_snmp_system_info,
-                argument = TargetId,
+                argument = TargetName,
                 info     = "Update the target sysInfo (sysName, sysLocation) of the target every days at 3am",
                 permissions = #perm_conf{read = ["admin"], write = ["admin"]}
             },
             #job{
-                name     = lists:concat(["daily4am-monitor_jobs-update_snmp_if_aliases-", TargetId]),
+                name     = lists:concat(["daily4am-monitor_jobs-update_snmp_if_aliases-", TargetName]),
                 trigger  = ?CRON_EVERY20S,
                 %trigger  = ?CRON_DAILY4AM,
                 module   = monitor_jobs,
                 function = update_snmp_if_aliases,
-                argument = TargetId,
+                argument = TargetName,
                 info     = "Update the target interfaces alliases of the target every days at 4am",
                 permissions = #perm_conf{read = ["admin"], write = ["admin"]}
             }

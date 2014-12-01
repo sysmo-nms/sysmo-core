@@ -95,7 +95,7 @@ code_change(_O, S, _E) ->
 
 % MNESIA events
 handle_target_create(#target{global_perm = Perm} = Target) ->
-    Pdu = infoTargetCreate(Target),
+    Pdu = monitor_pdu:'PDU-MonitorPDU-fromServer-infoTarget-create'(Target),
     supercast_channel:emit(?MASTER_CHANNEL, {Perm, Pdu}).
 
 handle_target_update(_,_) -> ok.
@@ -171,17 +171,3 @@ write_probe(Probe) ->
 
 write_job(Job) ->
     mnesia:transaction(fun() -> mnesia:write(Job) end).
-
-% PDUS
-infoTargetCreate(#target{id=Id, properties=Prop}) ->
-    AsnProps = lists:foldl(fun({K,V}, Acc) -> 
-        [{'Property', K, V} | Acc]
-    end, [], Prop),
-    {modMonitorPDU,
-        {fromServer,
-            {infoTarget,
-                {'InfoTarget',
-                    atom_to_list(Id),
-                    AsnProps,
-                    [],
-                    create}}}}.

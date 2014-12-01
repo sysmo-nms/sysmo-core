@@ -10,7 +10,6 @@
         {asn1,          "3.0.1"},
         {public_key,    "0.22"},
         {ssl,           "5.3.5"},
-        {inets,         "5.10.2"},
         {supercast,     "2.0.0"},
         {noctopus,      "0.1.0"},
         {errd,          "0.1.0"},

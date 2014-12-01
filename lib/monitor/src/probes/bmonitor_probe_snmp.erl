@@ -45,7 +45,7 @@
 info() -> {ok, "snmp get and walk module"}.
 
 init(Target, Probe) ->
-    AgentName   = atom_to_list(Target#target.id),
+    AgentName   = Target#target.name,
     Conf        = Probe#probe.monitor_probe_conf,
     Method      = Conf#snmp_probe_conf.method,
     Oids        = Conf#snmp_probe_conf.oids,
