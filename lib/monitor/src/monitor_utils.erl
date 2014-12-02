@@ -19,14 +19,27 @@
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 % @private
--module(monitor_snmp_utils).
+-module(monitor_utils).
 -include("include/monitor.hrl").
 
 -export([
-    init_snmp_conf/1
+    init_target_snmp/1,
+    init_target_dir/1
 ]).
 
-init_snmp_conf(Target) ->
+init_target_dir(Target) ->
+    Dir = proplists:get_value(var_directory, Target#target.sys_properties),
+    case file:read_file_info(Dir) of
+        {ok, _} ->
+            ok;
+        {error, enoent} ->
+            file:make_dir(Dir);
+        Other ->
+            exit({error, Other})
+    end.
+
+
+init_target_snmp(Target) ->
     SysProp = Target#target.sys_properties,
     case proplists:get_value(snmp_version, SysProp) of
         undefined   -> ok;
@@ -61,6 +74,8 @@ init_snmp_conf(Target) ->
                 {retries,           SnmpRetries},
                 {security_name,     SnmpUsmUser}
             ],
-
-            snmpman:register_element(Target#target.name, SnmpArgs)
+            case snmpman:register_element(Target#target.name, SnmpArgs) of
+                ok    -> ok;
+                Other -> exit(Other)
+            end
     end.

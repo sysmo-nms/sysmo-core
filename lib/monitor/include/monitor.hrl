@@ -6,6 +6,7 @@
 
 -define(MASTER_CHANNEL, "target-MasterChan").
 -define(PROBES_STATE,   ets_probes_state).
+-define(DEFAULT_PERM_CONF, #perm_conf{read=["admin"],write=["admin"]}).
 
 -record(inspector, {
     module,
@@ -53,19 +54,14 @@
     % the name of the job is dynamicaly build using
     % lists:concat([group,module,function,argument])
     % ex: lists:concat(["daily3am", monitor_jobs,hello, target-1234])
-    name     = "undefined"      :: string(),
+    name      = "undefined"      :: string(),
     belong_to = undefined       :: string(),
-    trigger  = "undefined"      :: string(),
-
-    module   = undefined        :: atom(),
-    function = undefined        :: atom(),
-    argument = "undefined"      :: string(),
-
-    info     = "undefined"      :: string(),
-    permissions =   #perm_conf{
-                        read    = ["admin"],
-                        write   = ["admin"]
-                    }  :: #perm_conf{}
+    trigger   = "undefined"      :: string(),
+    module    = undefined        :: atom(),
+    function  = undefined        :: atom(),
+    argument  = "undefined"      :: string(),
+    info      = "undefined"      :: string(),
+    permissions         = ?DEFAULT_PERM_CONF :: #perm_conf{}
 }).
 
 -record(probe, {
@@ -73,54 +69,31 @@
     belong_to           = "undefined"     :: string(),
     description         = ""            :: string(),
     info                = ""            :: string(),
-    permissions         =   #perm_conf{
-                                read    = ["admin"],
-                                write   = ["admin"]
-                            }  :: #perm_conf{},
     timeout             = 5             :: integer(), % seconds
     status              = "UNKNOWN"     :: string(),
     step                = 5             :: integer(), % seconds
-
     properties          = []            :: [{string(), any()}],
-    % forward properties is a list of properties wich will be propagated
-    % to the target.
-    forward_properties  = []            :: [string()],
-
-    parents             = []            :: [atom()],
+    parents             = []            :: [string()],
     active              = true          :: true | false,
-
     monitor_probe_mod   = undefined     :: undefined | module(),
     monitor_probe_conf  = undefined     :: [any()],
     inspectors          = []            :: [#inspector{}],
-    loggers             = []            :: [#logger{}]
+    loggers             = []            :: [#logger{}],
+
+    permissions         = ?DEFAULT_PERM_CONF :: #perm_conf{}
 }).
 
 -record(target, {
     name        = "undefined"   :: string(),
-    global_perm = #perm_conf{
-        read        =   ["admin"],
-        write       =   ["admin"]
-    },
 
     % sys_properties only accessible to users having write access
     sys_properties = []         :: [{atom(), string()}],
 
     % properties accessible to all users having read access
-    properties  = []            :: [{any(), any()}],
+    properties  = []            :: [{string(), any()}],
 
     probes      = []            :: [#probe{}],
-    jobs        = []            :: [#job{}]
-}).
+    jobs        = []            :: [#job{}],
 
-% monitor_logger_events
-% -record(probe_event, {
-%     id          = 0                 :: integer(),
-%     insert_ts   = 0                 :: integer(),
-%     ack_ts      = 0                 :: integer(),
-%     status      = "undefined"       :: string(),
-%     textual     = "undefined"       :: string(),
-%     ack_needed  = true              :: true | false,
-%     ack_value   = "undefined"       :: string(),
-%     group_owner = "undefined"       :: string(),
-%     user_owner  = "undefined"       :: string()
-% }).
+    permissions         = ?DEFAULT_PERM_CONF :: #perm_conf{}
+}).

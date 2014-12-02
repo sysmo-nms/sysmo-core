@@ -32,10 +32,22 @@
     del_job/0,
     update_target/0,
     update_probe/0,
-    update_job/0
+    update_job/0,
+
+    fill_test/0
 ]).
 
 -define(RRD_ifPerf_file, "snmp_if_perf.ini").
+
+fill_test() ->
+    L = ["a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q"],
+    fill_test(L).
+fill_test([]) -> ok;
+fill_test([I|T]) ->
+    add_target(I),
+    add_probe(icmp, I, lists:concat([I,"i"])),
+    add_probe(snmp, I, lists:concat([I,"s"])),
+    fill_test(T).
 
 add_target(Name) ->
     {ok, DataDir} = application:get_env(monitor, targets_data_dir),

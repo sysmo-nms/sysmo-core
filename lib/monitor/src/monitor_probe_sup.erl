@@ -25,7 +25,7 @@
 
 -export([
     start_link/0,
-    new/1
+    launch/1
 ]).
 
 -export([init/1]).
@@ -33,7 +33,7 @@
 start_link() ->
     supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
-new(Probe) ->
+launch(Probe) ->
     {ok, _} = supervisor:start_child(?MODULE, [Probe]).
 
 init([]) ->

@@ -47,9 +47,7 @@
 % API
 -export([
     create_target/1,
-    create_probe/1,
-
-    init_target/1
+    create_probe/1
 ]).
 
 -record(state, {
@@ -116,13 +114,14 @@ handle_call(get_perms, _F, #state{perm = P} = S) ->
 %% API CALLS
 %%----------------------------------------------------------------------------
 handle_call({create_probe, Probe}, _F, S) ->
-    monitor_probe_sup:new(Probe),
     monitor_data:write_probe(Probe),
+    monitor_probe_sup:launch(Probe),
     {reply, ok, S};
 
 handle_call({create_target, Target}, _F, S) ->
-    init_target(Target),
     monitor_data:write_target(Target),
+    monitor_utils:init_target_snmp(Target),
+    monitor_utils:init_target_dir(Target),
     {reply, ok, S}.
 
 %%----------------------------------------------------------------------------
@@ -132,7 +131,7 @@ handle_cast({sync_request, CState}, S) ->
     supercast_channel:subscribe(?MASTER_CHANNEL, CState),
 
     {atomic, _Targets} = monitor_data:iterate_target_table(fun(T,_) ->
-        #target{global_perm=Perm} = T,
+        #target{permissions=Perm} = T,
         case supercast:satisfy(CState, Perm) of
             true    ->
                 Pdu = monitor_pdu:'PDU-MonitorPDU-fromServer-infoTarget-create'(T),
@@ -183,27 +182,16 @@ code_change(_O, S, _E) ->
 %%----------------------------------------------------------------------------
 %% UTILS    
 %%----------------------------------------------------------------------------
-init_target(Target) ->
-    Dir = proplists:get_value(var_directory, Target#target.sys_properties),
-    case file:read_file_info(Dir) of
-        {ok, _} ->
-            ok;
-        {error, enoent} ->
-            file:make_dir(Dir);
-        Other ->
-            exit({error, Other})
-    end,
-    ok  = monitor_snmp_utils:init_snmp_conf(Target).
-    
 init_targets() ->
     {atomic, R} = monitor_data:iterate_target_table(fun(Target,_) ->
-        ok = monitor_snmp_utils:init_snmp_conf(Target)
+        monitor_utils:init_target_snmp(Target),
+        monitor_utils:init_target_dir(Target)
     end),
     {ok, R}.
 
 init_probes() ->
     {atomic, R} = monitor_data:iterate_probe_table(fun(X,_) ->
-        {ok, _} = monitor_probe_sup:new(X)
+        {ok, _} = monitor_probe_sup:launch(X)
     end),
     {ok, R}.
 

@@ -184,7 +184,7 @@ code_change(_O, S, _E) ->
     {ok, S}.
 
 % MNESIA events
-handle_target_create(#target{global_perm = Perm} = Target) ->
+handle_target_create(#target{permissions = Perm} = Target) ->
     Pdu = monitor_pdu:'PDU-MonitorPDU-fromServer-infoTarget-create'(Target),
     supercast_channel:emit(?MASTER_CHANNEL, {Perm, Pdu}).
 

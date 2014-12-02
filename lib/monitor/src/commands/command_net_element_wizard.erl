@@ -106,7 +106,7 @@ generate_standard_snmp_target(Args, DataDir) ->
     {ok,
      #target{
         name        = TargetName,
-        global_perm = #perm_conf{read = ["admin"], write = ["admin"]},
+        permissions = #perm_conf{read = ["admin"], write = ["admin"]},
         sys_properties = [
             {snmp_port,     Port},
             {snmp_version,  SnmpVer},
@@ -165,7 +165,6 @@ generate_standard_snmp_target(Args, DataDir) ->
                     properties = [
                         {"status", "UNKNOWN"}
                     ],
-                    forward_properties = ["sysName", "sysLocation"],
 
                     parents = [],
                     active = true,
