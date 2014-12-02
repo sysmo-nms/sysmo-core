@@ -32,7 +32,7 @@
     {ok, State::any()}.
 % @doc
 % Called at initialization stage. Must return a State value wich
-% will be gived as argument to the exec/2 callback.
+% will be gived as argument to the exec/1 callback.
 % @end
 
 -callback exec(State::any()) -> 

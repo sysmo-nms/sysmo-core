@@ -25,8 +25,31 @@
 -export([
     'PDU-MonitorPDU-fromServer-infoTarget-create'/1,
     'PDU-MonitorPDU-fromServer-infoProbe-create'/1,
-    'PDU-MonitorPDU-fromServer-infoProbe-update'/1
+    'PDU-MonitorPDU-fromServer-infoProbe-update'/1,
+    'PDU-MonitorPDU-fromServer-probeReturn'/4
 ]).
+
+'PDU-MonitorPDU-fromServer-probeReturn'(
+        #probe_return{ 
+            status          = Status,
+            original_reply  = OriginalReply,
+            timestamp       = Timestamp,
+            key_vals        = KeyVals
+        },
+        TargetName,
+        ProbeId,
+        NextReturn ) ->
+    {modMonitorPDU,
+        {fromServer,
+            {probeReturn,
+                {'ProbeReturn',
+                    TargetName,
+                    ProbeId,
+                    Status,
+                    OriginalReply,
+                    Timestamp,
+                    make_key_values(KeyVals),
+                    NextReturn }}}}.
 
 'PDU-MonitorPDU-fromServer-infoTarget-create'(
         #target{name=Name, properties=Prop}
@@ -66,7 +89,7 @@
                     Probe#probe.step,
                     gen_asn_probe_inspectors(Probe#probe.inspectors),
                     gen_asn_probe_loggers(Probe#probe.loggers),
-                    gen_asn_probe_properties(Probe#probe.properties),
+                    make_key_values(Probe#probe.properties),
                     gen_asn_probe_active(Probe#probe.active),
                     create
     }   }   }   }.
@@ -96,7 +119,7 @@
                     Probe#probe.step,
                     gen_asn_probe_inspectors(Probe#probe.inspectors),
                     gen_asn_probe_loggers(Probe#probe.loggers),
-                    gen_asn_probe_properties(Probe#probe.properties),
+                    make_key_values(Probe#probe.properties),
                     gen_asn_probe_active(Probe#probe.active),
                     create
     }   }   }   }.
@@ -134,18 +157,18 @@ gen_logger_pdu({logger, bmonitor_logger_rrd2, Cfg}) ->
         }
     }.
 
-gen_asn_probe_properties(K) ->
-    gen_asn_probe_properties(K, []).
-gen_asn_probe_properties([], S) ->
+make_key_values(K) ->
+    make_key_values(K, []).
+make_key_values([], S) ->
     S;
-gen_asn_probe_properties([{K,V} | T], S) when is_list(V) ->
-    gen_asn_probe_properties(T, [{'Property', K, V} | S]);
-gen_asn_probe_properties([{K,V} | T], S) when is_integer(V) ->
-    gen_asn_probe_properties(T, [{'Property', K, integer_to_list(V)} | S]);
-gen_asn_probe_properties([{K,V} | T], S) when is_float(V) ->
-    gen_asn_probe_properties(T, [{'Property', K, float_to_list(V, [{decimals, 10}])} | S]);
-gen_asn_probe_properties([{K,V} | T], S) when is_atom(V) ->
-    gen_asn_probe_properties(T, [{'Property', K, atom_to_list(V)} | S]).
+make_key_values([{K,V} | T], S) when is_list(V) ->
+    make_key_values(T, [{'Property', K, V} | S]);
+make_key_values([{K,V} | T], S) when is_integer(V) ->
+    make_key_values(T, [{'Property', K, integer_to_list(V)} | S]);
+make_key_values([{K,V} | T], S) when is_float(V) ->
+    make_key_values(T, [{'Property', K, float_to_list(V, [{decimals, 10}])} | S]);
+make_key_values([{K,V} | T], S) when is_atom(V) ->
+    make_key_values(T, [{'Property', K, atom_to_list(V)} | S]).
 
 
 gen_asn_probe_active(true)  -> 1;

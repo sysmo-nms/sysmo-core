@@ -21,7 +21,7 @@
 % @doc
 % @end
 -module(monitor_probe).
--behaviour(gen_fsm).
+-behaviour(gen_server).
 -behaviour(supercast_channel).
 -include("include/monitor.hrl").
 
@@ -33,192 +33,189 @@
 % supercast_channel
 -export([
     get_perms/1,
-    sync_request/2,
+    sync_request/2
+]).
+
+% gen_server
+-export([
+    init/1,
+    handle_call/3, 
+    handle_cast/2,
+    handle_info/2,
+    terminate/2,
+    code_change/3
+]).
+
+% API
+-export([
     triggered_return/2
 ]).
 
-% gen
--export([
-    init/1,
-    handle_event/3, 
-    handle_sync_event/4,
-    handle_info/3,
-    terminate/3,
-    code_change/4,
-    'RUNNING'/3
-]).
-
 -record(state, {
-    target_name,
-    name,
-    probe,
-    tref,
-    inspectors_state    = [],
-    loggers_state       = [],
-    probe_state         = []
+    name
 }).
 
 
--record(probe_state, {
+-record(ets_state, {
     name,
+    permissions,
     target_name,
     inspectors_state,
     loggers_state,
-    exec_state
+    exec_state,
+    exec_mod,
+    tref,
+    status_from,
+    status
 }).
 
 start_link(#probe{name = Name} = Probe) ->
-    gen_fsm:start_link({via, supercast_registrar, {?MODULE, Name}},
+    gen_server:start_link({via, supercast_registrar, {?MODULE, Name}},
         ?MODULE, Probe, []).
 
-% supercast_channel behaviour
+%%----------------------------------------------------------------------------
+%% supercast API
+%%----------------------------------------------------------------------------
 get_perms(PidName) ->
-    gen_fsm:sync_send_all_state_event({via, supercast_registrar, PidName}, get_perms).
+    gen_server:call({via, supercast_registrar, PidName}, get_perms).
 
-% supercast_channel behaviour
 sync_request(PidName, CState) ->
-    gen_fsm:send_all_state_event({via, supercast_registrar, PidName}, {sync_request, CState}).
+    gen_server:cast({via, supercast_registrar, PidName}, {sync_request, CState}).
 
 
-
-% from master channel to update clients timeout
+%%----------------------------------------------------------------------------
+%% API
+%%----------------------------------------------------------------------------
 triggered_return(PidName, CState) ->
-    gen_fsm:send_all_state_event({via, supercast_registrar, PidName}, {triggered_return, CState}).
+    gen_server:cast({via, supercast_registrar, PidName}, {triggered_return, CState}).
 
 
-
-
+%%----------------------------------------------------------------------------
+%% GEN_SERVER
+%%----------------------------------------------------------------------------
 init(Probe) ->
     init_random(),
-    {ok, ProbeInitState}    = init_probe(Probe),
+    {ok, ExecInitState}     = init_probe(Probe),
     {ok, InspectInitState}  = monitor_inspector:init_all(Probe),
     {ok, LoggersInitState}  = monitor_logger:init_all(Probe),
-    PState = #probe_state{
+    {ok, TRef} = initiate_start_sequence(Probe#probe.step, random),
+    ES = #ets_state{
         name             = Probe#probe.name,
+        permissions      = Probe#probe.permissions,
         target_name      = Probe#probe.belong_to,
         inspectors_state = InspectInitState,
         loggers_state    = LoggersInitState,
-        exec_state       = ProbeInitState
+        exec_state       = ExecInitState,
+        exec_mod         = Probe#probe.monitor_probe_mod,
+        tref             = TRef,
+        status_from      = erlang:now(),
+        status           = Probe#probe.status
     },
-    monitor_data:set_probe_state(PState),
-    PSState = #state{
-        target_name         = Probe#probe.belong_to,
-        name                = Probe#probe.name,
-        probe               = Probe,
-        probe_state         = ProbeInitState ,
-        inspectors_state    = InspectInitState,
-        loggers_state       = LoggersInitState
-    },
-    {ok, TRef} = initiate_start_sequence(Probe#probe.step, random),
-    {ok, 'RUNNING', PSState#state{tref=TRef}, hibernate}.
+    monitor_data:set_probe_state(ES),
+    {ok, #state{name=Probe#probe.name}}.
 
-'RUNNING'(_Event, SName, SData) ->
-    {next_state, SName, SData}.
-
-% GEN_CHANNEL event
-handle_event({probe_return, NewProbeState, ProbeReturn}, SName, SData) ->
-    % update #state.probe_state
-    SData1  = SData#state{probe_state = NewProbeState},
-
-    % INSPECT,
-    % update #state.probe
-    % update #state.inspectors_state,
-    Probe        = SData1#state.probe,
-    InspectState = SData1#state.inspectors_state,
-    {ok, NewInspectState, ModifiedProbe} = 
-        monitor_inspector:inspect_all(InspectState, Probe, ProbeReturn),
-    SData2  = SData1#state{probe             = ModifiedProbe},
-    SData3  = SData2#state{inspectors_state  = NewInspectState},
-
-    % LOG, update loggers_state,
-    % update #state.loggers_state
-    LoggersState = SData3#state.loggers_state,
-    {ok, Pdus, NewLoggersState} = monitor_logger:log_all(LoggersState,ProbeReturn),
-    emit_all(Probe#probe.name, Probe#probe.permissions, Pdus),
-
-    SData4 = SData3#state{loggers_state = NewLoggersState},
-
-    % LAUNCH
-    % update #state.tref
-    P = SData4#state.probe,
-    {ok, {NextMicroStart,_} = TRef} = initiate_start_sequence(P#probe.step, normal),
-    SData5 = SData4#state{tref = TRef},
-
-    % NOTIFY
-    % maybe notify master
-    % if Old#state.properties   != New#sate.properties
-    % or
-    % if Old#state.status       != New#state.status
-    %
-    % notify all subscribers of '?MASTER_CHANNEL' anyway
-    notify(
-        ProbeReturn,
-        SData5#state.target_name,
-        Probe,
-        ModifiedProbe,
-        NextMicroStart),
-
-    {next_state, SName, SData5};
-
-handle_event({sync_request, CState}, SName, SData) ->
-    Probe   = SData#state.probe,
-    Name    = Probe#probe.name,
-    LStates = SData#state.loggers_state,
-    {ok, Pdus, LState2} = monitor_logger:dump_all(LStates, CState),
-    ok  = supercast_channel:unicast(CState, Pdus),
-    ok  = supercast_channel:subscribe(Name, CState),
-    {next_state, SName, SData#state{loggers_state = LState2}};
 
 % Uniquely send to have client timeout counters in sync using tref()
-handle_event({triggered_return, CState}, SName, SData) ->
-    Probe   = SData#state.probe,
-    TargetName  = SData#state.target_name,
-    {NMicro, _} = SData#state.tref,
-    Status  = Probe#probe.status,
-    PName   = Probe#probe.name,
+handle_call(get_perms, _From, S) ->
+    ES = monitor_data:get_probe_state(S#state.name),
+    {reply, ES#ets_state.permissions, S};
 
-    PartialPr = #probe_return{ 
-        status          = Status,
+handle_call(_Call, _From, S) ->
+    {noreply, S}.
+
+
+
+handle_cast({probe_return, NewProbeState, PR}, S) ->
+    ES  = monitor_data:get_probe_state(S#state.name),
+
+    % INSPECT
+    Probe  = monitor_data:get_probe(S#state.name),
+    IState = ES#ets_state.inspectors_state,
+    {ok, IState2, Probe2} = monitor_inspector:inspect_all(IState, Probe, PR),
+
+    % LOG
+    LState = ES#ets_state.loggers_state,
+    {ok, Pdus, LState2} = monitor_logger:log_all(LState,PR),
+    emit_all(ES#ets_state.name, ES#ets_state.permissions, Pdus),
+
+
+    % LAUNCH
+    {ok,{NMicro,_}=TRef} = initiate_start_sequence(Probe#probe.step, normal),
+
+    % SEND MESSAGES
+    Pdu = monitor_pdu:'PDU-monitorPDU-fromServer-probeReturn'(
+        PR,
+        ES#ets_state.target_name,
+        ES#ets_state.name,
+        NMicro
+    ),
+    supercast_channel:emit(?MASTER_CHANNEL, {ES#ets_state.permissions, Pdu}),
+
+    % WRITE
+    monitor_data:set_probe_state(
+        ES#ets_state{
+            inspectors_state=IState2,
+            loggers_state=LState2,
+            tref=TRef,
+            exec_state=NewProbeState,
+            status_from= erlang:now(),
+            status=Probe2#probe.status
+        }
+    ),
+    monitor_data:write_probe(Probe2),
+    {noreply, S};
+
+handle_cast({sync_request, CState}, S) ->
+    ES = monitor_data:get_probe_state(S#state.name),
+    LS = ES#ets_state.loggers_state,
+    {ok, Pdus, LS2} = monitor_logger:dump_all(LS, CState),
+    ok  = supercast_channel:subscribe(ES#ets_state.name, CState),
+    ok  = supercast_channel:unicast(CState, Pdus),
+    monitor_data:set_probe_state(ES#ets_state{loggers_state=LS2}),
+    {noreply, S};
+
+handle_cast({triggered_return, CState}, S) ->
+    ES = monitor_data:get_probe_state(S#state.name),
+
+    PartialPR = #probe_return{ 
+        status          = ES#ets_state.status,
         original_reply  = "",
         timestamp       = 0,
         key_vals        = []
     },
 
-    Pdu = probe_return({PartialPr, TargetName, PName, NMicro}),
+    {NMicro, _} = ES#ets_state.tref,
+    Pdu = monitor_pdu:'PDU-monitorPDU-fromServer-probeReturn'(
+        PartialPR,
+        ES#ets_state.target_name,
+        ES#ets_state.name,
+        NMicro
+    ),
     supercast_channel:unicast(CState, [Pdu]),
-    {next_state, SName, SData}.
 
-handle_sync_event(get_perms, _From, SName, SData) ->
-    Probe = SData#state.probe,
-    Perms = Probe#probe.permissions,
-    {reply, Perms, SName, SData}.
+    {noreply, S};
 
-handle_info(take_of, SName, SData) ->
-    #state{
-       probe_state = ProbeState,
-       probe = #probe{monitor_probe_mod = Mod}
-    } = SData,
-    take_of(self(), Mod, ProbeState),
-    {next_state, SName, SData};
+handle_cast(_Call, S) ->
+    {noreply, S}.
 
-handle_info(_, SName, SData) ->
-    {next_state, SName, SData}.
 
-terminate(_Reason, _SName, _SData) ->
+handle_info(take_of, S) ->
+    ES = monitor_data:get_probe_state(S#state.name),
+    Mod = ES#ets_state.exec_mod,
+    ExS = ES#ets_state.exec_state,
+    take_of(self(), Mod, ExS),
+    {noreply, S};
+
+
+handle_info(_, SData) ->
+    {noreply, SData}.
+
+terminate(_Reason, _S) ->
     normal.
 
-code_change(_OldVsn, SName, SData, _Extra) ->
-    {ok, SName, SData}.
+code_change(_OldVsn, S, _Extra) ->
+    {ok, S}.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% PROBE %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-init_probe(Probe) ->
-    Mod       = Probe#probe.monitor_probe_mod,
-    InitState = Mod:init(Probe),
-    InitState.
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% PROBE LAUNCH %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -240,26 +237,8 @@ initiate_start_sequence(Step) ->
 take_of(Parent, Mod, ProbeState) ->
     erlang:spawn(fun() ->
         {ok, ProbeState2, Return}  = Mod:exec(ProbeState),
-        gen_fsm:send_all_state_event(Parent, {probe_return, ProbeState2, Return})
+        gen_server:cast(Parent, {probe_return, ProbeState2, Return})
     end).
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% monitor_master and supercast_channel NOTIFY %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-notify(ProbeReturn, TargetName, _OriginalProbe, NewProbe, NextMicroStart) ->
-    ok = notify_subscribers(ProbeReturn, TargetName, NewProbe, NextMicroStart),
-    monitor_data:write_probe(NewProbe).
-    %ok = notify_master(TargetName, OriginalProbe, NewProbe).
-
-notify_subscribers(ProbeReturn, TargetName, Probe, NextMicroStart) ->
-    ProbeName = Probe#probe.name,
-    Perms    = Probe#probe.permissions,
-    Pdu      = probe_return({ProbeReturn, TargetName, ProbeName, NextMicroStart}),
-    supercast_channel:emit(?MASTER_CHANNEL, {Perms, Pdu}).
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -270,41 +249,13 @@ emit_all(Name, Perm, [Pdu|T]) ->
     supercast_channel:emit(Name,{Perm, Pdu}),
     emit_all(Name,Perm,T).
 
+init_probe(Probe) ->
+    Mod       = Probe#probe.monitor_probe_mod,
+    InitState = Mod:init(Probe),
+    InitState.
 
 init_random() ->
     <<A:32, B:32, C:32>> = crypto:rand_bytes(12),
     random:seed({A,B,C}).
 
-probe_return({
-        #probe_return{ 
-            status      = Status,
-            original_reply = OriginalReply,
-            timestamp   = Timestamp,
-            key_vals    = KeyVals
-        },
-        TargetName, ProbeId, NextReturn}) ->
-    {modMonitorPDU,
-        {fromServer,
-            {probeReturn,
-                {'ProbeReturn',
-                    TargetName,
-                    ProbeId,
-                    Status,
-                    OriginalReply,
-                    Timestamp,
-                    make_key_values(KeyVals),
-                    NextReturn
-                }}}}.
 
-make_key_values(K) ->
-    make_key_values(K, []).
-make_key_values([], S) ->
-    S;
-make_key_values([{K,V} | T], S) when is_list(V) ->
-    make_key_values(T, [{'Property', K, V} | S]);
-make_key_values([{K,V} | T], S) when is_integer(V) ->
-    make_key_values(T, [{'Property', K, integer_to_list(V)} | S]);
-make_key_values([{K,V} | T], S) when is_float(V) ->
-    make_key_values(T, [{'Property', K, float_to_list(V, [{decimals, 10}])} | S]);
-make_key_values([{K,V} | T], S) when is_atom(V) ->
-    make_key_values(T, [{'Property', K, atom_to_list(V)} | S]).

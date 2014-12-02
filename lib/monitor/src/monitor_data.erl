@@ -144,8 +144,8 @@ init([]) ->
     mnesia:subscribe({table, job,    detailed}),
     {ok, state}.
 
-handle_call(_Call, _From, state) ->
-    {noreply, state}.
+handle_call(_Call, _From, S) ->
+    {noreply, S}.
 
 handle_cast(_R, S) ->
     {noreply, S}.
