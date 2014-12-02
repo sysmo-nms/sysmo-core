@@ -52,7 +52,7 @@
     target_name,
     name,
     probe,
-    tref,   %
+    tref,
     inspectors_state    = [],
     loggers_state       = [],
     probe_state         = []
@@ -90,9 +90,6 @@ triggered_return(PidName, CState) ->
 
 init(Probe) ->
     init_random(),
-    %{ok, ProbeInitState}    = init_probe(Target, Probe),
-    %{ok, InspectInitState}  = monitor_inspector:init_all(Target, Probe),
-    %{ok, LoggersInitState}  = monitor_logger:init_all(Target,Probe),
     {ok, ProbeInitState}    = init_probe(Probe),
     {ok, InspectInitState}  = monitor_inspector:init_all(Probe),
     {ok, LoggersInitState}  = monitor_logger:init_all(Probe),
@@ -263,20 +260,6 @@ notify_subscribers(ProbeReturn, TargetName, Probe, NextMicroStart) ->
     Perms    = Probe#probe.permissions,
     Pdu      = probe_return({ProbeReturn, TargetName, ProbeName, NextMicroStart}),
     supercast_channel:emit(?MASTER_CHANNEL, {Perms, Pdu}).
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

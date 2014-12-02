@@ -52,8 +52,81 @@
 
     get_probe_state/1,
     set_probe_state/1,
-    del_probe_state/1
+    del_probe_state/1,
+
+    generate_id/1
 ]).
+
+
+%%----------------------------------------------------------------------------
+%% API
+%%----------------------------------------------------------------------------
+% MNESIA write
+write_target(Target) ->
+    mnesia:transaction(fun() -> mnesia:write(Target) end).
+
+write_probe(Probe) ->
+    mnesia:transaction(fun() -> mnesia:write(Probe) end).
+
+write_job(Job) ->
+    mnesia:transaction(fun() -> mnesia:write(Job) end).
+
+% MNESIA iterate
+iterate_target_table(Fun) ->
+    Trans = fun() -> mnesia:foldl(Fun, [], target) end,
+    mnesia:transaction(Trans).
+
+iterate_probe_table(Fun) ->
+    Trans = fun() -> mnesia:foldl(Fun, [], probe) end,
+    mnesia:transaction(Trans).
+
+iterate_job_table(Fun) ->
+    Trans = fun() -> mnesia:foldl(Fun, [], job) end,
+    mnesia:transaction(Trans).
+
+% MNESIA get
+get_target(Key) ->
+    {atomic, T} =  mnesia:transaction(fun() -> 
+        case mnesia:read({target, Key}) of
+            [] -> undefined;
+            [V] -> V
+        end
+    end),
+    T.
+
+get_probe(Key) ->
+    {atomic, P} = mnesia:transaction(fun() -> 
+        case mnesia:read({probe, Key}) of
+            [] -> undefined;
+            [V] -> V
+        end
+    end),
+    P.
+
+
+get_job(Key) ->
+    {atomic, J} = mnesia:transaction(fun() -> 
+        case mnesia:read({job, Key}) of
+            [] -> undefined;
+            [V] -> V
+        end
+    end),
+    J.
+
+get_probe_state(Key) ->
+    ets:lookup(?PROBES_STATE, Key).
+
+set_probe_state(State) ->
+    ets:insert(?PROBES_STATE, State).
+
+del_probe_state(Key) ->
+    ets:delete(?PROBES_STATE, Key).
+
+% get free id
+generate_id(Head) ->
+    RandB = crypto:rand_bytes(16),
+    RandN = lists:foldl(fun(N,Acc) -> Acc * 256 + N end, 0, binary_to_list(RandB)),
+    Head ++ [$-|integer_to_list(RandN)].
 
 start_link() ->
     gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
@@ -128,6 +201,9 @@ handle_probe_update(#probe{permissions=Perm} = Probe,_) ->
     
 
 
+%%----------------------------------------------------------------------------
+%% local functions
+%%----------------------------------------------------------------------------
 % MNESIA init
 init_mnesia_tables() ->
     Tables = mnesia:system_info(tables),
@@ -186,59 +262,7 @@ init_mnesia_tables() ->
             )
     end.
 
-% MNESIA write
-write_target(Target) ->
-    mnesia:transaction(fun() -> mnesia:write(Target) end).
-
-write_probe(Probe) ->
-    mnesia:transaction(fun() -> mnesia:write(Probe) end).
-
-write_job(Job) ->
-    mnesia:transaction(fun() -> mnesia:write(Job) end).
-
-% MNESIA iterate
-iterate_target_table(Fun) ->
-    Trans = fun() -> mnesia:foldl(Fun, [], target) end,
-    mnesia:transaction(Trans).
-
-iterate_probe_table(Fun) ->
-    Trans = fun() -> mnesia:foldl(Fun, [], probe) end,
-    mnesia:transaction(Trans).
-
-iterate_job_table(Fun) ->
-    Trans = fun() -> mnesia:foldl(Fun, [], job) end,
-    mnesia:transaction(Trans).
-
-% MNESIA get
-get_target(Key) ->
-    {atomic, T} =  mnesia:transaction(fun() -> 
-        case mnesia:read({target, Key}) of
-            [] -> undefined;
-            [V] -> V
-        end
-    end),
-    T.
-
-get_probe(Key) ->
-    {atomic, P} = mnesia:transaction(fun() -> 
-        case mnesia:read({probe, Key}) of
-            [] -> undefined;
-            [V] -> V
-        end
-    end),
-    P.
-
-
-get_job(Key) ->
-    {atomic, J} = mnesia:transaction(fun() -> 
-        case mnesia:read({job, Key}) of
-            [] -> undefined;
-            [V] -> V
-        end
-    end),
-    J.
-
-% ETS probes_states
+% ETS probes_states init
 init_ets_tables() ->
     ets:new(?PROBES_STATE,
         [
@@ -249,12 +273,3 @@ init_ets_tables() ->
             {keypos, 2}
         ]
     ).
-
-get_probe_state(Key) ->
-    ets:lookup(?PROBES_STATE, Key).
-
-set_probe_state(State) ->
-    ets:insert(?PROBES_STATE, State).
-
-del_probe_state(Key) ->
-    ets:delete(?PROBES_STATE, Key).

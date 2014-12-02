@@ -5,8 +5,7 @@
 -define(LOG(X), io:format("{~w, ~w}: DEBUG: ~p~n", [?MODULE, ?LINE, X])).
 
 -define(MASTER_CHANNEL, "target-MasterChan").
-
--define(PROBES_STATE, ets_probes_state).
+-define(PROBES_STATE,   ets_probes_state).
 
 -record(inspector, {
     module,
