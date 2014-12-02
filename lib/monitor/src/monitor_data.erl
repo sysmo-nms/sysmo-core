@@ -88,7 +88,7 @@ iterate_job_table(Fun) ->
 get_target(Key) ->
     {atomic, T} =  mnesia:transaction(fun() -> 
         case mnesia:read({target, Key}) of
-            [] -> undefined;
+            []  -> undefined;
             [V] -> V
         end
     end),
@@ -114,7 +114,10 @@ get_job(Key) ->
     J.
 
 get_probe_state(Key) ->
-    ets:lookup(?PROBES_STATE, Key).
+    case ets:lookup(?PROBES_STATE, Key) of
+        [] -> undefined;
+        [V] -> V
+    end.
 
 set_probe_state(State) ->
     ets:insert(?PROBES_STATE, State).

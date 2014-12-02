@@ -143,7 +143,7 @@ handle_cast({probe_return, NewProbeState, PR}, S) ->
     {ok,{NMicro,_}=TRef} = initiate_start_sequence(Probe#probe.step, normal),
 
     % SEND MESSAGES
-    Pdu = monitor_pdu:'PDU-monitorPDU-fromServer-probeReturn'(
+    Pdu = monitor_pdu:'PDU-MonitorPDU-fromServer-probeReturn'(
         PR,
         ES#ets_state.target_name,
         ES#ets_state.name,
@@ -185,7 +185,7 @@ handle_cast({triggered_return, CState}, S) ->
     },
 
     {NMicro, _} = ES#ets_state.tref,
-    Pdu = monitor_pdu:'PDU-monitorPDU-fromServer-probeReturn'(
+    Pdu = monitor_pdu:'PDU-MonitorPDU-fromServer-probeReturn'(
         PartialPR,
         ES#ets_state.target_name,
         ES#ets_state.name,
@@ -257,5 +257,3 @@ init_probe(Probe) ->
 init_random() ->
     <<A:32, B:32, C:32>> = crypto:rand_bytes(12),
     random:seed({A,B,C}).
-
-
