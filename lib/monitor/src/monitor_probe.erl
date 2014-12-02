@@ -77,7 +77,8 @@ start_link(#probe{name = Name} = Probe) ->
 %% supercast API
 %%----------------------------------------------------------------------------
 get_perms(PidName) ->
-    gen_server:call({via, supercast_registrar, PidName}, get_perms).
+    #ets_state{permissions = Perm} = monitor_data:get_probe_state(PidName),
+    Perm.
 
 sync_request(PidName, CState) ->
     gen_server:cast({via, supercast_registrar, PidName}, {sync_request, CState}).
@@ -115,11 +116,6 @@ init(Probe) ->
     {ok, #state{name=Probe#probe.name}}.
 
 
-% Uniquely send to have client timeout counters in sync using tref()
-handle_call(get_perms, _From, S) ->
-    ES = monitor_data:get_probe_state(S#state.name),
-    {reply, ES#ets_state.permissions, S};
-
 handle_call(_Call, _From, S) ->
     {noreply, S}.
 
@@ -137,7 +133,6 @@ handle_cast({probe_return, NewProbeState, PR}, S) ->
     LState = ES#ets_state.loggers_state,
     {ok, Pdus, LState2} = monitor_logger:log_all(LState,PR),
     emit_all(ES#ets_state.name, ES#ets_state.permissions, Pdus),
-
 
     % LAUNCH
     {ok,{NMicro,_}=TRef} = initiate_start_sequence(Probe#probe.step, normal),
@@ -163,7 +158,8 @@ handle_cast({probe_return, NewProbeState, PR}, S) ->
         }
     ),
     monitor_data:write_probe(Probe2),
-    {noreply, S};
+
+    {noreply, S, hibernate};
 
 handle_cast({sync_request, CState}, S) ->
     ES = monitor_data:get_probe_state(S#state.name),

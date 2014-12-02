@@ -113,16 +113,6 @@ Shedule everithing that need it:
   - near end of support alert (contract reneval),
   - near end of registrar contract (reneval domain registration)
 
-
-##################
-# MODULE TICKETS #
-##################
-- Ticket gestion linked to mod_sysdoc
-
-################
-# MODULE TASKS #
-################
-- TODO list
 ##############################################################################
 #                   ITIL PACK END                                            #
 ##############################################################################
@@ -137,34 +127,6 @@ Shedule everithing that need it:
 #################
 - snmp traps handling, With logger_events
 - mod_syslog Collect syslog data. Can be used to feed logger_events
-
-#####################
-# MODULE METROLOGIE #
-#####################
-- metrologie pmacct, netflow, sflow, rmon.
-
-
-
-
-###################
-# MODULE MULTIMAN #
-###################
-
-
-##################
-# MODULE ROUTING #
-##################
-- mod_routing: Routing protocols monitoring/maps
-
-TODO maybe:
-smokeping probe compatibility
-
-################
-# PERFORMANCES #
-################
-- src/monitor_master, keep configuration in dets or file,
-- src/monitor_master hibernate,
-
 
 #################
 # international #
