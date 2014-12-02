@@ -101,9 +101,9 @@ init([]) ->
     random:seed(erlang:now()),
     {ok, Read}  = application:get_env(monitor, master_chan_read_perm),
     {ok, Write} = application:get_env(monitor, master_chan_write_perm),
-    {atomic, _} = init_targets(),
-    {atomic, _} = init_probes(),
-    {atomic, _} = init_jobs(),
+    {ok,_} = init_targets(),
+    {ok,_} = init_probes(),
+    {ok,_} = init_jobs(),
     {ok, #state{perm=#perm_conf{read=Read,write=Write}}}.
 
 %%----------------------------------------------------------------------------
@@ -131,45 +131,40 @@ handle_call({create_target, Target}, _F, S) ->
 handle_cast({sync_request, CState}, S) ->
     supercast_channel:subscribe(?MASTER_CHANNEL, CState),
 
-    {atomic, _Targets} = monitor_data:iterate_target_table(fun(X,Acc) ->
-        #target{global_perm=Perm} = X,
+    {atomic, _Targets} = monitor_data:iterate_target_table(fun(T,_) ->
+        #target{global_perm=Perm} = T,
         case supercast:satisfy(CState, Perm) of
             true    ->
-                [X|Acc];
+                Pdu = monitor_pdu:'PDU-MonitorPDU-fromServer-infoTarget-create'(T),
+                ok  = supercast_channel:unicast(CState, [Pdu]);
+            false   -> ok
+        end
+    end),
+
+    {atomic, _Probes} = monitor_data:iterate_probe_table(fun(P,_) ->
+        #probe{permissions=Perm} = P,
+        case supercast:satisfy(CState, Perm) of
+            true    ->
+                Pdu = monitor_pdu:'PDU-MonitorPDU-fromServer-infoProbe-create'(P),
+                ok  = supercast_channel:unicast(CState, [Pdu]),
+                monitor_probe:triggered_return(P#probe.name, CState);
+            false   -> ok
+        end
+    end),
+
+    {atomic, _Jobs} = monitor_data:iterate_job_table(fun(J,Acc) ->
+        #job{permissions=Perm} = J,
+        case supercast:satisfy(CState, Perm) of
+            true    ->
+                [J|Acc];
             false   ->
                 Acc
         end
     end),
 
-    {atomic, _Probes} = monitor_data:iterate_probe_table(fun(X,Acc) ->
-        #probe{permissions=Perm} = X,
-        case supercast:satisfy(CState, Perm) of
-            true    ->
-                [X|Acc];
-            false   ->
-                Acc
-        end
-    end),
 
-    {atomic, _Jobs} = monitor_data:iterate_job_table(fun(X,Acc) ->
-        #job{permissions=Perm} = X,
-        case supercast:satisfy(CState, Perm) of
-            true    ->
-                [X|Acc];
-            false   ->
-                Acc
-        end
-    end),
+    ?LOG({should_send_jobs, _Jobs}),
 
-
-    ?LOG({should_send, _Targets, _Probes, _Jobs}),
-    ?LOG({should_trigger_return, _Probes}),
-    %{Pdus, Probes} = gen_dump_pdus(CState, Targets),
-    %supercast_channel:unicast(CState, Pdus),
-    %lists:foreach(fun(X) ->
-    %    monitor_probe:triggered_return(X, CState)
-    %end, Probes),
- 
     {noreply, S};
 
 handle_cast(_R, S) ->
@@ -201,16 +196,19 @@ init_target(Target) ->
     ok  = monitor_snmp_utils:init_snmp_conf(Target).
     
 init_targets() ->
-    monitor_data:iterate_target_table(fun(Target,_) ->
-        monitor_snmp_utils:init_snmp_conf(Target)
-    end).
+    {atomic, R} = monitor_data:iterate_target_table(fun(Target,_) ->
+        ok = monitor_snmp_utils:init_snmp_conf(Target)
+    end),
+    {ok, R}.
 
 init_probes() ->
-    monitor_data:iterate_probe_table(fun(X,_) ->
-        monitor_probe_sup:new(X)
-    end).
+    {atomic, R} = monitor_data:iterate_probe_table(fun(X,_) ->
+        {ok, _} = monitor_probe_sup:new(X)
+    end),
+    {ok, R}.
 
 init_jobs() ->
-    monitor_data:iterate_job_table(fun(X,_) ->
-        io:format("~p~n",[X])
-    end).
+    {atomic, R} = monitor_data:iterate_job_table(fun(X,_) ->
+        ok = io:format("~p~n",[X])
+    end),
+    {ok, R}.
