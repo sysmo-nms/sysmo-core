@@ -47,7 +47,10 @@
 % API
 -export([
     create_target/1,
-    create_probe/1
+    create_probe/1,
+    create_job/1,
+
+    store_target_properties/2
 ]).
 
 -record(state, {
@@ -59,21 +62,31 @@
 %%----------------------------------------------------------------------------
 %% monitor API
 %%----------------------------------------------------------------------------
--spec create_target(Target::#target{}) -> ok | {error, Info::string()}.
+-spec create_target(Target::#target{}) -> TargetName::string().
 % @doc
-% Called from monitor_commander.
 % @end
 create_target(Target) ->
     gen_server:call({via, supercast_registrar, ?MASTER_CHANNEL}, {create_target, Target}).
 
--spec create_probe(Probe::#probe{}) 
-    -> ok | {error, string()}.
+-spec create_probe(Probe::#probe{})  -> ProbeName::string().
 % @doc
-% Called from monitor_commander.
 % @end
 create_probe(Probe) ->
     gen_server:call({via, supercast_registrar, ?MASTER_CHANNEL}, {create_probe, Probe}).
 
+-spec create_job(Job::#job{}) -> JobName::string().
+% @doc
+% @end
+create_job(Job) ->
+    gen_server:call({via, supercast_registrar, ?MASTER_CHANNEL}, {create_job, Job}).
+
+
+-spec store_target_properties(Target::#target{}, Properties::[]) -> ok.
+% @doc
+% @end
+store_target_properties(Target, Props) ->
+    gen_server:call({via, supercast_registrar, ?MASTER_CHANNEL},
+        {store_target_properties, Target, Props}).
 
 %%----------------------------------------------------------------------------
 %% supercast_channel API
@@ -112,17 +125,39 @@ handle_call(get_perms, _F, #state{perm = P} = S) ->
 %%----------------------------------------------------------------------------
 %% API CALLS
 %%----------------------------------------------------------------------------
+handle_call({create_job, Job}, _F, S) ->
+    {atomic, IJob} = monitor_data:write_job(Job),
+    #job{name=Name,trigger=Tr,module=M,function=F,argument=A} = IJob,
+    equartz:register_internal_job(Name,Tr,{M,F,A}),
+    equartz:fire_now(Name),
+    {reply, Name, S};
+
 handle_call({create_probe, Probe}, _F, S) ->
-    monitor_data:write_probe(Probe),
-    monitor_probe_sup:launch(Probe),
-    {reply, ok, S};
+    {atomic, IProbe} = monitor_data:write_probe(Probe),
+    monitor_probe_sup:launch(IProbe),
+    {reply, IProbe#probe.name, S};
 
 handle_call({create_target, Target}, _F, S) ->
-    monitor_data:write_target(Target),
-    monitor_utils:init_target_snmp(Target),
-    monitor_utils:init_target_dir(Target),
-    {reply, ok, S}.
+    {atomic, ITarget} = monitor_data:write_target(Target),
+    monitor_utils:init_target_snmp(ITarget),
+    monitor_utils:init_target_dir(ITarget),
+    {reply, ITarget#target.name, S};
 
+
+handle_call({store_target_properties, Target, Props}, _F, S) ->
+    Trans = fun() ->
+        case mnesia:read({target, Target}) of
+            [V] ->
+                P = lists:foldl(fun({Key,Val}, Acc) ->
+                    lists:keystore(Key,1,Acc,{Key,Val})
+                end, V#target.properties, Props),
+                mnesia:write(V#target{properties=P});
+            _ -> 
+                error
+        end
+    end,
+    R = mnesia:transaction(Trans),
+    {reply, R, S}.
 %%----------------------------------------------------------------------------
 %% SUPERCAST_CHANNEL BEHAVIOUR CASTS
 %%----------------------------------------------------------------------------
@@ -196,6 +231,7 @@ init_probes() ->
 
 init_jobs() ->
     {atomic, R} = monitor_data:iterate_job_table(fun(J,_) ->
-        io:format("~p~n",[J])
+        #job{name=Name,trigger=Tr,module=M,function=F,argument=A} = J,
+        equartz:register_internal_job(Name,Tr,{M,F,A})
     end),
     {ok, R}.

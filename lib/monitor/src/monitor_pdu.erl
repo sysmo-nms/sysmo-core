@@ -24,6 +24,7 @@
 -include("include/monitor.hrl").
 -export([
     'PDU-MonitorPDU-fromServer-infoTarget-create'/1,
+    'PDU-MonitorPDU-fromServer-infoTarget-update'/1,
     'PDU-MonitorPDU-fromServer-infoProbe-create'/1,
     'PDU-MonitorPDU-fromServer-infoProbe-update'/1,
     'PDU-MonitorPDU-fromServer-probeReturn'/4
@@ -54,9 +55,10 @@
 'PDU-MonitorPDU-fromServer-infoTarget-create'(
         #target{name=Name, properties=Prop}
     ) ->
-    AsnProps = lists:foldl(fun({K,V}, Acc) -> 
-        [{'Property', K, V} | Acc]
-    end, [], Prop),
+    %AsnProps = lists:foldl(fun({K,V}, Acc) -> 
+        %[{'Property', K, V} | Acc]
+    %end, [], Prop),
+    AsnProps = make_key_values(Prop),
     {modMonitorPDU,
         {fromServer,
             {infoTarget,
@@ -65,6 +67,22 @@
                     AsnProps,
                     [],
                     create}}}}.
+
+'PDU-MonitorPDU-fromServer-infoTarget-update'(
+        #target{name=Name, properties=Prop}
+    ) ->
+    %AsnProps = lists:foldl(fun({K,V}, Acc) -> 
+    %    [{'Property', K, V} | Acc]
+    %end, [], Prop),
+    AsnProps = make_key_values(Prop),
+    {modMonitorPDU,
+        {fromServer,
+            {infoTarget,
+                {'InfoTarget',
+                    Name,
+                    AsnProps,
+                    [],
+                    update}}}}.
 
 'PDU-MonitorPDU-fromServer-infoProbe-update'(
     #probe{

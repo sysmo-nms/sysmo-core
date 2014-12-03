@@ -76,8 +76,7 @@ update_snmp_system_info(Target) ->
             PF = P4
     end,
 
-    TargetAtom = erlang:list_to_existing_atom(Target),
-    monitor_master:job_update_properties(TargetAtom, PF).
+    monitor_master:store_target_properties(Target, PF).
 
 update_snmp_if_aliases(Target) ->
     IfNames = snmpman:walk_table(Target, [
@@ -104,8 +103,7 @@ update_snmp_if_aliases(Target) ->
             PF = P
     end,
 
-    TargetAtom = erlang:list_to_existing_atom(Target),
-    monitor_master:job_update_properties(TargetAtom, PF).
+    monitor_master:store_target_properties(Target, PF).
 
 build_if_names(Rows) ->
     build_if_names(Rows, []).

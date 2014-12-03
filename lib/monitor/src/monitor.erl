@@ -24,65 +24,83 @@
 -include("include/monitor_snmp.hrl").
 -include("../equartz/include/equartz.hrl").
 -export([
-    add_target/1,
-    add_probe/3,
-    add_job/0,
-    del_target/0,
-    del_probe/0,
-    del_job/0,
-    update_target/0,
-    update_probe/0,
-    update_job/0,
+    target_new/2,
+    target_del/1,
 
-    fill_test/0
+    %probe_new/2,
+    %probe_del/0,
+
+    job_new/2,
+    %job_del/0,
+
+    fill_test/1
 ]).
 
 -define(RRD_ifPerf_file, "snmp_if_perf.ini").
 
-fill_test() ->
-    L = ["a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q"],
-    fill_test(L).
-fill_test([]) -> ok;
-fill_test([I|T]) ->
-    add_target(I),
-    add_probe(icmp, I, lists:concat([I,"i"])),
-    add_probe(snmp, I, lists:concat([I,"s"])),
-    fill_test(T).
+fill_test(0) -> ok;
+fill_test(N) ->
+    SysProp = [
+        {snmp_port,     161},
+        {snmp_version,  "2c"},
+        {snmp_seclevel, "noAuthNoPriv"},
+        {snmp_community,"public"},
+        {snmp_usm_user, "undefined"},
+        {snmp_authkey,  "undefined"},
+        {snmp_authproto,"MD5"},
+        {snmp_privkey,  "undefined"},
+        {snmp_privproto,"DES"},
+        {snmp_timeout,  5000},
+        {snmp_retries,  1}
+    ],
+    Prop = [
+        {"ip",          "192.168.0.5"},
+        {"ipVersion",   "v4"},
+        {"dnsName",     "undefined"},
+        {"sysName",     "undefined"}
+    ],
 
-add_target(Name) ->
-    {ok, DataDir} = application:get_env(monitor, targets_data_dir),
-    Target = #target{
-        name = Name,
-        sys_properties = [
-            {snmp_port,     161},
-            {snmp_version,  "2c"},
-            {snmp_seclevel, "noAuthNoPriv"},
-            {snmp_community,"public"},
-            {snmp_usm_user, "undefined"},
-            {snmp_authkey,  "undefined"},
-            {snmp_authproto,"MD5"},
-            {snmp_privkey,  "undefined"},
-            {snmp_privproto,"DES"},
-            {snmp_timeout,  5000},
-            {snmp_retries,  1},
-            {var_directory, filename:join(DataDir, Name)}
-        ],
-        properties = [
-            {"ip",          "192.168.0.5"},
-            {"ipVersion",   "v4"},
-            {"staticName",  lists:concat(["testouille",Name])},
-            {"dnsName",     "undefined"},
-            {"sysName",     "undefined"}
-        ]
+    I = target_new(SysProp, Prop),
+    probe_new({nchecks, icmp},    I),
+    probe_new({snmp, walk_table}, I),
+    job_new({internal, update_snmp_system_info}, I),
+    job_new({internal, update_snmp_if_aliases},  I),
+    fill_test(N - 1).
+
+%%-----------------------------------------------------------------------------
+%% TARGET API
+%%-----------------------------------------------------------------------------
+target_new(SysProp, []) ->
+    Prop = [{"ip", "none"}, {"sysName", "undefined"}, {"dnsName", "undefined"}],
+    target_new(SysProp, Prop);
+target_new(SysProp, Prop) ->
+    T = #target{sys_properties=SysProp,properties=Prop},
+    monitor_master:create_target(T).
+
+target_del(Name) ->
+    monitor_data:del_target(Name).
+
+
+%%-----------------------------------------------------------------------------
+%% JOB API
+%%-----------------------------------------------------------------------------
+job_new({internal, Function}, Target) ->
+    J = #job{
+        belong_to = Target,
+        trigger  = ?CRON_EVERY20S,
+        %trigger  = ?CRON_DAILY4AM,
+        module   = monitor_jobs,
+        function = Function,
+        argument = Target,
+        info     = lists:concat([?CRON_EVERY20S, " ", monitor_jobs, " ", Function, " ", Target])
     },
-    monitor_master:create_target(Target).
+    monitor_master:create_job(J).
 
-
-
-
-add_probe(icmp, Target, Name) ->
+%%-----------------------------------------------------------------------------
+%% PROBE API
+%%-----------------------------------------------------------------------------
+probe_new({nchecks, icmp}, Target) ->
     Probe = #probe{
-        name        = Name,
         belong_to   = Target,
         description = "ICMP:Echo presence",
         monitor_probe_mod = bmonitor_probe_nchecks,
@@ -99,10 +117,9 @@ add_probe(icmp, Target, Name) ->
     },
     monitor_master:create_probe(Probe);
 
-add_probe(snmp, Target, Name) ->
+probe_new({snmp, walk_table}, Target) ->
     {RrdCreate, RrdUpdate, RrdGraphs} = get_rrd_template(),
     Probe = #probe{
-        name        = Name,
         belong_to   = Target,
         description = "SNMP:Interfaces performances",
         monitor_probe_mod = bmonitor_probe_snmp,
@@ -175,25 +192,6 @@ add_probe(snmp, Target, Name) ->
         ]
     },
     monitor_master:create_probe(Probe).
-
-add_job() -> ok.
-
-del_target() -> ok.
-del_probe() -> ok.
-del_job() -> ok.
-update_target() -> ok.
-update_probe() -> ok.
-update_job() -> ok.
-
-
-
-
-
-
-
-
-
-
 
 get_rrd_template() ->
     %?RRD_ifPerf_file

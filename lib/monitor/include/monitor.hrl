@@ -7,6 +7,13 @@
 -define(MASTER_CHANNEL, "target-MasterChan").
 -define(PROBES_STATE,   ets_probes_state).
 -define(DEFAULT_PERM_CONF, #perm_conf{read=["admin"],write=["admin"]}).
+-define(DEFAULT_TARGET_PROPERTIES, [
+    {"ip",          "undefined"},
+    {"ipVersion",   "undefined"},
+    {"sysName",     "undefined"},
+    {"dnsName",     "undefined"}
+]).
+
 
 -record(inspector, {
     module,
@@ -54,8 +61,8 @@
     % the name of the job is dynamicaly build using
     % lists:concat([group,module,function,argument])
     % ex: lists:concat(["daily3am", monitor_jobs,hello, target-1234])
-    name      = "undefined"      :: string(),
-    belong_to = undefined       :: string(),
+    name                         :: string(),
+    belong_to = "undefined"      :: string(),
     trigger   = "undefined"      :: string(),
     module    = undefined        :: atom(),
     function  = undefined        :: atom(),
@@ -65,8 +72,8 @@
 }).
 
 -record(probe, {
-    name                = "undefined"     :: string(),
-    belong_to           = "undefined"     :: string(),
+    name                                :: string(),
+    belong_to           = "undefined"   :: string(),
     description         = ""            :: string(),
     info                = ""            :: string(),
     timeout             = 5             :: integer(), % seconds
@@ -84,13 +91,13 @@
 }).
 
 -record(target, {
-    name        = "undefined"   :: string(),
+    name                        :: string(),
 
     % sys_properties only accessible to users having write access
     sys_properties = []         :: [{atom(), string()}],
 
     % properties accessible to all users having read access
-    properties  = []            :: [{string(), any()}],
+    properties  = ?DEFAULT_TARGET_PROPERTIES :: [{string(), string()}],
 
     probes      = []            :: [#probe{}],
     jobs        = []            :: [#job{}],
