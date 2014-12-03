@@ -22,17 +22,16 @@
 -module(supercast_mpd_sup).
 -behaviour(supervisor).
 
--export([start_link/3]).
+-export([start_link/0]).
 -export([init/1]).
 
-start_link(MpdConf, TcpClientConf, SslClientConf) ->
-    supervisor:start_link({local, ?MODULE}, ?MODULE, 
-            [MpdConf, TcpClientConf, SslClientConf]).
+start_link() ->
+    supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
-init([MpdConf, TcpClientConf, SslClientConf]) ->
+init([]) ->
     SupercastMpd = {
         supercast_mpd,
-        {supercast_mpd,start_link, [MpdConf]},
+        {supercast_mpd,start_link, []},
         permanent,
         2000,
         worker,
@@ -40,7 +39,7 @@ init([MpdConf, TcpClientConf, SslClientConf]) ->
     },
     ClientsSup = {
         supercast_clients_sup,
-        {supercast_clients_sup, start_link, [TcpClientConf, SslClientConf]},
+        {supercast_clients_sup, start_link, []},
         permanent,
         infinity,
         supervisor,

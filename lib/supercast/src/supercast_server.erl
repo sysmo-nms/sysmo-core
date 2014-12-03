@@ -33,15 +33,15 @@
 ]).
 
 -export([
-    start_link/1,
+    start_link/0,
     client_msg/2
 ]).
 
 -record(state, {
     auth_mod,
     dispatch,
-    data_port,
-    data_proto
+    http_port,
+    http_proto
 }).
  
 
@@ -49,8 +49,8 @@
 %% API
 %%-------------------------------------------------------------
 % @private
-start_link(ServerConf) ->
-    gen_server:start_link({local, ?MODULE}, ?MODULE, ServerConf, []).
+start_link() ->
+    gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
 
 which_auth() ->
@@ -69,21 +69,22 @@ handle_client_command(Mod, Msg, CState) ->
 %% GEN_SERVER CALLBACKS
 %%-------------------------------------------------------------
 % @private
-init({AuthModule, PduDispatch}) ->
-    ?LOGS({"pdu_dispatch", PduDispatch}),
-    {ok, Port} = application:get_env(supercast, data_port),
-    {ok, DataSsl} = application:get_env(supercast, data_use_ssl),
-    case DataSsl of
+init([]) ->
+    {ok, AuthModule}    = application:get_env(supercast, auth_module),
+    {ok, PduDispatch}   = application:get_env(supercast, pdu_dispatch),
+    {ok, HttpPort}      = application:get_env(supercast, http_port),
+    {ok, HttpUseSSL}    = application:get_env(supercast, http_use_ssl),
+    case HttpUseSSL of
         true ->
             DataProto = "https";
         false ->
             DataProto = "http"
     end,
     {ok, #state{
-        auth_mod = AuthModule,
-        dispatch = PduDispatch,
-        data_port = Port,
-        data_proto = DataProto
+        auth_mod   = AuthModule,
+        dispatch   = PduDispatch,
+        http_port  = HttpPort,
+        http_proto = DataProto
         }
     }.
 
@@ -91,7 +92,7 @@ init({AuthModule, PduDispatch}) ->
 handle_call(dump, _F, S) ->
     {reply, {ok, S}, S};
 
-handle_call({connect, CState}, _F, #state{data_port = Port, data_proto = Proto} = S) ->
+handle_call({connect, CState}, _F, #state{http_port = Port , http_proto = Proto} = S) ->
     R = send(CState, pdu(serverInfo, {"local", Port, Proto})),
     {reply, R, S};
 
@@ -181,22 +182,7 @@ handle_client_msg(
                     supercast_mpd:subscribe_stage2(Channel,CState)
             end
     end;
-%
-%     case (catch erlang:list_to_existing_atom(Channel)) of
-%         {'EXIT', _} ->
-%             % not a registered atom, not a channel
-%             send(CState, pdu(subscribeErr, {QueryId, Channel}));
-%         Chan ->
-%             % ok mean satisfy return ok for read the chan
-%             case supercast_mpd:subscribe_stage1(Chan, CState) of
-%                 error ->
-%                     send(CState, pdu(subscribeErr, {QueryId, Channel}));
-%                 ok ->
-%                     send(CState, pdu(subscribeOk, {QueryId, Channel})),
-%                     supercast_mpd:subscribe_stage2(Chan,CState)
-%             end
-%     end;
-            
+       
 handle_client_msg(
         {message, 
             {modSupercastPDU, 

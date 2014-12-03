@@ -33,7 +33,7 @@
 ]).
 
 -export([
-    start_link/1,
+    start_link/0,
     multicast_msg/2,
     unicast_msg/2,
     subscribe_stage1/2,
@@ -56,8 +56,8 @@
 %% API
 %%-------------------------------------------------------------
 % @private
-start_link(MpdConf) ->
-    gen_server:start_link({local, ?MODULE}, ?MODULE, MpdConf, []).
+start_link() ->
+    gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
 -spec main_chans() -> [atom()].
 % @doc
@@ -158,11 +158,13 @@ unsubscribe(Chan, CState) ->
 %%-------------------------------------------------------------
 %% GEN_SERVER CALLBACKS
 %%-------------------------------------------------------------
-init({AcctrlMod, MainChans}) ->
+init([]) ->
+    {ok, AcctrlMod}     = application:get_env(supercast, acctrl_module),
+    {ok, MainChannels}  = application:get_env(supercast, main_channels),
     {ok, #state{
-            acctrl = AcctrlMod,
-            main_chans = MainChans,
-            chans = []
+            acctrl      = AcctrlMod,
+            main_chans  = MainChannels,
+            chans       = []
         }
     }.
 

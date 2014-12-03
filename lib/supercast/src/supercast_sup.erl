@@ -22,14 +22,13 @@
 -module(supercast_sup).
 -behaviour(supervisor).
 
--export([start_link/4]).
+-export([start_link/0]).
 -export([init/1]).
 
-start_link(SrvConf, MpdConf, TcpClientConf, SslClientConf) ->
-    supervisor:start_link({local, ?MODULE}, ?MODULE, 
-            [SrvConf, MpdConf, TcpClientConf, SslClientConf]).
+start_link() ->
+    supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
-init([SrvConf, MpdConf, TcpClientConf, SslClientConf]) ->
+init([]) ->
     SupercastRegistrar = {
         supercast_registrar,
         {supercast_registrar,start_link, []},
@@ -41,7 +40,7 @@ init([SrvConf, MpdConf, TcpClientConf, SslClientConf]) ->
 
     SupercastServer = {
         supercast_server,
-        {supercast_server,start_link, [SrvConf]},
+        {supercast_server,start_link, []},
         permanent,
         2000,
         worker,
@@ -49,7 +48,7 @@ init([SrvConf, MpdConf, TcpClientConf, SslClientConf]) ->
     },
     SupercastMpdSup = {
         supercast_mpd_sup,
-        {supercast_mpd_sup,start_link, [MpdConf, TcpClientConf, SslClientConf]},
+        {supercast_mpd_sup,start_link, []},
         permanent,
         infinity,
         supervisor,

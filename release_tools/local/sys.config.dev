@@ -46,10 +46,10 @@
                     {encoder, supercast_encoder_asn}
                 ]
             },
-            {data_sync_dir, "var/yaws/docroot"},
-            {data_port,     8080},
-            {data_use_ssl,  false},
-            {yaws_conf,
+            {http_sync_dir, "var/yaws/docroot"},
+            {http_port,     8080},
+            {http_use_ssl,  false},
+            {http_conf,
                 [
                     {logdir, "var/yaws/log"},
                     {listen, {0,0,0,0}},

@@ -62,14 +62,11 @@
 %% API
 %%----------------------------------------------------------------------------
 % MNESIA write
-write_target(Target) ->
-    mnesia:transaction(fun() -> mnesia:write(Target) end).
-
-write_probe(Probe) ->
-    mnesia:transaction(fun() -> mnesia:write(Probe) end).
-
-write_job(Job) ->
-    mnesia:transaction(fun() -> mnesia:write(Job) end).
+write_target(Target) -> write_record(Target).
+write_probe(Probe)   -> write_record(Probe).
+write_job(Job)       -> write_record(Job).
+write_record(Record) ->
+    mnesia:transaction(fun() -> mnesia:write(Record) end).
 
 % MNESIA iterate
 iterate_target_table(Fun) ->
@@ -125,11 +122,32 @@ set_probe_state(State) ->
 del_probe_state(Key) ->
     ets:delete(?PROBES_STATE, Key).
 
-% get free id
-generate_id(Head) ->
-    RandB = crypto:rand_bytes(16),
-    RandN = lists:foldl(fun(N,Acc) -> Acc * 256 + N end, 0, binary_to_list(RandB)),
-    Head ++ [$-|integer_to_list(RandN)].
+% generate_id must be used from within a mnesia:transaction
+generate_id(target) ->
+    Id = lists:concat([target, [$-|generate_id()]]),
+    case mnesia:read({target, Id}) of
+        []  -> Id;
+        [_] -> generate_id(target)
+    end;
+
+generate_id(probe) ->
+    Id = lists:concat([probe, [$-|generate_id()]]),
+    case mnesia:read({probe, Id}) of
+        []  -> Id;
+        [_] -> generate_id(probe)
+    end;
+
+generate_id(job) ->
+    Id = lists:concat([job, [$-|generate_id()]]),
+    case mnesia:read({job, Id}) of
+        []  -> Id;
+        [_] -> generate_id(job)
+    end.
+
+generate_id() ->
+    B = crypto:rand_bytes(8),
+    N = lists:foldl(fun(N,Acc) -> Acc * 256 + N end, 0, binary_to_list(B)),
+    integer_to_list(N).
 
 start_link() ->
     gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).

@@ -27,22 +27,12 @@
 
 start(_Type, _Args) ->
     configure_yaws(),
-    {ok, AuthModule}    = application:get_env(supercast, auth_module),
-    {ok, AcctrlMod}     = application:get_env(supercast, acctrl_module),
-    {ok, TcpClientConf} = application:get_env(supercast, tcp_client),
-    {ok, SslClientConf} = application:get_env(supercast, ssl_client),
-    {ok, PduDispatch}   = application:get_env(supercast, pdu_dispatch),
-    {ok, MainChannels}  = application:get_env(supercast, main_channels),
-    supercast_sup:start_link(
-        {AuthModule, PduDispatch},              % for supercast_server
-        {AcctrlMod, MainChannels},              % for supercast_mpd
-        TcpClientConf,                          % for tcp_client_sup
-        SslClientConf).                         % for ssl_client_sup
+    supercast_sup:start_link().
 
 configure_yaws() ->
-    {ok, YawsConf} = application:get_env(supercast, yaws_conf),
-    {ok, DocRoot}  = application:get_env(supercast, data_sync_dir),
-    {ok, Port}     = application:get_env(supercast, data_port),
+    {ok, YawsConf} = application:get_env(supercast, http_conf),
+    {ok, DocRoot}  = application:get_env(supercast, http_sync_dir),
+    {ok, Port}     = application:get_env(supercast, http_port),
     LogDir      = proplists:get_value(logdir, YawsConf),
     Listen      = proplists:get_value(listen, YawsConf),
     CompLevel   = proplists:get_value(compression_level, YawsConf),

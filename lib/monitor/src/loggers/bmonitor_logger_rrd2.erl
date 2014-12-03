@@ -50,7 +50,7 @@
 log_init(Conf, Probe) ->
     Target  = monitor_data:get_target(Probe#probe.belong_to),
     ConfType        = proplists:get_value(type, Conf),
-    {ok, DumpDir}   = application:get_env(supercast, data_sync_dir),
+    {ok, DumpDir}   = application:get_env(supercast, http_sync_dir),
     case ConfType of
         snmp_table ->
             % the return will be from a walk_table method

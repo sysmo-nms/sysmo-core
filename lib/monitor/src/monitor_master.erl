@@ -96,7 +96,6 @@ start_link() ->
 %% GEN_SERVER CALLBACKS
 %%----------------------------------------------------------------------------
 init([]) ->
-    random:seed(erlang:now()),
     {ok, Read}  = application:get_env(monitor, master_chan_read_perm),
     {ok, Write} = application:get_env(monitor, master_chan_write_perm),
     {ok,_} = init_targets(),
@@ -183,20 +182,20 @@ code_change(_O, S, _E) ->
 %% UTILS    
 %%----------------------------------------------------------------------------
 init_targets() ->
-    {atomic, R} = monitor_data:iterate_target_table(fun(Target,_) ->
-        monitor_utils:init_target_snmp(Target),
-        monitor_utils:init_target_dir(Target)
+    {atomic, R} = monitor_data:iterate_target_table(fun(T,_) ->
+        monitor_utils:init_target_snmp(T),
+        monitor_utils:init_target_dir(T)
     end),
     {ok, R}.
 
 init_probes() ->
-    {atomic, R} = monitor_data:iterate_probe_table(fun(X,_) ->
-        {ok, _} = monitor_probe_sup:launch(X)
+    {atomic, R} = monitor_data:iterate_probe_table(fun(P,_) ->
+        monitor_probe_sup:launch(P)
     end),
     {ok, R}.
 
 init_jobs() ->
-    {atomic, R} = monitor_data:iterate_job_table(fun(X,_) ->
-        ok = io:format("~p~n",[X])
+    {atomic, R} = monitor_data:iterate_job_table(fun(J,_) ->
+        io:format("~p~n",[J])
     end),
     {ok, R}.

@@ -69,7 +69,7 @@
     status
 }).
 
-start_link(#probe{name = Name} = Probe) ->
+start_link(#probe{name=Name} = Probe) ->
     gen_server:start_link({via, supercast_registrar, {?MODULE, Name}},
         ?MODULE, Probe, []).
 
@@ -77,7 +77,7 @@ start_link(#probe{name = Name} = Probe) ->
 %% supercast API
 %%----------------------------------------------------------------------------
 get_perms(PidName) ->
-    #ets_state{permissions = Perm} = monitor_data:get_probe_state(PidName),
+    #ets_state{permissions=Perm} = monitor_data:get_probe_state(PidName),
     Perm.
 
 sync_request(PidName, CState) ->
@@ -251,5 +251,4 @@ init_probe(Probe) ->
     InitState.
 
 init_random() ->
-    <<A:32, B:32, C:32>> = crypto:rand_bytes(12),
-    random:seed({A,B,C}).
+    random:seed(erlang:now()).

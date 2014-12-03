@@ -30,7 +30,8 @@
 
 
 satisfy(CState, Perm) ->
-    case supercast_acctrl_rbac:satisfy(read, [CState], Perm) of
+    {ok, AccCtrl} = application:get_env(supercast, acctrl_module),
+    case AccCtrl:satisfy(read, [CState], Perm) of
         {ok, []}        -> false;
         {ok, [CState]}  -> true
     end.
@@ -46,31 +47,23 @@ filter(CState, Things) ->
 filter_things(_, [], R) ->
     R;
 filter_things(CState, [{Perm, Thing}|T], R) ->
-    case supercast_acctrl_rbac:satisfy(read, [CState], Perm) of
-        {ok, []} ->
+    case satisfy([CState], Perm) of
+        false ->
             filter_things(CState, T, R);
-        {ok, [CState]} ->
+        true  ->
             filter_things(CState, T, [Thing|R])
     end.
 
--spec mpd_state() -> {ok, tuple()} | error.
+-spec mpd_state() -> {ok, tuple()}.
 % @doc
 % This function return the state of the supercast_mpd gen_server module.
 % @end
 mpd_state() ->
-    R = gen_server:call(supercast_mpd, dump),
-    case R of
-        {ok, _} -> R;
-        _ -> {error, R}
-    end.
+    gen_server:call(supercast_mpd, dump).
 
--spec server_state() -> {ok, tuple()} | error.
+-spec server_state() -> {ok, tuple()}.
 % @doc
 % This function return the state of the supercast_server gen_server module.
 % @end
 server_state() ->
-    R = gen_server:call(supercast_server, dump),
-    case R of
-        {ok, _} -> R;
-        _ -> {error, R}
-    end.
+    gen_server:call(supercast_server, dump).
