@@ -28,8 +28,8 @@
     update_snmp_if_aliases/1
 ]).
 
-update_snmp_system_info(Target) ->
-    {ok, {varbinds, Ret}} = snmpman:get(Target, [
+update_snmp_system_info(TargetKey) ->
+    {ok, {varbinds, Ret}} = snmpman:get(TargetKey, [
         ?SYS_DESCR,
         ?SYS_OBJECTID,
         ?SYS_CONTACT,
@@ -75,16 +75,20 @@ update_snmp_system_info(Target) ->
     end,
 
     _ = PF,
-    TargetRecord = monitor_data_master:get(target, Target),
-    maybe_update_target(TargetRecord, TargetRecord).
+
+    #target{properties=OrigP} = Target = monitor_data_master:get(target, TargetKey),
+    ModifP = lists:foldl(fun({K,V},Acc) ->
+        lists:keystore(K,1,Acc,{K,V})
+    end, OrigP, PF),
+    maybe_update_target(Target, Target#target{properties=ModifP}).
 
 
-update_snmp_if_aliases(Target) ->
-    IfNames = snmpman:walk_table(Target, [
+update_snmp_if_aliases(TargetKey) ->
+    IfNames = snmpman:walk_table(TargetKey, [
         "1.3.6.1.2.1.2.2.1.1",
         "1.3.6.1.2.1.2.2.1.2"
     ]),
-    IfAliases = snmpman:walk_table(Target, [
+    IfAliases = snmpman:walk_table(TargetKey, [
         "1.3.6.1.2.1.31.1.1.1.1",
         "1.3.6.1.2.1.31.1.1.1.18"
     ]),
@@ -105,8 +109,13 @@ update_snmp_if_aliases(Target) ->
     end,
 
     _ = PF,
-    TargetRecord = monitor_data_master:get(target, Target),
-    maybe_update_target(TargetRecord, TargetRecord).
+
+    #target{properties=OrigP} = Target = monitor_data_master:get(target, TargetKey),
+    ModifP = lists:foldl(fun({K,V},Acc) ->
+       lists:keystore(K,1,Acc,{K,V})
+    end, OrigP, PF),
+    maybe_update_target(Target, Target#target{properties=ModifP}).
+
 
 build_if_names(Rows) ->
     build_if_names(Rows, []).
