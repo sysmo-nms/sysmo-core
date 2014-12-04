@@ -77,7 +77,7 @@ start_link(#probe{name=Name} = Probe) ->
 %% supercast API
 %%----------------------------------------------------------------------------
 get_perms(PidName) ->
-    #ets_state{permissions=Perm} = monitor_data:get_probe_state(PidName),
+    #ets_state{permissions=Perm} = monitor_data_master:get_probe_state(PidName),
     Perm.
 
 sync_request(PidName, CState) ->
@@ -99,7 +99,7 @@ init(Probe) ->
     {ok, ExecInitState}     = init_probe(Probe),
     {ok, InspectInitState}  = monitor_inspector:init_all(Probe),
     {ok, LoggersInitState}  = monitor_logger:init_all(Probe),
-    {ok, TRef} = initiate_start_sequence(Probe#probe.step, random),
+    TRef = initiate_start_sequence(Probe#probe.step, random),
     ES = #ets_state{
         name             = Probe#probe.name,
         permissions      = Probe#probe.permissions,
@@ -112,7 +112,7 @@ init(Probe) ->
         status_from      = erlang:now(),
         status           = Probe#probe.status
     },
-    monitor_data:set_probe_state(ES),
+    monitor_data_master:set_probe_state(ES),
     {ok, #state{name=Probe#probe.name}}.
 
 
@@ -122,10 +122,10 @@ handle_call(_Call, _From, S) ->
 
 
 handle_cast({probe_return, NewProbeState, PR}, S) ->
-    ES  = monitor_data:get_probe_state(S#state.name),
+    ES  = monitor_data_master:get_probe_state(S#state.name),
 
     % INSPECT
-    Probe  = monitor_data:get_probe(S#state.name),
+    Probe  = monitor_data_master:get(probe, S#state.name),
     IState = ES#ets_state.inspectors_state,
     {ok, IState2, Probe2} = monitor_inspector:inspect_all(IState, Probe, PR),
 
@@ -135,19 +135,20 @@ handle_cast({probe_return, NewProbeState, PR}, S) ->
     emit_all(ES#ets_state.name, ES#ets_state.permissions, Pdus),
 
     % LAUNCH
-    {ok,{NMicro,_}=TRef} = initiate_start_sequence(Probe#probe.step, normal),
+    TRef = initiate_start_sequence(Probe#probe.step, normal),
+    MilliRem  = read_timer(TRef),
 
     % SEND MESSAGES
     Pdu = monitor_pdu:'PDU-MonitorPDU-fromServer-probeReturn'(
         PR,
         ES#ets_state.target_name,
         ES#ets_state.name,
-        NMicro
+        MilliRem
     ),
     supercast_channel:emit(?MASTER_CHANNEL, {ES#ets_state.permissions, Pdu}),
 
     % WRITE
-    monitor_data:set_probe_state(
+    monitor_data_master:set_probe_state(
         ES#ets_state{
             inspectors_state=IState2,
             loggers_state=LState2,
@@ -157,21 +158,21 @@ handle_cast({probe_return, NewProbeState, PR}, S) ->
             status=Probe2#probe.status
         }
     ),
-    monitor_data:write_probe(Probe2),
 
+    maybe_write_probe(Probe, Probe2),
     {noreply, S, hibernate};
 
 handle_cast({sync_request, CState}, S) ->
-    ES = monitor_data:get_probe_state(S#state.name),
+    ES = monitor_data_master:get_probe_state(S#state.name),
     LS = ES#ets_state.loggers_state,
     {ok, Pdus, LS2} = monitor_logger:dump_all(LS, CState),
     ok  = supercast_channel:subscribe(ES#ets_state.name, CState),
     ok  = supercast_channel:unicast(CState, Pdus),
-    monitor_data:set_probe_state(ES#ets_state{loggers_state=LS2}),
+    monitor_data_master:set_probe_state(ES#ets_state{loggers_state=LS2}),
     {noreply, S};
 
 handle_cast({triggered_return, CState}, S) ->
-    ES = monitor_data:get_probe_state(S#state.name),
+    ES = monitor_data_master:get_probe_state(S#state.name),
 
     PartialPR = #probe_return{ 
         status          = ES#ets_state.status,
@@ -180,12 +181,12 @@ handle_cast({triggered_return, CState}, S) ->
         key_vals        = []
     },
 
-    {NMicro, _} = ES#ets_state.tref,
+    MilliRem = read_timer(ES#ets_state.tref),
     Pdu = monitor_pdu:'PDU-MonitorPDU-fromServer-probeReturn'(
         PartialPR,
         ES#ets_state.target_name,
         ES#ets_state.name,
-        NMicro
+        MilliRem
     ),
     supercast_channel:unicast(CState, [Pdu]),
 
@@ -196,7 +197,7 @@ handle_cast(_Call, S) ->
 
 
 handle_info(take_of, S) ->
-    ES = monitor_data:get_probe_state(S#state.name),
+    ES = monitor_data_master:get_probe_state(S#state.name),
     Mod = ES#ets_state.exec_mod,
     ExS = ES#ets_state.exec_state,
     take_of(self(), Mod, ExS),
@@ -228,7 +229,7 @@ initiate_start_sequence(_, now) ->
     initiate_start_sequence(0).
 
 initiate_start_sequence(Step) ->
-    timer:send_after(Step * 1000, take_of).
+    erlang:send_after(Step * 1000, self(), take_of).
 
 take_of(Parent, Mod, ProbeState) ->
     erlang:spawn(fun() ->
@@ -252,3 +253,13 @@ init_probe(Probe) ->
 
 init_random() ->
     random:seed(erlang:now()).
+
+read_timer(TRef) ->
+    case erlang:read_timer(TRef) of
+        false -> 0;
+        Any   -> Any
+    end.
+
+maybe_write_probe(#probe{name=_}=Probe, #probe{name=_}=Probe) -> ok;
+maybe_write_probe(_,Probe2) ->
+    monitor_data_master:update(probe, Probe2).

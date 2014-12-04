@@ -51,7 +51,7 @@
 
 log_init(Conf, Probe) ->
     ProbeId     = Probe#probe.name,
-    Target      = monitor_data:get_target(Probe#probe.belong_to),
+    Target      = monitor_data_master:get(target, Probe#probe.belong_to),
     Dir         = proplists:get_value(var_directory, Target#target.sys_properties),
     {ok, Rrds}  = update_rrd_record(Conf, Dir),
     ok          = create_file_if_needed(Rrds),

@@ -25,13 +25,8 @@
 -include("../equartz/include/equartz.hrl").
 -export([
     target_new/2,
-    target_del/1,
-
-    %probe_new/2,
-    %probe_del/0,
-
     job_new/2,
-    %job_del/0,
+    probe_new/2,
 
     fill_test/1
 ]).
@@ -60,11 +55,11 @@ fill_test(N) ->
         {"sysName",     "undefined"}
     ],
 
-    I = target_new(SysProp, Prop),
-    probe_new({nchecks, icmp},    I),
-    probe_new({snmp, walk_table}, I),
-    job_new({internal, update_snmp_system_info}, I),
-    job_new({internal, update_snmp_if_aliases},  I),
+    K = target_new(SysProp, Prop),
+    probe_new({nchecks, icmp},    K),
+    probe_new({snmp, walk_table}, K),
+    job_new({internal, update_snmp_system_info}, K),
+    job_new({internal, update_snmp_if_aliases},  K),
     fill_test(N - 1).
 
 %%-----------------------------------------------------------------------------
@@ -75,10 +70,7 @@ target_new(SysProp, []) ->
     target_new(SysProp, Prop);
 target_new(SysProp, Prop) ->
     T = #target{sys_properties=SysProp,properties=Prop},
-    monitor_master:create_target(T).
-
-target_del(Name) ->
-    monitor_data:del_target(Name).
+    monitor_data_master:new(target, T).
 
 
 %%-----------------------------------------------------------------------------
@@ -94,7 +86,7 @@ job_new({internal, Function}, Target) ->
         argument = Target,
         info     = lists:concat([?CRON_EVERY20S, " ", monitor_jobs, " ", Function, " ", Target])
     },
-    monitor_master:create_job(J).
+    monitor_data_master:new(job, J).
 
 %%-----------------------------------------------------------------------------
 %% PROBE API
@@ -115,7 +107,7 @@ probe_new({nchecks, icmp}, Target) ->
             }
         ]
     },
-    monitor_master:create_probe(Probe);
+    monitor_data_master:new(probe, Probe);
 
 probe_new({snmp, walk_table}, Target) ->
     {RrdCreate, RrdUpdate, RrdGraphs} = get_rrd_template(),
@@ -191,7 +183,7 @@ probe_new({snmp, walk_table}, Target) ->
             }
         ]
     },
-    monitor_master:create_probe(Probe).
+    monitor_data_master:new(probe, Probe).
 
 get_rrd_template() ->
     %?RRD_ifPerf_file

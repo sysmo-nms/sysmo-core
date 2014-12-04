@@ -29,8 +29,6 @@
 ]).
 
 update_snmp_system_info(Target) ->
-    % TODO assert monitor_master is ready, this job may fire once 
-    % equartz is ready, and trigger a job before monitor_master is.
     {ok, {varbinds, Ret}} = snmpman:get(Target, [
         ?SYS_DESCR,
         ?SYS_OBJECTID,
@@ -76,7 +74,10 @@ update_snmp_system_info(Target) ->
             PF = P4
     end,
 
-    monitor_master:store_target_properties(Target, PF).
+    _ = PF,
+    TargetRecord = monitor_data_master:get(target, Target),
+    maybe_update_target(TargetRecord, TargetRecord).
+
 
 update_snmp_if_aliases(Target) ->
     IfNames = snmpman:walk_table(Target, [
@@ -103,7 +104,9 @@ update_snmp_if_aliases(Target) ->
             PF = P
     end,
 
-    monitor_master:store_target_properties(Target, PF).
+    _ = PF,
+    TargetRecord = monitor_data_master:get(target, Target),
+    maybe_update_target(TargetRecord, TargetRecord).
 
 build_if_names(Rows) ->
     build_if_names(Rows, []).
@@ -132,3 +135,7 @@ build_if_aliases([{table_row, Name, Alias}|Rows], Names, Acc) ->
             Key = lists:concat(["ifIndex", Index, "-ifAlias"]),
             build_if_aliases(Rows, Names, [{Key,Alias}|Acc])
     end.
+
+maybe_update_target(#target{name=_}=Target, #target{name=_}=Target) -> ok;
+maybe_update_target(_, Target) ->
+    monitor_data_master:update(target, Target).

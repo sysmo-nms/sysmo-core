@@ -18,7 +18,7 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
--module(monitor_master).
+-module(monitor_channel).
 -behaviour(gen_server).
 -behaviour(supercast_channel).
 -include("include/monitor.hrl").
@@ -44,49 +44,17 @@
     start_link/0
 ]).
 
-% API
--export([
-    create_target/1,
-    create_probe/1,
-    create_job/1,
-
-    store_target_properties/2
-]).
-
 -record(state, {
     perm
 }).
 
 
 
-%%----------------------------------------------------------------------------
-%% monitor API
-%%----------------------------------------------------------------------------
--spec create_target(Target::#target{}) -> TargetName::string().
-% @doc
-% @end
-create_target(Target) ->
-    gen_server:call({via, supercast_registrar, ?MASTER_CHANNEL}, {create_target, Target}).
-
--spec create_probe(Probe::#probe{})  -> ProbeName::string().
-% @doc
-% @end
-create_probe(Probe) ->
-    gen_server:call({via, supercast_registrar, ?MASTER_CHANNEL}, {create_probe, Probe}).
-
--spec create_job(Job::#job{}) -> JobName::string().
-% @doc
-% @end
-create_job(Job) ->
-    gen_server:call({via, supercast_registrar, ?MASTER_CHANNEL}, {create_job, Job}).
+start_link() ->
+    gen_server:start_link(
+      {via, supercast_registrar, {?MODULE, ?MASTER_CHANNEL}}, ?MODULE, [], []).
 
 
--spec store_target_properties(Target::#target{}, Properties::[]) -> ok.
-% @doc
-% @end
-store_target_properties(Target, Props) ->
-    gen_server:call({via, supercast_registrar, ?MASTER_CHANNEL},
-        {store_target_properties, Target, Props}).
 
 %%----------------------------------------------------------------------------
 %% supercast_channel API
@@ -100,71 +68,30 @@ sync_request(PidName, CState) ->
     gen_server:cast({via, supercast_registrar, PidName}, {sync_request, CState}).
 
 
-
-start_link() ->
-    gen_server:start_link(
-      {via, supercast_registrar, {?MODULE, ?MASTER_CHANNEL}}, ?MODULE, [], []).
-
 %%----------------------------------------------------------------------------
 %% GEN_SERVER CALLBACKS
 %%----------------------------------------------------------------------------
 init([]) ->
     {ok, Read}  = application:get_env(monitor, master_chan_read_perm),
     {ok, Write} = application:get_env(monitor, master_chan_write_perm),
-    {ok,_} = init_targets(),
-    {ok,_} = init_probes(),
-    {ok,_} = init_jobs(),
+    mnesia:subscribe({table, target, detailed}),
+    mnesia:subscribe({table, probe,  detailed}),
+    mnesia:subscribe({table, job,    detailed}),
     {ok, #state{perm=#perm_conf{read=Read,write=Write}}}.
 
 %%----------------------------------------------------------------------------
 %% SUPERCAST_CHANNEL BEHAVIOUR CALLS
 %%----------------------------------------------------------------------------
 handle_call(get_perms, _F, #state{perm = P} = S) ->
-    {reply, P, S};
+    {reply, P, S}.
 
-%%----------------------------------------------------------------------------
-%% API CALLS
-%%----------------------------------------------------------------------------
-handle_call({create_job, Job}, _F, S) ->
-    {atomic, IJob} = monitor_data:write_job(Job),
-    #job{name=Name,trigger=Tr,module=M,function=F,argument=A} = IJob,
-    equartz:register_internal_job(Name,Tr,{M,F,A}),
-    equartz:fire_now(Name),
-    {reply, Name, S};
-
-handle_call({create_probe, Probe}, _F, S) ->
-    {atomic, IProbe} = monitor_data:write_probe(Probe),
-    monitor_probe_sup:launch(IProbe),
-    {reply, IProbe#probe.name, S};
-
-handle_call({create_target, Target}, _F, S) ->
-    {atomic, ITarget} = monitor_data:write_target(Target),
-    monitor_utils:init_target_snmp(ITarget),
-    monitor_utils:init_target_dir(ITarget),
-    {reply, ITarget#target.name, S};
-
-
-handle_call({store_target_properties, Target, Props}, _F, S) ->
-    Trans = fun() ->
-        case mnesia:read({target, Target}) of
-            [V] ->
-                P = lists:foldl(fun({Key,Val}, Acc) ->
-                    lists:keystore(Key,1,Acc,{Key,Val})
-                end, V#target.properties, Props),
-                mnesia:write(V#target{properties=P});
-            _ -> 
-                error
-        end
-    end,
-    R = mnesia:transaction(Trans),
-    {reply, R, S}.
 %%----------------------------------------------------------------------------
 %% SUPERCAST_CHANNEL BEHAVIOUR CASTS
 %%----------------------------------------------------------------------------
 handle_cast({sync_request, CState}, S) ->
     supercast_channel:subscribe(?MASTER_CHANNEL, CState),
 
-    {atomic, _Targets} = monitor_data:iterate_target_table(fun(T,_) ->
+    {atomic, _Targets} = monitor_data_master:iterate(target, fun(T,_) ->
         #target{permissions=Perm} = T,
         case supercast:satisfy(CState, Perm) of
             true    ->
@@ -174,7 +101,7 @@ handle_cast({sync_request, CState}, S) ->
         end
     end),
 
-    {atomic, _Probes} = monitor_data:iterate_probe_table(fun(P,_) ->
+    {atomic, _Probes} = monitor_data_master:iterate(probe, fun(P,_) ->
         #probe{permissions=Perm} = P,
         case supercast:satisfy(CState, Perm) of
             true    ->
@@ -185,7 +112,7 @@ handle_cast({sync_request, CState}, S) ->
         end
     end),
 
-    {atomic, _Jobs} = monitor_data:iterate_job_table(fun(J,Acc) ->
+    {atomic, _Jobs} = monitor_data_master:iterate(job, fun(J,Acc) ->
         #job{permissions=Perm} = J,
         case supercast:satisfy(CState, Perm) of
             true    ->
@@ -203,7 +130,39 @@ handle_cast({sync_request, CState}, S) ->
 handle_cast(_R, S) ->
     {noreply, S}.
 
-handle_info(_, S) ->
+handle_info({mnesia_table_event, {write, target, Target, [], _ActivityId}}, S) ->
+    handle_target_create(Target),
+    {noreply, S};
+handle_info({mnesia_table_event, {write, target, Target, [Target], _ActivityId}}, S) ->
+    % same thing do nothing
+    {noreply, S};
+handle_info({mnesia_table_event, {write, target, NewTarget, OldTarget, _ActivityId}}, S) ->
+    handle_target_update(NewTarget, OldTarget),
+    {noreply, S};
+
+handle_info({mnesia_table_event, {write, probe, Probe, [], _ActivityId}}, S) ->
+    handle_probe_create(Probe),
+    {noreply, S};
+handle_info({mnesia_table_event, {write, probe, NewProbe, [OldProbe], _ActivityId}}, S) ->
+    handle_probe_update(NewProbe, OldProbe),
+    {noreply, S};
+
+handle_info({mnesia_table_event, {write, job, Job, [], _ActivityId}}, S) ->
+    handle_job_create(Job),
+    {noreply, S};
+handle_info({mnesia_table_event, {write, job, Job, [Job], _ActivityId}}, S) ->
+    % same thing do nothing
+    {noreply, S};
+handle_info({mnesia_table_event, {write, job, NewJob, [OldJob], _ActivityId}}, S) ->
+    handle_job_update(NewJob, OldJob),
+    {noreply, S};
+
+handle_info({mnesia_table_event, {delete, _Table, What, _OldRecords, _ActivityId}}, S) ->
+    handle_delete(What),
+    {noreply, S};
+
+handle_info(_I, S) ->
+    ?LOG({"handle info: ", _I}),
     {noreply, S}.
 
 terminate(_R, _) ->
@@ -213,25 +172,29 @@ code_change(_O, S, _E) ->
     {ok, S}.
 
 
-%%----------------------------------------------------------------------------
-%% UTILS    
-%%----------------------------------------------------------------------------
-init_targets() ->
-    {atomic, R} = monitor_data:iterate_target_table(fun(T,_) ->
-        monitor_utils:init_target_snmp(T),
-        monitor_utils:init_target_dir(T)
-    end),
-    {ok, R}.
+% MNESIA EVENTS
+handle_target_create(#target{permissions=Perm} = Target) ->
+    Pdu = monitor_pdu:'PDU-MonitorPDU-fromServer-infoTarget-create'(Target),
+    supercast_channel:emit(?MASTER_CHANNEL, {Perm, Pdu}).
 
-init_probes() ->
-    {atomic, R} = monitor_data:iterate_probe_table(fun(P,_) ->
-        monitor_probe_sup:launch(P)
-    end),
-    {ok, R}.
+handle_target_update(#target{permissions=Perm} = Target, _) ->
+    Pdu = monitor_pdu:'PDU-MonitorPDU-fromServer-infoTarget-update'(Target),
+    supercast_channel:emit(?MASTER_CHANNEL, {Perm, Pdu}).
 
-init_jobs() ->
-    {atomic, R} = monitor_data:iterate_job_table(fun(J,_) ->
-        #job{name=Name,trigger=Tr,module=M,function=F,argument=A} = J,
-        equartz:register_internal_job(Name,Tr,{M,F,A})
-    end),
-    {ok, R}.
+
+handle_probe_create(#probe{permissions=Perm} = Probe) ->
+    Pdu = monitor_pdu:'PDU-MonitorPDU-fromServer-infoProbe-create'(Probe),
+    supercast_channel:emit(?MASTER_CHANNEL, {Perm, Pdu}).
+
+handle_probe_update(#probe{permissions=Perm} = Probe,_) ->
+    Pdu = monitor_pdu:'PDU-MonitorPDU-fromServer-infoProbe-update'(Probe),
+    supercast_channel:emit(?MASTER_CHANNEL, {Perm, Pdu}).
+
+handle_job_create(#job{permissions=_Perm} = Job) ->
+    ?LOG({create_job, Job}).
+    
+handle_job_update(#job{permissions=_Perm} = Job, _) ->
+    ?LOG({update_job, Job}).
+
+handle_delete(_What) ->
+    ?LOG({delete, _What}).

@@ -44,7 +44,8 @@ info() ->
     {ok, "Noctopus checks"}.
 
 init(Probe) ->
-    Target      = monitor_data:get_target(Probe#probe.belong_to),
+    Target      = monitor_data_master:get(target, Probe#probe.belong_to),
+    ?LOG(Target),
     TargetProp  = Target#target.properties,
     Conf        = Probe#probe.monitor_probe_conf,
     #nchecks_probe_conf{function = Funct, args = Args} = Conf,

@@ -36,8 +36,6 @@
     retries     = 1             :: integer()
 }).
 
-
-
 -record(probe_return, {
     status          = "UNKNOWN" :: string(),
     % "OK" | "UNKNOWN" | "WARNING" | "CRITICAL" | "SHADED" | "PAUSED",
@@ -58,21 +56,18 @@
 }).
 
 -record(job, {
-    % the name of the job is dynamicaly build using
-    % lists:concat([group,module,function,argument])
-    % ex: lists:concat(["daily3am", monitor_jobs,hello, target-1234])
-    name                         :: string(),
-    belong_to = "undefined"      :: string(),
-    trigger   = "undefined"      :: string(),
-    module    = undefined        :: atom(),
-    function  = undefined        :: atom(),
-    argument  = "undefined"      :: string(),
-    info      = "undefined"      :: string(),
-    permissions         = ?DEFAULT_PERM_CONF :: #perm_conf{}
+    name        = undefined         :: string(),
+    belong_to   = "undefined"       :: string(),
+    trigger     = "undefined"       :: string(),
+    module      = undefined         :: atom(),
+    function    = undefined         :: atom(),
+    argument    = "undefined"       :: string(),
+    info        = "undefined"       :: string(),
+    permissions = ?DEFAULT_PERM_CONF :: #perm_conf{}
 }).
 
 -record(probe, {
-    name                                :: string(),
+    name                = undefined     :: string(),
     belong_to           = "undefined"   :: string(),
     description         = ""            :: string(),
     info                = ""            :: string(),
@@ -91,7 +86,7 @@
 }).
 
 -record(target, {
-    name                        :: string(),
+    name        = undefined     :: string(),
 
     % sys_properties only accessible to users having write access
     sys_properties = []         :: [{atom(), string()}],

@@ -34,14 +34,6 @@ init([]) ->
             {one_for_one, 1, 60},
             [
                 {
-                    monitor_data,
-                    {monitor_data, start_link, []},
-                    permanent,
-                    infinity,
-                    supervisor,
-                    [monitor_data]
-                },
-                {
                     monitor_probe_sup,
                     {monitor_probe_sup, start_link, []},
                     permanent,
@@ -50,20 +42,28 @@ init([]) ->
                     [monitor_probe_sup]
                 },
                 {
-                    monitor_master,
-                    {monitor_master, start_link, []},
-                    permanent,
-                    2000,
-                    worker,
-                    [monitor_master]
-                },
-                {
                     monitor_commander,
                     {monitor_commander, start_link, []},
                     permanent,
                     2000,
                     worker,
                     [monitor_commander]
+                },
+                {
+                    monitor_data_master,
+                    {monitor_data_master, start_link, []},
+                    permanent,
+                    infinity,
+                    supervisor,
+                    [monitor_data_master]
+                },
+                {
+                    monitor_channel,
+                    {monitor_channel, start_link, []},
+                    permanent,
+                    2000,
+                    worker,
+                    [monitor_channel]
                 }
             ]
         }
