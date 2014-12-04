@@ -44,15 +44,11 @@
     delete/2,
     iterate/2,
 
-
     % probe state
     get_probe_state/1,
     set_probe_state/1,
     del_probe_state/1
 ]).
-
-
-
 
 %%----------------------------------------------------------------------------
 %% API
@@ -85,11 +81,7 @@ do_new(target, Target) ->
     SP   = lists:keystore(var_directory, 1, Target#target.sys_properties, VDir),
     SName = {"staticName", Name},
     P    = lists:keystore("staticName", 1, Target#target.properties, SName),
-    ITarget = Target#target{
-        name            = Name,
-        sys_properties  = SP,
-        properties      = P
-    },
+    ITarget = Target#target{name=Name,sys_properties=SP,properties=P},
     mnesia:dirty_write(ITarget),
     monitor_utils:init_target_snmp(ITarget),
     monitor_utils:init_target_dir(ITarget),
@@ -123,11 +115,14 @@ do_update(job, #job{name=Key} = Job) ->
 
 -spec delete(Table::target|probe|job, Key::string()) -> ok | abort.
 % @doc
-% Delete the specified element from the table.
+% Delete the specified element from the table. Deleting a target will also
+% delete his probes and jobs.
 % @end
 delete(Table, Key) ->
     gen_server:call(?MODULE, {delete, Table, Key}).
 
+do_delete(target, Key) ->
+    mnesia:dirty_delete({target,Key});
 do_delete(Table, Key) ->
     mnesia:dirty_delete({Table, Key}).
 
@@ -185,24 +180,19 @@ init([]) ->
     {ok, nostate}.
 
 handle_call({new, Table, Record}, _From, S) ->
-    R = do_new(Table,Record),
-    {reply, R, S};
+    {reply, do_new(Table, Record), S};
 
 handle_call({update, Table, Record}, _From, S) ->
-    R = do_update(Table,Record),
-    {reply, R, S};
+    {reply, do_update(Table, Record), S};
 
 handle_call({delete, Table, Key}, _From, S) ->
-    R = do_delete(Table,Key),
-    {reply, R, S};
+    {reply, do_delete(Table, Key), S};
 
 handle_call({iterate, Table, Fun}, _From, S) ->
-    R = do_iterate(Table,Fun),
-    {reply, R, S};
+    {reply, do_iterate(Table, Fun), S};
 
 handle_call({get, Table, Key}, _From, S) ->
-    R = do_get(Table,Key),
-    {reply, R, S};
+    {reply, do_get(Table, Key), S};
 
 handle_call(_Call, _From, S) ->
     {noreply, S}.
@@ -247,12 +237,7 @@ init_mnesia_tables() ->
                 [
                     {attributes, record_info(fields, target)},
                     {disc_copies, [node()]},
-                    {storage_properties,
-                        [
-                            {dets, DetsOpts}
-                        ]
-                    }
-
+                    {storage_properties, [{dets, DetsOpts}]}
                 ]
             )
     end,
@@ -265,11 +250,7 @@ init_mnesia_tables() ->
                     {attributes, record_info(fields, probe)},
                     {disc_copies, [node()]},
                     {index, [belong_to]},
-                    {storage_properties,
-                        [
-                            {dets, DetsOpts}
-                        ]
-                    }
+                    {storage_properties, [{dets, DetsOpts}]}
                 ]
             )
     end,
@@ -280,13 +261,9 @@ init_mnesia_tables() ->
                 job,
                 [
                     {attributes, record_info(fields, job)},
-                    {index, [belong_to]},
                     {disc_copies, [node()]},
-                    {storage_properties,
-                        [
-                            {dets, DetsOpts}
-                        ]
-                    }
+                    {index, [belong_to]},
+                    {storage_properties, [{dets, DetsOpts}]}
                 ]
             )
     end.
