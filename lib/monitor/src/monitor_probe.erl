@@ -95,6 +95,10 @@ triggered_return(PidName, CState) ->
 %% GEN_SERVER
 %%----------------------------------------------------------------------------
 init(Probe) ->
+    gen_server:cast(self(), continue_init),
+    {ok, Probe}.
+
+handle_cast(continue_init, Probe) ->
     init_random(),
     {ok, ExecInitState}     = init_probe(Probe),
     {ok, InspectInitState}  = monitor_inspector:init_all(Probe),
@@ -113,13 +117,7 @@ init(Probe) ->
         status           = Probe#probe.status
     },
     monitor_data_master:set_probe_state(ES),
-    {ok, #state{name=Probe#probe.name}}.
-
-
-handle_call(_Call, _From, S) ->
-    {noreply, S}.
-
-
+    {noreply, #state{name=Probe#probe.name}};
 
 handle_cast({probe_return, NewProbeState, PR}, S) ->
     ES  = monitor_data_master:get_probe_state(S#state.name),
@@ -160,7 +158,7 @@ handle_cast({probe_return, NewProbeState, PR}, S) ->
     ),
 
     maybe_write_probe(Probe, Probe2),
-    {noreply, S, hibernate};
+    {noreply, S};
 
 handle_cast({sync_request, CState}, S) ->
     ES = monitor_data_master:get_probe_state(S#state.name),
@@ -195,6 +193,8 @@ handle_cast({triggered_return, CState}, S) ->
 handle_cast(_Call, S) ->
     {noreply, S}.
 
+handle_call(_Call, _From, S) ->
+    {noreply, S}.
 
 handle_info(take_of, S) ->
     ES = monitor_data_master:get_probe_state(S#state.name),

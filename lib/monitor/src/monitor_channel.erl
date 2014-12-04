@@ -91,7 +91,7 @@ handle_call(get_perms, _F, #state{perm = P} = S) ->
 handle_cast({sync_request, CState}, S) ->
     supercast_channel:subscribe(?MASTER_CHANNEL, CState),
 
-    {atomic, _Targets} = monitor_data_master:iterate(target, fun(T,_) ->
+    {ok, _} = monitor_data_master:iterate(target, fun(T,_) ->
         #target{permissions=Perm} = T,
         case supercast:satisfy(CState, Perm) of
             true    ->
@@ -101,7 +101,7 @@ handle_cast({sync_request, CState}, S) ->
         end
     end),
 
-    {atomic, _Probes} = monitor_data_master:iterate(probe, fun(P,_) ->
+    {ok, _} = monitor_data_master:iterate(probe, fun(P,_) ->
         #probe{permissions=Perm} = P,
         case supercast:satisfy(CState, Perm) of
             true    ->
@@ -112,7 +112,7 @@ handle_cast({sync_request, CState}, S) ->
         end
     end),
 
-    {atomic, _Jobs} = monitor_data_master:iterate(job, fun(J,Acc) ->
+    {ok, _Jobs} = monitor_data_master:iterate(job, fun(J,Acc) ->
         #job{permissions=Perm} = J,
         case supercast:satisfy(CState, Perm) of
             true    ->
