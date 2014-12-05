@@ -25,13 +25,25 @@
 -include("../equartz/include/equartz.hrl").
 -export([
     target_new/2,
+    target_delete/1,
     job_new/2,
+    job_delete/1,
     probe_new/2,
+    probe_delete/1,
 
     fill_test/1
 ]).
 
 -define(RRD_ifPerf_file, "snmp_if_perf.ini").
+
+target_delete(TargetName) ->
+    monitor_data_master:delete(target,TargetName).
+
+probe_delete(ProbeName) ->
+    monitor_data_master:delete(probe,ProbeName).
+
+job_delete(JobName) ->
+    monitor_data_master:delete(job,JobName).
 
 fill_test(0) -> ok;
 fill_test(N) ->

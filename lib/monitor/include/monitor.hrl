@@ -94,8 +94,8 @@
     % properties accessible to all users having read access
     properties  = ?DEFAULT_TARGET_PROPERTIES :: [{string(), string()}],
 
-    probes      = []            :: [#probe{}],
-    jobs        = []            :: [#job{}],
+    %probes      = []            :: [#probe{}],
+    %jobs        = []            :: [#job{}],
 
     permissions         = ?DEFAULT_PERM_CONF :: #perm_conf{}
 }).

@@ -44,6 +44,9 @@
     delete/2,
     iterate/2,
 
+    get_jobs/1,
+    get_probes/1,
+
     % probe state
     get_probe_state/1,
     set_probe_state/1,
@@ -99,17 +102,17 @@ update(Table, Record) ->
 do_update(target, #target{name=Key} = Target) ->
     case mnesia:dirty_read(target, Key) of
         []  -> {error, "Unknown target"};
-        [_] -> mnesia:dirty_write(Target), Key
+        [_] -> mnesia:dirty_write(Target)
     end;
 do_update(probe, #probe{name=Key} = Probe) ->
     case mnesia:dirty_read(probe, Key) of
         []  -> {error, "Unknown probe"};
-        [_] -> mnesia:dirty_write(Probe), Key
+        [_] -> mnesia:dirty_write(Probe)
     end;
 do_update(job, #job{name=Key} = Job) ->
     case mnesia:dirty_read(job, Key) of
         []  -> {error, "Unknown job"};
-        [_] -> mnesia:dirty_write(Job), Key
+        [_] -> mnesia:dirty_write(Job)
     end.
 
 
@@ -122,14 +125,22 @@ delete(Table, Key) ->
     gen_server:call(?MODULE, {delete, Table, Key}).
 
 do_delete(target, Key) ->
+    lists:foreach(fun(P) -> do_delete(probe, P) end, do_get_probes(Key)),
+    lists:foreach(fun(J) -> do_delete(job,   J) end, do_get_jobs(Key)),
     mnesia:dirty_delete({target,Key});
-do_delete(Table, Key) ->
-    mnesia:dirty_delete({Table, Key}).
+do_delete(probe, Key) ->
+    monitor_probe:shutdown(Key),
+    mnesia:dirty_delete({probe,Key});
+do_delete(job, Key) ->
+    equartz:delete_job(Key),
+    mnesia:dirty_delete({job, Key}).
 
 
 -spec iterate(Table::target|probe|job, Fun::fun()) -> ok.
 % @doc
-% Iterate a table. To have a description of Fun, see mnesia:foldl/3.
+% Iterate a table. Fun must accept two arguments:
+% - a element record,
+% - an accumulator with default value [].
 % @end
 iterate(Table, Fun) ->
     gen_server:call(?MODULE, {iterate, Table, Fun}).
@@ -157,6 +168,29 @@ do_get(Table, Key) ->
     end.
 
 
+-spec get_jobs(Key::string()) -> [string()].
+% @doc
+% Return all jobs which belong to target identified by Key.
+% @end
+get_jobs(Key) ->
+    gen_server:call(?MODULE, {get_jobs, Key}).
+
+do_get_jobs(Key) ->
+    mnesia:dirty_select(job,[{#job{name='$1',belong_to=Key,_='_'},[],['$1']}]).
+
+
+-spec get_probes(TargetKey::string()) -> [string()].
+% @doc
+% Return all probes which belong to target TargetKey.
+% @end
+get_probes(Key) ->
+    gen_server:call(?MODULE, {get_probes, Key}).
+
+do_get_probes(Key) ->
+    mnesia:dirty_select(probe,[{#probe{name='$1',belong_to=Key,_='_'},[],['$1']}]).
+
+
+
 get_probe_state(Key) ->
     case ets:lookup(?PROBES_STATE, Key) of [] -> undefined; [V] -> V end.
 set_probe_state(State) ->
@@ -179,11 +213,11 @@ init([]) ->
     init_jobs(),
     {ok, nostate}.
 
-handle_call({new, Table, Record}, _From, S) ->
-    {reply, do_new(Table, Record), S};
-
 handle_call({update, Table, Record}, _From, S) ->
     {reply, do_update(Table, Record), S};
+
+handle_call({new, Table, Record}, _From, S) ->
+    {reply, do_new(Table, Record), S};
 
 handle_call({delete, Table, Key}, _From, S) ->
     {reply, do_delete(Table, Key), S};
@@ -193,6 +227,12 @@ handle_call({iterate, Table, Fun}, _From, S) ->
 
 handle_call({get, Table, Key}, _From, S) ->
     {reply, do_get(Table, Key), S};
+
+handle_call({get_jobs, Key}, _From, S) ->
+    {reply, do_get_jobs(Key), S};
+
+handle_call({get_probes, Key}, _From, S) ->
+    {reply, do_get_probes(Key), S};
 
 handle_call(_Call, _From, S) ->
     {noreply, S}.

@@ -48,11 +48,13 @@
 
 % API
 -export([
-    triggered_return/2
+    triggered_return/2,
+    shutdown/1
 ]).
 
 -record(state, {
-    name
+    name,
+    shutdown = false
 }).
 
 
@@ -90,6 +92,9 @@ sync_request(PidName, CState) ->
 triggered_return(PidName, CState) ->
     gen_server:cast({via, supercast_registrar, PidName}, {triggered_return, CState}).
 
+shutdown(PidName) ->
+    gen_server:call({via, supercast_registrar, PidName}, shutdown).
+
 
 %%----------------------------------------------------------------------------
 %% GEN_SERVER
@@ -119,7 +124,8 @@ handle_cast(continue_init, Probe) ->
     monitor_data_master:set_probe_state(ES),
     {noreply, #state{name=Probe#probe.name}};
 
-handle_cast({probe_return, NewProbeState, PR}, S) ->
+
+handle_cast({probe_return, NewProbeState, PR}, #state{shutdown=false} = S) ->
     ES  = monitor_data_master:get_probe_state(S#state.name),
 
     % INSPECT
@@ -160,7 +166,7 @@ handle_cast({probe_return, NewProbeState, PR}, S) ->
     maybe_write_probe(Probe, Probe2),
     {noreply, S};
 
-handle_cast({sync_request, CState}, S) ->
+handle_cast({sync_request, CState}, #state{shutdown=false} = S) ->
     ES = monitor_data_master:get_probe_state(S#state.name),
     LS = ES#ets_state.loggers_state,
     {ok, Pdus, LS2} = monitor_logger:dump_all(LS, CState),
@@ -169,7 +175,7 @@ handle_cast({sync_request, CState}, S) ->
     monitor_data_master:set_probe_state(ES#ets_state{loggers_state=LS2}),
     {noreply, S};
 
-handle_cast({triggered_return, CState}, S) ->
+handle_cast({triggered_return, CState}, #state{shutdown=false} = S) ->
     ES = monitor_data_master:get_probe_state(S#state.name),
 
     PartialPR = #probe_return{ 
@@ -190,19 +196,31 @@ handle_cast({triggered_return, CState}, S) ->
 
     {noreply, S};
 
-handle_cast(_Call, S) ->
+handle_cast({probe_return, _, _}, #state{shutdown=true} = S) ->
+    {stop, shutdown, S};
+
+handle_cast(_, #state{shutdown=true} = S) ->
+    {noreply, S};
+
+handle_cast(_Cast, S) ->
     {noreply, S}.
+
+
+handle_call(shutdown, _F, S) ->
+    {reply, ok, S#state{shutdown=true}};
 
 handle_call(_Call, _From, S) ->
     {noreply, S}.
 
-handle_info(take_of, S) ->
+handle_info(take_of, #state{shutdown=false} = S) ->
     ES = monitor_data_master:get_probe_state(S#state.name),
     Mod = ES#ets_state.exec_mod,
     ExS = ES#ets_state.exec_state,
     take_of(self(), Mod, ExS),
     {noreply, S};
 
+handle_info(take_of, #state{shutdown=true} = S) ->
+    {stop, shutdown, S};
 
 handle_info(_, SData) ->
     {noreply, SData}.
