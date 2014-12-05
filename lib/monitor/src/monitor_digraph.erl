@@ -73,7 +73,7 @@ start_link() ->
 %% GEN_SERVER CALLBACKS
 %%----------------------------------------------------------------------------
 init([]) ->
-    G = digraph:new(),
+    G = digraph:new([acyclic]),
     {ok, #state{graph=G}}.
 
 handle_call({init_graph, Vertexes}, _F, #state{graph=G} = S) ->
@@ -115,4 +115,5 @@ handle_probe_update(G, #probe{name=Name,parents=Edges,status=Label}, _) ->
     end, Edges).
 
 handle_delete(G, Key) ->
+
     digraph:del_vertex(G,Key).

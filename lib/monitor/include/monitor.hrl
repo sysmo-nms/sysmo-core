@@ -14,6 +14,17 @@
     {"dnsName",     "undefined"}
 ]).
 
+-record(pstate, {
+    name,
+    status,
+    ts
+}).
+
+-record(vertex, {
+    name,
+    label,
+    incident
+}).
 
 -record(inspector, {
     module,

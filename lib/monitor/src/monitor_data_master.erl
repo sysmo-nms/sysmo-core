@@ -284,6 +284,7 @@ init_ets_tables() ->
     ).
 
 init_mnesia_tables() ->
+    % TODO table: pstate{name,status,ts} vertex{name,incident,label},
     Tables = mnesia:system_info(tables),
     DetsOpts = [
         {auto_save, 5000}
@@ -326,6 +327,7 @@ init_mnesia_tables() ->
                 ]
             )
     end.
+
 
 init_targets() ->
     do_iterate(target, fun(T,_) ->
