@@ -29,35 +29,42 @@ start_link() ->
     supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
 init([]) ->
-    SupercastRegistrar = {
-        supercast_registrar,
-        {supercast_registrar,start_link, []},
-        permanent,
-        2000,
-        worker,
-        [supercast_registrar]
-    },
-
-    SupercastServer = {
-        supercast_server,
-        {supercast_server,start_link, []},
-        permanent,
-        2000,
-        worker,
-        [supercast_server]
-    },
-    SupercastMpdSup = {
-        supercast_mpd_sup,
-        {supercast_mpd_sup,start_link, []},
-        permanent,
-        infinity,
-        supervisor,
-        [supercast_mpd_sup]
-    },
-
     {ok,
         {
             {one_for_one, 1, 300},
-            [SupercastRegistrar, SupercastServer, SupercastMpdSup]
+            [
+                {
+                    supercast_registrar,
+                    {supercast_registrar,start_link, []},
+                    permanent,
+                    2000,
+                    worker,
+                    [supercast_registrar]
+                },
+                {
+                    supercast_server,
+                    {supercast_server,start_link, []},
+                    permanent,
+                    2000,
+                    worker,
+                    [supercast_server]
+                },
+                {
+                    supercast_mpd,
+                    {supercast_mpd,start_link, []},
+                    permanent,
+                    2000,
+                    worker,
+                    [supercast_mpd]
+                },
+                {
+                    supercast_clients_sup,
+                    {supercast_clients_sup, start_link, []},
+                    permanent,
+                    infinity,
+                    supervisor,
+                    [supercast_clients_sup]
+                }
+            ]
         }
     }.
