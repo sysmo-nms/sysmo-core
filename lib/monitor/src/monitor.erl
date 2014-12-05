@@ -157,8 +157,6 @@ probe_new({snmp, walk_table}, Target) ->
             ]
         },
 
-
-
         loggers = [
             #logger{
                 module = bmonitor_logger_rrd2, 

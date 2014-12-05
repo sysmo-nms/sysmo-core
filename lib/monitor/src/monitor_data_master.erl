@@ -223,7 +223,6 @@ start_link() ->
 init([]) ->
     init_ets_tables(),
     init_mnesia_tables(),
-    init_digraph(),
     init_targets(),
     init_probes(),
     init_jobs(),
@@ -284,7 +283,6 @@ init_ets_tables() ->
     ).
 
 init_mnesia_tables() ->
-    % TODO table: pstate{name,status,ts} vertex{name,incident,label},
     Tables = mnesia:system_info(tables),
     DetsOpts = [
         {auto_save, 5000}
@@ -345,19 +343,6 @@ init_jobs() ->
         #job{name=Name,trigger=Tr,module=M,function=F,argument=A} = J,
         equartz:register_internal_job(Name,Tr,{M,F,A})
     end).
-
-init_digraph() ->
-    Vertexes = mnesia:dirty_select(probe,
-        [
-            {
-                #probe{name='$1',parents='$2',status='$3',_='_'},
-                [],
-                [{{'$1', '$2', '$3'}}]
-            }
-        ]
-    ),
-
-    monitor_digraph:init_graph(Vertexes).
 
 %%----------------------------------------------------------------------------
 %% UTILS    

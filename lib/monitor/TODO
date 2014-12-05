@@ -1,3 +1,5 @@
+1 dependencies/alertes apres x CRITICAL (and remove inspectors)
+
 5 general code cleanup/refactor/test (eunit/dializer)
     - cleanup/document monitor_commander,
     - cleanup/document monitor_master,

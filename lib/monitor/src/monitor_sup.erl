@@ -50,14 +50,6 @@ init([]) ->
                     [monitor_commander]
                 },
                 {
-                    monitor_digraph,
-                    {monitor_digraph, start_link, []},
-                    permanent,
-                    2000,
-                    worker,
-                    [monitor_digraph]
-                },
-                {
                     monitor_data_master,
                     {monitor_data_master, start_link, []},
                     permanent,
