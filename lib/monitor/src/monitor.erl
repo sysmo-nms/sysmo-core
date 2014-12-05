@@ -31,10 +31,18 @@
     probe_new/2,
     probe_delete/1,
 
+    which_targets/0,
+    which_probes/0,
+    which_jobs/0,
+
     fill_test/1
 ]).
 
 -define(RRD_ifPerf_file, "snmp_if_perf.ini").
+
+which_targets() -> monitor_data_master:which(target).
+which_probes()  -> monitor_data_master:which(probe).
+which_jobs()    -> monitor_data_master:which(job).
 
 target_delete(TargetName) ->
     monitor_data_master:delete(target,TargetName).

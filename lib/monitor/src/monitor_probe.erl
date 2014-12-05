@@ -53,8 +53,7 @@
 ]).
 
 -record(state, {
-    name,
-    shutdown = false
+    name
 }).
 
 
@@ -93,7 +92,7 @@ triggered_return(PidName, CState) ->
     gen_server:cast({via, supercast_registrar, PidName}, {triggered_return, CState}).
 
 shutdown(PidName) ->
-    gen_server:call({via, supercast_registrar, PidName}, shutdown).
+    gen_server:call({via, supercast_registrar, PidName}, shut_it_down).
 
 
 %%----------------------------------------------------------------------------
@@ -124,8 +123,48 @@ handle_cast(continue_init, Probe) ->
     monitor_data_master:set_probe_state(ES),
     {noreply, #state{name=Probe#probe.name}};
 
+handle_cast({sync_request, CState}, S) ->
+    ES = monitor_data_master:get_probe_state(S#state.name),
+    LS = ES#ets_state.loggers_state,
+    {ok, Pdus, LS2} = monitor_logger:dump_all(LS, CState),
+    ok  = supercast_channel:subscribe(ES#ets_state.name, CState),
+    ok  = supercast_channel:unicast(CState, Pdus),
+    monitor_data_master:set_probe_state(ES#ets_state{loggers_state=LS2}),
+    {noreply, S};
 
-handle_cast({probe_return, NewProbeState, PR}, #state{shutdown=false} = S) ->
+handle_cast({triggered_return, CState}, S) ->
+    ES = monitor_data_master:get_probe_state(S#state.name),
+
+    PartialPR = #probe_return{ 
+        status          = ES#ets_state.status,
+        original_reply  = "",
+        timestamp       = 0,
+        key_vals        = []
+    },
+
+    MilliRem = read_timer(ES#ets_state.tref),
+    Pdu = monitor_pdu:'PDU-MonitorPDU-fromServer-probeReturn'(
+        PartialPR,
+        ES#ets_state.target_name,
+        ES#ets_state.name,
+        MilliRem
+    ),
+    supercast_channel:unicast(CState, [Pdu]),
+
+    {noreply, S};
+
+handle_cast(_Cast, S) ->
+    {noreply, S}.
+
+
+handle_call(shut_it_down, _F, S) ->
+    {stop, shutdown, ok, S};
+
+
+handle_call(_Call, _From, S) ->
+    {noreply, S}.
+
+handle_info({probe_return, NewProbeState, PR}, S) ->
     ES  = monitor_data_master:get_probe_state(S#state.name),
 
     % INSPECT
@@ -166,64 +205,15 @@ handle_cast({probe_return, NewProbeState, PR}, #state{shutdown=false} = S) ->
     maybe_write_probe(Probe, Probe2),
     {noreply, S};
 
-handle_cast({sync_request, CState}, #state{shutdown=false} = S) ->
-    ES = monitor_data_master:get_probe_state(S#state.name),
-    LS = ES#ets_state.loggers_state,
-    {ok, Pdus, LS2} = monitor_logger:dump_all(LS, CState),
-    ok  = supercast_channel:subscribe(ES#ets_state.name, CState),
-    ok  = supercast_channel:unicast(CState, Pdus),
-    monitor_data_master:set_probe_state(ES#ets_state{loggers_state=LS2}),
-    {noreply, S};
 
-handle_cast({triggered_return, CState}, #state{shutdown=false} = S) ->
-    ES = monitor_data_master:get_probe_state(S#state.name),
-
-    PartialPR = #probe_return{ 
-        status          = ES#ets_state.status,
-        original_reply  = "",
-        timestamp       = 0,
-        key_vals        = []
-    },
-
-    MilliRem = read_timer(ES#ets_state.tref),
-    Pdu = monitor_pdu:'PDU-MonitorPDU-fromServer-probeReturn'(
-        PartialPR,
-        ES#ets_state.target_name,
-        ES#ets_state.name,
-        MilliRem
-    ),
-    supercast_channel:unicast(CState, [Pdu]),
-
-    {noreply, S};
-
-handle_cast({probe_return, _, _}, #state{shutdown=true} = S) ->
-    {stop, shutdown, S};
-
-handle_cast(_, #state{shutdown=true} = S) ->
-    {noreply, S};
-
-handle_cast(_Cast, S) ->
-    {noreply, S}.
-
-
-handle_call(shutdown, _F, S) ->
-    {reply, ok, S#state{shutdown=true}};
-
-handle_call(_Call, _From, S) ->
-    {noreply, S}.
-
-handle_info(take_of, #state{shutdown=false} = S) ->
+handle_info(take_of, S) ->
     ES = monitor_data_master:get_probe_state(S#state.name),
     Mod = ES#ets_state.exec_mod,
     ExS = ES#ets_state.exec_state,
     take_of(self(), Mod, ExS),
     {noreply, S};
 
-handle_info(take_of, #state{shutdown=true} = S) ->
-    {stop, shutdown, S};
-
-handle_info(_, SData) ->
-    {noreply, SData}.
+handle_info(_, SData) -> {noreply, SData}.
 
 terminate(_Reason, _S) ->
     normal.
@@ -252,7 +242,7 @@ initiate_start_sequence(Step) ->
 take_of(Parent, Mod, ProbeState) ->
     erlang:spawn(fun() ->
         {ok, ProbeState2, Return}  = Mod:exec(ProbeState),
-        gen_server:cast(Parent, {probe_return, ProbeState2, Return})
+        erlang:send(Parent, {probe_return, ProbeState2, Return})
     end).
 
 

@@ -29,59 +29,64 @@
 ]).
 
 update_snmp_system_info(TargetKey) ->
-    {ok, {varbinds, Ret}} = snmpman:get(TargetKey, [
+    case snmpman:get(TargetKey, [
         ?SYS_DESCR,
         ?SYS_OBJECTID,
         ?SYS_CONTACT,
         ?SYS_NAME,
         ?SYS_LOCATION,
-        ?SYS_SERVICES
-    ]),
-    case lists:keyfind(?SYS_DESCR, 2, Ret) of
-        {_,_,_,SDescr} ->
-            P = [{"sysDescr", SDescr}];
-        _ ->
-            P = []
-    end,
-    case lists:keyfind(?SYS_OBJECTID, 2, Ret) of
-        {_,_,_,SOId} ->
-            P1 = [{"sysObjectId", SOId} | P];
-        _ ->
-            P1 = P
-    end,
-    case lists:keyfind(?SYS_CONTACT, 2, Ret) of
-        {_,_,_,SCont} ->
-            P2 = [{"sysContact", SCont} | P1];
-        _ ->
-            P2 = P1
-    end,
-    case lists:keyfind(?SYS_NAME, 2, Ret) of
-        {_,_,_,SName} ->
-            P3 = [{"sysName", SName} | P2];
-        _ ->
-            P3 = P2
-    end,
-    case lists:keyfind(?SYS_LOCATION, 2, Ret) of
-        {_,_,_,SLoc} ->
-            P4 = [{"sysLocation", SLoc} | P3];
-        _ ->
-            P4 = P3
-    end,
-    case lists:keyfind(?SYS_SERVICES, 2, Ret) of
-        {_,_,_,SServ} ->
-            PF = [{"sysServices", SServ} | P4];
-        _ ->
-            PF = P4
-    end,
-
-    _ = PF,
-
-    #target{properties=OrigP} = Target = monitor_data_master:get(target, TargetKey),
-    ModifP = lists:foldl(fun({K,V},Acc) ->
-        lists:keystore(K,1,Acc,{K,V})
-    end, OrigP, PF),
-    maybe_update_target(Target, Target#target{properties=ModifP}).
-
+        ?SYS_SERVICES]) of
+        {ok, {varbinds, Ret}} ->
+            case lists:keyfind(?SYS_DESCR, 2, Ret) of
+                {_,_,_,SDescr} ->
+                    P = [{"sysDescr", SDescr}];
+                _ ->
+                    P = []
+            end,
+            case lists:keyfind(?SYS_OBJECTID, 2, Ret) of
+                {_,_,_,SOId} ->
+                    P1 = [{"sysObjectId", SOId} | P];
+                _ ->
+                    P1 = P
+            end,
+            case lists:keyfind(?SYS_CONTACT, 2, Ret) of
+                {_,_,_,SCont} ->
+                    P2 = [{"sysContact", SCont} | P1];
+                _ ->
+                    P2 = P1
+            end,
+            case lists:keyfind(?SYS_NAME, 2, Ret) of
+                {_,_,_,SName} ->
+                    P3 = [{"sysName", SName} | P2];
+                _ ->
+                    P3 = P2
+            end,
+            case lists:keyfind(?SYS_LOCATION, 2, Ret) of
+                {_,_,_,SLoc} ->
+                    P4 = [{"sysLocation", SLoc} | P3];
+                _ ->
+                    P4 = P3
+            end,
+            case lists:keyfind(?SYS_SERVICES, 2, Ret) of
+                {_,_,_,SServ} ->
+                    PF = [{"sysServices", SServ} | P4];
+                _ ->
+                    PF = P4
+            end,
+        
+            _ = PF,
+        
+            #target{properties=OrigP} = Target = monitor_data_master:get(target, TargetKey),
+            ModifP = lists:foldl(fun({K,V},Acc) ->
+                lists:keystore(K,1,Acc,{K,V})
+            end, OrigP, PF),
+            maybe_update_target(Target, Target#target{properties=ModifP});
+        {error, Reason} ->
+            error_logger:info_msg(
+              "snmp fail ~p ~p for agent ~p",
+              [?MODULE, ?LINE, Reason, TargetKey])
+    end.
+        
 
 update_snmp_if_aliases(TargetKey) ->
     IfNames = snmpman:walk_table(TargetKey, [
