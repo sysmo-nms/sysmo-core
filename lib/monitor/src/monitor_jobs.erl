@@ -76,7 +76,8 @@ update_snmp_system_info(TargetKey) ->
         
             _ = PF,
         
-            #target{properties=OrigP} = Target = monitor_data_master:get(target, TargetKey),
+            [Target] = monitor_data_master:get(target, TargetKey),
+            #target{properties=OrigP} = Target, 
             ModifP = lists:foldl(fun({K,V},Acc) ->
                 lists:keystore(K,1,Acc,{K,V})
             end, OrigP, PF),
@@ -115,7 +116,8 @@ update_snmp_if_aliases(TargetKey) ->
 
     _ = PF,
 
-    #target{properties=OrigP} = Target = monitor_data_master:get(target, TargetKey),
+    [Target] = monitor_data_master:get(target, TargetKey),
+    #target{properties=OrigP} = Target,
     ModifP = lists:foldl(fun({K,V},Acc) ->
        lists:keystore(K,1,Acc,{K,V})
     end, OrigP, PF),

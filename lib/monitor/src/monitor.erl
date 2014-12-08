@@ -26,6 +26,7 @@
 -export([
     target_new/2,
     target_delete/1,
+
     job_new/2,
     job_delete/1,
     probe_new/2,
@@ -85,18 +86,13 @@ fill_test(N,Parent) ->
     job_new({internal, update_snmp_system_info}, K),
     job_new({internal, update_snmp_if_aliases},  K),
     fill_test(N - 1, Ping).
-
-dependency_new(Probe, Depend) ->
-    monitor_data_master:new(dependency, #dependency{a_probe=Probe,his_parent=Depend}).
-
 %%-----------------------------------------------------------------------------
 %% TARGET API
 %%-----------------------------------------------------------------------------
-target_new(SysProp, []) ->
-    Prop = [{"ip", "none"}, {"sysName", "undefined"}, {"dnsName", "undefined"}],
-    target_new(SysProp, Prop);
-target_new(SysProp, Prop) ->
-    T = #target{sys_properties=SysProp,properties=Prop},
+target_new(SysProp, Props) ->
+    Default = ?DEFAULT_TARGET_PROPERTIES,
+    NewProp = lists:foldl(fun({K,V},Acc) -> lists:keystore(K,1,Acc,{K,V}) end, Default, Props),
+    T = #target{sys_properties=SysProp,properties=NewProp},
     monitor_data_master:new(target, T).
 
 
@@ -111,9 +107,17 @@ job_new({internal, Function}, Target) ->
         module   = monitor_jobs,
         function = Function,
         argument = Target,
-        info     = lists:concat([?CRON_EVERY20S, " ", monitor_jobs, " ", Function, " ", Target])
+        info     = lists:concat([?CRON_EVERY20S, ",", monitor_jobs, ",", Function, ",", Target])
     },
     monitor_data_master:new(job, J).
+
+
+%%-----------------------------------------------------------------------------
+%% PROBE API
+%%-----------------------------------------------------------------------------
+dependency_new(Probe, Depend) ->
+    monitor_data_master:new(dependency, #dependency{a_probe=Probe,his_parent=Depend}).
+
 
 %%-----------------------------------------------------------------------------
 %% PROBE API

@@ -23,12 +23,34 @@
 -module(monitor_pdu).
 -include("include/monitor.hrl").
 -export([
+    'PDU-MonitorPDU-fromServer-deleteTarget'/1,
+    'PDU-MonitorPDU-fromServer-deleteProbe'/1,
     'PDU-MonitorPDU-fromServer-infoTarget-create'/1,
     'PDU-MonitorPDU-fromServer-infoTarget-update'/1,
     'PDU-MonitorPDU-fromServer-infoProbe-create'/1,
     'PDU-MonitorPDU-fromServer-infoProbe-update'/1,
     'PDU-MonitorPDU-fromServer-probeReturn'/4
 ]).
+
+'PDU-MonitorPDU-fromServer-deleteTarget'(Target) ->
+    {modMonitorPDU,
+        {fromServer,
+            {deleteTarget, Target}
+        }
+    }.
+ 
+'PDU-MonitorPDU-fromServer-deleteProbe'(Probe) ->
+    #probe{name=Name,belong_to=Target} = Probe,
+    {modMonitorPDU,
+        {fromServer,
+            {deleteProbe,
+                {'DeleteProbe',
+                    Target,
+                    Name
+                }
+            }
+        }
+    }.
 
 'PDU-MonitorPDU-fromServer-probeReturn'(
         #probe_return{ 

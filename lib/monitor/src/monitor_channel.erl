@@ -77,6 +77,7 @@ init([]) ->
     mnesia:subscribe({table, target, detailed}),
     mnesia:subscribe({table, probe,  detailed}),
     mnesia:subscribe({table, job,    detailed}),
+    mnesia:subscribe({table, dependency, detailed}),
     {ok, #state{perm=#perm_conf{read=Read,write=Write}}}.
 
 %%----------------------------------------------------------------------------
@@ -102,11 +103,14 @@ handle_cast({sync_request, CState}, S) ->
     end),
 
     {ok, _} = monitor_data_master:iterate(probe, fun(P,_) ->
-        #probe{permissions=Perm} = P,
+        #probe{name=_Name,permissions=Perm} = P,
         case supercast:satisfy(CState, Perm) of
             true    ->
                 Pdu = monitor_pdu:'PDU-MonitorPDU-fromServer-infoProbe-create'(P),
                 ok  = supercast_channel:unicast(CState, [Pdu]),
+                % Dep = do_get(dependency,Name)
+                % Pdu = dep... supercast:unicast...
+                ?LOG({should_send_dependencies}),
                 monitor_probe:triggered_return(P#probe.name, CState);
             false   -> ok
         end
@@ -121,7 +125,6 @@ handle_cast({sync_request, CState}, S) ->
                 Acc
         end
     end),
-
 
     ?LOG({should_send_jobs, _Jobs}),
 
@@ -157,8 +160,17 @@ handle_info({mnesia_table_event, {write, job, NewJob, [OldJob], _ActivityId}}, S
     handle_job_update(NewJob, OldJob),
     {noreply, S};
 
-handle_info({mnesia_table_event, {delete, _Table, What, _OldRecords, _ActivityId}}, S) ->
-    handle_delete(What),
+
+handle_info({mnesia_table_event, {write, dependency, Dep, [], _ActivityId}}, S) ->
+    handle_dependency_create(Dep),
+    {noreply, S};
+handle_info({mnesia_table_event, {write, dependency, Dep, [_OldDep], _ActivityId}}, S) ->
+    handle_dependency_update(Dep),
+    {noreply, S};
+
+
+handle_info({mnesia_table_event, {delete, _Table, What, [OldRecord], _ActivityId}}, S) ->
+    handle_delete(What, OldRecord),
     {noreply, S};
 
 handle_info(_I, S) ->
@@ -190,11 +202,27 @@ handle_probe_update(#probe{permissions=Perm} = Probe,_) ->
     Pdu = monitor_pdu:'PDU-MonitorPDU-fromServer-infoProbe-update'(Probe),
     supercast_channel:emit(?MASTER_CHANNEL, {Perm, Pdu}).
 
+
 handle_job_create(#job{permissions=_Perm} = Job) ->
     ?LOG({create_job, Job}).
     
 handle_job_update(#job{permissions=_Perm} = Job, _) ->
     ?LOG({update_job, Job}).
 
-handle_delete(_What) ->
-    ?LOG({delete, _What}).
+
+handle_dependency_create(Dep) ->
+    ?LOG({create_dep, Dep}).
+handle_dependency_update(Dep) ->
+    ?LOG({update_dep, Dep}).
+
+
+handle_delete({target, Name}, #target{permissions=Perm}) ->
+    Pdu = monitor_pdu:'PDU-MonitorPDU-fromServer-deleteTarget'(Name),
+    supercast_channel:emit(?MASTER_CHANNEL, {Perm, Pdu});
+handle_delete({probe, _}, #probe{permissions=Perm} = Probe) ->
+    Pdu = monitor_pdu:'PDU-MonitorPDU-fromServer-deleteProbe'(Probe),
+    supercast_channel:emit(?MASTER_CHANNEL, {Perm, Pdu});
+handle_delete({job, Name},_) ->
+    ?LOG({delete, Name});
+handle_delete({dependency, Name},_) ->
+    ?LOG({delete, Name}).

@@ -148,11 +148,26 @@ delete(Table, Key) ->
     gen_server:call(?MODULE, {delete, Table, Key}).
 
 do_delete(target, Key) ->
-    lists:foreach(fun(P) -> do_delete(probe, P) end, do_get_probes(Key)),
     lists:foreach(fun(J) -> do_delete(job,   J) end, do_get_jobs(Key)),
+    lists:foreach(fun(P) -> do_delete(probe, P) end, do_get_probes(Key)),
     mnesia:dirty_delete({target,Key});
 do_delete(probe, Key) ->
     monitor_probe:shutdown(Key),
+    case do_get(dependency, Key) of
+        []  -> ok;
+        [_] ->
+            do_delete(dependency, Key),
+            % delete ciblings
+            Others = mnesia:dirty_select(dependency,
+                [
+                    {#dependency{a_probe='$1',his_parent=Key,_='_'},
+                    [],
+                    ['$1']}
+                ]
+            ),
+            ?LOG(Others),
+            lists:foreach(fun(X) -> do_delete(dependency, X) end, Others)
+    end,
     mnesia:dirty_delete({probe,Key});
 do_delete(job, Key) ->
     equartz:delete_job(Key),
@@ -187,10 +202,7 @@ get(Table, Key) ->
     gen_server:call(?MODULE, {get, Table, Key}).
 
 do_get(Table, Key) ->
-    case mnesia:dirty_read(Table, Key) of
-        []  -> undefined;
-        [V] -> V
-    end.
+    mnesia:dirty_read(Table, Key).
 
 
 
@@ -343,6 +355,7 @@ init_mnesia_tables() ->
                 [
                     {attributes, record_info(fields, dependency)},
                     {disc_copies, [node()]},
+                    {index, [his_parent]},
                     {storage_properties, [{dets, DetsOpts}]}
                 ]
             )

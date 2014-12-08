@@ -105,6 +105,10 @@ ProbeReturn ::= SEQUENCE {
     nextReturn      MicroSecond
 }
 
+DeleteProbe ::= SEQUENCE {
+    target      PrintableString,
+    probe       PrintableString
+}
 ---------------------------------------
 -- FULL PDU
 ---------------------------------------
@@ -113,6 +117,14 @@ MonitorPDU ::= CHOICE {
         infoTarget      [1] InfoTarget,
         infoProbe       [2] InfoProbe,
         probeReturn     [3] ProbeReturn,
+        --infoJob       
+        --infoDependency
+
+        deleteTarget     [5] PrintableString,
+        deleteProbe      [6] DeleteProbe,
+        --deleteJob        [7] PrintableString,
+        --deleteDependency [8] PrintableString,
+
 
         extendedQueryFromServer [12] ExtendedQueryFromServer,
 

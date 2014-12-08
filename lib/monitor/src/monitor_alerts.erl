@@ -93,13 +93,13 @@ handle_call(_R,_F,S) ->
 
 % is ok nothing to do
 handle_cast({notify, Name, "OK", Time}, #state{last_notif=Nt} = S) ->
-    ?LOG({todo_notify, Name, "OK", Time}),
+    %?LOG({todo_notify, Name, "OK", Time}),
     ets:insert(Nt, #notif{probe=Name,status="OK",time=Time}),
     {noreply, S};
 
 % is not good, something to do
 handle_cast({notify, Name, Status, Time}, #state{last_notif=Nt} = S) ->
-    ?LOG({todo_notify, Name, Status, Time}),
+    %?LOG({todo_notify, Name, Status, Time}),
     ets:insert(Nt, #notif{probe=Name,status=Status,time=Time}),
     {noreply, S};
 
@@ -110,8 +110,9 @@ handle_cast({notify, Name, Status, Time}, #state{last_notif=Nt} = S) ->
 % target.properties "mailAlertEscalationAfter". Cancel the timer if a status
 % move to OK occur between.
 % Keep a state of all this.
+% Emit info for supercast.
 handle_cast({notify_move, Name, Status, Time}, #state{last_notif=Nt,last_move=Mv} = S) ->
-    ?LOG({todo_notify_and_log_move, Name, Status, Time}),
+    %?LOG({todo_notify_and_log_move, Name, Status, Time}),
     Notif = #notif{probe=Name,status=Status,time=Time},
     ets:insert(Nt, Notif),
     ets:insert(Mv, Notif),
@@ -120,7 +121,7 @@ handle_cast({notify_move, Name, Status, Time}, #state{last_notif=Nt,last_move=Mv
 
 % called at probe startup, do not need to update postgre
 handle_cast({notify_init, Name, Status, Time}, #state{last_notif=Nt,last_move=Mv} = S) ->
-    ?LOG({todo_notify_and_log_move, Name, Status, Time}),
+    %?LOG({todo_notify_and_log_move, Name, Status, Time}),
     Notif = #notif{probe=Name,status=Status,time=Time},
     ets:insert(Nt, Notif),
     ets:insert(Mv, Notif),
@@ -146,5 +147,5 @@ get_ts() ->
     {Meg,Sec,_} = erlang:now(),
     1000000 * Meg + Sec.
 
-do_log(_Alert) ->
-    epostg:write(monitor_alerts, Alert).
+do_log(_Alert) -> ok.
+    %epostg:write(monitor_alerts, Alert).

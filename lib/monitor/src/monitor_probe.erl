@@ -168,7 +168,7 @@ handle_info({probe_return, NewProbeState, PR}, S) ->
     ES  = monitor_data_master:get_probe_state(S#state.name),
 
     % INSPECT TODO do use case better than behaviour
-    Probe  = monitor_data_master:get(probe, S#state.name),
+    [Probe]  = monitor_data_master:get(probe, S#state.name),
     IState = ES#ets_state.inspectors_state,
     {ok, IState2, Probe2} = monitor_inspector:inspect_all(IState, Probe, PR),
 
