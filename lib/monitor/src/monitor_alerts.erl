@@ -38,11 +38,14 @@
 ]).
 
 -export([
-    notify/2
+    notify/2,
+    notify_move/2,
+    notify_init/2
 ]).
 
 -record(state, {
-    ets_notif
+    last_notif,
+    last_move
 }).
 
 -record(notif, {
@@ -58,33 +61,77 @@ notify(Name, Status) ->
     Ts = get_ts(),
     gen_server:cast(?MODULE, {notify, Name, Status, Ts}).
 
+notify_init(Name, Status) ->
+    Ts = get_ts(),
+    gen_server:cast(?MODULE, {notify_init, Name, Status, Ts}).
+
+notify_move(Name, Status) ->
+    Ts = get_ts(),
+    gen_server:cast(?MODULE, {notify_move, Name, Status, Ts}).
 %%----------------------------------------------------------------------------
 %% GEN_SERVER CALLBACKS
 %%----------------------------------------------------------------------------
 init([]) ->
-    Notifs = ets:new(notif,
+    Notifs = ets:new(last_notif,
         [
             set,
             compressed,
             {keypos,2}
         ]
     ),
-    {ok, #state{ets_notif=Notifs}}.
+    LastMove = ets:new(last_move,
+        [
+            set,
+            compressed,
+            {keypos,2}
+        ]
+    ),
+    {ok, #state{last_notif=Notifs,last_move=LastMove}}.
 
 handle_call(_R,_F,S) ->
     {noreply, S}.
 
-handle_cast({notify, Name, "OK", Time}, #state{ets_notif=Tid} = S) ->
-    ets:insert(Tid, #notif{probe=Name,status="OK",time=Time}),
+% is ok nothing to do
+handle_cast({notify, Name, "OK", Time}, #state{last_notif=Nt} = S) ->
+    ?LOG({todo_notify, Name, "OK", Time}),
+    ets:insert(Nt, #notif{probe=Name,status="OK",time=Time}),
     {noreply, S};
 
-handle_cast({notify, Name, Status, Time}, #state{ets_notif=Tid} = S) ->
+% is not good, something to do
+handle_cast({notify, Name, Status, Time}, #state{last_notif=Nt} = S) ->
     ?LOG({todo_notify, Name, Status, Time}),
-    ets:insert(Tid, #notif{probe=Name,status=Status,time=Time}),
+    ets:insert(Nt, #notif{probe=Name,status=Status,time=Time}),
     {noreply, S};
+
+% It is a move of status, insert in last_move table, and log to postgre.
+% Trigger some actions to define if we should trigger a mail alert based on
+% the dependency table. Maybe trigger some parents probe to complete informations
+% When fired, use the target.properties "mailAlertL1", and erlang:send_after
+% target.properties "mailAlertEscalationAfter". Cancel the timer if a status
+% move to OK occur between.
+% Keep a state of all this.
+handle_cast({notify_move, Name, Status, Time}, #state{last_notif=Nt,last_move=Mv} = S) ->
+    ?LOG({todo_notify_and_log_move, Name, Status, Time}),
+    Notif = #notif{probe=Name,status=Status,time=Time},
+    ets:insert(Nt, Notif),
+    ets:insert(Mv, Notif),
+    do_log(Notif),
+    {noreply, S};
+
+% called at probe startup, do not need to update postgre
+handle_cast({notify_init, Name, Status, Time}, #state{last_notif=Nt,last_move=Mv} = S) ->
+    ?LOG({todo_notify_and_log_move, Name, Status, Time}),
+    Notif = #notif{probe=Name,status=Status,time=Time},
+    ets:insert(Nt, Notif),
+    ets:insert(Mv, Notif),
+    {noreply, S};
+
 
 handle_cast(_R, S) ->
     {noreply, S}.
+
+handle_info({escalation, _Probe}, S) ->
+    {noreply, S};
 
 handle_info(_I, S) ->
     {noreply, S}.
@@ -99,3 +146,5 @@ get_ts() ->
     {Meg,Sec,_} = erlang:now(),
     1000000 * Meg + Sec.
 
+do_log(_Alert) ->
+    epostg:write(monitor_alerts, Alert).

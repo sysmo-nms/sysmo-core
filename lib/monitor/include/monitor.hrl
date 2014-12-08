@@ -11,12 +11,15 @@
     {"ip",          "undefined"},
     {"ipVersion",   "undefined"},
     {"sysName",     "undefined"},
-    {"dnsName",     "undefined"}
+    {"dnsName",     "undefined"},
+    {"mailAlertgroupL1", ""},
+    {"mailAlertgroupL2", ""},
+    {"mailAlertEscalationAfter", "1h"}
 ]).
 
 -record(dependency, {
-    probe,
-    parent
+    a_probe,
+    his_parent
 }).
 
 -record(inspector, {
@@ -79,7 +82,6 @@
     status              = "DOWN"     :: string(),
     step                = 5             :: integer(), % seconds
     properties          = []            :: [{string(), any()}],
-    parents             = []            :: [string()],
     active              = true          :: true | false,
     monitor_probe_mod   = undefined     :: undefined | module(),
     monitor_probe_conf  = undefined     :: [any()],

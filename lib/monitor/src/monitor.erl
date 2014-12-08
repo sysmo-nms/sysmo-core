@@ -87,7 +87,7 @@ fill_test(N,Parent) ->
     fill_test(N - 1, Ping).
 
 dependency_new(Probe, Depend) ->
-    monitor_data_master:new(dependency, #dependency{probe=Probe,parent=Depend}).
+    monitor_data_master:new(dependency, #dependency{a_probe=Probe,his_parent=Depend}).
 
 %%-----------------------------------------------------------------------------
 %% TARGET API

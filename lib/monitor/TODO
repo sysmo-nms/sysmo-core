@@ -1,21 +1,6 @@
 1 dependencies/alertes apres x CRITICAL (and remove inspectors)
-
-5 general code cleanup/refactor/test (eunit/dializer)
-    - cleanup/document monitor_commander,
-    - cleanup/document monitor_master,
-    - remove #rrd_config.update_regexps, #rrd_config.file_path
-    - clenup asn messages, remove query keep extendedQuery
-
-// next
-6 job scheduler (events/alerts/server actions)
-7 template system
+2 template system
     - for probes
     - for snmp
     - events (scheduler/alerts)
-8 use mnesia for monitor_master, listen for table events on monitor_store
-
-// later
-- get the time a probe might get informations to initialize timer on the
-client at connexion time. If not, the client will only be initialized with
-the first reception of a probe message (deducing the time using the probe
-specific properties step and timeout).
+3 general code cleanup/refactor/test (eunit/dializer)

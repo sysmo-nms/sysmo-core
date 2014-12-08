@@ -1,6 +1,0 @@
-start phases
-    - init supercast_registrar
-    - init equartz
-    - start monitor
-    - start supercast
-    - start equartz

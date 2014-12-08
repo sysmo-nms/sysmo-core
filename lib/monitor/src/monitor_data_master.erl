@@ -107,7 +107,7 @@ do_new(target, Target) ->
     Name;
 do_new(dependency, Dep) ->
     mnesia:dirty_write(Dep),
-    Dep#dependency.probe.
+    Dep#dependency.a_probe.
 
 
 
@@ -136,7 +136,7 @@ do_update(job, #job{name=Key} = Job) ->
     end;
 do_update(dependency, Dep) ->
     mnesia:dirty_write(Dep),
-    Dep#dependency.probe.
+    Dep#dependency.a_probe.
 
 
 -spec delete(Table::target|probe|job|dependency, Key::string()) -> ok | abort.

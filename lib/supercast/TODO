@@ -1,9 +1,7 @@
 - delayed sync included in supercast, require that every channel event is
 recognized by supercast.
-- replace atom() by string() for channel pid()
 
 # in the future
-- protobuff support
-- replace with rabbitmq?
+- protobuff or json support
 - Behaviour in a distributed environment with multiple supercast servers
 running?
