@@ -14,6 +14,11 @@
     {"dnsName",     "undefined"}
 ]).
 
+-record(dependency, {
+    probe,
+    parent
+}).
+
 -record(inspector, {
     module,
     conf
@@ -36,8 +41,8 @@
 }).
 
 -record(probe_return, {
-    status          = "UNKNOWN" :: string(),
-    % "OK" | "UNKNOWN" | "WARNING" | "CRITICAL" | "SHADED" | "PAUSED",
+    status          = "DOWN" :: string(),
+    % "OK" | "DOWN" | "WARNING" | "CRITICAL" | "PAUSED",
     % used by inspector status set
 
     original_reply  = "undefined" :: string(),
@@ -71,7 +76,7 @@
     description         = ""            :: string(),
     info                = ""            :: string(),
     timeout             = 5             :: integer(), % seconds
-    status              = "UNKNOWN"     :: string(),
+    status              = "DOWN"     :: string(),
     step                = 5             :: integer(), % seconds
     properties          = []            :: [{string(), any()}],
     parents             = []            :: [string()],

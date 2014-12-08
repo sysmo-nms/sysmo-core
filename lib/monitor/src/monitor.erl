@@ -53,8 +53,10 @@ probe_delete(ProbeName) ->
 job_delete(JobName) ->
     monitor_data_master:delete(job,JobName).
 
-fill_test(0) -> ok;
 fill_test(N) ->
+    fill_test(N, "self").
+fill_test(0,_) -> ok;
+fill_test(N,Parent) ->
     SysProp = [
         {snmp_port,     161},
         {snmp_version,  "2c"},
@@ -76,11 +78,16 @@ fill_test(N) ->
     ],
 
     K = target_new(SysProp, Prop),
-    probe_new({nchecks, icmp},    K),
-    probe_new({snmp, walk_table}, K),
+    Ping = probe_new({nchecks, icmp}, K),
+    Snmp = probe_new({snmp, walk_table}, K),
+    dependency_new(Ping, Parent),
+    dependency_new(Snmp, Parent),
     job_new({internal, update_snmp_system_info}, K),
     job_new({internal, update_snmp_if_aliases},  K),
-    fill_test(N - 1).
+    fill_test(N - 1, Ping).
+
+dependency_new(Probe, Depend) ->
+    monitor_data_master:new(dependency, #dependency{probe=Probe,parent=Depend}).
 
 %%-----------------------------------------------------------------------------
 %% TARGET API

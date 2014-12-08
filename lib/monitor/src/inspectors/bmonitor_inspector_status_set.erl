@@ -41,10 +41,13 @@ words it set the status of the probe from the status of the probe_return
 without further inspection. This inspector should be the first called.",
     {ok, Info}.
 
-init(_Conf, _Probe) ->
+init(_Conf, #probe{name=Name,status=Status}) ->
+    monitor_alerts:notify(Name, Status),
     {ok, no_state}.
 
 inspect(State, ProbeReturn, _OrigProbe, ModifiedProbe) ->
     Status      = ProbeReturn#probe_return.status,
     NewProbe    = ModifiedProbe#probe{status = Status},
+    monitor_alerts:notify(ModifiedProbe#probe.name, Status),
     {ok, State, NewProbe}.
+

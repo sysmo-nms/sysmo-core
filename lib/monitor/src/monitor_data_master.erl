@@ -68,10 +68,11 @@ which(Table) ->
 do_which(target) -> mnesia:dirty_all_keys(target);
 do_which(probe)  -> mnesia:dirty_all_keys(probe);
 do_which(job)    -> mnesia:dirty_all_keys(job);
+do_which(dependency) -> mnesia:dirty_all_keys(dependency);
 do_which(_)      -> error.
 
 
--spec new(Table::target|probe|job, Record::#target{}|#probe{}|#job{}) -> Name::string().
+-spec new(Table::target|probe|job|dependency, Record::#target{}|#probe{}|#job{}) -> Name::string().
 % @doc
 % Initialize the new element and add it to the table. It include giving him a
 % name, and call the appropriate API to initialize it.
@@ -103,10 +104,14 @@ do_new(target, Target) ->
     mnesia:dirty_write(ITarget),
     monitor_utils:init_target_snmp(ITarget),
     monitor_utils:init_target_dir(ITarget),
-    Name.
+    Name;
+do_new(dependency, Dep) ->
+    mnesia:dirty_write(Dep),
+    Dep#dependency.probe.
 
 
--spec update(Table::target|probe|job, Record::#target{}|#probe{}|#job{}) -> 
+
+-spec update(Table::target|probe|job|dependency, Record::#target{}|#probe{}|#job{}) -> 
     ok | abort | {error, Reason::string}.
 % @doc
 % Overwrite an element in the table. Fail if the element did not exist.
@@ -128,10 +133,13 @@ do_update(job, #job{name=Key} = Job) ->
     case mnesia:dirty_read(job, Key) of
         []  -> {error, "Unknown job"};
         [_] -> mnesia:dirty_write(Job)
-    end.
+    end;
+do_update(dependency, Dep) ->
+    mnesia:dirty_write(Dep),
+    Dep#dependency.probe.
 
 
--spec delete(Table::target|probe|job, Key::string()) -> ok | abort.
+-spec delete(Table::target|probe|job|dependency, Key::string()) -> ok | abort.
 % @doc
 % Delete the specified element from the table. Deleting a target will also
 % delete his probes and jobs.
@@ -148,10 +156,12 @@ do_delete(probe, Key) ->
     mnesia:dirty_delete({probe,Key});
 do_delete(job, Key) ->
     equartz:delete_job(Key),
-    mnesia:dirty_delete({job, Key}).
+    mnesia:dirty_delete({job, Key});
+do_delete(dependency, Key) ->
+    mnesia:dirty_delete({dependency, Key}).
 
 
--spec iterate(Table::target|probe|job, Fun::fun()) -> ok.
+-spec iterate(Table::target|probe|job|dependency, Fun::fun()) -> ok.
 % @doc
 % Iterate a table. Fun must accept two arguments:
 % - a element record,
@@ -169,7 +179,7 @@ do_iterate(Tab, Key, Fun, Acc) ->
     do_iterate(Tab,mnesia:dirty_next(Tab, Key),Fun,Acc2).
 
 
--spec get(Table::target|probe|job, Key::string()) -> #target{} | #probe{} | #job{} | undefined.
+-spec get(Table::target|probe|job|dependency, Key::string()) -> #target{} | #probe{} | #job{} | undefined.
 % @doc
 % Get an element by key. Return the table record corresponding to the key Key.
 % @end
@@ -181,6 +191,7 @@ do_get(Table, Key) ->
         []  -> undefined;
         [V] -> V
     end.
+
 
 
 -spec get_jobs(Key::string()) -> [string()].
@@ -203,7 +214,6 @@ get_probes(Key) ->
 
 do_get_probes(Key) ->
     mnesia:dirty_select(probe,[{#probe{name='$1',belong_to=Key,_='_'},[],['$1']}]).
-
 
 
 get_probe_state(Key) ->
@@ -321,6 +331,18 @@ init_mnesia_tables() ->
                     {attributes, record_info(fields, job)},
                     {disc_copies, [node()]},
                     {index, [belong_to]},
+                    {storage_properties, [{dets, DetsOpts}]}
+                ]
+            )
+    end,
+    case lists:member(dependency, Tables) of
+        true -> ok;
+        false ->
+            {atomic,ok} = mnesia:create_table(
+                dependency,
+                [
+                    {attributes, record_info(fields, dependency)},
+                    {disc_copies, [node()]},
                     {storage_properties, [{dets, DetsOpts}]}
                 ]
             )
