@@ -167,12 +167,12 @@ handle_call(_Call, _From, S) ->
 handle_info({probe_return, NewProbeState, PR}, S) ->
     ES  = monitor_data_master:get_probe_state(S#state.name),
 
-    % INSPECT
+    % INSPECT TODO do use case better than behaviour
     Probe  = monitor_data_master:get(probe, S#state.name),
     IState = ES#ets_state.inspectors_state,
     {ok, IState2, Probe2} = monitor_inspector:inspect_all(IState, Probe, PR),
 
-    % LOG
+    % INSPECT TODO do use case better than behaviour
     LState = ES#ets_state.loggers_state,
     {ok, Pdus, LState2} = monitor_logger:log_all(LState,PR),
     emit_all(ES#ets_state.name, ES#ets_state.permissions, Pdus),
@@ -241,6 +241,7 @@ initiate_start_sequence(Step) ->
 
 take_of(Parent, Mod, ProbeState) ->
     erlang:spawn(fun() ->
+        % INSPECT TODO do use case x of better than behaviour
         {ok, ProbeState2, Return}  = Mod:exec(ProbeState),
         erlang:send(Parent, {probe_return, ProbeState2, Return})
     end).
