@@ -28,7 +28,6 @@
     server_state/0
 ]).
 
-
 satisfy(CState, Perm) ->
     {ok, AccCtrl} = application:get_env(supercast, acctrl_module),
     case AccCtrl:satisfy(read, [CState], Perm) of

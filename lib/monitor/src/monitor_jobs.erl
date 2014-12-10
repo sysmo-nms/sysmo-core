@@ -76,12 +76,18 @@ update_snmp_system_info(TargetKey) ->
         
             _ = PF,
         
-            [Target] = monitor_data_master:get(target, TargetKey),
-            #target{properties=OrigP} = Target, 
-            ModifP = lists:foldl(fun({K,V},Acc) ->
-                lists:keystore(K,1,Acc,{K,V})
-            end, OrigP, PF),
-            maybe_update_target(Target, Target#target{properties=ModifP});
+            case monitor_data_master:get(target, TargetKey) of
+                [] ->
+                    error_logger:info_msg(
+                    "get fail ~p ~p for agent ~p. Did not exist.",
+                    [?MODULE, ?LINE, TargetKey]);
+                [Target] ->
+                    #target{properties=OrigP} = Target, 
+                    ModifP = lists:foldl(fun({K,V},Acc) ->
+                        lists:keystore(K,1,Acc,{K,V})
+                    end, OrigP, PF),
+                    maybe_update_target(Target, Target#target{properties=ModifP})
+            end;
         {error, Reason} ->
             error_logger:info_msg(
               "snmp fail ~p ~p for agent ~p",

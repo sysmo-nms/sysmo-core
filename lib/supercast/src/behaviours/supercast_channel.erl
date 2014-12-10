@@ -33,7 +33,8 @@
 -export([
     subscribe/2,
     emit/2,
-    unicast/2
+    unicast/2,
+    delete/1
 ]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -63,6 +64,9 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % SUPERCAST server and mpd API %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+delete(Channel) ->
+    supercast_mpd:delete_channel(Channel).
+
 -spec get_chan_perms(Channel::string()) -> error | #perm_conf{}.
 % @private
 get_chan_perms(Channel) ->

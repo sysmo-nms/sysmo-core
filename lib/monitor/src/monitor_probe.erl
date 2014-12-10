@@ -157,7 +157,8 @@ handle_cast(_Cast, S) ->
     {noreply, S}.
 
 
-handle_call(shut_it_down, _F, S) ->
+handle_call(shut_it_down, _F, #state{name=Name} = S) ->
+    supercast_channel:delete(Name),
     {stop, shutdown, ok, S};
 
 

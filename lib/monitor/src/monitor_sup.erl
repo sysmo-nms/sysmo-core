@@ -34,12 +34,12 @@ init([]) ->
             {one_for_one, 1, 60},
             [
                 {
-                    monitor_alerts,
-                    {monitor_alerts, start_link, []},
+                    monitor_events,
+                    {monitor_events, start_link, []},
                     permanent,
                     infinity,
                     supervisor,
-                    [monitor_alerts]
+                    [monitor_events]
                 },
                 {
                     monitor_probe_sup,

@@ -42,7 +42,7 @@ without further inspection. This inspector should be the first called.",
     {ok, Info}.
 
 init(_Conf, #probe{name=Name,status=Status}) ->
-    monitor_alerts:notify_init(Name, Status),
+    monitor_events:notify_init(Name, Status),
     {ok, no_state}.
 
 inspect(State, ProbeReturn, #probe{status=OldStatus} = _Orig, ModifiedProbe) ->
@@ -50,8 +50,8 @@ inspect(State, ProbeReturn, #probe{status=OldStatus} = _Orig, ModifiedProbe) ->
     NewProbe = ModifiedProbe#probe{status = Status},
     case Status of
         OldStatus ->
-            monitor_alerts:notify(ModifiedProbe#probe.name, Status);
+            monitor_events:notify(ModifiedProbe#probe.name, Status);
         _ ->
-            monitor_alerts:notify_move(ModifiedProbe#probe.name, Status)
+            monitor_events:notify_move(ModifiedProbe#probe.name, Status)
     end,
     {ok, State, NewProbe}.

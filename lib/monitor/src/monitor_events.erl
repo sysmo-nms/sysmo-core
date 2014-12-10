@@ -18,7 +18,7 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
--module(monitor_alerts).
+-module(monitor_events).
 -behaviour(gen_server).
 -include("include/monitor.hrl").
 
@@ -148,4 +148,4 @@ get_ts() ->
     1000000 * Meg + Sec.
 
 do_log(_Alert) -> ok.
-    %epostg:write(monitor_alerts, Alert).
+    %epostg:write(monitor_events, Alert).

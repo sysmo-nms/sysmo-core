@@ -14,7 +14,9 @@
     {"dnsName",     "undefined"},
     {"mailAlertgroupL1", ""},
     {"mailAlertgroupL2", ""},
-    {"mailAlertEscalationAfter", "1h"}
+    {"mailAlertEscalationAfter", "1h"},
+    {"longitude", 0},
+    {"latitude",  0}
 ]).
 
 -record(dependency, {

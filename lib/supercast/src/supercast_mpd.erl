@@ -41,7 +41,8 @@
     subscribe_stage3/2,
     unsubscribe/2,
     main_chans/0,
-    client_disconnect/1
+    client_disconnect/1,
+    delete_channel/1
 ]).
 
 -record(state, {
@@ -58,6 +59,9 @@
 % @private
 start_link() ->
     gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
+
+delete_channel(Channel) ->
+    gen_server:cast(?MODULE, {delete_channel, Channel}).
 
 -spec main_chans() -> [atom()].
 % @doc
@@ -216,6 +220,10 @@ handle_call(_R, _F, S) ->
     {reply, error, S}.
 
 % CAST
+handle_cast({delete_channel, Channel}, #state{chans=Chans} = S) ->
+    Channels = proplists:delete(Channel, Chans),
+    {noreply, S#state{chans=Channels}};
+
 % called by himself
 handle_cast({unicast, #client_state{module = CMod} = CState, Perm, Pdu}, 
     #state{acctrl = AcctrlMod} = S) ->
