@@ -15,8 +15,9 @@
     {"mailAlertgroupL1", ""},
     {"mailAlertgroupL2", ""},
     {"mailAlertEscalationAfter", "1h"},
-    {"longitude", 0},
-    {"latitude",  0}
+    {"longitude", 0.0},
+    {"latitude",  0.0},
+    {"type", "computer"}
 ]).
 
 -record(dependency, {
@@ -82,7 +83,7 @@
     info                = ""            :: string(),
     timeout             = 5             :: integer(), % seconds
     status              = "DOWN"     :: string(),
-    step                = 5             :: integer(), % seconds
+    step                = 300           :: integer(), % seconds
     properties          = []            :: [{string(), any()}],
     active              = true          :: true | false,
     monitor_probe_mod   = undefined     :: undefined | module(),

@@ -1,21 +1,32 @@
-###############################################################################
-# DASHBOARD ###################################################################
-###############################################################################
-### HIGH
-- weathermap style maps from monitor/rrds
-- scheduler
-
 #################
 # international #
 #################
 - move some asn elements from PrintableString to UTF8String
 
-
-###########
-# LICENSE #
-###########
+#############
+# OPENSYSMO #
+#############
+- TODO: dashboard, weathermap style maps from monitor/rrds
+- TODO: standard job scheduler API (example: sauvegarde conf switch)
 - server GNU
 - client CPAL
+
+##########
+# WSYSMO #
+##########
+- (windows) proprietaire payant: entreprise seulement
+
+######################
+# SYSMO (ENTREPRISE) #
+######################
+- TODO: critical job scheduler API
+    - second job scheduler pour les jobs critiques (fonctionnement entreprise)
+    - haute dispo,
+    - continue de fonctionner quand sysmo est down,
+    - deux interfaces: sysmo et interface secondaire web
+- TODO: CMI (remplace NRPE/ZABBIX agent)
+- TODO: Advanced SNMP conf (custom snmp/rrd conf)
+- DONE: multiple permissions/multi users
 
 ### MAYBE
 ITIL pack with linked modules. Every movement in the SI is tracked and logged

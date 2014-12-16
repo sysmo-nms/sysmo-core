@@ -41,19 +41,19 @@ init_target_dir(Target) ->
 
 init_target_snmp(Target) ->
     SysProp = Target#target.sys_properties,
-    case proplists:get_value(snmp_version, SysProp) of
+    case proplists:get_value("snmp_version", SysProp) of
         undefined   -> ok;
         SnmpVersion ->
-            SnmpPort        = proplists:get_value(snmp_port,        SysProp),
-            SnmpSecLevel    = proplists:get_value(snmp_seclevel,    SysProp),
-            SnmpCommunity   = proplists:get_value(snmp_community,   SysProp),
-            SnmpUsmUser     = proplists:get_value(snmp_usm_user,    SysProp),
-            SnmpAuthKey     = proplists:get_value(snmp_authkey,     SysProp),
-            SnmpAuthProto   = proplists:get_value(snmp_authproto,   SysProp),
-            SnmpPrivKey     = proplists:get_value(snmp_privkey,     SysProp),
-            SnmpPrivProto   = proplists:get_value(snmp_privproto,   SysProp),
-            SnmpTimeout     = proplists:get_value(snmp_timeout,     SysProp),
-            SnmpRetries     = proplists:get_value(snmp_retries,     SysProp),
+            SnmpPort        = proplists:get_value("snmp_port",        SysProp),
+            SnmpSecLevel    = proplists:get_value("snmp_seclevel",    SysProp),
+            SnmpCommunity   = proplists:get_value("snmp_community",   SysProp),
+            SnmpUsmUser     = proplists:get_value("snmp_usm_user",    SysProp),
+            SnmpAuthKey     = proplists:get_value("snmp_authkey",     SysProp),
+            SnmpAuthProto   = proplists:get_value("snmp_authproto",   SysProp),
+            SnmpPrivKey     = proplists:get_value("snmp_privkey",     SysProp),
+            SnmpPrivProto   = proplists:get_value("snmp_privproto",   SysProp),
+            SnmpTimeout     = proplists:get_value("snmp_timeout",     SysProp),
+            SnmpRetries     = proplists:get_value("snmp_retries",     SysProp),
 
             Props = Target#target.properties,
             IpVersion = proplists:get_value("ipVersion", Props),

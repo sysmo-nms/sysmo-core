@@ -58,15 +58,29 @@ QueryProbeStart ::= SEQUENCE {
 QueryProbeDelete ::= SEQUENCE {
     probe [0] PrintableString
 }
+
+
+Prop ::= SEQUENCE {
+    key PrintableString,
+    val PrintableString
+}
+
+CreateTargetQuery ::= SEQUENCE {
+    sysProperties   SEQUENCE OF Prop,
+    properties      SEQUENCE OF Prop
+}
+
 ExtendedQuery ::= CHOICE {
     snmpElementInfoQuery    [0] SnmpElementInfoQuery,
     snmpElementCreateQuery  [1] SnmpElementCreateQuery,
 
+    createTargetQuery       [10] CreateTargetQuery,
+
     --probes control
-    queryProbeForce     [10] QueryProbeForce,
-    queryProbeSuspend   [11] QueryProbeSuspend,
-    queryProbeStart     [12] QueryProbeStart,
-    queryProbeDelete    [13] QueryProbeDelete
+    queryProbeForce     [20] QueryProbeForce,
+    queryProbeSuspend   [21] QueryProbeSuspend,
+    queryProbeStart     [22] QueryProbeStart,
+    queryProbeDelete    [23] QueryProbeDelete
 
 }
 
@@ -108,7 +122,7 @@ ReplyChoice   ::= CHOICE {
     snmpInterfacesInfo  [2] SEQUENCE OF SnmpInterfaceInfo
 }
 
-ExtendedQueryFromServer   ::= SEQUENCE {
+ExtendedReply   ::= SEQUENCE {
     queryId     INTEGER,
     status      BOOLEAN,
     lastPdu     BOOLEAN,

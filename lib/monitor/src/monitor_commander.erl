@@ -22,18 +22,10 @@
 -module(monitor_commander).
 -behaviour(supercast_commander).
 -behaviour(gen_server).
--include("include/monitor.hrl").
--include("include/monitor_snmp.hrl").
--include_lib("kernel/include/file.hrl").
-
-% API
--export([
-    start_link/0,
-    handle_command/2
-]).
 
 % GEN_SERVER
 -export([
+    start_link/0,
     init/1, 
     handle_call/3, 
     handle_cast/2, 
@@ -42,112 +34,34 @@
     code_change/3
 ]).
 
--record(state, {
-    data_dir,
-    check_db_ref
-}).
-
--define(DETS_CHECK_INFO, check_infos_db).
-
-% used to create random target and probe names
-% 1 000 000 possible values
--define(RAND_RANGE, 1000000).
-% but must be a minimum of 100000
--define(RAND_MIN,   99999).
-
-start_link() ->
-    gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
+% SUPERCAST_COMMANDER
+-export([
+    handle_command/2
+]).
 
 handle_command(Command, CState) ->
     {modMonitorPDU, {fromClient, CastCommand}} = Command,
     gen_server:cast(?MODULE, {CastCommand, CState}).
 
-%%----------------------------------------------------------------------------
-%%----------------------------------------------------------------------------
-%% INIT
-%%----------------------------------------------------------------------------
-%%----------------------------------------------------------------------------
-init([]) -> 
-    random:seed(erlang:now()),
-    {ok, DataDir}  = application:get_env(monitor, targets_data_dir),
-    {ok, DetsRef}  = init_check_info_database(DataDir),
-    State = #state{
-        data_dir=DataDir,
-        check_db_ref=DetsRef
-    },
-    {ok, State}.
-
-init_check_info_database(VarDir) ->
-    DetsFile     = filename:absname_join(VarDir, "check_infos.dets"),
-    case filelib:is_file(DetsFile) of
-        true  ->
-            ok = file:delete(DetsFile);
-        false ->
-            ok
-    end,
-    {ok, N} = dets:open_file(?DETS_CHECK_INFO, [
-        {file,   DetsFile},
-        {keypos, 1},
-        {ram_file, false},
-        {auto_save, 180000},
-        {type, set}
-    ]),
-    dets:close(N),
-    dets:open_file(DetsFile).
-
-%%----------------------------------------------------------------------------
-%%----------------------------------------------------------------------------
-%% HANDLE_CALL 
-%%----------------------------------------------------------------------------
-%%----------------------------------------------------------------------------
-handle_call(_R, _F, S) ->
-    {noreply, S}.
-
-%%----------------------------------------------------------------------------
-%%----------------------------------------------------------------------------
-%% HANDLE_CAST
-%%----------------------------------------------------------------------------
-%%----------------------------------------------------------------------------
-handle_cast({{extendedQueryFromClient, 
-        {_, QueryId, {snmpElementInfoQuery, Query}}}, CState}, S) ->
-
-    %Perms = monitor_master:get_perms(
-    command_net_element_wizard:handle_snmpElementInfoQuery(QueryId, CState, Query),
+handle_cast({{extendedQueryFromClient,
+        {_, QueryId, {createTargetQuery, {_,SysProp,Prop}}}}, CState}, S) ->
+    NProp    = [{Key,Val} || {'Prop', Key, Val} <- Prop],
+    NSysProp = [{Key,Val} || {'Prop', Key, Val} <- SysProp],
+    TargetId = monitor:target_new(NSysProp, NProp),
+    ReplyPDU = monitor_pdu:'PDU-MonitorPDU-fromServer-extendedReply'(
+        QueryId, true, true, {string, TargetId}),
+    supercast_channel:unicast(CState, [ReplyPDU]),
     {noreply, S};
-
-handle_cast({{extendedQueryFromClient, 
-        {_, QueryId, {snmpElementCreateQuery, Query}}}, CState}, S) ->
-    command_net_element_wizard:handle_snmpElementCreateQuery(QueryId, CState, Query, S#state.data_dir),
-    {noreply, S};
-
 
 handle_cast(R, S) ->
-    error_logger:info_msg(
-        "unknown cast for command ~p ~p ~p~n", [?MODULE, ?LINE, R]
-    ),
+    error_logger:info_msg("unknown cast for command ~p ~p ~p~n", [?MODULE, ?LINE, R]),
     {noreply, S}.
 
 %%----------------------------------------------------------------------------
 %%----------------------------------------------------------------------------
-%% HANDLE_INFO
-%%----------------------------------------------------------------------------
-%%----------------------------------------------------------------------------
-handle_info(_I, S) ->
-    {noreply, S}.
-
-%%----------------------------------------------------------------------------
-%%----------------------------------------------------------------------------
-%% TERMINATE  
-%%----------------------------------------------------------------------------
-%%----------------------------------------------------------------------------
-terminate(_R, #state{check_db_ref=Ref}) ->
-    dets:close(Ref),
-    normal.
-
-%%----------------------------------------------------------------------------
-%%----------------------------------------------------------------------------
-%% CODE_CHANGE
-%%----------------------------------------------------------------------------
-%%----------------------------------------------------------------------------
-code_change(_O, S, _E) ->
-    {ok, S}.
+start_link() -> gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
+init([])                -> {ok, nostate}.
+handle_call(_R, _F, S)  -> {noreply, S}.
+handle_info(_I, S)      -> {noreply, S}.
+terminate(_R, _S)       -> normal.
+code_change(_O, S, _E)  -> {ok, S}.

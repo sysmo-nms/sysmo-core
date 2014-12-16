@@ -4,7 +4,7 @@ BEGIN
 IMPORTS
     LoggerRrdDump             FROM MonitorLoggerRrd
     LoggerRrdEvent            FROM MonitorLoggerRrd
-    ExtendedQueryFromServer   FROM MonitorExtendedQuery
+    ExtendedReply             FROM MonitorExtendedQuery
     ExtendedQueryFromClient   FROM MonitorExtendedQuery;
 
 -- BASIC TYPES --
@@ -126,7 +126,7 @@ MonitorPDU ::= CHOICE {
         --deleteDependency [8] PrintableString,
 
 
-        extendedQueryFromServer [12] ExtendedQueryFromServer,
+        extendedReply [12] ExtendedReply,
 
         loggerRrdDump   [20] LoggerRrdDump,
         loggerRrdEvent  [21] LoggerRrdEvent

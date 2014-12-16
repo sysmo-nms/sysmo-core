@@ -29,8 +29,24 @@
     'PDU-MonitorPDU-fromServer-infoTarget-update'/1,
     'PDU-MonitorPDU-fromServer-infoProbe-create'/1,
     'PDU-MonitorPDU-fromServer-infoProbe-update'/1,
-    'PDU-MonitorPDU-fromServer-probeReturn'/4
+    'PDU-MonitorPDU-fromServer-probeReturn'/4,
+    'PDU-MonitorPDU-fromServer-extendedReply'/4
 ]).
+
+
+'PDU-MonitorPDU-fromServer-extendedReply'(QueryId,Status,Last,Info) ->
+    {modMonitorPDU,
+        {fromServer,
+            {extendedReply,
+                {'ExtendedReply',
+                    QueryId,
+                    Status,
+                    Last,
+                    Info
+                }
+            }
+        }
+    }.
 
 'PDU-MonitorPDU-fromServer-deleteTarget'(Target) ->
     {modMonitorPDU,
@@ -72,7 +88,11 @@
                     OriginalReply,
                     Timestamp,
                     make_key_values(KeyVals),
-                    NextReturn }}}}.
+                    NextReturn
+                }
+            }
+        }
+    }.
 
 'PDU-MonitorPDU-fromServer-infoTarget-create'(
         #target{name=Name, properties=Prop}
@@ -88,7 +108,11 @@
                     Name,
                     AsnProps,
                     [],
-                    create}}}}.
+                    create
+                }
+            }
+        }
+    }.
 
 'PDU-MonitorPDU-fromServer-infoTarget-update'(
         #target{name=Name, properties=Prop}
@@ -104,7 +128,11 @@
                     Name,
                     AsnProps,
                     [],
-                    update}}}}.
+                    update
+                }
+            }
+        }
+    }.
 
 'PDU-MonitorPDU-fromServer-infoProbe-update'(
     #probe{
@@ -132,7 +160,10 @@
                     make_key_values(Probe#probe.properties),
                     gen_asn_probe_active(Probe#probe.active),
                     create
-    }   }   }   }.
+                }
+            }
+        }
+    }.
 
 
 
@@ -162,7 +193,10 @@
                     make_key_values(Probe#probe.properties),
                     gen_asn_probe_active(Probe#probe.active),
                     create
-    }   }   }   }.
+                }
+            }
+        }
+    }.
 
 % UTILS
 gen_asn_probe_conf(Conf) when is_record(Conf, nchecks_probe_conf) ->

@@ -59,17 +59,17 @@ fill_test(N) ->
 fill_test(0,_) -> ok;
 fill_test(N,Parent) ->
     SysProp = [
-        {snmp_port,     161},
-        {snmp_version,  "2c"},
-        {snmp_seclevel, "noAuthNoPriv"},
-        {snmp_community,"public"},
-        {snmp_usm_user, "undefined"},
-        {snmp_authkey,  "undefined"},
-        {snmp_authproto,"MD5"},
-        {snmp_privkey,  "undefined"},
-        {snmp_privproto,"DES"},
-        {snmp_timeout,  5000},
-        {snmp_retries,  1}
+        {"snmp_port",     161},
+        {"snmp_version",  "2c"},
+        {"snmp_seclevel", "noAuthNoPriv"},
+        {"snmp_community","public"},
+        {"snmp_usm_user", "undefined"},
+        {"snmp_authkey",  "undefined"},
+        {"snmp_authproto","MD5"},
+        {"snmp_privkey",  "undefined"},
+        {"snmp_privproto","DES"},
+        {"snmp_timeout",  5000},
+        {"snmp_retries",  1}
     ],
     Prop = [
         {"ip",          "192.168.0.5"},
