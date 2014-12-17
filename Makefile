@@ -24,8 +24,14 @@ export REL_NAME    = noctopus
 export REL_VERSION = 0.2.1
 export MODS = supercast monitor errd snmpman noctopus yaws ini nchecks equartz pping
 
-.PHONY: compile test doc clean var-clean rel-clean start \
+.PHONY: all compile test doc clean var-clean rel-clean start \
 	unix-release unix-local-release windows-release windows-local-release
+
+all: compile web
+
+web:
+	rm -rf var/yaws/docroot/nchecks
+	cp -R lib/nchecks/priv/defs/ var/yaws/docroot/nchecks
 
 compile:
 	$(MAKE) -C lib

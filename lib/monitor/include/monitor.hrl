@@ -9,6 +9,7 @@
 -define(DEFAULT_PERM_CONF, #perm_conf{read=["admin"],write=["admin"]}).
 -define(DEFAULT_TARGET_PROPERTIES, [
     {"host",        "undefined"},
+    {"name",        "undefined"},
     {"sysName",     "undefined"},
     {"dnsName",     "undefined"},
     {"mailAlertgroupL1", ""},
