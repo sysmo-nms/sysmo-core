@@ -72,8 +72,7 @@ fill_test(N,Parent) ->
         {"snmp_retries",  1}
     ],
     Prop = [
-        {"ip",          "192.168.0.5"},
-        {"ipVersion",   "v4"},
+        {"host",          "192.168.0.5"},
         {"dnsName",     "undefined"},
         {"sysName",     "undefined"}
     ],

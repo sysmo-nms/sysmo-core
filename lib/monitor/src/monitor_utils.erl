@@ -56,12 +56,10 @@ init_target_snmp(Target) ->
             SnmpRetries     = proplists:get_value("snmp_retries",     SysProp),
 
             Props = Target#target.properties,
-            IpVersion = proplists:get_value("ipVersion", Props),
-            Ip        = proplists:get_value("ip",        Props),
+            Host = proplists:get_value("host", Props),
 
             SnmpArgs = [
-                {ip_address,        Ip},
-                {ip_version,        IpVersion},
+                {host,              Host},
                 {timeout,           SnmpTimeout},
                 {port,              SnmpPort},
                 {snmp_version,      SnmpVersion},

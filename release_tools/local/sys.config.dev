@@ -70,7 +70,7 @@
         [
             {start_dist_ac, false},
             {inet_dist_listen_min, 9000},
-            {inet_dist_listen_max, 9005}
+            {inet_dist_listen_max, 9999}
             %{error_logger, {file, "var/log/error_logger.log"}}
         ]
     },

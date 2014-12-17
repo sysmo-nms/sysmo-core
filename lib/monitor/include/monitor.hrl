@@ -8,8 +8,7 @@
 -define(PROBES_STATE,   ets_probes_state).
 -define(DEFAULT_PERM_CONF, #perm_conf{read=["admin"],write=["admin"]}).
 -define(DEFAULT_TARGET_PROPERTIES, [
-    {"ip",          "undefined"},
-    {"ipVersion",   "undefined"},
+    {"host",        "undefined"},
     {"sysName",     "undefined"},
     {"dnsName",     "undefined"},
     {"mailAlertgroupL1", ""},

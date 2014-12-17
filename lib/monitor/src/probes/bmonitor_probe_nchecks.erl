@@ -54,11 +54,8 @@ init(Probe) ->
     % "ipVersion" property.
     case proplists:lookup("host", Args) of
         none ->
-            Args1   = proplists:delete("ipVersion", Args),
-            TargIp  = proplists:get_value("ip", TargetProp),
-            TargIpV = proplists:lookup("ipVersion", TargetProp),
-            NewProp = [{"host", TargIp}, TargIpV],
-            NewArgs = lists:append([NewProp,Args1]);
+            TargHost = proplists:lookup("host", TargetProp),
+            NewArgs  = [TargHost|Args];
         _ ->
             NewArgs = Args
     end,
