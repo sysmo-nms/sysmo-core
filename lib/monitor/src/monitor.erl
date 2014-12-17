@@ -27,6 +27,8 @@
     target_new/2,
     target_delete/1,
 
+    new_standard_snmp_jobs/1,
+
     job_new/2,
     job_delete/1,
     probe_new/2,
@@ -54,6 +56,10 @@ probe_delete(ProbeName) ->
 job_delete(JobName) ->
     monitor_data_master:delete(job,JobName).
 
+new_standard_snmp_jobs(Target) ->
+    job_new({internal, update_snmp_system_info}, Target),
+    job_new({internal, update_snmp_if_aliases},  Target).
+
 fill_test(N) ->
     fill_test(N, "self").
 fill_test(0,_) -> ok;
@@ -78,8 +84,8 @@ fill_test(N,Parent) ->
     ],
 
     K = target_new(SysProp, Prop),
-    Ping = probe_new({nchecks, icmp}, K),
-    Snmp = probe_new({snmp, walk_table}, K),
+    Ping = probe_new({nchecks, "icmp", []}, K),
+    Snmp = probe_new({snmp, if_perfs, [1,2,3]}, K),
     dependency_new(Ping, Parent),
     dependency_new(Snmp, Parent),
     job_new({internal, update_snmp_system_info}, K),
@@ -121,14 +127,14 @@ dependency_new(Probe, Depend) ->
 %%-----------------------------------------------------------------------------
 %% PROBE API
 %%-----------------------------------------------------------------------------
-probe_new({nchecks, icmp}, Target) ->
+probe_new({nchecks, "icmp", Args}, Target) ->
     Probe = #probe{
         belong_to   = Target,
         description = "ICMP:Echo presence",
         monitor_probe_mod = bmonitor_probe_nchecks,
         monitor_probe_conf = #nchecks_probe_conf{
             function    = icmp,
-            args        = []
+            args        = Args
         },
         inspectors  = [
             #inspector{
@@ -139,8 +145,11 @@ probe_new({nchecks, icmp}, Target) ->
     },
     monitor_data_master:new(probe, Probe);
 
-probe_new({snmp, walk_table}, Target) ->
+probe_new({snmp, if_perfs, Indexes}, Target) ->
     {RrdCreate, RrdUpdate, RrdGraphs} = get_rrd_template(),
+
+    IndexesFiles = [{Index,lists:concat(["index",Index,".rrd"])} || Index <- Indexes],
+    io:format("indexes: ~p~n",[IndexesFiles]),
     Probe = #probe{
         belong_to   = Target,
         description = "SNMP:Interfaces performances",
@@ -174,11 +183,12 @@ probe_new({snmp, walk_table}, Target) ->
                     {type,                  snmp_table},
                     {rrd_create,            RrdCreate},
                     {row_index_to_rrd_file,
-                        [
-                            {1, "index1.rrd"},
-                            {2, "index2.rrd"},
-                            {3, "index3.rrd"}
-                        ]
+                        %[
+                            %{1, "index1.rrd"},
+                            %{2, "index2.rrd"},
+                            %{3, "index3.rrd"}
+                        %]
+                        IndexesFiles
                     },
                     {rrd_update,            RrdUpdate},
                     {rrd_graph,             RrdGraphs},

@@ -65,9 +65,25 @@ Prop ::= SEQUENCE {
     val PrintableString
 }
 
+ElementInterfaceQuery ::= SEQUENCE {
+    sysProperties   SEQUENCE OF Prop,
+    properties      SEQUENCE OF Prop
+}
+
 CreateTargetQuery ::= SEQUENCE {
     sysProperties   SEQUENCE OF Prop,
     properties      SEQUENCE OF Prop
+}
+
+CreateNchecksQuery ::= SEQUENCE {
+    target  PrintableString,
+    type    PrintableString,
+    conf    SEQUENCE OF Prop
+}
+
+CreateIfPerfQuery ::= SEQUENCE {
+    target      PrintableString,
+    interfaces  SEQUENCE OF INTEGER
 }
 
 ExtendedQuery ::= CHOICE {
@@ -75,13 +91,16 @@ ExtendedQuery ::= CHOICE {
     snmpElementCreateQuery  [1] SnmpElementCreateQuery,
 
     createTargetQuery       [10] CreateTargetQuery,
+    elementInterfaceQuery   [11] ElementInterfaceQuery,
+    createNchecksQuery      [12] CreateNchecksQuery,
+    createIfPerfQuery       [13] CreateIfPerfQuery,
+
 
     --probes control
     queryProbeForce     [20] QueryProbeForce,
     queryProbeSuspend   [21] QueryProbeSuspend,
     queryProbeStart     [22] QueryProbeStart,
     queryProbeDelete    [23] QueryProbeDelete
-
 }
 
 

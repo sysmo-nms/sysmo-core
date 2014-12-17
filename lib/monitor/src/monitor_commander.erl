@@ -20,6 +20,8 @@
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 % @private
 -module(monitor_commander).
+-include("include/monitor_snmp.hrl").
+-include("include/monitor.hrl").
 -behaviour(supercast_commander).
 -behaviour(gen_server).
 
@@ -47,11 +49,53 @@ handle_cast({{extendedQueryFromClient,
         {_, QueryId, {createTargetQuery, {_,SysProp,Prop}}}}, CState}, S) ->
     NProp    = [{Key,Val} || {'Prop', Key, Val} <- Prop],
     NSysProp = [{Key,Val} || {'Prop', Key, Val} <- SysProp],
-    TargetId = monitor:target_new(NSysProp, NProp),
+    NSysProp2 = sysprop_guard(NSysProp),
+    TargetId = monitor:target_new(NSysProp2, NProp),
     ReplyPDU = monitor_pdu:'PDU-MonitorPDU-fromServer-extendedReply'(
         QueryId, true, true, {string, TargetId}),
     supercast_channel:unicast(CState, [ReplyPDU]),
     {noreply, S};
+
+handle_cast({{extendedQueryFromClient,
+        {_, QueryId, {createNchecksQuery, {_,Target,Type,Props}}}}, CState}, S) ->
+    Args = [{Key, Val} || {'Prop', Key, Val} <- Props],
+    ProbeId = monitor:probe_new({nchecks,Type,Args}, Target),
+    ReplyPDU = monitor_pdu:'PDU-MonitorPDU-fromServer-extendedReply'(
+        QueryId, true, true, {string, ProbeId}),
+    supercast_channel:unicast(CState, [ReplyPDU]),
+    {noreply, S};
+
+handle_cast({{extendedQueryFromClient,
+        {_, QueryId, {createIfPerfQuery, {_,Target, Ifs}}}}, CState}, S) ->
+    ProbeId = monitor:probe_new({snmp, if_perfs,Ifs}, Target),
+    _ = monitor:new_standard_snmp_jobs(Target),
+    ReplyPDU = monitor_pdu:'PDU-MonitorPDU-fromServer-extendedReply'(
+        QueryId, true, true, {string, ProbeId}),
+    supercast_channel:unicast(CState, [ReplyPDU]),
+    {noreply, S};
+
+handle_cast({{extendedQueryFromClient,
+        {_, QueryId, {elementInterfaceQuery, {_,SysProp,Prop}}}}, CState}, S) ->
+    NProp    = [{Key,Val} || {'Prop', Key, Val} <- Prop],
+    NSysProp = [{Key,Val} || {'Prop', Key, Val} <- SysProp],
+
+    case walk_ifTable(NProp, NSysProp) of
+        {ok, Val} ->
+            io:format("val is: ~p~n",[Val]),
+            ReplyPDU = monitor_pdu:'PDU-MonitorPDU-fromServer-extendedReply-snmpInterfacesInfo'(
+                QueryId, true, true, Val),
+            supercast_channel:unicast(CState, [ReplyPDU]);
+        {error, timeout} ->
+            ReplyPDU = monitor_pdu:'PDU-MonitorPDU-fromServer-extendedReply'(
+                QueryId, false, true, {string, "timeout"}),
+            supercast_channel:unicast(CState, [ReplyPDU]);
+        {error, Reason} ->
+            ReplyPDU = monitor_pdu:'PDU-MonitorPDU-fromServer-extendedReply'(
+                QueryId, false, true, {string, Reason}),
+            supercast_channel:unicast(CState, [ReplyPDU])
+    end,
+    {noreply, S};
+
 
 handle_cast(R, S) ->
     error_logger:info_msg("unknown cast for command ~p ~p ~p~n", [?MODULE, ?LINE, R]),
@@ -65,3 +109,70 @@ handle_call(_R, _F, S)  -> {noreply, S}.
 handle_info(_I, S)      -> {noreply, S}.
 terminate(_R, _S)       -> normal.
 code_change(_O, S, _E)  -> {ok, S}.
+
+
+
+
+sysprop_guard(NSysProp) ->
+    case proplists:get_value("snmp_version", NSysProp) of
+        undefined ->
+            NSysProp;
+        _ ->
+            build_snmpConf(NSysProp)
+    end.
+
+build_snmpConf(NSysProp) ->
+    io:format("~p~n",[NSysProp]),
+    Default = ?DEFAULT_SNMP_PROPERTIES,
+    build_snmpConf(NSysProp, Default).
+build_snmpConf([], Default) -> Default;
+build_snmpConf([{"snmp_port", Val}|R], Default) ->
+    Port = erlang:list_to_integer(Val),
+    NDefault = lists:keystore("snmp_port", 1, Default, {"snmp_port", Port}),
+    build_snmpConf(R, NDefault);
+build_snmpConf([{"snmp_timeout", Val}|R], Default) ->
+    Timeout = erlang:list_to_integer(Val),
+    NDefault = lists:keystore("snmp_timeout", 1, Default, {"snmp_timeout", Timeout}),
+    build_snmpConf(R, NDefault);
+build_snmpConf([{Key,Val}|R], Default) ->
+    NDefault = lists:keystore(Key, 1, Default, {Key, Val}),
+    build_snmpConf(R, NDefault).
+
+walk_ifTable(Props,SProps) ->
+    PortString = proplists:get_value("snmp_port", SProps),
+    Port = erlang:list_to_integer(PortString),
+    TimeoutString = proplists:get_value("snmp_timeout", SProps),
+    Timeout = erlang:list_to_integer(TimeoutString),
+    SnmpVer = proplists:get_value("snmp_version", SProps),
+    Community = proplists:get_value("snmp_community", SProps, "public"),
+    SecLevel = proplists:get_value("snmp_seclevel", SProps, "noAuthNoPriv"),
+    SecName = proplists:get_value("snmp_usm_user", SProps, "undefined"),
+    AuthProto = proplists:get_value("snmp_authproto", SProps, "MD5"),
+    AuthKey = proplists:get_value("snmp_authkey", SProps, "undefined"),
+    PrivProto = proplists:get_value("snmp_privproto", SProps, "DES"),
+    PrivKey = proplists:get_value("snmp_privkey", SProps, "undefined"),
+    Host = proplists:get_value("host", Props),
+
+    case snmpman:register_element(?TMP_ELEMENT,
+        [
+            {host, Host},
+            {snmp_version, SnmpVer},
+            {security_level, SecLevel},
+            {port, Port},
+            {timeout, Timeout},
+            {community, Community},
+            {priv_proto, PrivProto},
+            {priv_key, PrivKey},
+            {auth_proto, AuthProto},
+            {auth_key, AuthKey},
+            {security_name, SecName}
+        ]) of
+        ok ->
+            R = snmpman:walk_table(?TMP_ELEMENT, ?IF_INFO),
+            snmpman:unregister_element(?TMP_ELEMENT),
+            R;
+        {error, Error} ->
+            {error, Error}
+    end.
+
+

@@ -15,9 +15,23 @@
     {"mailAlertgroupL1", ""},
     {"mailAlertgroupL2", ""},
     {"mailAlertEscalationAfter", "1h"},
-    {"longitude", 0.0},
-    {"latitude",  0.0},
+    {"longitude", "0.0"},
+    {"latitude",  "0.0"},
     {"type", "computer"}
+]).
+
+-define(DEFAULT_SNMP_PROPERTIES, [
+    {"snmp_port",     161},
+    {"snmp_version",  "2c"},
+    {"snmp_seclevel", "noAuthNoPriv"},
+    {"snmp_community","public"},
+    {"snmp_usm_user", "undefined"},
+    {"snmp_authkey",  "undefined"},
+    {"snmp_authproto","MD5"},
+    {"snmp_privkey",  "undefined"},
+    {"snmp_privproto","DES"},
+    {"snmp_timeout",  2500},
+    {"snmp_retries",  1}
 ]).
 
 -record(dependency, {

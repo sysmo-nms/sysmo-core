@@ -30,8 +30,35 @@
     'PDU-MonitorPDU-fromServer-infoProbe-create'/1,
     'PDU-MonitorPDU-fromServer-infoProbe-update'/1,
     'PDU-MonitorPDU-fromServer-probeReturn'/4,
-    'PDU-MonitorPDU-fromServer-extendedReply'/4
+    'PDU-MonitorPDU-fromServer-extendedReply'/4,
+    'PDU-MonitorPDU-fromServer-extendedReply-snmpInterfacesInfo'/4
 ]).
+
+
+'PDU-MonitorPDU-fromServer-extendedReply-snmpInterfacesInfo'(QueryId,Status,Last,Info) ->
+    {table, TableRows} = Info,
+    IfTable = build_ifTable(TableRows, []),
+    {modMonitorPDU,
+        {fromServer,
+            {extendedReply,
+                {'ExtendedReply',
+                    QueryId,
+                    Status,
+                    Last,
+                    {snmpInterfacesInfo, IfTable}
+                }
+            }
+        }
+    }.
+
+build_ifTable([], Acc) ->
+    lists:reverse(Acc);
+build_ifTable([H|T], Acc) ->
+    {table_row, IfIndex, IfDescr, IfType, IfMtu, IfSpeed, IfPhysAddress,
+        IfAdminStatus, IfOperStatus, IfLastChange} = H,
+    TableRow = {'SnmpInterfaceInfo', IfIndex, IfDescr, IfType, IfMtu,
+        IfSpeed, IfPhysAddress, IfAdminStatus, IfOperStatus, IfLastChange},
+    build_ifTable(T, [TableRow|Acc]).
 
 
 'PDU-MonitorPDU-fromServer-extendedReply'(QueryId,Status,Last,Info) ->
