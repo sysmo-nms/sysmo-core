@@ -27,9 +27,8 @@
     target_new/2,
     target_delete/1,
 
-    new_standard_snmp_jobs/1,
-
     job_new/2,
+    job_fire/1,
     job_delete/1,
     probe_new/2,
     probe_delete/1,
@@ -55,10 +54,6 @@ probe_delete(ProbeName) ->
 
 job_delete(JobName) ->
     monitor_data_master:delete(job,JobName).
-
-new_standard_snmp_jobs(Target) ->
-    job_new({internal, update_snmp_system_info}, Target),
-    job_new({internal, update_snmp_if_aliases},  Target).
 
 fill_test(N) ->
     fill_test(N, "self").
@@ -116,6 +111,9 @@ job_new({internal, Function}, Target) ->
     },
     monitor_data_master:new(job, J).
 
+
+job_fire(JobId) ->
+    equartz:fire_now(JobId).
 
 %%-----------------------------------------------------------------------------
 %% PROBE API

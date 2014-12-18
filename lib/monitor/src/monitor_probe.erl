@@ -121,6 +121,17 @@ handle_cast(continue_init, Probe) ->
         status           = Probe#probe.status
     },
     monitor_data_master:set_probe_state(ES),
+    % BEGIN partial return for clients
+    PartialReturn = partial_pr(ES),
+    MilliRem = read_timer(ES#ets_state.tref),
+    Pdu = monitor_pdu:'PDU-MonitorPDU-fromServer-probeReturn'(
+        PartialReturn,
+        ES#ets_state.target_name,
+        ES#ets_state.name,
+        MilliRem
+    ),
+    supercast_channel:emit(?MASTER_CHANNEL, {ES#ets_state.permissions, Pdu}),
+    % END partial return for clients
     {noreply, #state{name=Probe#probe.name}};
 
 handle_cast({sync_request, CState}, S) ->
@@ -273,3 +284,12 @@ read_timer(TRef) ->
 maybe_write_probe(#probe{name=_}=Probe, #probe{name=_}=Probe) -> ok;
 maybe_write_probe(_,Probe2) ->
     monitor_data_master:update(probe, Probe2).
+
+partial_pr(ES) ->
+    #probe_return{ 
+        status          = ES#ets_state.status,
+        original_reply  = "",
+        timestamp       = 0,
+        key_vals        = []
+    }.
+

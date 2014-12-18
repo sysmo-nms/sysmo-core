@@ -51,6 +51,14 @@ handle_cast({{extendedQueryFromClient,
     NSysProp = [{Key,Val} || {'Prop', Key, Val} <- SysProp],
     NSysProp2 = sysprop_guard(NSysProp),
     TargetId = monitor:target_new(NSysProp2, NProp),
+    case snmp_enabled(NSysProp2) of
+        true ->
+            SInfoJob  = monitor:job_new({internal, update_snmp_system_info}, TargetId),
+            IfInfoJob = monitor:job_new({internal, update_snmp_if_aliases},  TargetId),
+            monitor:job_fire(SInfoJob),
+            monitor:job_fire(IfInfoJob);
+        false -> ok
+    end,
     ReplyPDU = monitor_pdu:'PDU-MonitorPDU-fromServer-extendedReply'(
         QueryId, true, true, {string, TargetId}),
     supercast_channel:unicast(CState, [ReplyPDU]),
@@ -68,7 +76,6 @@ handle_cast({{extendedQueryFromClient,
 handle_cast({{extendedQueryFromClient,
         {_, QueryId, {createIfPerfQuery, {_,Target, Ifs}}}}, CState}, S) ->
     ProbeId = monitor:probe_new({snmp, if_perfs,Ifs}, Target),
-    _ = monitor:new_standard_snmp_jobs(Target),
     ReplyPDU = monitor_pdu:'PDU-MonitorPDU-fromServer-extendedReply'(
         QueryId, true, true, {string, ProbeId}),
     supercast_channel:unicast(CState, [ReplyPDU]),
@@ -175,4 +182,8 @@ walk_ifTable(Props,SProps) ->
             {error, Error}
     end.
 
-
+snmp_enabled(SProps) ->
+    case proplists:get_value("snmp_version", SProps) of
+        undefined   -> false;
+        _           -> true
+    end.
