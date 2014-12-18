@@ -40,26 +40,6 @@ SnmpElementCreateQuery ::= SEQUENCE {
     ifSelection   SEQUENCE OF INTEGER
 }
 
-QueryProbeForce ::= SEQUENCE {
-    foo [0] INTEGER,
-    bar [1] INTEGER
-}
-
-QueryProbeSuspend ::= SEQUENCE {
-    foo [0] INTEGER,
-    bar [1] INTEGER
-}
-
-QueryProbeStart ::= SEQUENCE {
-    foo [0] INTEGER,
-    bar [1] INTEGER
-}
-
-QueryProbeDelete ::= SEQUENCE {
-    probe [0] PrintableString
-}
-
-
 Prop ::= SEQUENCE {
     key PrintableString,
     val PrintableString
@@ -95,12 +75,10 @@ ExtendedQuery ::= CHOICE {
     createNchecksQuery      [12] CreateNchecksQuery,
     createIfPerfQuery       [13] CreateIfPerfQuery,
 
+    deleteProbeQuery        [20] PrintableString,
+    deleteTargetQuery       [21] PrintableString,
 
-    --probes control
-    queryProbeForce     [20] QueryProbeForce,
-    queryProbeSuspend   [21] QueryProbeSuspend,
-    queryProbeStart     [22] QueryProbeStart,
-    queryProbeDelete    [23] QueryProbeDelete
+    forceProbeQuery         [30] PrintableString
 }
 
 

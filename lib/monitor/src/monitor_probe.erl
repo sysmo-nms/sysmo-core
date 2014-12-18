@@ -49,7 +49,8 @@
 % API
 -export([
     triggered_return/2,
-    shutdown/1
+    shutdown/1,
+    force/1
 ]).
 
 -record(state, {
@@ -92,7 +93,20 @@ triggered_return(PidName, CState) ->
     gen_server:cast({via, supercast_registrar, PidName}, {triggered_return, CState}).
 
 shutdown(PidName) ->
-    gen_server:call({via, supercast_registrar, PidName}, shut_it_down).
+    case supercast_registrar:whereis_name(PidName) of
+        undefined ->
+            ok;
+        Pid ->
+            gen_server:call(Pid, shut_it_down)
+    end.
+
+force(PidName) ->
+    case supercast_registrar:whereis_name(PidName) of
+        undefined ->
+            ok;
+        Pid ->
+            gen_server:cast(Pid, force)
+    end.
 
 
 %%----------------------------------------------------------------------------
@@ -164,9 +178,25 @@ handle_cast({triggered_return, CState}, S) ->
 
     {noreply, S};
 
+handle_cast(force, S) ->
+    ES  = monitor_data_master:get_probe_state(S#state.name),
+    case erlang:cancel_timer(ES#ets_state.tref) of
+        false -> ok;
+        _ ->
+            TRef = initiate_start_sequence(undefined, now),
+            monitor_data_master:set_probe_state(ES#ets_state{tref=TRef}),
+            PartialReturn = partial_pr(ES),
+            Pdu = monitor_pdu:'PDU-MonitorPDU-fromServer-probeReturn'(
+                PartialReturn,
+                ES#ets_state.target_name,
+                ES#ets_state.name,
+                500
+            ),
+            supercast_channel:emit(?MASTER_CHANNEL, {ES#ets_state.permissions, Pdu})
+    end,
+    {noreply, S};
 handle_cast(_Cast, S) ->
     {noreply, S}.
-
 
 handle_call(shut_it_down, _F, #state{name=Name} = S) ->
     supercast_channel:delete(Name),

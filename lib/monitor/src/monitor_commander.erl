@@ -82,6 +82,30 @@ handle_cast({{extendedQueryFromClient,
     {noreply, S};
 
 handle_cast({{extendedQueryFromClient,
+        {_, QueryId, {deleteProbeQuery, ProbeId}}}, CState}, S) ->
+    monitor:probe_delete(ProbeId),
+    ReplyPDU = monitor_pdu:'PDU-MonitorPDU-fromServer-extendedReply'(
+        QueryId, true, true, {string, ProbeId}),
+    supercast_channel:unicast(CState, [ReplyPDU]),
+    {noreply, S};
+
+handle_cast({{extendedQueryFromClient,
+        {_, QueryId, {deleteTargetQuery, TargetId}}}, CState}, S) ->
+    monitor:target_delete(TargetId),
+    ReplyPDU = monitor_pdu:'PDU-MonitorPDU-fromServer-extendedReply'(
+        QueryId, true, true, {string, TargetId}),
+    supercast_channel:unicast(CState, [ReplyPDU]),
+    {noreply, S};
+
+handle_cast({{extendedQueryFromClient,
+        {_, QueryId, {forceProbeQuery, ProbeId}}}, CState}, S) ->
+    monitor_probe:force(ProbeId),
+    ReplyPDU = monitor_pdu:'PDU-MonitorPDU-fromServer-extendedReply'(
+        QueryId, true, true, {string, ProbeId}),
+    supercast_channel:unicast(CState, [ReplyPDU]),
+    {noreply, S};
+
+handle_cast({{extendedQueryFromClient,
         {_, QueryId, {elementInterfaceQuery, {_,SysProp,Prop}}}}, CState}, S) ->
     NProp    = [{Key,Val} || {'Prop', Key, Val} <- Prop],
     NSysProp = [{Key,Val} || {'Prop', Key, Val} <- SysProp],
