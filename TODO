@@ -6,10 +6,17 @@
 #############
 # OPENSYSMO #
 #############
-- TODO: dashboard, weathermap style maps from monitor/rrds
-- TODO: standard job scheduler API (example: sauvegarde conf switch)
+- TODO:
+    . standard job scheduler API (example: sauvegarde conf switch)
+    OU
+    . TieJob (sauvegarde effectued sur un autre serveur)
 - server GNU
-- client CPAL
+
+############################
+# SYSMO ENTERPRISE EDITION #
+############################
+- TODO: dashboard, weathermap style maps from monitor/rrds
+- client proprio
 
 ##########
 # WSYSMO #
@@ -27,6 +34,15 @@
 - TODO: CMI (remplace NRPE/ZABBIX agent)
 - TODO: Advanced SNMP conf (custom snmp/rrd conf)
 - DONE: multiple permissions/multi users
+
+##########
+# CLIENT #
+##########
+- TODO: timeline/last events/events log
+- TODO: dependences
+- TODO: dashboard
+
+
 
 ### MAYBE
 ITIL pack with linked modules. Every movement in the SI is tracked and logged
