@@ -27,11 +27,8 @@ export MODS = supercast monitor errd snmpman noctopus yaws ini nchecks equartz p
 .PHONY: all compile test doc clean var-clean rel-clean start \
 	unix-release unix-local-release windows-release windows-local-release
 
-all: compile web
+all: compile
 
-web:
-	rm -rf var/yaws/docroot/nchecks
-	cp -R lib/nchecks/priv/defs/ var/yaws/docroot/nchecks
 
 compile:
 	$(MAKE) -C lib
@@ -50,7 +47,7 @@ var-clean:
 	rm -rf var/yaws/log/*.log
 	rm -rf var/yaws/log/*.access
 	rm -rf var/yaws/log/*.auth
-	rm -rf var/yaws/docroot/*/
+	rm -rf var/yaws/docroot/tmp-*/
 	rm -rf var/monitor/targets.dets
 	rm -rf var/monitor_events
 	rm -f var/snmp/snmpm_config_db
@@ -69,6 +66,7 @@ rel-clean:
 	rm -f $(REL_NAME).script
 	rm -f $(REL_NAME).boot
 	rm -f sys.config
+	rm -f var/yaws/docroot/nchecks/*.xml
 	rm -f $(REL_NAME).tar
 	rm -f $(REL_NAME)-$(REL_VERSION).tar.gz
 	rm -rf $(REL_NAME)-$(REL_VERSION).win32
@@ -115,6 +113,7 @@ ERL_UNTAR   = '\
 # WINDOWS RELEASES BEGIN #
 ##########################
 windows-local-release: compile $(REL_NAME).script
+	cp lib/nchecks/priv/defs/en/* var/yaws/docroot/nchecks/
 	cp release_tools/local/sys.config.dev ./sys.config
 	chmod -w sys.config
 
@@ -141,6 +140,7 @@ windows-release: var-clean rel-clean compile
 # UNIX RELEASES BEGIN #
 #######################
 unix-local-release: compile $(REL_NAME).script
+	cp lib/nchecks/priv/defs/en/* var/yaws/docroot/nchecks/
 	cp release_tools/local/sys.config.dev sys.config
 	chmod -w sys.config
 

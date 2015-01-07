@@ -43,7 +43,7 @@ lib/nchecks
 lib/equartz
 lib/pping
 
-var/yaws/docroot/*
+var/yaws/docroot/tmp-*
+var/yaws/docroot/nchecks/*.xml
 var/yaws/log/*
-!var/yaws/docroot/INFO
 !var/yaws/log/INFO
