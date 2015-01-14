@@ -47,3 +47,4 @@ var/yaws/docroot/tmp-*
 var/yaws/docroot/nchecks/*.xml
 var/yaws/log/*
 !var/yaws/log/INFO
+lib/fcgisrv/priv/noctopus-webif/

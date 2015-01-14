@@ -21,7 +21,8 @@
                 errd,
                 supercast,
                 nchecks,
-                equartz
+                equartz,
+                fcgisrv
             ]
         },
         {applications, 

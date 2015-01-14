@@ -45,6 +45,8 @@ configure_yaws() ->
         {port, Port},
         {servername, "supercast"},
         {listen, Listen},
+        {appmods, [{"/interface", mod_pyfcgi}]},
+        {fcgi_app_server, {"localhost",8777}},
         {docroot, DocRoot},
         {deflate_options,
             {deflate,

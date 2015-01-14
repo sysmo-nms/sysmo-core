@@ -162,6 +162,11 @@
                 ]
             }
         ]
+    },
+    {fcgisrv,
+        [
+            {executable, "lib/fcgisrv/priv/noctopus-webif/sysmo_web_if.fcgi"}
+        ]
     }
 
 ].

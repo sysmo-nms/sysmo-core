@@ -22,7 +22,7 @@ endif
 export MAKE        = /usr/bin/make
 export REL_NAME    = noctopus
 export REL_VERSION = 0.2.1
-export MODS = supercast monitor errd snmpman noctopus yaws ini nchecks equartz pping
+export MODS = supercast monitor errd snmpman noctopus yaws ini nchecks equartz pping fcgisrv
 
 .PHONY: all compile test doc clean var-clean rel-clean start \
 	unix-release unix-local-release windows-release windows-local-release
