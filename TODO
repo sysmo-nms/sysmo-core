@@ -11,6 +11,7 @@
     OU
     . TieJob (sauvegarde effectued sur un autre serveur)
 - server GNU
+- couchdb database
 
 ############################
 # SYSMO ENTERPRISE EDITION #
