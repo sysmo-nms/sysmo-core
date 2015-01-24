@@ -479,15 +479,15 @@ the code written by Noctopus are Copyright (c) 2012-2015 Sebastien Serre
 
 EXHIBIT B. Attribution Information
 
-    Attribution Copyright Notice: Copyright (c) 2012-2015 Sebastien Serre
-<sserre.bx@gmail.com>. All Rights Reserved.
+    Attribution Copyright Notice: Copyright (c) 2012-2015 Noctopus
+Sebastien Serre <sserre.bx@gmail.com>. All Rights Reserved.
 
-    Attribution Phrase (not exceeding 10 words): Powered by noctopus
+    Attribution Phrase (not exceeding 10 words): Powered by Noctopus
 
-    Attribution URL: http://www.noctopus.com
+    Attribution URL: http://www.noctopus.io
 
     Graphic Image as provided in the Covered Code, if any.
 
-    Display of Attribution Information is [required/not required] in Larger 
+    Display of Attribution Information is required in Larger 
 Works which are defined in the CPAL as a work which combines Covered Code or 
 portions thereof with code not governed by the terms of the CPAL.
