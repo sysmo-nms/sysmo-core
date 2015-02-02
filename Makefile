@@ -11,12 +11,12 @@ ifeq ($(CYGW), CYGWIN)
 else
     RELEASE        = unix-release
     LOCAL_RELEASE  = unix-local-release
-    export ERL     = /opt/erlang_otp_17.1/bin/erl
-    export ERLC    = /opt/erlang_otp_17.1/bin/erlc -Werror
-    export ERLCY   = /opt/erlang_otp_17.1/bin/erlc
-    export ASNC    = /opt/erlang_otp_17.1/bin/erlc -Werror -bber
-    export JAVA    = /opt/jdk1.8.0_25/bin/java
-    export JAVAC   = /opt/jdk1.8.0_25/bin/javac
+    export ERL     = /opt/erlang_otp_17.4/bin/erl
+    export ERLC    = /opt/erlang_otp_17.4/bin/erlc -Werror
+    export ERLCY   = /opt/erlang_otp_17.4/bin/erlc
+    export ASNC    = /opt/erlang_otp_17.4/bin/erlc -Werror -bber
+    export JAVA    = /opt/jdk1.8.0_31/bin/java
+    export JAVAC   = /opt/jdk1.8.0_31/bin/javac
 endif
 
 export MAKE        = /usr/bin/make
