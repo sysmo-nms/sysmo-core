@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<snmp_def name="snmp_interfaces_performances">
+    <descr>Monitor interfaces performances on an SNMP aware element.</descr>
+    <helper action="walk" type="table">
+        <table_elements>
+            <oid>1.3.6.1.2.1.2.2.1.1</oid>
+            <oid>1.3.6.1.2.1.2.2.1.2</oid>
+            <oid>1.3.6.1.2.1.2.2.1.3</oid>
+            <oid>1.3.6.1.2.1.2.2.1.4</oid>
+            <oid>1.3.6.1.2.1.2.2.1.5</oid>
+            <oid>1.3.6.1.2.1.2.2.1.6</oid>
+            <oid>1.3.6.1.2.1.2.2.1.7</oid>
+            <oid>1.3.6.1.2.1.2.2.1.8</oid>
+            <oid>1.3.6.1.2.1.2.2.1.8</oid>
+            <oid>1.3.6.1.2.1.2.2.1.9</oid>
+        </table_elements>
+        <return_conf sort_id="3" select="all"/>
+    </helper_process>
+    <build action="walk" type="table" index="1.3.6.1.2.1.2.2.1.1">
+        <table_elements>
+            <oid>1.3.6.1.2.1.2.2.1.1</oid>
+            <oid>1.3.6.1.2.1.2.2.1.10</oid>
+            <oid>1.3.6.1.2.1.2.2.1.11</oid>
+            <oid>1.3.6.1.2.1.2.2.1.12</oid>
+            <oid>1.3.6.1.2.1.2.2.1.14</oid>
+            <oid>1.3.6.1.2.1.2.2.1.16</oid>
+            <oid>1.3.6.1.2.1.2.2.1.17</oid>
+            <oid>1.3.6.1.2.1.2.2.1.18</oid>
+            <oid>1.3.6.1.2.1.2.2.1.20</oid>
+        </table_elements>
+        <storage type="table" file_sub="index<INDEX>.rrd">
+                <rrd_update>--template octetsIn:octetsOut:ucastPkIn:nucastPkIn:errorsIn:ucastPkOut:nucastPkOut:errorsOut</rrd_update>
+                <rrd_update_order>
+                    <element id=4/>
+                    <element id=8/>
+                    <element id=5/>
+                    <element id=6/>
+                    <element id=7/>
+                    <element id=9/>
+                    <element id=10/>
+                    <element id=11/>
+                </rrd_update_order>
+                <rrd_create>--step 300 --no-overwrite DS:octetsIn:COUNTER:650:U:U DS:octetsOut:COUNTER:650:U:U DS:ucastPkIn:COUNTER:650:U:U DS:nucastPkIn:COUNTE-R:650:U:U DS:errorsIn:COUNTER:650:U:U DS:ucastPkOut:COUNTER:650:U:U DS:nucastPkOut:COUNTER:650:U:U DS:errorsOut:COUNTER:650:U:U RRA:AVERAGE:0.5:1:1200 RRA:AVERAGE:0.5:12:2400</rrd_create>
+                <rrd_graphs>
+                    <graph name="Octets in and out">DEF:oIn=<FILE>:octetsIn:AVERAGE DEF:oOut=<FILE>:octetsOut:AVERAGE LINE1:oIn#3465A4 LINE2:oOut#CC0000</graph>
+                    <graph name="Errors in and out">DEF:errIn=<FILE>:errorsIn:AVERAGE DEF:errOut=<FILE>:errorsOut:AVERAGE LINE1:errIn#3465A4 LINE2:errOut#CC0000</graph>
+                    <graph name="Ucast Pk and Nucast Pk in and out">DEF:ucastIn=<FILE>:ucastPkIn:AVERAGE DEF:ucastOut=<FILE>:ucastPkOut:AVERAGE DEF:nucastIn=<FILE>:nucastPkIn:AVERAGE DEF:nucastOut=<FILE>:nucastPkOut:AVERAGE LINE1:ucastIn#3465A4 LINE2:ucastOut#CC0000 LINE3:nucastIn#ff0000 LINE4:nucastOut#00ff00</graph>
+                </rrd_graphs>
+        </storage>
+    </build>
+</snmp_def>

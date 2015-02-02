@@ -17,9 +17,6 @@ doc: $(MODS2)
 clean: $(MODS2)
 	@for i in $(MODS2); do $(MAKE) -C $$i clean; done
 
-snmpman:
-	@git clone git@github.com:ssbx/snmpman.git
-
 nchecks:
 	@git clone git@github.com:ssbx/nchecks.git
 
