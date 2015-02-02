@@ -1,0 +1,7 @@
+*.beam
+*.swp
+*.swo
+*.so
+*.rrd
+*.xml
+erl_crash.dump

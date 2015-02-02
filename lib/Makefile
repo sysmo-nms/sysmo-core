@@ -20,9 +20,6 @@ clean: $(MODS2)
 snmpman:
 	@git clone git@github.com:ssbx/snmpman.git
 
-errd:
-	@git clone git@github.com:ssbx/errd.git
-
 nchecks:
 	@git clone git@github.com:ssbx/nchecks.git
 
