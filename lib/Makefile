@@ -17,9 +17,6 @@ doc: $(MODS2)
 clean: $(MODS2)
 	@for i in $(MODS2); do $(MAKE) -C $$i clean; done
 
-pping:
-	@git clone git@github.com:ssbx/pping.git
-
 # yaws special begin
 $(REQUIRE_YAWS): yaws
 $(REQUIRE_YAWS): ERLC = $(ERLCY)

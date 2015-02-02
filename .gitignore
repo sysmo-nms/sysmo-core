@@ -37,8 +37,6 @@ noctopus.tar
 var/engineID.conf
 
 lib/yaws
-lib/pping
-
 var/yaws/docroot/tmp-*
 var/yaws/docroot/nchecks/*.xml
 var/yaws/log/*

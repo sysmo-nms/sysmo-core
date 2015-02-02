@@ -1,0 +1,2 @@
+Portable (Golang) ICMP echo/reply command line implementation.
+Should run on 32/64 bit arch on: OS-X, FreeBSD, Linux, Windows.
