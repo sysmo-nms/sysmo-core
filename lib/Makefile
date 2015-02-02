@@ -17,9 +17,6 @@ doc: $(MODS2)
 clean: $(MODS2)
 	@for i in $(MODS2); do $(MAKE) -C $$i clean; done
 
-nchecks:
-	@git clone git@github.com:ssbx/nchecks.git
-
 equartz:
 	@git clone git@github.com:ssbx/equartz.git
 

@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<check_def command="ncheck_tcp">
+    <path>/home/seb/src/noctopus/lib/nchecks/bin/ncheck_tcp</path>
+    <descr>this check do ...</descr>
+    <flags_def>
+        <flag_info name="all">
+            <usage>Expect all true</usage>
+            <default>false</default>
+            <role>optional</role>
+        </flag_info>
+        <flag_info name="critical">
+            <usage>responce delay critical</usage>
+            <default>6</default>
+            <role>optional</role>
+        </flag_info>
+        <flag_info name="delay">
+            <usage>second to wait before pollingive</usage>
+            <default>0</default>
+            <role>optional</role>
+        </flag_info>
+        <flag_info name="escape">
+            <usage>Escape string</usage>
+            <default></default>
+            <role>optional</role>
+        </flag_info>
+        <flag_info name="expect">
+            <usage>Can appear multiple times</usage>
+            <default>[]</default>
+            <role>optional</role>
+        </flag_info>
+        <flag_info name="host">
+            <usage>Host</usage>
+            <default></default>
+            <role>mandatory</role>
+        </flag_info>
+        <flag_info name="jail">
+            <usage>Hide tcp reply</usage>
+            <default>false</default>
+            <role>optional</role>
+        </flag_info>
+        <flag_info name="maxbytes">
+            <usage>Maximum bytes to receive</usage>
+            <default>1024</default>
+            <role>optional</role>
+        </flag_info>
+        <flag_info name="port">
+            <usage>Port</usage>
+            <default>0</default>
+            <role>mandatory</role>
+        </flag_info>
+        <flag_info name="quit">
+            <usage>Quit string</usage>
+            <default></default>
+            <role>optional</role>
+        </flag_info>
+        <flag_info name="refuse">
+            <usage>What if connexion refused</usage>
+            <default>crit</default>
+            <role>optional</role>
+        </flag_info>
+        <flag_info name="send">
+            <usage>Send string</usage>
+            <default></default>
+            <role>optional</role>
+        </flag_info>
+        <flag_info name="show-xml-check-def">
+            <usage>Show XML definition</usage>
+            <default>false</default>
+            <role>informational</role>
+        </flag_info>
+        <flag_info name="timeout">
+            <usage>Timeout</usage>
+            <default>0</default>
+            <role>mandatory</role>
+        </flag_info>
+        <flag_info name="use-ipv4">
+            <usage>Use ipv4</usage>
+            <default>false</default>
+            <role>optional</role>
+        </flag_info>
+        <flag_info name="use-ipv6">
+            <usage>Use ipv6</usage>
+            <default>false</default>
+            <role>optional</role>
+        </flag_info>
+        <flag_info name="version">
+            <usage>Show version</usage>
+            <default>false</default>
+            <role>informational</role>
+        </flag_info>
+        <flag_info name="warning">
+            <usage>responce delay warning</usage>
+            <default>3</default>
+            <role>optional</role>
+        </flag_info>
+    </flags_def>
+    <performances>
+        <perf_definition name="latency" type="single">
+            <description>Check duration time</description>
+            <unit_string>milliseconds</unit_string>
+            <unit_base>10</unit_base>
+            <val_min>0</val_min>
+            <val_max>20000</val_max>
+        </perf_definition>
+    </performances>
+</check_def>

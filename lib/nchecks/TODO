@@ -1,0 +1,19 @@
+- xml defs
+
+- tcp/perfs
+    . ssh
+    . ntp
+    . ldap
+    . smtp
+    . ftp
+    . http
+    . https
+    . pop
+    . nntp
+    . imap
+    . telnet
+ - ssl validity. To check TCP service using SSL, use checkTCP --with-ssl
+ - udp/perfs
+    . dhcp
+    . dns
+    . smb

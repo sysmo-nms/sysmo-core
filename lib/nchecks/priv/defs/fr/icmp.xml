@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<check_def check="icmp">
+    <descr>this check do blabla</descr>
+    <flags_def>
+        <flag_info name="critical">
+            <usage>responce delay critical in nanoseconds</usage>
+            <default>500000000</default>
+            <role>optional</role>
+        </flag_info>
+        <flag_info name="host">
+            <usage>Target</usage>
+            <default></default>
+            <role>mandatory</role>
+        </flag_info>
+        <flag_info name="interval">
+            <usage>Send packet interval</usage>
+            <default>80000</default>
+            <role>optional</role>
+        </flag_info>
+        <flag_info name="number">
+            <usage>Number of packets to send</usage>
+            <default>5</default>
+            <role>optional</role>
+        </flag_info>
+        <flag_info name="show-xml-check-def">
+            <usage>Show XML definition</usage>
+            <default>false</default>
+            <role>informational</role>
+        </flag_info>
+        <flag_info name="source">
+            <usage>From host or ip</usage>
+            <default></default>
+            <role>optional</role>
+        </flag_info>
+        <flag_info name="timeout">
+            <usage>Timeout</usage>
+            <default>0</default>
+            <role>mandatory</role>
+        </flag_info>
+        <flag_info name="ttl">
+            <usage>TTL on outgoing packets</usage>
+            <default>0</default>
+            <role>optional</role>
+        </flag_info>
+        <flag_info name="version">
+            <usage>Show version</usage>
+            <default>false</default>
+            <role>informational</role>
+        </flag_info>
+        <flag_info name="warning">
+            <usage>responce delay warning in nanoseconds</usage>
+            <default>200000000</default>
+            <role>optional</role>
+        </flag_info>
+    </flags_def>
+    <performances></performances>
+</check_def>
