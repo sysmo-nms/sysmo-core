@@ -11,7 +11,7 @@ ifeq ($(CYGW), CYGWIN)
 else
     RELEASE        = unix-release
     LOCAL_RELEASE  = unix-local-release
-    export ERL     = /opt/erlang_otp_17.4/bin/erl
+    export ERL     = /opt/erlang_otp_17.4/bin/erl -smp
     export ERLC    = /opt/erlang_otp_17.4/bin/erlc -Werror
     export ERLCY   = /opt/erlang_otp_17.4/bin/erlc
     export ASNC    = /opt/erlang_otp_17.4/bin/erlc -Werror -bber
