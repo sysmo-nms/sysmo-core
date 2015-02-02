@@ -1,0 +1,12 @@
+*.swp
+*.swo
+*.beam
+*.class
+*.jar
+*.swp
+*.swo
+*.html
+*.css
+*.png
+doc/edoc-info
+equartz.log

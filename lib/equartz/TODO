@@ -1,0 +1,3 @@
+- internal_job thread must wait for erlang side return
+- mail
+- other user jobs (job script dir)

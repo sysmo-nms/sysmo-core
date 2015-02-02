@@ -17,9 +17,6 @@ doc: $(MODS2)
 clean: $(MODS2)
 	@for i in $(MODS2); do $(MAKE) -C $$i clean; done
 
-equartz:
-	@git clone git@github.com:ssbx/equartz.git
-
 pping:
 	@git clone git@github.com:ssbx/pping.git
 

@@ -1,0 +1,6 @@
+-define(CRON_DAILY3AM, "0 0 3 * * ?").
+-define(CRON_DAILY4AM, "0 0 4 * * ?").
+-define(CRON_DAILY5AM, "0 0 5 * * ?").
+-define(CRON_DAILY6AM, "0 0 6 * * ?").
+-define(CRON_DAILY7AM, "0 0 7 * * ?").
+-define(CRON_EVERY20S, "0/20 * * * * ?").

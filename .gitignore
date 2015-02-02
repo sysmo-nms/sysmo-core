@@ -37,7 +37,6 @@ noctopus.tar
 var/engineID.conf
 
 lib/yaws
-lib/equartz
 lib/pping
 
 var/yaws/docroot/tmp-*
