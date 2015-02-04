@@ -1,5 +1,6 @@
 # Makefile
 
+
 JAVA		?= java
 JAVAC		?= javac
 
@@ -21,8 +22,14 @@ SNMP4J			= snmp4j-2.3.1.jar
 JINTERFACE		= OtpErlang.jar
 SNMP4J_DEP		= $(JLIB)/$(SNMP4J)
 JINTERFACE_DEP	= $(JLIB)/$(JINTERFACE)
-JCLASSPATH		= $(SNMP4J_DEP):$(JINTERFACE_DEP)
+JCLASSPATH_TMP  = $(SNMP4J_DEP):$(JINTERFACE_DEP):$(JBIN)
 
+
+ifeq ($(CYGW), CYGWIN)
+	JCLASSPATH = '$(shell cygpath -awp $(JCLASSPATH_TMP))'
+else
+	JCLASSPATH = $(JCLASSPATH_TMP)
+endif
 
 compile: $(JSNMPMAN) $(ERL_TARGETS)
 

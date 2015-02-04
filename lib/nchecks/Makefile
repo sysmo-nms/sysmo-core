@@ -1,23 +1,12 @@
 # Makefile
 
+JAVA		?= java
+JAVAC		?= javac
 
-UNAME = $(shell uname)
-CYGW  = $(findstring CYGWIN, $(UNAME))
-
-ifeq ($(CYGW), CYGWIN)
-	ERL 		?= /cygdrive/c/Program\ Files/erl6.3/bin/erl.exe
-	ERLC		?= /cygdrive/c/Program\ Files/erl6.3/bin/erlc.exe
-	JAVA		?= /cygdrive/c/Program\ Files/Java/jdk1.7.0_75/bin/java.exe
-	JAVAC		?= /cygdrive/c/Program\ Files/Java/jdk1.7.0_75/bin/javac.exe
-else
-	ERL 		?= erl
-	ERLC		?= erlc
-	JAVA		?= java
-	JAVAC		?= javac
-endif
+ERL 		?= erl
+ERLC		?= erlc
 
 APP			= nchecks
-
 # define erl targets
 ERL_SRC		= $(wildcard src/*.erl)
 ERL_TARGETS	= $(patsubst src/%.erl, ebin/%.beam, $(ERL_SRC))

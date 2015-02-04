@@ -1,5 +1,6 @@
 UNAME = $(shell uname)
 CYGW  = $(findstring CYGWIN, $(UNAME))
+export CYGW
 
 ifeq ($(CYGW), CYGWIN)
     RELEASE        = windows-release
@@ -8,6 +9,8 @@ ifeq ($(CYGW), CYGWIN)
     export ERLC    = /cygdrive/c/Program\ Files/erl6.3/bin/erlc -Werror
     export ERLCY   = /cygdrive/c/Program\ Files/erl6.3/bin/erlc
     export ASNC    = /cygdrive/c/Program\ Files/erl6.3/bin/erlc -Werror -bber
+    export JAVA	   = /cygdrive/c/Program\ Files/Java/jdk1.8.0_31/bin/java.exe
+    export JAVAC   = /cygdrive/c/Program\ Files/Java/jdk1.8.0_31/bin/javac.exe
 else
     RELEASE        = unix-release
     LOCAL_RELEASE  = unix-local-release
@@ -159,3 +162,4 @@ unix-release: var-clean rel-clean compile
 	@mkdir $(TMP_DIR)/cfg
 	@touch $(TMP_DIR)/cfg/monitor.conf
 	@tar -czf $(REL_NAME)-$(REL_VERSION).tar.gz -C $(TMP_DIR) .
+
