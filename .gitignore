@@ -27,7 +27,6 @@ activity.log
 *.log
 noctopus.script
 noctopus.boot
-lib/errd/ebin/*
 *.win32
 lib/supercast/include/ModSupercast.hrl
 lib/supercast/include/ModMonitor.hrl
