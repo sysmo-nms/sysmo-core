@@ -4,10 +4,10 @@ CYGW  = $(findstring CYGWIN, $(UNAME))
 ifeq ($(CYGW), CYGWIN)
     RELEASE        = windows-release
     LOCAL_RELEASE  = windows-local-release
-    export ERL     = /cygdrive/c/Program\ Files/erl5.10.4/bin/erl
-    export ERLC    = /cygdrive/c/Program\ Files/erl5.10.4/bin/erlc -Werror
-    export ERLCY   = /cygdrive/c/Program\ Files/erl5.10.4/bin/erlc
-    export ASNC    = /cygdrive/c/Program\ Files/erl5.10.4/bin/erlc -Werror -bber
+    export ERL     = /cygdrive/c/Program\ Files/erl6.3/bin/erl -smp
+    export ERLC    = /cygdrive/c/Program\ Files/erl6.3/bin/erlc -Werror
+    export ERLCY   = /cygdrive/c/Program\ Files/erl6.3/bin/erlc
+    export ASNC    = /cygdrive/c/Program\ Files/erl6.3/bin/erlc -Werror -bber
 else
     RELEASE        = unix-release
     LOCAL_RELEASE  = unix-local-release
