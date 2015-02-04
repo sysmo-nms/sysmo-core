@@ -22,7 +22,6 @@ ebin:
 clean:
 	rm -f ebin/*.beam
 	rm -f erl_crash.dump
-	rm -rf priv/noctopus-webif
 
 start: all
 	erl -pa ebin -config sys -eval 'application:start(fcgisrv)'
