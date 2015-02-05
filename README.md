@@ -132,6 +132,9 @@ Here are some examples of the pysysmo API module:
 	ghub = Target("www.github.com")
 	ghub.addProbe(Probe("icmp", conf=default))
 	ghub.addProbe(Probe("http", conf=default))
+	ghub.setProperty('mailAlertGroup', 'mymail@mymail.net')
+	ghub.setProperty('mailAlertGroup2', 'mymail2@mymail.net')
+	ghub.setProperty('mailAlertEscalation', '60')
 	ghub.setProperty('my property', 'web server')
 
 	# include our web server target some tie script
