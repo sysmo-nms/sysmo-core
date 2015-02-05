@@ -154,6 +154,7 @@ Here are some examples of the pysysmo API module:
 		probes = f.getProbesByType("http")
 		for p in probes:
 			p.setTimeout(10000)
+		sysmo.update(w)
 	
 	
 	sysmo.close()
