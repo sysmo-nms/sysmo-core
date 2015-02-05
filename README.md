@@ -1,15 +1,15 @@
 # Sysmo Community BETA
 Sysmo is a versatile solution unifying monitoring, management and system
 scripting. It fallow the development process of Sysmo Enterprise Edition.
-For a complete description see [sysmo.io](sysmo.io).
+For a complete description see [sysmo.io](http://sysmo.io).
 
 > WARNING: Sysmo Community is actualy in BETA stage. A web interface is
 > planned in the near future, but actualy the only available is the
-> non free Sysmo-Operator-UI available for beta testing [here](sysmo.io).
+> non free Sysmo-Operator-UI available for beta testing [here](http://sysmo.io).
 
 # Download prebuild binary
 If you want to see how Sysmo work, we suggest that you download the prebuilt
-Enterprise Edition binary (for Windows and Linux) available [here](sysmo.io).
+Enterprise Edition binary (for Windows and Linux) available [here](http://sysmo.io).
 
 # Build/Testing Sysmo
 
@@ -110,9 +110,12 @@ and generate some standard targets with icmp ping presence.
 Open a new terminal:
 ```sh
 $ cd $(your sysmo root repository)/lib/pysysmo
+$ vi myscript.py
 ```
 
+
 Here are some examples of the pysysmo API module:
+
 	#!/usr/bin/env python
 	
 	from __init__ import *
@@ -155,12 +158,18 @@ Here are some examples of the pysysmo API module:
 	
 	sysmo.close()
 	
+Then run:
+```sh
+$ python myscript.py
+```
+
 
 ## Create a very succint web interface
-This script must be put in the cgi yaws directory $(your root repository)/var/yaws/cgi/
-and accessed http://localhost:8080/cgis/myscript.py
-	#!/usr/bin/env python
+This script must be put in the cgi yaws directory $(your root repository)/var/yaws/cgi/ and accessed http://localhost:8080/cgis/myscript.py
 	
+```sh
+$ vi mycgi.py
+```
 	from __init__ import *
 	
 	sysmo = Server()
@@ -184,6 +193,8 @@ and accessed http://localhost:8080/cgis/myscript.py
 	   print "</table>"
 	    
 	print "</body></html>"
+
+You can see the result at http://localhost:8080/cgi/mycgi.py.
 
 Here you are. You can now build your how web interface and include some form to add
 targets to the system with the preceding script example. Enjoy!
