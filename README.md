@@ -33,22 +33,25 @@ The build system expect the following tools to be present:
 * rrdtool (tested with 1.4.7 in your $PATH)
 
 ### Java jars
-And some java libs from the root repository.
+Dependencies:
 * OtpErlang.jar (must be the one present in your erlang installation)
 * snmp4j-2.3.1
 * quartz-2.2.1 (release archive contain log4j, c3p0, and slf4j)
 
-From the root repository, these jars must appear as follow:
-* ./lib/nchecks/java_lib/OtpErlang.jar
-* ./lib/snmpman/java_lib/snmp4j-2.3.1.jar
-* ./lib/snmpman/java_lib/OtpErlang.jar
-* ./lib/equartz/java_lib/quartz-jobs-2.2.1.jar
-* ./lib/equartz/java_lib/log4j-1.2.16.jar
-* ./lib/equartz/java_lib/c3p0-0.9.1.1.jar
-* ./lib/equartz/java_lib/slf4j-api-1.6.6.jar
-* ./lib/equartz/java_lib/OtpErlang.jar
-* ./lib/equartz/java_lib/slf4j-log4j12-1.6.6.jar
-* ./lib/equartz/java_lib/quartz-2.2.1.jar
+From the root repository running find should return exactly this:
+```sh
+$find . -name "*jar"
+./lib/nchecks/java_lib/OtpErlang.jar
+./lib/snmpman/java_lib/snmp4j-2.3.1.jar
+./lib/snmpman/java_lib/OtpErlang.jar
+./lib/equartz/java_lib/quartz-jobs-2.2.1.jar
+./lib/equartz/java_lib/log4j-1.2.16.jar
+./lib/equartz/java_lib/c3p0-0.9.1.1.jar
+./lib/equartz/java_lib/slf4j-api-1.6.6.jar
+./lib/equartz/java_lib/OtpErlang.jar
+./lib/equartz/java_lib/slf4j-log4j12-1.6.6.jar
+./lib/equartz/java_lib/quartz-2.2.1.jar
+```
 
 ### Python
 You will require the development files for python2.7 to build the API module.
@@ -104,9 +107,6 @@ Eshell V6.3  (abort with ^G)
 ```
 
 ## Adding elements
-Now we will add some elements to monitore to the system. To do this, we will create a python script
-and generate some standard targets with icmp ping presence.
-
 Open a new terminal:
 ```sh
 $ cd $(your sysmo root repository)/lib/pysysmo
@@ -120,6 +120,11 @@ Here are some examples of the pysysmo API module:
 	
 	from __init__ import *
 	
+	# see http://sysmo.io/documentation/pysysmoTutorial.html
+	# see http://sysmo.io/documentation/pysysmo.html
+	# see http://sysmo.io/documentation/pysysmo/class/Target.html
+	# see http://sysmo.io/documentation/pysysmo/class/Probe.html
+
 	sysmo = Server()
 	sysmo.connect()
 	
@@ -128,8 +133,17 @@ Here are some examples of the pysysmo API module:
 	ghub.addProbe(Probe("icmp", conf=default))
 	ghub.addProbe(Probe("http", conf=default))
 	ghub.setProperty('my property', 'web server')
+
+	# include our web server target some tie script
+	# see http://sysmo.io/documentation/TieScriptTutorial.html
+	ghub.addTieScript("mywikipages.py")
+	ghub.addTieScript("myinventorytool.py")
+	ghub.addTieScript("anyexternaltool.py")
+
+	# update the server with this target
 	sysmo.update(ghub)
 	
+
 	# add a network element
 	netelement = Target("192.168.0.254")
 	netelement.addProbe(Probe("icmp", conf=default))
@@ -142,6 +156,7 @@ Here are some examples of the pysysmo API module:
 	sysmo.update(netelement)
 
 	# modify the default values for my web server
+	# see http://sysmo.io/documentation/graphPerformances.html
 	# step 1: get all elements aving property key 'my property'
 	elems = sysmo.getElementByPropertyKey('my property')
 	# step 2: filter to have only 'web server' value
@@ -178,6 +193,9 @@ $ vi mycgi.py
 	elements = sysmo.getAll()
 	sysmo.close()
 	
+	# see http://sysmo.io/documentation/pysysmo/class/Target.html
+	# see http://sysmo.io/documentation/pysysmo/class/Probe.html
+
 	print "<doctype html>"
 	print "<html><body>"
 	print "<h4>Powered by Sysmo</h4>"
