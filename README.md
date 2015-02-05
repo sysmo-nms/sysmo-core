@@ -3,10 +3,6 @@ Sysmo is a versatile solution unifying monitoring, management and system
 scripting. It fallow the development process of Sysmo Enterprise Edition.
 For a complete description see [sysmo.io](http://sysmo.io).
 
-> WARNING: Sysmo Community is actualy in BETA stage. A web interface is
-> planned in the near future, but actualy the only available is the
-> non free Sysmo-Operator-UI available for beta testing [here](http://sysmo.io).
-
 # Download prebuild binary
 If you want to see how Sysmo work, we suggest that you download the prebuilt
 Enterprise Edition binary (for Windows and Linux) available [here](http://sysmo.io).
