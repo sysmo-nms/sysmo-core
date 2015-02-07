@@ -1,6 +1,6 @@
 {application, sysmo,
     [
-        {description, "Noctopus management system"},
+        {description, "Sysmo management system"},
         {vsn, "0.1.0"},
         {modules, [
                 sysmo_app,

@@ -469,24 +469,24 @@ addition, Exhibit A has been modified to be consistent with Exhibit B.
 WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License for 
 the specific language governing rights and limitations under the License.
 
-    The Original Code is sysmo.
+    The Original Code is Sysmo-CE.
 
     The Original Developer is the Initial Developer.
 
-    The Initial Developer of the Original Code is Noctopus. All portions of 
-the code written by Noctopus are Copyright (c) 2012-2015 Sebastien Serre
+    The Initial Developer of the Original Code is Sysmo. All portions of 
+the code written by Sysmo are Copyright (c) 2012-2015 Sebastien Serre
 <sserre.bx@gmail.com>. All Rights Reserved.
 
 EXHIBIT B. Attribution Information
 
-    Attribution Copyright Notice: Copyright (c) 2012-2015 Noctopus
+    Attribution Copyright Notice: Copyright (c) 2012-2015 Sysmo
 Sebastien Serre <sserre.bx@gmail.com>. All Rights Reserved.
 
-    Attribution Phrase (not exceeding 10 words): Powered by Noctopus
+    Attribution Phrase (not exceeding 10 words): Powered by Sysmo
 
     Attribution URL: http://www.sysmo.io
 
-    Graphic Image as provided in the Covered Code, if any.
+    Attribution Graphic Image: http://www.sysmo.io/favicon.ico
 
     Display of Attribution Information is required in Larger 
 Works which are defined in the CPAL as a work which combines Covered Code or 

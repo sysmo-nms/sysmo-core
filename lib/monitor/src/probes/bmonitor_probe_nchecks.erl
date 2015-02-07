@@ -41,7 +41,7 @@
 %% monotor_probe callbacks %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 info() ->
-    {ok, "Noctopus checks"}.
+    {ok, "Sysmo checks"}.
 
 init(Probe) ->
     [Target]      = monitor_data_master:get(target, Probe#probe.belong_to),
