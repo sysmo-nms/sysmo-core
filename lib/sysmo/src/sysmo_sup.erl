@@ -75,14 +75,6 @@ init([]) ->
                     2000,
                     supervisor,
                     [monitor_app]
-%                 },
-%                 {
-%                     fcgisrv_app,
-%                     {fcgisrv_app, start, [normal,[]]},
-%                     permanent,
-%                     2000,
-%                     supervisor,
-%                     [fcgisrv_app]
                 }
             ]
         }
