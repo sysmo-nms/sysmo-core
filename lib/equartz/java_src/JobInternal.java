@@ -1,5 +1,5 @@
-package io.noctopus.equartz;
-import io.noctopus.equartz.EQuartzNode;
+package io.sysmo.equartz;
+import io.sysmo.equartz.EQuartzNode;
 
 import com.ericsson.otp.erlang.*;
 import java.util.Date;

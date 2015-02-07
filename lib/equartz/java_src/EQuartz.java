@@ -1,7 +1,7 @@
-package io.noctopus.equartz;
-import io.noctopus.equartz.JobInternal;
-import io.noctopus.equartz.EQuartzNode;
-import io.noctopus.equartz.EQuartzMessageHandler;
+package io.sysmo.equartz;
+import io.sysmo.equartz.JobInternal;
+import io.sysmo.equartz.EQuartzNode;
+import io.sysmo.equartz.EQuartzMessageHandler;
 
 import java.util.Date;
 import java.util.Set;

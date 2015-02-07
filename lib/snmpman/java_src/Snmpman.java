@@ -19,7 +19,7 @@
  * THE SOFTWARE.
  */
 
-package io.noctopus.snmpm;
+package io.sysmo.snmpm;
 
 import java.io.*;
 import java.util.*;

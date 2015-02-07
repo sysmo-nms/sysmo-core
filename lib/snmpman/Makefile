@@ -16,7 +16,7 @@ ERL_TARGETS	= $(patsubst src/%.erl, ebin/%.beam, $(ERL_SRC))
 JLIB		= java_lib
 JBIN		= java_bin
 JSRC		= java_src
-JSNMPMAN	= $(JBIN)/io/noctopus/snmpm/Snmpman.class
+JSNMPMAN	= $(JBIN)/io/sysmo/snmpm/Snmpman.class
 
 SNMP4J			= snmp4j-2.3.1.jar
 JINTERFACE		= OtpErlang.jar

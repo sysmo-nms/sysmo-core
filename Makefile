@@ -14,7 +14,7 @@ ifeq ($(CYGW), CYGWIN)
 else
     RELEASE        = unix-release
     LOCAL_RELEASE  = unix-local-release
-    export ERL     = /opt/erlang_otp_17.4/bin/erl -smp
+    export ERL     = /opt/erlang_otp_17.4/bin/erl
     export ERLC    = /opt/erlang_otp_17.4/bin/erlc -Werror
     export ERLCY   = /opt/erlang_otp_17.4/bin/erlc
     export ASNC    = /opt/erlang_otp_17.4/bin/erlc -Werror -bber
@@ -23,9 +23,9 @@ else
 endif
 
 export MAKE        = /usr/bin/make
-export REL_NAME    = noctopus
+export REL_NAME    = sysmo
 export REL_VERSION = 0.2.1
-export MODS = supercast monitor errd snmpman noctopus yaws ini nchecks equartz pping fcgisrv
+export MODS = supercast monitor errd snmpman sysmo yaws ini nchecks equartz pping 
 
 .PHONY: all compile test doc clean var-clean rel-clean start \
 	unix-release unix-local-release windows-release windows-local-release
@@ -130,8 +130,8 @@ windows-release: var-clean rel-clean compile
 	@$(ERL) -noinput -eval $(ERL_UNTAR)
 	@cp -R var $(TMP_DIR)/
 	@mkdir $(TMP_DIR)/bin
-	@cp release_tools/win32/noctopus.bat.src $(TMP_DIR)/bin/noctopus.bat
-	@cp release_tools/win32/register_noctopus_nt-service.bat.src $(TMP_DIR)/bin/register_noctopus_nt-service.bat
+	@cp release_tools/win32/sysmo.bat.src $(TMP_DIR)/bin/sysmo.bat
+	@cp release_tools/win32/register_sysmo_nt-service.bat.src $(TMP_DIR)/bin/register_sysmo_nt-service.bat
 	@cp release_tools/win32/erl.ini.src      $(TMP_DIR)/erts-5.10.4/bin/erl.ini.src
 	@cp release_tools/sys.config.src   $(TMP_DIR)/releases/$(REL_VERSION)/sys.config
 	@mkdir $(TMP_DIR)/cfg
@@ -156,7 +156,7 @@ unix-release: var-clean rel-clean compile
 	@rm -f $(REL_NAME).tar.gz
 	@cp -R var $(TMP_DIR)/
 	@mkdir $(TMP_DIR)/bin
-	@cp release_tools/unix/noctopus $(TMP_DIR)/bin/
+	@cp release_tools/unix/sysmo $(TMP_DIR)/bin/
 	@cp release_tools/unix/install $(TMP_DIR)
 	@cp release_tools/sys.config.src $(TMP_DIR)/releases/$(REL_VERSION)/
 	@mkdir $(TMP_DIR)/cfg

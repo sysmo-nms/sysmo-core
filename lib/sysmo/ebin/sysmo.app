@@ -1,16 +1,16 @@
-{application, noctopus,
+{application, sysmo,
     [
         {description, "Noctopus management system"},
         {vsn, "0.1.0"},
         {modules, [
-                noctopus_app,
-                noctopus_sup
+                sysmo_app,
+                sysmo_sup
             ]
         },
         {registered, 
             [
-                noctopus_app,
-                noctopus_sup
+                sysmo_app,
+                sysmo_sup
             ]
         },
         {included_applications, 
@@ -21,14 +21,13 @@
                 errd,
                 supercast,
                 nchecks,
-                equartz,
-                fcgisrv
+                equartz
             ]
         },
         {applications, 
             [kernel, stdlib]
         },
         {start_phases, []},
-        {mod, {application_starter, [noctopus_app, []]}}
+        {mod, {application_starter, [sysmo_app, []]}}
     ]
 }.

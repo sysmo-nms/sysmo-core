@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <check_def command="ncheck_tcp">
-    <path>/home/seb/src/noctopus/lib/nchecks/bin/ncheck_tcp</path>
+    <path>/home/seb/src/sysmo/lib/nchecks/bin/ncheck_tcp</path>
     <descr>this check do ...</descr>
     <flags_def>
         <flag_info name="all">

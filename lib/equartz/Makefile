@@ -15,7 +15,7 @@ ERL_TARGETS	= $(patsubst src/%.erl, ebin/%.beam, $(ERL_SRC))
 JLIB		= java_lib
 JBIN		= java_bin
 JSRC		= java_src
-EQUARTZ_DIR	= $(JBIN)/io/noctopus/equartz
+EQUARTZ_DIR	= $(JBIN)/io/sysmo/equartz
 EQUARTZ		= $(EQUARTZ_DIR)/EQuartz.class
 
 ENODE       = $(EQUARTZ_DIR)/EQuartzNode.class

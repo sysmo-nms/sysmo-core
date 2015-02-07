@@ -1,5 +1,5 @@
 % @private
--module(noctopus_app).
+-module(sysmo_app).
 -behaviour(application).
 
 -export([
@@ -8,7 +8,7 @@
 ]).
 
 start(_Type, _Args) ->
-    noctopus_sup:start_link().
+    sysmo_sup:start_link().
 
 stop(_State) ->
     ok.

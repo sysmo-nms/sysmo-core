@@ -1,1 +1,0 @@
-"%INSTALL_DIR%\noctopus-server\erts-5.10.4\bin\erl.exe" -sname noctopus -boot "%INSTALL_DIR%\noctopus-server\releases\0.2.1\start" -config "%INSTALL_DIR%\noctopus-server\releases\0.2.1\sys"

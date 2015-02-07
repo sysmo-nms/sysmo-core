@@ -19,11 +19,11 @@
  * THE SOFTWARE.
  */
 
-package io.noctopus.nchecks.modules;
+package io.sysmo.nchecks.modules;
 
-import io.noctopus.nchecks.NChecksInterface;
-import io.noctopus.nchecks.Argument;
-import io.noctopus.nchecks.Reply;
+import io.sysmo.nchecks.NChecksInterface;
+import io.sysmo.nchecks.Argument;
+import io.sysmo.nchecks.Reply;
 
 import java.io.IOException;
 import java.io.InputStreamReader;

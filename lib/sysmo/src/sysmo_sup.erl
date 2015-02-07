@@ -1,5 +1,5 @@
 % @private
--module(noctopus_sup).
+-module(sysmo_sup).
 -behaviour(supervisor).
 
 -export([

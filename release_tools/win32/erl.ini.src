@@ -1,4 +1,4 @@
 [erlang]
-Bindir=%INSTALL_DIR%\noctopus-server\erts-5.10.4\bin
+Bindir=%INSTALL_DIR%\sysmo-server\erts-5.10.4\bin
 Progname=erl
-Rootdir=%INSTALL_DIR%\noctopus-server
+Rootdir=%INSTALL_DIR%\sysmo-server

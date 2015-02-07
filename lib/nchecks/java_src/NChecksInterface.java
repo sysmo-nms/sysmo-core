@@ -18,10 +18,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package io.noctopus.nchecks;
+package io.sysmo.nchecks;
 import java.util.Map;
-import io.noctopus.nchecks.Argument;
-import io.noctopus.nchecks.Reply;
+import io.sysmo.nchecks.Argument;
+import io.sysmo.nchecks.Reply;
 
 public interface NChecksInterface
 {

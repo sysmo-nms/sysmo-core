@@ -67,8 +67,8 @@ $ sudo apt-get install XYZ
 
 First get Sysmo source tree:
 ```sh
-$ git clone https://github.com/ssbx/noctopus.git
-$ cd noctopus
+$ git clone https://github.com/ssbx/sysmo.git
+$ cd sysmo
 ```
 
 Then run make:

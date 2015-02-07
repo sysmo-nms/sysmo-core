@@ -8,10 +8,10 @@ ERL_TARGETS	= $(patsubst src/%.erl, ebin/%.beam, $(ERL_SRC))
 
 all: $(ERL_TARGETS) cgi
 
-cgi: priv/noctopus-webif
+cgi: priv/sysmo-webif
 
-priv/noctopus-webif:
-	cd priv; git clone git@github.com:ssbx/noctopus-webif.git; cd noctopus-webif; make
+priv/sysmo-webif:
+	cd priv; git clone git@github.com:ssbx/sysmo-webif.git; cd sysmo-webif; make
 
 ebin/%.beam: src/%.erl
 	$(ERLC) $(EPATH) -o ebin/ src/$*.erl

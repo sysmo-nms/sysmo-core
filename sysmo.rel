@@ -1,5 +1,5 @@
 {release,
-    {"noctopus", "0.2.1"},
+    {"sysmo", "0.2.1"},
     {erts, "6.1"},
     [
         {kernel,        "3.1"},
@@ -11,15 +11,14 @@
         {public_key,    "0.22.1"},
         {ssl,           "5.3.8"},
         {supercast,     "2.0.0"},
-        {noctopus,      "0.1.0"},
+        {sysmo,      "0.1.0"},
         {errd,          "0.1.0"},
         {monitor,       "0.1.0"},
         {snmpman,       "0.1.0"},
         {yaws,          "1.98"},
         {ini,           "0.1"},
         {nchecks,       "0.1.0"},
-        {equartz,       "0.1.0"},
-        {fcgisrv,       "0.1.0"}
+        {equartz,       "0.1.0"}
 
     ]
 }.

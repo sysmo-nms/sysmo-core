@@ -1,5 +1,5 @@
-package io.noctopus.equartz;
-import io.noctopus.equartz.EQuartzMessageHandler;
+package io.sysmo.equartz;
+import io.sysmo.equartz.EQuartzMessageHandler;
 import java.util.Date;
 import java.io.IOException;
 import java.nio.file.Path;

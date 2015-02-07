@@ -19,11 +19,11 @@
  * THE SOFTWARE.
  */
 
-package io.noctopus.nchecks;
-import io.noctopus.nchecks.NChecksInterface;
-import io.noctopus.nchecks.Argument;
-import io.noctopus.nchecks.Reply;
-import io.noctopus.nchecks.modules.*;
+package io.sysmo.nchecks;
+import io.sysmo.nchecks.NChecksInterface;
+import io.sysmo.nchecks.Argument;
+import io.sysmo.nchecks.Reply;
+import io.sysmo.nchecks.modules.*;
 
 import com.ericsson.otp.erlang.*;
 

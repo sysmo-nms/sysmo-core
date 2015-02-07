@@ -120,7 +120,7 @@
             {java_node, 
                 [
                     {java_com,
-"/opt/jdk1.8.0_31/bin/java -cp lib/snmpman/java_bin/:lib/snmpman/java_lib/OtpErlang.jar:lib/snmpman/java_lib/snmp4j-2.3.1.jar: -Djava.security.egd=file:/dev/./urandom io.noctopus.snmpm.Snmpman var/engineID.conf >> var/log/snmpman4j.log 2>&1 &"
+"/opt/jdk1.8.0_31/bin/java -cp lib/snmpman/java_bin/:lib/snmpman/java_lib/OtpErlang.jar:lib/snmpman/java_lib/snmp4j-2.3.1.jar: -Djava.security.egd=file:/dev/./urandom io.sysmo.snmpm.Snmpman var/engineID.conf >> var/log/snmpman4j.log 2>&1 &"
                     }
                 ]
             }
@@ -146,7 +146,7 @@
             {java_node, 
                 [
                     {java_com,
-"/opt/jdk1.8.0_31/bin/java -cp lib/nchecks/java_bin/:lib/nchecks/java_lib/OtpErlang.jar io.noctopus.nchecks.NChecks >> var/log/nchecks.log 2>&1 &"
+"/opt/jdk1.8.0_31/bin/java -cp lib/nchecks/java_bin/:lib/nchecks/java_lib/OtpErlang.jar io.sysmo.nchecks.NChecks >> var/log/nchecks.log 2>&1 &"
                     }
                 ]
             }
@@ -157,7 +157,7 @@
             {java_node, 
                 [
                     {java_com,
-"/opt/jdk1.8.0_31/bin/java -cp lib/equartz/:lib/equartz/java_bin/:lib/equartz/java_lib/* io.noctopus.equartz.EQuartz >> var/log/equartz.log 2>&1 &"
+"/opt/jdk1.8.0_31/bin/java -cp lib/equartz/:lib/equartz/java_bin/:lib/equartz/java_lib/* io.sysmo.equartz.EQuartz >> var/log/equartz.log 2>&1 &"
                     }
                 ]
             }
@@ -165,7 +165,7 @@
     },
     {fcgisrv,
         [
-            {executable, "lib/fcgisrv/priv/noctopus-webif/sysmo_web_if.fcgi"}
+            {executable, "lib/fcgisrv/priv/sysmo-webif/sysmo_web_if.fcgi"}
         ]
     }
 

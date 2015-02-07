@@ -18,7 +18,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package io.noctopus.nchecks;
+package io.sysmo.nchecks;
 import java.util.Map;
 
 public class Argument

@@ -1,4 +1,4 @@
-package io.noctopus.equartz;
+package io.sysmo.equartz;
 
 
 import java.util.Date;

@@ -15,7 +15,7 @@
 }).
 
 -define(LOG2(X), io:format("{~p, ~p}: DEBUG: ~p~n", [?MODULE, ?LINE, X])).
--define(SNMPM_USER, "noctopus_snmpm_user").
+-define(SNMPM_USER, "sysmo_snmpm_user").
 -define(BULK_MAX_REP, 64).
 % MIB2 'system' tree
 -define(OID_SYS_DESCR, [1,3,6,1,2,1,1,1,0]).

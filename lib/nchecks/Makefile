@@ -15,12 +15,12 @@ ERL_TARGETS	= $(patsubst src/%.erl, ebin/%.beam, $(ERL_SRC))
 JLIB		= java_lib
 JBIN		= java_bin
 JSRC		= java_src
-NCHECKS_PKG = io/noctopus/nchecks
-NCHECKS_MOD_DIR = $(JBIN)/io/noctopus/nchecks/modules
+NCHECKS_PKG = io/sysmo/nchecks
+NCHECKS_MOD_DIR = $(JBIN)/io/sysmo/nchecks/modules
 NCHECKS_SRC = $(wildcard $(JSRC)/Check*.java)
 NCHECKS_TARGETS = $(patsubst $(JSRC)/%.java, $(NCHECKS_MOD_DIR)/%.class, $(NCHECKS_SRC))
 
-NCHECKS_DIR = $(JBIN)/io/noctopus/nchecks
+NCHECKS_DIR = $(JBIN)/io/sysmo/nchecks
 
 NCHECKS_MAIN_SRC = $(JSRC)/NChecks.java
 NCHECKS_MAIN_TARGET = $(patsubst $(JSRC)/%.java, $(NCHECKS_DIR)/%.class, $(NCHECKS_MAIN_SRC))
