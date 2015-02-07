@@ -25,13 +25,13 @@ activity.log
 *.db
 *_db
 *.log
-noctopus.script
-noctopus.boot
+sysmo.script
+sysmo.boot
 *.win32
 lib/supercast/include/ModSupercast.hrl
 lib/supercast/include/ModMonitor.hrl
 sys.config
-noctopus.tar
+sysmo.tar
 *.plt
 var/engineID.conf
 
@@ -40,4 +40,4 @@ var/yaws/docroot/tmp-*
 var/yaws/docroot/nchecks/*.xml
 var/yaws/log/*
 !var/yaws/log/INFO
-lib/fcgisrv/priv/noctopus-webif/
+lib/fcgisrv/priv/sysmo-webif/
