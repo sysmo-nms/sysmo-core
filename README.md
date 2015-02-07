@@ -1,4 +1,4 @@
-# Sysmo Community BETA
+# Sysmo Community Edition BETA
 Sysmo is a versatile solution unifying monitoring, management and system
 scripting. It fallow the development process of Sysmo Enterprise Edition.
 For a complete description see [sysmo.io](http://sysmo.io).
@@ -10,7 +10,7 @@ Enterprise Edition binary (for Windows and Linux) available [here](http://sysmo.
 # Build/Testing Sysmo
 
 In the following procedure you will:
-* Build Sysmo Community
+* Build Sysmo Community Edition
 * Build the Python API module
 * Add some elements to monitore using the Python API
 * Create a basic web view using the Python API
@@ -67,8 +67,8 @@ $ sudo apt-get install XYZ
 
 First get Sysmo source tree:
 ```sh
-$ git clone https://github.com/ssbx/sysmo.git
-$ cd sysmo
+$ git clone https://github.com/ssbx/sysmo-CE.git
+$ cd sysmo-CE
 ```
 
 Then run make:
@@ -78,11 +78,13 @@ $ sudo make
 Make require root privilege because the pping (portable ping) executable must be
 setuid. You may run it as normal user and set it yourself if you prefer.
 
+
 And everything should be fine. Note that the build system will clone the yaws
 repository and build it. If you have build errors here, you might need to
 fullfil some yaws dependencies.
 
 ## Start
+There is actualy NOT any "install" target. To start a test server run:
 ```sh
 $ make start
 ```
@@ -219,4 +221,4 @@ targets to the system with the preceding script example. Enjoy!
 
 
 # License
-Sysmo Community is release under the Common Public Attribution License. See LICENSE.TXT.
+Sysmo Community Edition is release under the Common Public Attribution License. See LICENSE.TXT.
