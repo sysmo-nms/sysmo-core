@@ -6,6 +6,13 @@ JAVAC		?= javac
 ERL			?= erl
 ERLC		?= erlc -Werror
 
+# DEBUG
+ERL     = /cygdrive/c/Program\ Files/erl6.3/bin/erl -smp
+ERLC    = /cygdrive/c/Program\ Files/erl6.3/bin/erlc -Werror
+JAVA	= /cygdrive/c/Program\ Files/Java/jdk1.8.0_31/bin/java.exe
+JAVAC   = /cygdrive/c/Program\ Files/Java/jdk1.8.0_31/bin/javac.exe
+# DEBUG END
+
 APP			= equartz
 # define erl targets
 ERL_SRC		= $(wildcard src/*.erl)
@@ -37,6 +44,10 @@ ifeq ($(CYGW), CYGWIN)
 else
 	JCLASSPATH = $(JCLASSPATH_TMP)
 endif
+
+# DEBUG
+JCLASSPATH = '$(shell cygpath -awp $(JCLASSPATH_TMP))'
+# DEBUG END
 
 compile: $(ERL_TARGETS) $(ENODE) $(EQUARTZ) 
 
@@ -89,3 +100,4 @@ doc: doc/index.html
 
 doc/index.html: doc/overview.edoc $(ERL_SRC)
 	$(ERL) -noinput -pa ebin -eval 'edoc:application($(APP), ".", [{subpackages, true}, {packages, false}]), init:stop()'
+

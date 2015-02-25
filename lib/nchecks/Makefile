@@ -7,6 +7,14 @@ ERL 		?= erl
 ERLC		?= erlc
 
 APP			= nchecks
+
+# DEBUG
+ERL     = /cygdrive/c/Program\ Files/erl6.3/bin/erl -smp
+ERLC    = /cygdrive/c/Program\ Files/erl6.3/bin/erlc -Werror
+JAVA	= /cygdrive/c/Program\ Files/Java/jdk1.8.0_31/bin/java.exe
+JAVAC   = /cygdrive/c/Program\ Files/Java/jdk1.8.0_31/bin/javac.exe
+# DEBUG END
+
 # define erl targets
 ERL_SRC		= $(wildcard src/*.erl)
 ERL_TARGETS	= $(patsubst src/%.erl, ebin/%.beam, $(ERL_SRC))
@@ -47,6 +55,10 @@ ifeq ($(CYGW), CYGWIN)
 else
 	JCLASSPATH = $(JCLASSPATH_TMP)
 endif
+
+#DEBUG BEDGIN
+JCLASSPATH = '$(shell cygpath -awp $(JCLASSPATH_TMP))'
+#DEBUG END
 
 compile: $(ERL_TARGETS) $(NCHECKS_MAIN_TARGET)
 
@@ -96,3 +108,4 @@ doc: doc/index.html
 
 doc/index.html: doc/overview.edoc $(ERL_SRC)
 	$(ERL) -noinput -pa ebin -eval 'edoc:application($(APP), ".", [{subpackages, true}, {packages, false}]), init:stop()'
+

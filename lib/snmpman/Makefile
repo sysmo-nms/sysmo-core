@@ -4,6 +4,13 @@
 JAVA		?= java
 JAVAC		?= javac
 
+# DEBUG
+JAVA	= /cygdrive/c/Program\ Files/Java/jdk1.8.0_31/bin/java.exe
+JAVAC   = /cygdrive/c/Program\ Files/Java/jdk1.8.0_31/bin/javac.exe
+ERL     = /cygdrive/c/Program\ Files/erl6.3/bin/erl -smp
+ERLC    = /cygdrive/c/Program\ Files/erl6.3/bin/erlc -Werror
+# DEBUG END
+
 ERL			?= erl
 ERLC		?= erlc -Werror
 
@@ -30,6 +37,10 @@ ifeq ($(CYGW), CYGWIN)
 else
 	JCLASSPATH = $(JCLASSPATH_TMP)
 endif
+
+#DEBUG
+JCLASSPATH = '$(shell cygpath -awp $(JCLASSPATH_TMP))'
+#DEBUG END
 
 compile: $(JSNMPMAN) $(ERL_TARGETS)
 
@@ -72,4 +83,5 @@ $(JINTERFACE_DEP):
 
 # utils
 start: compile
-	$(ERL) -pa ebin -sname master -config ./sys -eval 'application:start(snmpman)'
+	$(ERL) -pa ebin -sname master -setcookie "AAAAAA" -config ./sys -eval 'application:start(snmpman)'
+

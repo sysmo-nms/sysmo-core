@@ -50,6 +50,7 @@ public class EQuartzNode extends Thread {
             mbox = self.createMbox();
             if (!self.ping(foreignNodeName, 2000)) 
             { 
+                System.out.println("Connection timed out");
                 return;
             }
         }
