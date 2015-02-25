@@ -27,6 +27,7 @@ The build system expect the following tools to be present:
 * java, javac (under /opt/jdk1.8.0_31/bin/)
 * go (version 1.4.1 in your $PATH)
 * rrdtool (tested with 1.4.7 in your $PATH)
+* yaws 1.99
 
 ### Java jars
 Dependencies:
@@ -78,6 +79,11 @@ $ sudo make
 Make require root privilege because the pping (portable ping) executable must be
 setuid. You may run it as normal user and set it yourself if you prefer.
 
+Then put the yaws-supercast.conf file in the yaws config directory (on debian it is
+/etc/yaws/conf.d/), and restart it.
+```
+$ sudo /etc/init.d/yaws restart
+```
 
 And everything should be fine. Note that the build system will clone the yaws
 repository and build it. If you have build errors here, you might need to
@@ -97,9 +103,6 @@ receive init
 receive init
 receive init
 
-=INFO REPORT==== 5-Feb-2015::10:17:48 ===
-Yaws: Listening to 0.0.0.0:8080 for <1> virtual servers:
- - http://supercast:8080 under var/yaws/docroot
 Eshell V6.3  (abort with ^G)
 (master@debian)1> 
 ```

@@ -35,9 +35,6 @@ sysmo.tar
 *.plt
 var/engineID.conf
 
-lib/yaws
 var/yaws/docroot/tmp-*
 var/yaws/docroot/nchecks/*.xml
-var/yaws/log/*
-!var/yaws/log/INFO
 lib/fcgisrv/priv/sysmo-webif/

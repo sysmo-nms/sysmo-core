@@ -25,7 +25,7 @@ endif
 export MAKE        = /usr/bin/make
 export REL_NAME    = sysmo
 export REL_VERSION = 0.2.1
-export MODS = supercast monitor errd snmpman sysmo yaws ini nchecks equartz pping 
+export MODS = supercast monitor errd snmpman sysmo ini nchecks equartz pping 
 
 .PHONY: all compile test doc clean var-clean rel-clean start \
 	unix-release unix-local-release windows-release windows-local-release
@@ -47,9 +47,6 @@ clean: var-clean crash-clean rel-clean
 
 var-clean:
 	rm -rf var/monitor/*/
-	rm -rf var/yaws/log/*.log
-	rm -rf var/yaws/log/*.access
-	rm -rf var/yaws/log/*.auth
 	rm -rf var/yaws/docroot/tmp-*/
 	rm -rf var/monitor/targets.dets
 	rm -rf var/monitor_events

@@ -21,43 +21,11 @@
 % @private
 -module(supercast_app).
 -behaviour(application).
--include("../yaws/include/yaws.hrl").
 
 -export([start/2, stop/1]).
 
 start(_Type, _Args) ->
-    configure_yaws(),
     supercast_sup:start_link().
-
-configure_yaws() ->
-    {ok, YawsConf} = application:get_env(supercast, http_conf),
-    {ok, DocRoot}  = application:get_env(supercast, http_sync_dir),
-    {ok, Port}     = application:get_env(supercast, http_port),
-    LogDir      = proplists:get_value(logdir, YawsConf),
-    Listen      = proplists:get_value(listen, YawsConf),
-    CompLevel   = proplists:get_value(compression_level, YawsConf),
-
-    GcList = [
-        {id, "supercast"},
-        {logdir, LogDir}
-    ],
-    SConfList = [
-        {port, Port},
-        {servername, "supercast"},
-        {listen, Listen},
-        {appmods, [{"/interface", mod_pyfcgi}]},
-        {fcgi_app_server, {"localhost",8777}},
-        {docroot, DocRoot},
-        {deflate_options,
-            {deflate,
-                nolimit,CompLevel,-15,8,
-                default,false,all
-            }
-        }
-    ],
-    {ok,[[Sc]],Gc,_} = yaws_api:embedded_start_conf(DocRoot, SConfList, GcList),
-    UpSc = ?sc_set_deflate(Sc, true),
-    yaws_api:setconf(Gc, [[UpSc]]).
 
 stop(_State) ->
 	ok.
