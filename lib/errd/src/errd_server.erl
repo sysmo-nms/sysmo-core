@@ -104,8 +104,9 @@ build_spawn_cmd(RrdtoolCmd, Nice, {unix, _}) ->
     NiceValue = proplists:get_value(Nice, ?NICE_UNIX),
     lists:flatten(io_lib:format("nice -n ~s ~s -", [NiceValue,RrdtoolCmd]));
 build_spawn_cmd(RrdtoolCmd, Nice, {win32, _}) ->
-    NiceValue = proplists:get_value(Nice, ?NICE_WINDOWS),
-    lists:flatten(io_lib:format("start /~s ~s -", [NiceValue,RrdtoolCmd])).
+    _NiceValue = proplists:get_value(Nice, ?NICE_WINDOWS),
+    %lists:flatten(io_lib:format("cmd.exe /Q /C START /~s /B /WAIT ~s -", [NiceValue,RrdtoolCmd])).
+    lists:flatten(io_lib:format("~s -", [RrdtoolCmd])).
 
 % @private
 get_response(Port, Timeout) ->

@@ -1,11 +1,11 @@
 -define(NICE_WINDOWS,
     [
-        {low,           "low"},
-        {bellownormal,  "bellownormal"},
-        {normal,        "normal"},
-        {abovenormal,   "abovenormal"},
-        {high,          "high"},
-        {realtime,      "realtime"}
+        {low,           "LOW"},
+        {bellownormal,  "BELLOWNORMAL"},
+        {normal,        "NORMAL"},
+        {abovenormal,   "ABOVENORMAL"},
+        {high,          "HIGH"},
+        {realtime,      "REALTIME"}
     ]
 ).
 

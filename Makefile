@@ -92,7 +92,7 @@ ERL_REL_COMM2   = '\
     init:stop()\
 '
 start: rel-clean $(LOCAL_RELEASE)
-	@$(ERL) -sname master -boot ./$(REL_NAME) -config ./sys
+	$(ERL) -sname master -boot ./$(REL_NAME) -config ./sys
 
 release: $(RELEASE)
 
@@ -114,7 +114,7 @@ ERL_UNTAR   = '\
 ##########################
 windows-local-release: compile $(REL_NAME).script
 	cp lib/nchecks/priv/defs/en/* var/yaws/docroot/nchecks/
-	cp release_tools/local/sys.config.dev ./sys.config
+	cp release_tools/local/sys.config.dev.win ./sys.config
 	chmod -w sys.config
 
 windows-release: var-clean rel-clean compile

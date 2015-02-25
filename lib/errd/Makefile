@@ -1,6 +1,9 @@
 ERLC        ?= erlc -Werror
 ERL         ?= erl
 
+ERL     = /cygdrive/c/Program\ Files/erl6.3/bin/erl -smp
+ERLC    = /cygdrive/c/Program\ Files/erl6.3/bin/erlc -Werror
+
 ERL_SRC		= $(wildcard src/*.erl)
 ERL_TARGETS	= $(patsubst src/%.erl, ebin/%.beam, $(ERL_SRC))
 
@@ -19,4 +22,7 @@ clean:
 	rm -f erl_crash.dump
 
 start: all
-	erl -pa ebin -config sys -eval 'application:start(errd)'
+	$(ERL) -pa ebin -config sys -eval 'application:start(errd)'
+
+start1:
+	$(ERL)
