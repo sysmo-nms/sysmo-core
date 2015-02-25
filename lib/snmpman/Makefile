@@ -83,5 +83,5 @@ $(JINTERFACE_DEP):
 
 # utils
 start: compile
-	$(ERL) -pa ebin -sname master -setcookie "AAAAAA" -config ./sys -eval 'application:start(snmpman)'
+	$(ERL) -pa ebin -sname master -config ./sys -eval 'application:start(snmpman)'
 

@@ -125,7 +125,7 @@ public class Snmpman
         // Initialize
         try 
         {
-            self = new OtpNode(selfNodeName, "AAAAAA");
+            self = new OtpNode(selfNodeName);
             mbox = self.createMbox();
             if (!self.ping(foreignNodeName, 2000)) 
             { 
@@ -139,11 +139,9 @@ public class Snmpman
             return;
         }
 
-        System.out.println("Connection success?");
         
         // when it is ok, inform the erl snmpman process
         acknowledgeOtpConnexion();
-        System.out.println("after ack begin loop?");
 
         // then begin to loop and wait for calls
         OtpErlangObject call = null;
@@ -191,12 +189,10 @@ public class Snmpman
 
         OtpErlangTuple tuple  = new OtpErlangTuple(msg);
 
-        System.out.println("Send tuple success? " + tuple);
         synchronized(mbox)
         {
             mbox.send(foreignPidName, foreignNodeName, tuple);
         }
-        System.out.println("Send tuple success? " + tuple + " " + foreignPidName + " " + foreignNodeName);
 
     }
 
