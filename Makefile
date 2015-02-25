@@ -141,7 +141,7 @@ windows-release: var-clean rel-clean compile
 #######################
 unix-local-release: compile $(REL_NAME).script
 	cp lib/nchecks/priv/defs/en/* var/yaws/docroot/nchecks/
-	cp release_tools/local/sys.config.dev sys.config
+	cp release_tools/local/sys.config.dev.unix sys.config
 	chmod -w sys.config
 
 unix-release: var-clean rel-clean compile
