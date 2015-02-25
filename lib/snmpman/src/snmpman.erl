@@ -356,7 +356,7 @@ code_change(_,S,_) ->
 
 % PRIVATE
 boot(JavaCommand) ->
-    os:cmd(JavaCommand).
+    erlang:spawn(os,cmd,[JavaCommand]).
 
 build_conf(ElementName, ElementConf) ->
     PrivProto = proplists:get_value(priv_proto, ElementConf, "AES"),
