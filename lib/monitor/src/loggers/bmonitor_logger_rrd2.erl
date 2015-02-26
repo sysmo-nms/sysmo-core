@@ -48,7 +48,7 @@
 %%%% INIT (rrdcreate) %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 log_init(Conf, Probe) ->
-    [Target]  = monitor_data_master:get(target, Probe#probe.belong_to),
+    [Target]        = monitor_data_master:get(target, Probe#probe.belong_to),
     ConfType        = proplists:get_value(type, Conf),
     {ok, DumpDir}   = application:get_env(supercast, http_sync_dir),
     case ConfType of
@@ -98,8 +98,13 @@ snmp_table_init_rrd_files(RrdCreateStr, IndexToFile) ->
 
 snmp_table_build_create(_, [], Acc) -> Acc;
 snmp_table_build_create(RrdCreate,[{_,File}|T],Acc) ->
-    RrdCmd = lists:concat([File, RrdCreate]),
-    snmp_table_build_create(RrdCreate, T, [RrdCmd|Acc]).
+    case filelib:is_file(File) of
+        true ->
+            snmp_table_build_create(RrdCreate, T, Acc);
+        false ->
+            RrdCmd = lists:concat([File, RrdCreate]),
+            snmp_table_build_create(RrdCreate, T, [RrdCmd|Acc])
+    end.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

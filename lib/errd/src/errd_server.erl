@@ -51,6 +51,7 @@ start_link(ServerName, Nice, Timeout) ->
 % Rrdtool call.
 % @end
 exec(ServerName, Command) ->
+    io:format("execute: ~p ~p~n", [ServerName, Command]),
     gen_server:call(ServerName, {exec, string:concat(Command, "\n")}).
 
 
@@ -70,6 +71,7 @@ handle_call({exec, Command}, _F, #state{port=Port, timeout=Timeout} = S) ->
         {timeout, PartialReply} ->
             {stop, {errd_port_timeout, self(), Timeout, PartialReply}, S};
         Reply -> 
+            io:format("reply is ~p ~n", [Reply]),
             {reply, Reply, S}
     end.
 
