@@ -142,7 +142,6 @@
     },
     {nchecks, 
         [
-            {nagios_dir,"/opt/nagios-plugins-2.0.3/libexec"},
             {java_node, 
                 [
                     {java_com,
