@@ -9,10 +9,10 @@ ERLC		?= erlc
 APP			= nchecks
 
 # DEBUG
-ERL     = /cygdrive/c/Program\ Files/erl6.3/bin/erl -smp
-ERLC    = /cygdrive/c/Program\ Files/erl6.3/bin/erlc -Werror
-JAVA	= /cygdrive/c/Program\ Files/Java/jdk1.8.0_31/bin/java.exe
-JAVAC   = /cygdrive/c/Program\ Files/Java/jdk1.8.0_31/bin/javac.exe
+#ERL     = /cygdrive/c/Program\ Files/erl6.3/bin/erl -smp
+#ERLC    = /cygdrive/c/Program\ Files/erl6.3/bin/erlc -Werror
+#JAVA	= /cygdrive/c/Program\ Files/Java/jdk1.8.0_31/bin/java.exe
+#JAVAC   = /cygdrive/c/Program\ Files/Java/jdk1.8.0_31/bin/javac.exe
 # DEBUG END
 
 # define erl targets
@@ -57,7 +57,7 @@ else
 endif
 
 #DEBUG BEDGIN
-JCLASSPATH = '$(shell cygpath -awp $(JCLASSPATH_TMP))'
+#JCLASSPATH = '$(shell cygpath -awp $(JCLASSPATH_TMP))'
 #DEBUG END
 
 compile: $(ERL_TARGETS) $(NCHECKS_MAIN_TARGET)

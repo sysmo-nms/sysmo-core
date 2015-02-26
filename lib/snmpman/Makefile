@@ -5,10 +5,10 @@ JAVA		?= java
 JAVAC		?= javac
 
 # DEBUG
-JAVA	= /cygdrive/c/Program\ Files/Java/jdk1.8.0_31/bin/java.exe
-JAVAC   = /cygdrive/c/Program\ Files/Java/jdk1.8.0_31/bin/javac.exe
-ERL     = /cygdrive/c/Program\ Files/erl6.3/bin/erl -smp
-ERLC    = /cygdrive/c/Program\ Files/erl6.3/bin/erlc -Werror
+#JAVA	= /cygdrive/c/Program\ Files/Java/jdk1.8.0_31/bin/java.exe
+#JAVAC   = /cygdrive/c/Program\ Files/Java/jdk1.8.0_31/bin/javac.exe
+#ERL     = /cygdrive/c/Program\ Files/erl6.3/bin/erl -smp
+#ERLC    = /cygdrive/c/Program\ Files/erl6.3/bin/erlc -Werror
 # DEBUG END
 
 ERL			?= erl
@@ -39,7 +39,7 @@ else
 endif
 
 #DEBUG
-JCLASSPATH = '$(shell cygpath -awp $(JCLASSPATH_TMP))'
+#JCLASSPATH = '$(shell cygpath -awp $(JCLASSPATH_TMP))'
 #DEBUG END
 
 compile: $(JSNMPMAN) $(ERL_TARGETS)
