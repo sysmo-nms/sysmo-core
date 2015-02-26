@@ -247,4 +247,4 @@ code_change(_,S,_) ->
 
 % PRIVATE
 boot(JavaCommand) ->
-    os:cmd(JavaCommand).
+    erlang:spawn(os,cmd,[JavaCommand]).
