@@ -17,7 +17,7 @@ PPING     = $(BIN_DIR)/pping$(EXTENTION)
 
 all: $(PPING)
 
-$(BIN_DIR)/pping.exe:
+$(BIN_DIR)/pping.exe: $(PPING_SRC)
 	$(GO_BUILD) -o $(PPING) $(PPING_SRC)
 
 $(BIN_DIR)/pping:

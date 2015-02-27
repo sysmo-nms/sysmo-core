@@ -64,6 +64,7 @@ func main() {
 
     testip := net.ParseIP(HostFlag)
 
+
     if testip.To4 == nil {
         ipVersion   = 6
         if Ip6IfFlag != "" {
@@ -81,7 +82,7 @@ func main() {
         host = HostFlag
         conn, err   = net.Dial("ip4:1", host)
     }
-    if err != nil { fmt.Println(err); os.Exit(1) }
+    if err != nil { fmt.Println(err, " when host is: ", host); os.Exit(1) }
     LocalAddr   = conn.LocalAddr().String()
     RemoteAddr  = conn.RemoteAddr().String()
 
