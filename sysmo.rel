@@ -1,6 +1,6 @@
 {release,
     {"sysmo", "0.2.1"},
-    {erts, "6.1"},
+    {erts, "6.3"},
     [
         {kernel,        "3.1"},
         {stdlib,        "2.3"},
