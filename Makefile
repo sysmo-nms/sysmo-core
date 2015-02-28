@@ -121,7 +121,7 @@ windows-local-release: compile $(REL_NAME).script
 	chmod -w sys.config
 
 windows-release: var-clean rel-clean compile
-	@echo -n "Generating $(REL_NAME)-$(REL_VERSION).win32 directory "
+	@echo -n "Generating $(REL_NAME)-$(REL_VERSION).win32 release: ."
 	@echo -n "."
 	@$(ERL) -noinput $(ERL_NMS_PATH) -eval $(ERL_REL_COMM2)
 	@echo -n "."
