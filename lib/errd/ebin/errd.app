@@ -4,10 +4,10 @@
         {vsn, "0.1.0"},
         {modules, [
                 errd,
-                errd_server_high,
-                errd_server_low,
                 errd_sup,
-                errd_app
+                errd_app,
+                errd_server,
+                errd_server_call_queue
             ]
         },
         {registered, 
