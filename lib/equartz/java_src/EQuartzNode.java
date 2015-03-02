@@ -14,6 +14,8 @@ public class EQuartzNode extends Thread {
     // the foreign node name (-sname)
     private static String foreignNodeName;
 
+    private static String erlangCookie;
+
     // the foreign equartz.erl gen_server pid name
     private static String foreignPidName;
 
@@ -32,11 +34,12 @@ public class EQuartzNode extends Thread {
 
     private static EQuartzMessageHandler quartzHandler;
 
-    public EQuartzNode(String selfName, String fNodeName, String fPidName)
+    public EQuartzNode(String selfName, String fNodeName, String fPidName, String cookie)
     {
         selfNodeName    = selfName;
         foreignNodeName = fNodeName;
         foreignPidName  = fPidName;
+        erlangCookie    = cookie;
     }
 
     @Override
@@ -46,7 +49,7 @@ public class EQuartzNode extends Thread {
         // Initialize otp
         try 
         {
-            self = new OtpNode(selfNodeName);
+            self = new OtpNode(selfNodeName, erlangCookie);
             mbox = self.createMbox();
             if (!self.ping(foreignNodeName, 2000)) 
             { 
@@ -59,6 +62,7 @@ public class EQuartzNode extends Thread {
             e1.printStackTrace();
             return;
         }
+
         acknowledgeOtpConnexion();
 
         // then begin to loop and wait for calls

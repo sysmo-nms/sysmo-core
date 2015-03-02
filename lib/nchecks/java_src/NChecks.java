@@ -30,10 +30,12 @@ import com.ericsson.otp.erlang.*;
 
 import java.io.FileInputStream;
 import java.io.InputStream;
+import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Scanner;
 import java.util.Iterator;
 import java.util.Properties;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -52,6 +54,7 @@ public class NChecks
 
     // the foreign node name (-sname)
     private static String foreignNodeName = null;
+    private static String erlangCookie = null;
 
     // the foreign nchecks.erl gen_server pid name
     private static String foreignPidName  = null;
@@ -94,6 +97,17 @@ public class NChecks
             return;
         }
 
+        try
+        {
+            erlangCookie = new Scanner(new File("cfg/sysmo.cookie")).useDelimiter("\\Z").next();
+        }
+        catch(IOException e)
+        {
+            e.printStackTrace();
+            return;
+        }
+
+
         // init thread pool
         threadPool = new ThreadPoolExecutor(
                 threadCorePoolSize,
@@ -109,7 +123,7 @@ public class NChecks
         // Initialize otp
         try 
         {
-            self = new OtpNode(selfNodeName);
+            self = new OtpNode(selfNodeName, erlangCookie);
             mbox = self.createMbox();
             if (!self.ping(foreignNodeName, 2000)) 
             { 

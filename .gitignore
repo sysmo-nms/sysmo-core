@@ -39,3 +39,4 @@ var/yaws/docroot/tmp-*
 var/yaws/docroot/nchecks/*.xml
 lib/fcgisrv/priv/sysmo-webif/
 lib/jars/*.jar
+cfg/sysmo.cookie

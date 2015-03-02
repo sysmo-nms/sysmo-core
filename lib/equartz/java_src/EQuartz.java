@@ -6,9 +6,11 @@ import io.sysmo.equartz.EQuartzMessageHandler;
 import java.util.Date;
 import java.util.Set;
 import java.util.Properties;
+import java.util.Scanner;
 import java.io.IOException;
 import java.io.FileInputStream;
 import java.io.InputStream;
+import java.io.File;
 import java.nio.file.Path;
 
 
@@ -51,6 +53,7 @@ public class EQuartz {
         String selfNodeName;
         String foreignNodeName;
         String foreignPidName;
+        String erlangCookie;
         try
         {
             Properties   prop  = new Properties();
@@ -66,9 +69,21 @@ public class EQuartz {
             return;
         }
 
+        try
+        {
+            erlangCookie = new Scanner(new File("cfg/sysmo.cookie")).useDelimiter("\\Z").next();
+            
+        }
+        catch(IOException e)
+        {
+            e.printStackTrace();
+            return;
+        }
+
+
 
         // initialize erlang node
-        enode = new EQuartzNode(selfNodeName, foreignNodeName, foreignPidName);
+        enode = new EQuartzNode(selfNodeName, foreignNodeName, foreignPidName, erlangCookie);
         enode.setMsgHandler(new MessageHandler());
         enode.start();
         

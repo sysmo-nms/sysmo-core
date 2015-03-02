@@ -51,6 +51,7 @@ clean: var-clean crash-clean rel-clean
 	$(MAKE) -C lib clean
 
 var-clean:
+	rm -f lib/jars/*.jar
 	rm -rf var/monitor/*/
 	rm -rf var/yaws/docroot/tmp-*/
 	rm -rf var/monitor/targets.dets
@@ -136,6 +137,7 @@ windows-release: var-clean rel-clean compile jars
 	mkdir $(TMP_DIR)/bin
 	cp release_tools/win32/sysmo.bat.src                     $(TMP_DIR)/bin/sysmo.bat
 	cp release_tools/win32/register_sysmo_nt-service.bat.src $(TMP_DIR)/bin/register_sysmo_nt-service.bat
+	cp release_tools/win32/unregister_sysmo_nt-service.bat.src $(TMP_DIR)/bin/register_sysmo_nt-service.bat
 	cp release_tools/win32/erl.ini.src                       $(TMP_DIR)/erts-$(ERTS_VER)/bin/erl.ini.src
 	cp release_tools/sys.config.base   $(TMP_DIR)/releases/$(REL_VERSION)/sys.config
 	mkdir $(TMP_DIR)/cfg

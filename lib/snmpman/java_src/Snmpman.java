@@ -58,6 +58,7 @@ public class Snmpman
 
     // the foreign node name (-sname)
     private static String foreignNodeName = null;
+    private static String erlangCookie = null;
 
     // the foreign snmpman.erl gen_server pid name
     private static String foreignPidName  = null;
@@ -90,7 +91,7 @@ public class Snmpman
 
     public static void main(String[] args)
     {
-                try
+        try
         {
             Properties   prop  = new Properties();
             InputStream  input = new FileInputStream("cfg/snmpman.properties");
@@ -98,6 +99,17 @@ public class Snmpman
             selfNodeName     = prop.getProperty("self_name");
             foreignNodeName  = prop.getProperty("foreign_node");
             foreignPidName   = prop.getProperty("foreign_pid");
+        }
+        catch(IOException e)
+        {
+            e.printStackTrace();
+            return;
+        }
+        System.out.println("foreign node is " + foreignNodeName);
+
+        try
+        {
+            erlangCookie = new Scanner(new File("cfg/sysmo.cookie")).useDelimiter("\\Z").next();
         }
         catch(IOException e)
         {
@@ -125,7 +137,8 @@ public class Snmpman
         // Initialize
         try 
         {
-            self = new OtpNode(selfNodeName);
+            System.out.println("Trying to connect to " + foreignNodeName);
+            self = new OtpNode(selfNodeName, erlangCookie);
             mbox = self.createMbox();
             if (!self.ping(foreignNodeName, 2000)) 
             { 
