@@ -7,6 +7,7 @@ JAVAC		?= javac
 # DEBUG
 #JAVA	= /cygdrive/c/Program\ Files/Java/jdk1.8.0_31/bin/java.exe
 #JAVAC   = /cygdrive/c/Program\ Files/Java/jdk1.8.0_31/bin/javac.exe
+#JAVAJAR = /cygdrive/c/Program\ Files/Java/jdk1.8.0_31/bin/jar.exe
 #ERL     = /cygdrive/c/Program\ Files/erl6.3/bin/erl -smp
 #ERLC    = /cygdrive/c/Program\ Files/erl6.3/bin/erlc -Werror
 # DEBUG END
@@ -42,7 +43,10 @@ endif
 #JCLASSPATH = '$(shell cygpath -awp $(JCLASSPATH_TMP))'
 #DEBUG END
 
-compile: $(JSNMPMAN) $(ERL_TARGETS)
+compile: $(ERL_TARGETS) java_lib/Snmpman.jar 
+
+java_lib/Snmpman.jar: $(JSNMPMAN)
+	$(JAVAJAR) cf java_lib/Snmpman.jar -C java_bin io
 
 doc: doc/index.html
 
@@ -53,6 +57,7 @@ doc/index.html: doc/overview.edoc $(ERL_SRC)
 test:
 
 clean: clean-doc
+	rm -f java_lib/Snmpman.jar
 	rm -rf java_bin/io
 	rm -f ebin/*.beam
 	rm -f erl_crash.dump

@@ -14,6 +14,7 @@ ifeq ($(CYGW), CYGWIN)
     export ASNC    = /cygdrive/c/Program\ Files/erl6.3/bin/erlc -Werror -bber
     export JAVA	   = /cygdrive/c/Program\ Files/Java/jdk1.8.0_31/bin/java.exe
     export JAVAC   = /cygdrive/c/Program\ Files/Java/jdk1.8.0_31/bin/javac.exe
+    export JAVAJAR = /cygdrive/c/Program\ Files/Java/jdk1.8.0_31/bin/jar.exe
 else
     RELEASE        = unix-release
     LOCAL_RELEASE  = unix-local-release
@@ -23,6 +24,7 @@ else
     export ASNC    = /opt/erlang_otp_17.4/bin/erlc -Werror -bber
     export JAVA    = /opt/jdk1.8.0_31/bin/java
     export JAVAC   = /opt/jdk1.8.0_31/bin/javac
+    export JAVAJAR = /opt/jdk1.8.0_31/bin/jar
 endif
 
 export MAKE        = /usr/bin/make
@@ -72,7 +74,7 @@ rel-clean:
 	rm -f var/yaws/docroot/nchecks/*.xml
 	rm -f $(REL_NAME).tar
 	rm -f $(REL_NAME)-$(REL_VERSION).tar.gz
-	rm -rf $(REL_NAME)-$(REL_VERSION).win32
+	rm -rf $(REL_NAME)-win32-$(REL_VERSION)
 
 
 
@@ -121,37 +123,27 @@ windows-local-release: compile $(REL_NAME).script
 	chmod -w sys.config
 
 windows-release: var-clean rel-clean compile
-	@echo -n "Generating $(REL_NAME)-$(REL_VERSION).win32 release: ."
-	@echo -n "."
-	@$(ERL) -noinput $(ERL_NMS_PATH) -eval $(ERL_REL_COMM2)
-	@echo -n "."
-	@rm -rf $(WIN_TMP_DIR)
-	@echo -n "."
-	@mkdir  $(WIN_TMP_DIR)
-	@echo -n "."
-	@gzip -d $(REL_NAME).tar.gz
-	@echo -n "."
-	@rm -f   $(REL_NAME).tar.gz
-	@echo -n "."
-	@$(ERL) -noinput -eval $(ERL_UNTAR)
-	@echo -n "."
-	@cp -R var $(WIN_TMP_DIR)/
-	@echo -n "."
-	@mkdir $(WIN_TMP_DIR)/bin
-	@echo -n "."
-	@cp release_tools/win32/sysmo.bat.src $(WIN_TMP_DIR)/bin/sysmo.bat
-	@echo -n "."
-	@cp release_tools/win32/register_sysmo_nt-service.bat.src $(WIN_TMP_DIR)/bin/register_sysmo_nt-service.bat
-	@echo -n "."
-	@cp release_tools/win32/erl.ini.src      $(WIN_TMP_DIR)/erts-$(ERTS_VER)/bin/erl.ini.src
-	@echo -n "."
-	@cp release_tools/sys.config.src   $(WIN_TMP_DIR)/releases/$(REL_VERSION)/sys.config
-	@echo -n "."
-	@mkdir $(WIN_TMP_DIR)/cfg
-	@echo -n "."
-	@touch $(WIN_TMP_DIR)/cfg/monitor.conf
-	@echo -n "."
-	@cp -r $(WIN_TMP_DIR) $(REL_NAME)-$(REL_VERSION).win32
+	@echo "Generating $(REL_NAME)-win32-$(REL_VERSION) release: ."
+	$(ERL) -noinput $(ERL_NMS_PATH) -eval $(ERL_REL_COMM2)
+	rm -rf $(TMP_DIR)
+	mkdir  $(TMP_DIR)
+	gzip -d $(REL_NAME).tar.gz
+	rm -f   $(REL_NAME).tar.gz
+	$(ERL) -noinput -eval $(ERL_UNTAR)
+	cp -R var $(TMP_DIR)
+	cp lib/nchecks/priv/defs/en/* $(TMP_DIR)/var/yaws/docroot/nchecks/
+	mkdir $(TMP_DIR)/bin
+	cp release_tools/win32/sysmo.bat.src $(TMP_DIR)/bin/sysmo.bat
+	cp release_tools/win32/register_sysmo_nt-service.bat.src $(TMP_DIR)/bin/register_sysmo_nt-service.bat
+	cp release_tools/win32/erl.ini.src      $(TMP_DIR)/erts-$(ERTS_VER)/bin/erl.ini.src
+	cp release_tools/sys.config.src   $(TMP_DIR)/releases/$(REL_VERSION)/sys.config
+	mkdir $(TMP_DIR)/cfg
+	cp -r cfg/* $(TMP_DIR)/cfg/
+	mkdir -p $(TMP_DIR)/lib/jars
+	cp lib/snmpman/java_lib/*.jar $(TMP_DIR)/lib/jars/
+	cp lib/nchecks/java_lib/*.jar $(TMP_DIR)/lib/jars/
+	cp lib/equartz/java_lib/*.jar $(TMP_DIR)/lib/jars/
+	cp -r $(TMP_DIR) $(REL_NAME)-win32-$(REL_VERSION)
 	@echo "Done!"
 
 

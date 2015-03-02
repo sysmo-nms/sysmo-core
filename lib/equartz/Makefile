@@ -11,6 +11,7 @@ ERLC		?= erlc -Werror
 #ERLC    = /cygdrive/c/Program\ Files/erl6.3/bin/erlc -Werror
 #JAVA	= /cygdrive/c/Program\ Files/Java/jdk1.8.0_31/bin/java.exe
 #JAVAC   = /cygdrive/c/Program\ Files/Java/jdk1.8.0_31/bin/javac.exe
+#JAVAJAR = /cygdrive/c/Program\ Files/Java/jdk1.8.0_31/bin/jar.exe
 # DEBUG END
 
 APP			= equartz
@@ -49,9 +50,13 @@ endif
 #JCLASSPATH = '$(shell cygpath -awp $(JCLASSPATH_TMP))'
 # DEBUG END
 
-compile: $(ERL_TARGETS) $(ENODE) $(EQUARTZ) 
+compile: $(ERL_TARGETS) java_lib/EQuartz.jar
 
+java_lib/EQuartz.jar: $(ENODE) $(EQUARTZ)
+	$(JAVAJAR) cf java_lib/EQuartz.jar -C java_bin io
+	
 clean: clean-doc
+	rm -f java_lib/EQuartz.jar
 	rm -rf java_bin/io
 	rm -f ebin/*.beam
 	rm -f erl_crash.dump

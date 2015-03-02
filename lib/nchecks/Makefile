@@ -13,6 +13,7 @@ APP			= nchecks
 #ERLC    = /cygdrive/c/Program\ Files/erl6.3/bin/erlc -Werror
 #JAVA	= /cygdrive/c/Program\ Files/Java/jdk1.8.0_31/bin/java.exe
 #JAVAC   = /cygdrive/c/Program\ Files/Java/jdk1.8.0_31/bin/javac.exe
+#JAVAJAR = /cygdrive/c/Program\ Files/Java/jdk1.8.0_31/bin/jar.exe
 # DEBUG END
 
 # define erl targets
@@ -60,10 +61,14 @@ endif
 #JCLASSPATH = '$(shell cygpath -awp $(JCLASSPATH_TMP))'
 #DEBUG END
 
-compile: $(ERL_TARGETS) $(NCHECKS_MAIN_TARGET)
+compile: $(ERL_TARGETS) java_lib/NChecks.jar
+
+java_lib/NChecks.jar: $(NCHECKS_MAIN_TARGET)
+	$(JAVAJAR) cf java_lib/NChecks.jar -C java_bin io
 
 clean: clean-doc
 	rm -rf java_bin/io
+	rm -f java_lib/NChecks.jar
 	rm -f ebin/*.beam
 	rm -f erl_crash.dump
 	rm -f nchecks.log
