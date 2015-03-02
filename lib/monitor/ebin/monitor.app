@@ -23,29 +23,28 @@
         {description, "Data store of monitors configuration"},
         {vsn, "0.1.0"},
         {modules, [
-                monitor,
-                monitor_app,
-                monitor_channel,
-                monitor_commander,
-                monitor_data_master,
-                monitor_events,
-                monitor_exec,
-                monitor_inspector,
-                monitor_jobs,
-                monitor_logger,
-                monitor_pdu,
-                monitor_probe,
-                monitor_probe_sup,
-                monitor_sup,
-                monitor_utils,
-                bmonitor_inspector_fire_alert,
-                bmonitor_inspector_property_set,
-                bmonitor_inspector_status_set,
-                bmonitor_logger_rrd,
-                bmonitor_logger_rrd2,
-                bmonitor_probe_nchecks,
-                bmonitor_probe_snmp
-                
+            bmonitor_inspector_fire_alert,
+            bmonitor_inspector_property_set,
+            bmonitor_inspector_status_set,
+            bmonitor_logger_rrd,
+            bmonitor_logger_rrd2,
+            bmonitor_probe_nchecks,
+            bmonitor_probe_snmp,
+            monitor,
+            monitor_app,
+            monitor_channel,
+            monitor_commander,
+            monitor_data_master,
+            monitor_events,
+            monitor_exec,
+            monitor_inspector,
+            monitor_jobs,
+            monitor_logger,
+            monitor_pdu,
+            monitor_probe,
+            monitor_probe_sup,
+            monitor_sup,
+            monitor_utils
             ]},
         {registered, [
                 monitor_sup,
@@ -60,3 +59,4 @@
         {mod, {monitor_app, []}}
     ]
 }.
+

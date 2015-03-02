@@ -144,6 +144,7 @@ windows-release: var-clean rel-clean compile jars
 	cp -r cfg/* $(TMP_DIR)/cfg/
 	mkdir -p $(TMP_DIR)/lib/jars
 	cp lib/jars/*.jar $(TMP_DIR)/lib/jars/
+	cp lib/pping/pping.exe $(TMP_DIR)/
 	cp -r $(TMP_DIR) $(REL_NAME)-win32-$(REL_VERSION)
 	@echo "Done!"
 

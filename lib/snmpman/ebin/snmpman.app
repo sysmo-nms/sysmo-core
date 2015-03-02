@@ -4,6 +4,7 @@
         {vsn, "0.1.0"},
         {modules, [
                 snmpman,
+                snmpman_guard,
                 snmpman_sup,
                 snmpman_app
             ]
