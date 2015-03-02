@@ -134,12 +134,11 @@ windows-release: var-clean rel-clean compile jars
 	$(ERL) -noinput -eval $(ERL_UNTAR)
 	cp -R var $(TMP_DIR)
 	cp lib/nchecks/priv/defs/en/* $(TMP_DIR)/var/yaws/docroot/nchecks/
-	mkdir $(TMP_DIR)/bin
-	cp release_tools/win32/sysmo.bat.src                     $(TMP_DIR)/bin/sysmo.bat
-	cp release_tools/win32/register_sysmo_nt-service.bat.src $(TMP_DIR)/bin/register_sysmo_nt-service.bat
-	cp release_tools/win32/unregister_sysmo_nt-service.bat.src $(TMP_DIR)/bin/register_sysmo_nt-service.bat
-	cp release_tools/win32/erl.ini.src                       $(TMP_DIR)/erts-$(ERTS_VER)/bin/erl.ini.src
-	cp release_tools/sys.config.base   $(TMP_DIR)/releases/$(REL_VERSION)/sys.config
+	mkdir $(TMP_DIR)/nt-tools
+	cp release_tools/win32/nt-*         $(TMP_DIR)/nt-tools/
+	cp release_tools/win32/erl.ini.src  $(TMP_DIR)/erts-$(ERTS_VER)/bin/erl.ini.src
+	cp release_tools/sys.config.base    $(TMP_DIR)/releases/$(REL_VERSION)/sys.config
+	cp release_tools/sysmo.io.URL		$(TMP_DIR)/
 	mkdir $(TMP_DIR)/cfg
 	cp -r cfg/* $(TMP_DIR)/cfg/
 	mkdir -p $(TMP_DIR)/lib/jars
