@@ -76,9 +76,10 @@ rel-clean:
 	rm -f $(REL_NAME)-$(REL_VERSION).tar.gz
 	rm -rf $(REL_NAME)-win32-$(REL_VERSION)
 
-
-
-
+jars:
+	cp lib/snmpman/java_lib/*.jar lib/jars/
+	cp lib/equartz/java_lib/*.jar lib/jars/
+	cp lib/nchecks/java_lib/*.jar lib/jars/
 
 
 ######################
@@ -97,7 +98,7 @@ ERL_REL_COMM2   = '\
     init:stop()\
 '
 start: rel-clean $(LOCAL_RELEASE)
-	$(ERL) -sname master -boot ./$(REL_NAME) -config ./sys
+	$(ERL) -sname sysmo -boot ./$(REL_NAME) -config ./sys
 
 release: $(RELEASE)
 
@@ -117,12 +118,12 @@ ERL_UNTAR   = '\
 ##########################
 # WINDOWS RELEASES BEGIN #
 ##########################
-windows-local-release: compile $(REL_NAME).script
+windows-local-release: compile $(REL_NAME).script jars
 	cp lib/nchecks/priv/defs/en/* var/yaws/docroot/nchecks/
-	cp release_tools/local/sys.config.dev.win ./sys.config
+	cp release_tools/sys.config.base ./sys.config
 	chmod -w sys.config
 
-windows-release: var-clean rel-clean compile
+windows-release: var-clean rel-clean compile jars
 	@echo "Generating $(REL_NAME)-win32-$(REL_VERSION) release: ."
 	$(ERL) -noinput $(ERL_NMS_PATH) -eval $(ERL_REL_COMM2)
 	rm -rf $(TMP_DIR)
@@ -133,16 +134,14 @@ windows-release: var-clean rel-clean compile
 	cp -R var $(TMP_DIR)
 	cp lib/nchecks/priv/defs/en/* $(TMP_DIR)/var/yaws/docroot/nchecks/
 	mkdir $(TMP_DIR)/bin
-	cp release_tools/win32/sysmo.bat.src $(TMP_DIR)/bin/sysmo.bat
+	cp release_tools/win32/sysmo.bat.src                     $(TMP_DIR)/bin/sysmo.bat
 	cp release_tools/win32/register_sysmo_nt-service.bat.src $(TMP_DIR)/bin/register_sysmo_nt-service.bat
-	cp release_tools/win32/erl.ini.src      $(TMP_DIR)/erts-$(ERTS_VER)/bin/erl.ini.src
-	cp release_tools/sys.config.src   $(TMP_DIR)/releases/$(REL_VERSION)/sys.config
+	cp release_tools/win32/erl.ini.src                       $(TMP_DIR)/erts-$(ERTS_VER)/bin/erl.ini.src
+	cp release_tools/sys.config.base   $(TMP_DIR)/releases/$(REL_VERSION)/sys.config
 	mkdir $(TMP_DIR)/cfg
 	cp -r cfg/* $(TMP_DIR)/cfg/
 	mkdir -p $(TMP_DIR)/lib/jars
-	cp lib/snmpman/java_lib/*.jar $(TMP_DIR)/lib/jars/
-	cp lib/nchecks/java_lib/*.jar $(TMP_DIR)/lib/jars/
-	cp lib/equartz/java_lib/*.jar $(TMP_DIR)/lib/jars/
+	cp lib/jars/*.jar $(TMP_DIR)/lib/jars/
 	cp -r $(TMP_DIR) $(REL_NAME)-win32-$(REL_VERSION)
 	@echo "Done!"
 

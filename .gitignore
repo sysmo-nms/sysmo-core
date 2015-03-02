@@ -27,7 +27,7 @@ activity.log
 *.log
 sysmo.script
 sysmo.boot
-*.win32
+sysmo-win32*
 lib/supercast/include/ModSupercast.hrl
 lib/supercast/include/ModMonitor.hrl
 ./sys.config
@@ -38,3 +38,4 @@ var/engineID.conf
 var/yaws/docroot/tmp-*
 var/yaws/docroot/nchecks/*.xml
 lib/fcgisrv/priv/sysmo-webif/
+lib/jars/*.jar

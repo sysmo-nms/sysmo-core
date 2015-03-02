@@ -90,7 +90,7 @@
             {java_node, 
                 [
                     {java_com,
-"c:/ProgramData/Oracle/Java/javapath/javaw.exe -cp lib/snmpman/java_lib/*; io.sysmo.snmpm.Snmpman var/engineID.conf >var/log/snmpman.log 2>&1"
+"javaw.exe -cp lib/snmpman/java_lib/*; io.sysmo.snmpm.Snmpman var/engineID.conf >var/log/snmpman.log 2>&1"
                     }
                 ]
             }
@@ -110,7 +110,7 @@
             {java_node, 
                 [
                     {java_com,
-"c:/ProgramData/Oracle/Java/javapath/javaw.exe -cp lib/nchecks/java_lib/*; io.sysmo.nchecks.NChecks >var/log/nchecks.log 2>&1"
+"javaw.exe -cp lib/nchecks/java_lib/*; io.sysmo.nchecks.NChecks >var/log/nchecks.log 2>&1"
                     }
                 ]
             }
@@ -121,7 +121,7 @@
             {java_node, 
                 [
                     {java_com,
-" c:/ProgramData/Oracle/Java/javapath/javaw.exe -cp lib/equartz/java_lib/*; io.sysmo.equartz.EQuartz >var/log/equartz.log 2>&1"
+"javaw.exe -cp lib/equartz/java_lib/*; io.sysmo.equartz.EQuartz >var/log/equartz.log 2>&1"
                     }
                 ]
             }
