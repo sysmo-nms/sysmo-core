@@ -30,7 +30,7 @@ sysmo.boot
 sysmo-win32*
 lib/supercast/include/ModSupercast.hrl
 lib/supercast/include/ModMonitor.hrl
-./sys.config
+sys.config
 sysmo.tar
 *.plt
 var/engineID.conf
