@@ -23,13 +23,6 @@
 -module(monitor_pdu).
 -include("include/monitor.hrl").
 -export([
-    'PDU-MonitorPDU-fromServer-deleteTarget'/1,
-    'PDU-MonitorPDU-fromServer-deleteProbe'/1,
-    'PDU-MonitorPDU-fromServer-infoTarget-create'/1,
-    'PDU-MonitorPDU-fromServer-infoTarget-update'/1,
-    'PDU-MonitorPDU-fromServer-infoProbe-create'/1,
-    'PDU-MonitorPDU-fromServer-infoProbe-update'/1,
-    'PDU-MonitorPDU-fromServer-probeReturn'/4,
     probeReturn/4,
     infoProbeCreate/1,
     infoProbeUpdate/1,
@@ -100,14 +93,6 @@ deleteTarget(TargetName) ->
         ]
     }.
  
-    
-'PDU-MonitorPDU-fromServer-deleteTarget'(Target) ->
-    {modMonitorPDU,
-        {fromServer,
-            {deleteTarget, Target}
-        }
-    }.
- 
 deleteProbe(Probe) ->
     #probe{name=Name,belong_to=Target} = Probe,
     {struct,
@@ -115,35 +100,21 @@ deleteProbe(Probe) ->
             {<<"from">>, <<"monitor">>},
             {<<"type">>, <<"deleteProbe">>},
             {<<"value">>, {struct, [
-                {<<"name">>, list_to_binary(Name)},
+                {<<"name">>,   list_to_binary(Name)},
                 {<<"target">>, list_to_binary(Target)}]}}
         ]
     }.
  
-
-'PDU-MonitorPDU-fromServer-deleteProbe'(Probe) ->
-    #probe{name=Name,belong_to=Target} = Probe,
-    {modMonitorPDU,
-        {fromServer,
-            {deleteProbe,
-                {'DeleteProbe',
-                    Target,
-                    Name
-                }
-            }
-        }
-    }.
-
 probeReturn(ProbeReturn, Target, Probe, NextReturn) ->
     KeyValStr = make_key_values(ProbeReturn#probe_return.key_vals),
-    JKeyVal = [{list_to_binary(Key), list_to_binary(Val)} || {_, Key, Val} <- KeyValStr],
+    JKeyVal = [{list_to_binary(Key), list_to_binary(Val)} || {Key, Val} <- KeyValStr],
     {struct,
         [
             {<<"from">>, <<"monitor">>},
-            {<<"type">>, <<"deleteProbe">>},
+            {<<"type">>, <<"probeReturn">>},
             {<<"value">>, {struct, [
                 {<<"target">>, list_to_binary(Target)},
-                {<<"id">>,  list_to_binary(Probe)},
+                {<<"name">>,  list_to_binary(Probe)},
                 {<<"status">>, list_to_binary(ProbeReturn#probe_return.status)},
                 {<<"originalRep">>, list_to_binary(ProbeReturn#probe_return.original_reply)},
                 {<<"timestamp">>, ProbeReturn#probe_return.timestamp},
@@ -152,34 +123,7 @@ probeReturn(ProbeReturn, Target, Probe, NextReturn) ->
             ]}}
         ]
     }.
-
-    
-'PDU-MonitorPDU-fromServer-probeReturn'(
-        #probe_return{ 
-            status          = Status,
-            original_reply  = OriginalReply,
-            timestamp       = Timestamp,
-            key_vals        = KeyVals
-        },
-        TargetName,
-        ProbeId,
-        NextReturn ) ->
-    {modMonitorPDU,
-        {fromServer,
-            {probeReturn,
-                {'ProbeReturn',
-                    TargetName,
-                    ProbeId,
-                    Status,
-                    OriginalReply,
-                    Timestamp,
-                    make_key_values(KeyVals),
-                    NextReturn
-                }
-            }
-        }
-    }.
-
+   
 infoTargetCreate(Target) -> infoTarget(Target, <<"create">>).
 infoTargetUpdate(Target) -> infoTarget(Target, <<"update">>).
 infoTarget(#target{name=Name, properties=Prop}, InfoType) ->
@@ -203,70 +147,36 @@ maybe_str(Val) when is_float(Val) -> Val;
 maybe_str(Val) -> list_to_binary(Val).
     
 
-'PDU-MonitorPDU-fromServer-infoTarget-create'(
-        #target{name=Name, properties=Prop}
-    ) ->
-    AsnProps = make_key_values(Prop),
-    {modMonitorPDU,
-        {fromServer,
-            {infoTarget,
-                {'InfoTarget',
-                    Name,
-                    AsnProps,
-                    [],
-                    create
-                }
-            }
-        }
-    }.
-
-'PDU-MonitorPDU-fromServer-infoTarget-update'(
-        #target{name=Name, properties=Prop}
-    ) ->
-    AsnProps = make_key_values(Prop),
-    {modMonitorPDU,
-        {fromServer,
-            {infoTarget,
-                {'InfoTarget',
-                    Name,
-                    AsnProps,
-                    [],
-                    update
-                }
-            }
-        }
-    }.
-
-'PDU-MonitorPDU-fromServer-infoProbe-update'(
-    #probe{
-        permissions         = #perm_conf{read = R, write = W},
-        monitor_probe_conf  = ProbeConf,
-        description         = Descr,
-        info                = Info
-    } = Probe) ->
-    {modMonitorPDU,
-        {fromServer,
-            {infoProbe,
-                {'InfoProbe',
-                    Probe#probe.belong_to,
-                    Probe#probe.name,
-                    Descr,
-                    Info,
-                    {'PermConf', R, W},
-                    atom_to_list(Probe#probe.monitor_probe_mod),
-                    gen_asn_probe_conf(ProbeConf),
-                    Probe#probe.status,
-                    Probe#probe.timeout,
-                    Probe#probe.step,
-                    gen_asn_probe_inspectors(Probe#probe.inspectors),
-                    gen_asn_probe_loggers(Probe#probe.loggers),
-                    make_key_values(Probe#probe.properties),
-                    gen_asn_probe_active(Probe#probe.active),
-                    create
-                }
-            }
-        }
-    }.
+% 'PDU-MonitorPDU-fromServer-infoProbe-update'(
+%     #probe{
+%         permissions         = #perm_conf{read = R, write = W},
+%         monitor_probe_conf  = ProbeConf,
+%         description         = Descr,
+%         info                = Info
+%     } = Probe) ->
+%     {modMonitorPDU,
+%         {fromServer,
+%             {infoProbe,
+%                 {'InfoProbe',
+%                     Probe#probe.belong_to,
+%                     Probe#probe.name,
+%                     Descr,
+%                     Info,
+%                     {'PermConf', R, W},
+%                     atom_to_list(Probe#probe.monitor_probe_mod),
+%                     gen_str_probe_conf(ProbeConf),
+%                     Probe#probe.status,
+%                     Probe#probe.timeout,
+%                     Probe#probe.step,
+%                     gen_asn_probe_inspectors(Probe#probe.inspectors),
+%                     gen_asn_probe_loggers(Probe#probe.loggers),
+%                     make_key_values(Probe#probe.properties),
+%                     gen_asn_probe_active(Probe#probe.active),
+%                     create
+%                 }
+%             }
+%         }
+%     }.
 
 
 infoProbeCreate(Probe) -> infoProbe(Probe, <<"create">>).
@@ -289,7 +199,7 @@ infoProbe(Probe, InfoType) ->
                 {<<"info">>,        list_to_binary(Probe#probe.info)},
                 {<<"perm">>,        {struct, [{<<"read">>, {array, JR}}, {<<"write">>, {array, JW}}]}},
                 {<<"probeMod">>,    atom_to_binary(Probe#probe.monitor_probe_mod, utf8)},
-                {<<"probeconf">>,   list_to_binary(gen_asn_probe_conf(ProbeConf))},
+                {<<"probeconf">>,   list_to_binary(gen_str_probe_conf(ProbeConf))},
                 {<<"status">>,      list_to_binary(Probe#probe.status)},
                 {<<"timeout">>,     Probe#probe.timeout},
                 {<<"step">>,        Probe#probe.step},
@@ -333,84 +243,52 @@ gen_json_probe_loggers(A) ->
     {struct, []}.
             
 
-
-'PDU-MonitorPDU-fromServer-infoProbe-create'(
-    #probe{
-        permissions         = #perm_conf{read = R, write = W},
-        monitor_probe_conf  = ProbeConf,
-        description         = Descr,
-        info                = Info
-    } = Probe) ->
-    {modMonitorPDU,
-        {fromServer,
-            {infoProbe,
-                {'InfoProbe',
-                    Probe#probe.belong_to,
-                    Probe#probe.name,
-                    Descr,
-                    Info,
-                    {'PermConf', R, W},
-                    atom_to_list(Probe#probe.monitor_probe_mod),
-                    gen_asn_probe_conf(ProbeConf),
-                    Probe#probe.status,
-                    Probe#probe.timeout,
-                    Probe#probe.step,
-                    gen_asn_probe_inspectors(Probe#probe.inspectors),
-                    gen_asn_probe_loggers(Probe#probe.loggers),
-                    make_key_values(Probe#probe.properties),
-                    gen_asn_probe_active(Probe#probe.active),
-                    create
-                }
-            }
-        }
-    }.
-
 % UTILS
-gen_asn_probe_conf(Conf) when is_record(Conf, nchecks_probe_conf) ->
+gen_str_probe_conf(Conf) when is_record(Conf, nchecks_probe_conf) ->
     lists:flatten(io_lib:format("~p", [Conf]));
-gen_asn_probe_conf(Conf) when is_record(Conf, snmp_probe_conf) ->
+gen_str_probe_conf(Conf) when is_record(Conf, snmp_probe_conf) ->
     lists:flatten(io_lib:format("~p", [Conf])).
 
-gen_asn_probe_inspectors(Inspectors) ->
-    [{
-        'Inspector',
-        atom_to_list(Module),
-        lists:flatten(io_lib:format("~p", [Conf]))
-    } || {_, Module, Conf} <- Inspectors].
-
-gen_asn_probe_loggers(Loggers) ->
-    [gen_logger_pdu(LConf) || LConf <- Loggers].
-
-gen_logger_pdu({logger, bmonitor_logger_rrd2, Cfg}) ->
-    Type = proplists:get_value(type, Cfg),
-    RCreate = proplists:get_value(rrd_create, Cfg),
-    RUpdate = proplists:get_value(rrd_update, Cfg),
-    RGraphs = proplists:get_value(rrd_graph, Cfg),
-    Indexes = [I || {I,_} <- proplists:get_value(row_index_to_rrd_file, Cfg)],
-    {loggerRrd2, 
-        {'LoggerRrd2',
-            atom_to_list(bmonitor_logger_rrd2),
-            atom_to_list(Type),
-            RCreate,
-            RUpdate,
-            RGraphs,
-            Indexes
-        }
-    }.
+% gen_asn_probe_inspectors(Inspectors) ->
+%     [{
+%         'Inspector',
+%         atom_to_list(Module),
+%         lists:flatten(io_lib:format("~p", [Conf]))
+%     } || {_, Module, Conf} <- Inspectors].
+% 
+% gen_asn_probe_loggers(Loggers) ->
+%     [gen_logger_pdu(LConf) || LConf <- Loggers].
+% 
+% gen_logger_pdu({logger, bmonitor_logger_rrd2, Cfg}) ->
+%     Type = proplists:get_value(type, Cfg),
+%     RCreate = proplists:get_value(rrd_create, Cfg),
+%     RUpdate = proplists:get_value(rrd_update, Cfg),
+%     RGraphs = proplists:get_value(rrd_graph, Cfg),
+%     Indexes = [I || {I,_} <- proplists:get_value(row_index_to_rrd_file, Cfg)],
+%     {loggerRrd2, 
+%         {'LoggerRrd2',
+%             atom_to_list(bmonitor_logger_rrd2),
+%             atom_to_list(Type),
+%             RCreate,
+%             RUpdate,
+%             RGraphs,
+%             Indexes
+%         }
+%     }.
 
 make_key_values(K) ->
     make_key_values(K, []).
 make_key_values([], S) ->
     S;
 make_key_values([{K,V} | T], S) when is_list(V) ->
-    make_key_values(T, [{'Property', K, V} | S]);
+    make_key_values(T, [{K, V} | S]);
 make_key_values([{K,V} | T], S) when is_integer(V) ->
-    make_key_values(T, [{'Property', K, integer_to_list(V)} | S]);
+    make_key_values(T, [{K, integer_to_list(V)} | S]);
 make_key_values([{K,V} | T], S) when is_float(V) ->
-    make_key_values(T, [{'Property', K, float_to_list(V, [{decimals, 10}])} | S]);
+    make_key_values(T, [{K, float_to_list(V, [{decimals, 10}])} | S]);
 make_key_values([{K,V} | T], S) when is_atom(V) ->
-    make_key_values(T, [{'Property', K, atom_to_list(V)} | S]).
+    make_key_values(T, [{K, atom_to_list(V)} | S]).
 
 
-gen_asn_probe_active(true)  -> 1;
-gen_asn_probe_active(false) -> 0.
+%gen_asn_probe_active(true)  -> 1;
+%gen_asn_probe_active(false) -> 0.
