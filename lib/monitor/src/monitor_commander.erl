@@ -45,6 +45,28 @@ handle_command(Command, CState) ->
     io:format("handle command ~p ~n", [Command]),
     gen_server:cast(?MODULE, {Command, CState}).
 
+handle_cast({{"monitorCreateTargetQuery", Contents}, CState}, S) ->
+    {struct, Contents2} = proplists:get_value(<<"value">>, Contents),
+    {struct, Prop}  = proplists:get_value(<<"properties">>, Contents2),
+    {struct, SProp} = proplists:get_value(<<"sysProperties">>, Contents2),
+    QueryId  = proplists:get_value(<<"queryId">>, Contents2),
+    NProp    = [{binary_to_list(Key), maybe_str(Val)} || {Key,Val} <- Prop],
+    NSysProp = [{binary_to_list(Key), maybe_str(Val)} || {Key,Val} <- SProp],
+    NSysProp2 = sysprop_guard(NSysProp),
+    TargetId = monitor:target_new(NSysProp2, NProp),
+    case snmp_enabled(NSysProp2) of
+        true ->
+            SInfoJob  = monitor:job_new({internal, update_snmp_system_info}, TargetId),
+            IfInfoJob = monitor:job_new({internal, update_snmp_if_aliases},  TargetId),
+            monitor:job_fire(SInfoJob),
+            monitor:job_fire(IfInfoJob);
+        false -> ok
+    end,
+    ReplyPDU = monitor_pdu:simpleReply(QueryId, true, true, TargetId),
+    supercast_channel:unicast(CState, [ReplyPDU]),
+    {noreply, S};
+
+
 handle_cast({{extendedQueryFromClient,
         {_, QueryId, {createTargetQuery, {_,SysProp,Prop}}}}, CState}, S) ->
     NProp    = [{Key,Val} || {'Prop', Key, Val} <- Prop],
@@ -64,10 +86,24 @@ handle_cast({{extendedQueryFromClient,
     supercast_channel:unicast(CState, [ReplyPDU]),
     {noreply, S};
 
+handle_cast({{"createNchecksQuery", Contents}, CState}, S) ->
+    {struct, Contents2} = proplists:get_value(<<"value">>, Contents),
+    {struct, Prop}  = proplists:get_value(<<"properties">>, Contents2),
+    Prop2 = [{binary_to_list(Key), maybe_str(Val)} || {Key, Val} <- Prop],
+    Name    = binary_to_list(proplists:get_value(<<"name">>, Contents2)),
+    Target  = binary_to_list(proplists:get_value(<<"target">>, Contents2)),
+    QueryId = proplists:get_value(<<"queryId">>, Contents2),
+    io:format("probe newo ~p ~p ~p ~n", [Name, Prop2, Target]),
+    ProbeId = monitor:probe_new({nchecks, Name, Prop2}, Target),
+    ReplyPdu = monitor_pdu:simpleReply(QueryId, true, true, ProbeId),
+    supercast_channel:unicast(CState, [ReplyPdu]),
+    {noreply, S};
+
+
 handle_cast({{extendedQueryFromClient,
         {_, QueryId, {createNchecksQuery, {_,Target,Type,Props}}}}, CState}, S) ->
     Args = [{Key, Val} || {'Prop', Key, Val} <- Props],
-    ProbeId = monitor:probe_new({nchecks,Type,Args}, Target),
+    ProbeId  = monitor:probe_new({nchecks,Type,Args}, Target),
     ReplyPDU = monitor_pdu:'PDU-MonitorPDU-fromServer-extendedReply'(
         QueryId, true, true, {string, ProbeId}),
     supercast_channel:unicast(CState, [ReplyPDU]),
@@ -89,11 +125,12 @@ handle_cast({{extendedQueryFromClient,
     supercast_channel:unicast(CState, [ReplyPDU]),
     {noreply, S};
 
-handle_cast({{extendedQueryFromClient,
-        {_, QueryId, {deleteTargetQuery, TargetId}}}, CState}, S) ->
-    monitor:target_delete(TargetId),
-    ReplyPDU = monitor_pdu:'PDU-MonitorPDU-fromServer-extendedReply'(
-        QueryId, true, true, {string, TargetId}),
+handle_cast({{"deleteTargetQuery", Contents}, CState}, S) ->
+    {struct, Contents2}  = proplists:get_value(<<"value">>, Contents),
+    Target  = binary_to_list(proplists:get_value(<<"name">>, Contents2)),
+    QueryId = proplists:get_value(<<"queryId">>, Contents2),
+    monitor:target_delete(Target),
+    ReplyPDU = monitor_pdu:simpleReply(QueryId, true, true, Target),
     supercast_channel:unicast(CState, [ReplyPDU]),
     {noreply, S};
 
@@ -217,3 +254,4 @@ snmp_enabled(SProps) ->
 
 maybe_str(Val) when is_binary(Val) -> binary_to_list(Val);
 maybe_str(Other) -> Other.
+

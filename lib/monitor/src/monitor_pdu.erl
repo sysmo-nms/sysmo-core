@@ -30,6 +30,13 @@
     'PDU-MonitorPDU-fromServer-infoProbe-create'/1,
     'PDU-MonitorPDU-fromServer-infoProbe-update'/1,
     'PDU-MonitorPDU-fromServer-probeReturn'/4,
+    probeReturn/4,
+    infoProbeCreate/1,
+    infoProbeUpdate/1,
+    deleteTarget/1,
+    deleteProbe/1,
+    infoTargetCreate/1,
+    infoTargetUpdate/1,
     elementInterfaceReply/4,
     simpleReply/4
 
@@ -82,6 +89,18 @@ simpleReply(QueryId, Status, Last, Msg) ->
         ]
     }.
 
+
+deleteTarget(TargetName) ->
+    {struct,
+        [
+            {<<"from">>, <<"monitor">>},
+            {<<"type">>, <<"deleteTarget">>},
+            {<<"value">>, {struct, [
+                {<<"name">>, list_to_binary(TargetName)}]}}
+        ]
+    }.
+ 
+    
 'PDU-MonitorPDU-fromServer-deleteTarget'(Target) ->
     {modMonitorPDU,
         {fromServer,
@@ -89,6 +108,19 @@ simpleReply(QueryId, Status, Last, Msg) ->
         }
     }.
  
+deleteProbe(Probe) ->
+    #probe{name=Name,belong_to=Target} = Probe,
+    {struct,
+        [
+            {<<"from">>, <<"monitor">>},
+            {<<"type">>, <<"deleteProbe">>},
+            {<<"value">>, {struct, [
+                {<<"name">>, list_to_binary(Name)},
+                {<<"target">>, list_to_binary(Target)}]}}
+        ]
+    }.
+ 
+
 'PDU-MonitorPDU-fromServer-deleteProbe'(Probe) ->
     #probe{name=Name,belong_to=Target} = Probe,
     {modMonitorPDU,
@@ -102,6 +134,26 @@ simpleReply(QueryId, Status, Last, Msg) ->
         }
     }.
 
+probeReturn(ProbeReturn, Target, Probe, NextReturn) ->
+    KeyValStr = make_key_values(ProbeReturn#probe_return.key_vals),
+    JKeyVal = [{list_to_binary(Key), list_to_binary(Val)} || {_, Key, Val} <- KeyValStr],
+    {struct,
+        [
+            {<<"from">>, <<"monitor">>},
+            {<<"type">>, <<"deleteProbe">>},
+            {<<"value">>, {struct, [
+                {<<"target">>, list_to_binary(Target)},
+                {<<"id">>,  list_to_binary(Probe)},
+                {<<"status">>, list_to_binary(ProbeReturn#probe_return.status)},
+                {<<"originalRep">>, list_to_binary(ProbeReturn#probe_return.original_reply)},
+                {<<"timestamp">>, ProbeReturn#probe_return.timestamp},
+                {<<"keyVals">>,  {struct, JKeyVal}},
+                {<<"nextReturn">>, NextReturn}
+            ]}}
+        ]
+    }.
+
+    
 'PDU-MonitorPDU-fromServer-probeReturn'(
         #probe_return{ 
             status          = Status,
@@ -128,12 +180,32 @@ simpleReply(QueryId, Status, Last, Msg) ->
         }
     }.
 
+infoTargetCreate(Target) -> infoTarget(Target, <<"create">>).
+infoTargetUpdate(Target) -> infoTarget(Target, <<"update">>).
+infoTarget(#target{name=Name, properties=Prop}, InfoType) ->
+    JProp = [{list_to_binary(Key), maybe_str(Val)} || {Key,Val} <- Prop],
+    {struct,
+        [
+            {<<"from">>, <<"monitor">>},
+            {<<"type">>, <<"infoTarget">>},
+            {<<"value">>, {struct, [
+                {<<"name">>,          list_to_binary(Name)},
+                {<<"properties">>,    {struct, JProp}},
+                {<<"sysProperties">>, {struct, []}},
+                {<<"infoType">>,      InfoType}]}
+            }
+        ]
+    }.
+
+
+maybe_str(Val) when is_integer(Val) -> Val;
+maybe_str(Val) when is_float(Val) -> Val;
+maybe_str(Val) -> list_to_binary(Val).
+    
+
 'PDU-MonitorPDU-fromServer-infoTarget-create'(
         #target{name=Name, properties=Prop}
     ) ->
-    %AsnProps = lists:foldl(fun({K,V}, Acc) -> 
-        %[{'Property', K, V} | Acc]
-    %end, [], Prop),
     AsnProps = make_key_values(Prop),
     {modMonitorPDU,
         {fromServer,
@@ -151,9 +223,6 @@ simpleReply(QueryId, Status, Last, Msg) ->
 'PDU-MonitorPDU-fromServer-infoTarget-update'(
         #target{name=Name, properties=Prop}
     ) ->
-    %AsnProps = lists:foldl(fun({K,V}, Acc) -> 
-    %    [{'Property', K, V} | Acc]
-    %end, [], Prop),
     AsnProps = make_key_values(Prop),
     {modMonitorPDU,
         {fromServer,
@@ -199,6 +268,70 @@ simpleReply(QueryId, Status, Last, Msg) ->
         }
     }.
 
+
+infoProbeCreate(Probe) -> infoProbe(Probe, <<"create">>).
+infoProbeUpdate(Probe) -> infoProbe(Probe, <<"update">>).
+infoProbe(Probe, InfoType) ->
+    #probe{
+        permissions         = #perm_conf{read = R, write = W},
+        monitor_probe_conf  = ProbeConf } = Probe,
+    
+    JR = [list_to_binary(G) || G <- R],
+    JW = [list_to_binary(G) || G <- W],
+    {struct,
+        [
+            {<<"from">>, <<"monitor">>},
+            {<<"type">>, <<"infoProbe">>},
+            {<<"value">>, {struct, [
+                {<<"target">>,      list_to_binary(Probe#probe.belong_to)},
+                {<<"name">>,        list_to_binary(Probe#probe.name)},
+                {<<"descr">>,       list_to_binary(Probe#probe.description)},
+                {<<"info">>,        list_to_binary(Probe#probe.info)},
+                {<<"perm">>,        {struct, [{<<"read">>, {array, JR}}, {<<"write">>, {array, JW}}]}},
+                {<<"probeMod">>,    atom_to_binary(Probe#probe.monitor_probe_mod, utf8)},
+                {<<"probeconf">>,   list_to_binary(gen_asn_probe_conf(ProbeConf))},
+                {<<"status">>,      list_to_binary(Probe#probe.status)},
+                {<<"timeout">>,     Probe#probe.timeout},
+                {<<"step">>,        Probe#probe.step},
+                {<<"inspectors">>,  gen_json_probe_inspectors(Probe#probe.inspectors)},
+                {<<"loggers">>,     gen_json_probe_loggers(Probe#probe.loggers)},
+
+                {<<"properties">>,  {struct, [{list_to_binary(Key), maybe_str(Val)} || {Key, Val} <- Probe#probe.properties]}},
+                {<<"active">>,      Probe#probe.active},
+                {<<"infoType">>,      InfoType}]}
+            }
+        ]
+    }.
+
+gen_json_probe_inspectors(Inspectors) ->
+    {struct,
+        [{atom_to_binary(Key, utf8), list_to_binary(io_lib:format("~p", [Conf]))} || {_,Key,Conf} <- Inspectors]
+    }.
+    
+gen_json_probe_loggers([{logger, bmonitor_logger_rrd2, Cfg}]) ->
+    Type    = proplists:get_value(type, Cfg),
+    RCreate = proplists:get_value(rrd_create, Cfg),
+    RUpdate = proplists:get_value(rrd_update, Cfg),
+    RGraphs = proplists:get_value(rrd_graph, Cfg),
+    RGraphs2 = [list_to_binary(G) || G <- RGraphs],
+    Indexes = [I || {I,_} <- proplists:get_value(row_index_to_rrd_file, Cfg)],
+    {struct,
+        [{atom_to_binary(bmonitor_logger_rrd2, utf8),
+            {struct,
+                [
+                    {<<"type">>,        list_to_binary(Type)},
+                    {<<"rrdCreate">>,   list_to_binary(RCreate)},
+                    {<<"RUpdate">>,     list_to_binary(RUpdate)},
+                    {<<"RGraphs">>,     {array, RGraphs2}},
+                    {<<"indexes">>,     {array, Indexes}}
+                ]
+            }
+        }]
+    };
+gen_json_probe_loggers(A) ->
+    io:format("what what waht ~p ~n", [A]),
+    {struct, []}.
+            
 
 
 'PDU-MonitorPDU-fromServer-infoProbe-create'(

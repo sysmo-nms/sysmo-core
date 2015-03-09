@@ -96,7 +96,7 @@ handle_cast({sync_request, CState}, S) ->
         #target{permissions=Perm} = T,
         case supercast:satisfy(CState, Perm) of
             true    ->
-                Pdu = monitor_pdu:'PDU-MonitorPDU-fromServer-infoTarget-create'(T),
+                Pdu = monitor_pdu:infoTargetCreate(T),
                 ok  = supercast_channel:unicast(CState, [Pdu]);
             false   -> ok
         end
@@ -106,7 +106,7 @@ handle_cast({sync_request, CState}, S) ->
         #probe{name=_Name,permissions=Perm} = P,
         case supercast:satisfy(CState, Perm) of
             true    ->
-                Pdu = monitor_pdu:'PDU-MonitorPDU-fromServer-infoProbe-create'(P),
+                Pdu = monitor_pdu:infoProbeCreate(P),
                 ok  = supercast_channel:unicast(CState, [Pdu]),
                 % Dep = do_get(dependency,Name)
                 % Pdu = dep... supercast:unicast...
@@ -186,20 +186,20 @@ code_change(_O, S, _E) ->
 
 % MNESIA EVENTS
 handle_target_create(#target{permissions=Perm} = Target) ->
-    Pdu = monitor_pdu:'PDU-MonitorPDU-fromServer-infoTarget-create'(Target),
+    Pdu = monitor_pdu:infoTargetCreate(Target),
     supercast_channel:emit(?MASTER_CHANNEL, {Perm, Pdu}).
 
 handle_target_update(#target{permissions=Perm} = Target, _) ->
-    Pdu = monitor_pdu:'PDU-MonitorPDU-fromServer-infoTarget-update'(Target),
+    Pdu = monitor_pdu:infoTargetUpdate(Target),
     supercast_channel:emit(?MASTER_CHANNEL, {Perm, Pdu}).
 
 
 handle_probe_create(#probe{permissions=Perm} = Probe) ->
-    Pdu = monitor_pdu:'PDU-MonitorPDU-fromServer-infoProbe-create'(Probe),
+    Pdu = monitor_pdu:infoProbeCreate(Probe),
     supercast_channel:emit(?MASTER_CHANNEL, {Perm, Pdu}).
 
 handle_probe_update(#probe{permissions=Perm} = Probe,_) ->
-    Pdu = monitor_pdu:'PDU-MonitorPDU-fromServer-infoProbe-update'(Probe),
+    Pdu = monitor_pdu:infoProbeUpdate(Probe),
     supercast_channel:emit(?MASTER_CHANNEL, {Perm, Pdu}).
 
 
@@ -217,10 +217,10 @@ handle_dependency_update(Dep) ->
 
 
 handle_delete({target, Name}, #target{permissions=Perm}) ->
-    Pdu = monitor_pdu:'PDU-MonitorPDU-fromServer-deleteTarget'(Name),
+    Pdu = monitor_pdu:deleteTarget(Name),
     supercast_channel:emit(?MASTER_CHANNEL, {Perm, Pdu});
 handle_delete({probe, _}, #probe{permissions=Perm} = Probe) ->
-    Pdu = monitor_pdu:'PDU-MonitorPDU-fromServer-deleteProbe'(Probe),
+    Pdu = monitor_pdu:deleteProbe(Probe),
     supercast_channel:emit(?MASTER_CHANNEL, {Perm, Pdu});
 handle_delete({job, Name},_) ->
     ?LOG({delete, Name});

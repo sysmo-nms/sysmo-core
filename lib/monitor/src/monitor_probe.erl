@@ -138,7 +138,7 @@ handle_cast(continue_init, Probe) ->
     % BEGIN partial return for clients
     PartialReturn = partial_pr(ES),
     MilliRem = read_timer(ES#ets_state.tref),
-    Pdu = monitor_pdu:'PDU-MonitorPDU-fromServer-probeReturn'(
+    Pdu = monitor_pdu:probeReturn(
         PartialReturn,
         ES#ets_state.target_name,
         ES#ets_state.name,
@@ -168,7 +168,7 @@ handle_cast({triggered_return, CState}, S) ->
     },
 
     MilliRem = read_timer(ES#ets_state.tref),
-    Pdu = monitor_pdu:'PDU-MonitorPDU-fromServer-probeReturn'(
+    Pdu = monitor_pdu:probeReturn(
         PartialPR,
         ES#ets_state.target_name,
         ES#ets_state.name,
@@ -186,7 +186,7 @@ handle_cast(force, S) ->
             TRef = initiate_start_sequence(undefined, now),
             monitor_data_master:set_probe_state(ES#ets_state{tref=TRef}),
             PartialReturn = partial_pr(ES),
-            Pdu = monitor_pdu:'PDU-MonitorPDU-fromServer-probeReturn'(
+            Pdu = monitor_pdu:probeReturn(
                 PartialReturn,
                 ES#ets_state.target_name,
                 ES#ets_state.name,
@@ -224,7 +224,7 @@ handle_info({probe_return, NewProbeState, PR}, S) ->
     MilliRem  = read_timer(TRef),
 
     % SEND MESSAGES
-    Pdu = monitor_pdu:'PDU-MonitorPDU-fromServer-probeReturn'(
+    Pdu = monitor_pdu:probeReturn(
         PR,
         ES#ets_state.target_name,
         ES#ets_state.name,
