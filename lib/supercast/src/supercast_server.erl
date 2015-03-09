@@ -58,8 +58,17 @@ which_auth() ->
 
 
 % API FROM CLIENTS
-client_msg(Msg, ClientState) ->
-    handle_client_msg(Msg, ClientState).
+client_msg(connect, ClientState) ->
+    handle_client_msg(connect, ClientState);
+client_msg(disconnect, ClientState) ->
+    handle_client_msg(disconnect, ClientState);
+client_msg({message, Json}, ClientState) ->
+    {struct, Contents} = Json,
+    
+    From = binary_to_list(proplists:get_value(<<"from">>, Contents)),
+    Type = binary_to_list(proplists:get_value(<<"type">>, Contents)),
+
+    handle_client_msg({From, Type, Contents}, ClientState).
 
 % from himself
 handle_client_command(Mod, Msg, CState) ->
@@ -96,8 +105,7 @@ handle_call({connect, CState}, _F, #state{http_port = Port , http_proto = Proto}
     R = send(CState, pdu(serverInfo, {"local", Port, Proto})),
     {reply, R, S};
 
-handle_call({client_command, Key, Msg, CState}, _F, 
-        #state{dispatch = Dispatch} = S) ->
+handle_call({client_command, Key, Msg, CState}, _F, #state{dispatch = Dispatch} = S) ->
     case lists:keyfind(Key, 2, Dispatch) of
         false ->
             {reply, ok, S};
@@ -141,153 +149,138 @@ handle_client_msg(connect, ClientState) ->
 handle_client_msg(disconnect, ClientState) ->
     supercast_mpd:client_disconnect(ClientState);
 
-handle_client_msg(
-        {message, 
-            {modSupercastPDU, 
-                {fromClient,
-                    {authResp,
-                        {'AuthResp', 
-                            Name,
-                            Password
-        }   }   }   }   },  #client_state{module = CMod} = ClientState) ->
+handle_client_msg({"supercast", "authResp", Contents}, ClientState) ->
+    {struct, Values} = proplists:get_value(<<"value">>, Contents),
+    Name = binary_to_list(proplists:get_value(<<"name">>,     Values)),
+    Pass = binary_to_list(proplists:get_value(<<"password">>, Values)),
+    CMod = ClientState#client_state.module,
     AuthMod = which_auth(),
-    case AuthMod:authenticate(Name, Password) of
+    case AuthMod:authenticate(Name, Pass) of
         {ok, Groups} ->
             MainChans = supercast_mpd:main_chans(),
             CMod:auth_set(success, ClientState, Name, Groups, MainChans),
             send(ClientState,pdu(authAck, {Groups, MainChans}));
         fail    ->
-            send(ClientState, pdu(authErr, {Name, Password}))
+            send(ClientState, pdu(authErr, {Name, Pass}))
     end;
 
-handle_client_msg(
-        {message, 
-            {modSupercastPDU, 
-                {fromClient,
-                    {subscribe,
-                        {'Subscribe',
-                            QueryId,
-                            Channel
-        }   }   }   }   }, CState) ->
+handle_client_msg({"supercast", "subscribe", Contents}, ClientState) ->
+    {struct, Values} = proplists:get_value(<<"value">>, Contents),
+    QueryId = proplists:get_value(<<"queryId">>, Values),
+    Channel =  binary_to_list(proplists:get_value(<<"channel">>, Values)),
     case supercast_registrar:whereis_name(Channel) of
         undefined ->
             io:format("undefined?~p~n", [Channel]),
-            send(CState, pdu(subscribeErr, {QueryId, Channel}));
+            send(ClientState, pdu(subscribeErr, {QueryId, Channel}));
         _ ->
-            case supercast_mpd:subscribe_stage1(Channel, CState) of
+            case supercast_mpd:subscribe_stage1(Channel, ClientState) of
                 error ->
-                    send(CState, pdu(subscribeErr, {QueryId, Channel}));
+                    send(ClientState, pdu(subscribeErr, {QueryId, Channel}));
                 ok ->
-                    send(CState, pdu(subscribeOk, {QueryId, Channel})),
-                    supercast_mpd:subscribe_stage2(Channel,CState)
+                    send(ClientState, pdu(subscribeOk, {QueryId, Channel})),
+                    supercast_mpd:subscribe_stage2(Channel,ClientState)
             end
     end;
        
-handle_client_msg(
-        {message, 
-            {modSupercastPDU, 
-                {fromClient,
-                    {unsubscribe,
-                        {'Unsubscribe',
-                            QueryId,
-                            Channel
-        }   }   }   }   }, CState) ->
-    case (catch erlang:list_to_existing_atom(Channel)) of
-        {'EXIT', _} -> 
-            % incorrect client call, return nothing.
-            ok;
-        Chan ->
-            ok = supercast_mpd:unsubscribe(Chan, CState),
-            send(CState, pdu(unsubscribeOk, {QueryId, Channel}))
-    end;
+handle_client_msg({"supercast", "unsubscribe", Contents}, ClientState) ->
+    {struct, Values} = proplists:get_value(<<"value">>, Contents),
+    QueryId = proplists:get_value(<<"queryId">>, Values),
+    Channel =  binary_to_list(proplists:get_value(<<"channel">>, Values)),
+    ok = supercast_mpd:unsubscribe(Channel, ClientState),
+    send(ClientState, pdu(unsubscribeOk, {QueryId, Channel}));
 
-handle_client_msg(
-        {message, 
-            {modSupercastPDU, 
-                Other
-        }   }, _) ->
-    io:format("~p RECEIVED UNKNOWN supercast ~p~n", [?MODULE, Other]);
-
-handle_client_msg(
-                {message,
-                    {Mod,
-                        _
-                } = Msg  }, CState) ->
-   handle_client_command(Mod, Msg, CState). 
+handle_client_msg({OtherMod, Type, Contents}, ClientState) ->
+    handle_client_command(OtherMod, {Type, Contents}, ClientState).
 
 % server PDUs
 % @private
 pdu(serverInfo, {AuthType, DataPort, DataProto}) ->
-    {modSupercastPDU, 
-        {fromServer, 
-            {serverInfo, 
-                {'ServerInfo',
-                    AuthType,
-                    DataPort,
-                    DataProto
-                }}}};
+    {struct, 
+        [
+            {<<"from">>, <<"supercast">>},
+            {<<"type">>, <<"serverInfo">>},
+            {<<"value">>, {struct, [
+                {<<"dataPort">>,  DataPort},
+                {<<"dataProto">>, list_to_binary(DataProto)},
+                {<<"authType">>,  list_to_binary(AuthType)}]}
+            }
+        ]
+    };
 
 pdu(authAck, {Groups, StaticChans}) ->
-    StaticChansAsString = lists:foldl(fun(Atom, Accum) ->
-        [{'ChanInfo', atom_to_list(Atom), create} | Accum]
-    end, [], StaticChans),
-    {modSupercastPDU, 
-        {fromServer,
-            {authAck,
-                {'AuthAck',
-                    Groups,
-                    StaticChansAsString }}}};
+    BinGroups       = [list_to_binary(G) || G <- Groups],
+    BinStaticChans  = [atom_to_binary(G, utf8) || G <- StaticChans],
+    {struct,
+        [
+            {<<"from">>, <<"supercast">>},
+            {<<"type">>, <<"authAck">>},
+            {<<"value">>, {struct, [
+                {<<"groups">>, {array, BinGroups}},
+                {<<"staticChans">>, {array, BinStaticChans}}]}
+            }
+        ]
+    };
 
 pdu(authErr, {Name, Password}) ->
-    {modSupercastPDU,
-        {fromServer,
-            {authError,
-                {'AuthError',
-                    badPass,
-                    Name,
-                    Password }}}};
+    {struct,
+        [
+            {<<"from">>, <<"supercast">>},
+            {<<"type">>, <<"authErr">>},
+            {<<"value">>, {struct, [
+                {<<"error">>, <<"Bad password">>},
+                {<<"name">>, list_to_binary(Name)},
+                {<<"password">>, list_to_binary(Password)}]}
+            }
+        ]
+    };
 
 pdu(subscribeOk, {QueryId, Channel}) ->
-    {modSupercastPDU, 
-        {fromServer, 
-            {subscribeOk, 
-                {'SubscribeOk',
-                    QueryId,
-                    Channel  }}}};
+    {struct,
+        [
+            {<<"from">>, <<"supercast">>},
+            {<<"type">>, <<"subscribeOk">>},
+            {<<"value">>, {struct, [
+                {<<"queryId">>, QueryId},
+                {<<"channel">>, list_to_binary(Channel)}]}
+            }
+        ]
+    };
 
 pdu(subscribeErr, {QueryId, Channel}) ->
-    {modSupercastPDU, 
-        {fromServer,
-            {subscribeErr, 
-                {'SubscribeErr',
-                    QueryId,
-                    Channel }}}};
+    {struct,
+        [
+            {<<"from">>, <<"supercast">>},
+            {<<"type">>, <<"subscribeErr">>},
+            {<<"value">>, {struct, [
+                {<<"queryId">>, QueryId},
+                {<<"channel">>, list_to_binary(Channel)}]}
+            }
+        ]
+    };
 
 pdu(unsubscribeOk, {QueryId, Channel}) ->
-    {modSupercastPDU, 
-        {fromServer, 
-            {unsubscribeOk, 
-                {'UnsubscribeOk',
-                    QueryId,
-                    Channel }}}};
+    {struct,
+        [
+            {<<"from">>, <<"supercast">>},
+            {<<"type">>, <<"unsubscribeOk">>},
+            {<<"value">>, {struct, [
+                {<<"queryId">>, QueryId},
+                {<<"channel">>, list_to_binary(Channel)}]}
+            }
+        ]
+    };
 
 pdu(unsubscribeErr, {QueryId, Channel}) ->
-    {modSupercastPDU, 
-        {fromServer, 
-            {unsubscribeErr, 
-                {'UnsubscribeErr',
-                    QueryId,
-                    Channel }}}};
-
-pdu(chanInfo, {Module, Channel, Type}) ->
-    {modSupercastPDU,
-        {fromServer,
-            {chanInfo,
-                {'ChanInfo',
-                    Module,
-                    Channel,
-                    Type }}}}.
-
+    {struct,
+        [
+            {<<"from">>, <<"supercast">>},
+            {<<"type">>, <<"unsubscribeOk">>},
+            {<<"value">>, {struct, [
+                {<<"queryId">>, QueryId},
+                {<<"channel">>, list_to_binary(Channel)}]}
+            }
+        ]
+    }.
 
 send(#client_state{module = CMod} = ClientState, Msg) ->
     CMod:send(ClientState, Msg).

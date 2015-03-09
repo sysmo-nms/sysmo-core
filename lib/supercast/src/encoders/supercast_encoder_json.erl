@@ -25,9 +25,10 @@
 
 
 
-encode(App, Message) ->
-    mochijison2:encode(Message).
+encode(ETerm) ->
+    io:format("should encode ~p~n", [ETerm]),
+    mochijson2:encode(ETerm).
 
-decode(Pdu) ->
-    {struct, [{App, Message}]} = mochijison2:decode(Pdu),
-    {App, Message}.
+decode(Json) ->
+    io:format("should decode ~p~n", [Json]),
+    mochijson2:decode(Json).

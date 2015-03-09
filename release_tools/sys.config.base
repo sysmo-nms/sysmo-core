@@ -4,11 +4,11 @@
             {auth_module,   supercast_auth_local},
             {acctrl_module, supercast_acctrl_rbac},
 
-            % if a PDU come from client with asn_key, switch it to the module
+            % if a PDU come from client with key, switch it to the module
             % implementing the supercast_module_behaviour.
             {pdu_dispatch,
                 [
-                    % {supercast_module_behaviour, asn_key}
+                    % {supercast_module_behaviour, key}
                     {monitor_commander, modMonitorPDU}
                 ]
             },
@@ -30,7 +30,7 @@
                     {enabled, true},
                     {port, 8888},
                     {maxconn, 50},
-                    {encoder, supercast_encoder_asn}
+                    {encoder, supercast_encoder_json}
                 ]
             },
             {ssl_client,
@@ -43,7 +43,7 @@
                     ]},
                     {port, 4443},
                     {maxconn, 50},
-                    {encoder, supercast_encoder_asn}
+                    {encoder, supercast_encoder_json}
                 ]
             },
             {http_sync_dir, "var/yaws/docroot"},
