@@ -42,8 +42,8 @@
 ]).
 
 handle_command(Command, CState) ->
-    {modMonitorPDU, {fromClient, CastCommand}} = Command,
-    gen_server:cast(?MODULE, {CastCommand, CState}).
+    io:format("handle command ~p ~n", [Command]),
+    gen_server:cast(?MODULE, {Command, CState}).
 
 handle_cast({{extendedQueryFromClient,
         {_, QueryId, {createTargetQuery, {_,SysProp,Prop}}}}, CState}, S) ->
@@ -105,28 +105,31 @@ handle_cast({{extendedQueryFromClient,
     supercast_channel:unicast(CState, [ReplyPDU]),
     {noreply, S};
 
-handle_cast({{extendedQueryFromClient,
-        {_, QueryId, {elementInterfaceQuery, {_,SysProp,Prop}}}}, CState}, S) ->
-    NProp    = [{Key,Val} || {'Prop', Key, Val} <- Prop],
-    NSysProp = [{Key,Val} || {'Prop', Key, Val} <- SysProp],
-
+handle_cast({{"monitorElementInterfaceQuery", Contents}, CState}, S) ->
+    io:format("jojojojojo ~p ~n",[Contents]),
+    {struct, Contents2} = proplists:get_value(<<"value">>, Contents),
+    {struct, Prop}  = proplists:get_value(<<"properties">>, Contents2),
+    {struct, SProp} = proplists:get_value(<<"sysProperties">>, Contents2),
+    QueryId  = proplists:get_value(<<"queryId">>, Contents2),
+    NProp    = [{binary_to_list(Key), maybe_str(Val)} || {Key,Val} <- Prop],
+    NSysProp = [{binary_to_list(Key), maybe_str(Val)} || {Key,Val} <- SProp],
+ 
+    io:format("query?????? ~p ~p ~n", [NProp, NSysProp]),
     case walk_ifTable(NProp, NSysProp) of
         {ok, Val} ->
             io:format("val is: ~p~n",[Val]),
-            ReplyPDU = monitor_pdu:'PDU-MonitorPDU-fromServer-extendedReply-snmpInterfacesInfo'(
-                QueryId, true, true, Val),
+            ReplyPDU = monitor_pdu:elementInterfaceReply(QueryId, true, true, Val),
             supercast_channel:unicast(CState, [ReplyPDU]);
         {error, timeout} ->
-            ReplyPDU = monitor_pdu:'PDU-MonitorPDU-fromServer-extendedReply'(
-                QueryId, false, true, {string, "timeout"}),
+            ReplyPDU = monitor_pdu:simpleReply(
+                QueryId, false, true, "timeout"),
             supercast_channel:unicast(CState, [ReplyPDU]);
         {error, Reason} ->
-            ReplyPDU = monitor_pdu:'PDU-MonitorPDU-fromServer-extendedReply'(
-                QueryId, false, true, {string, Reason}),
+            ReplyPDU = monitor_pdu:simpleReply(
+                QueryId, false, true, Reason),
             supercast_channel:unicast(CState, [ReplyPDU])
     end,
     {noreply, S};
-
 
 handle_cast(R, S) ->
     error_logger:info_msg("unknown cast for command ~p ~p ~p~n", [?MODULE, ?LINE, R]),
@@ -211,3 +214,6 @@ snmp_enabled(SProps) ->
         undefined   -> false;
         _           -> true
     end.
+
+maybe_str(Val) when is_binary(Val) -> binary_to_list(Val);
+maybe_str(Other) -> Other.

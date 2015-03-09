@@ -30,49 +30,56 @@
     'PDU-MonitorPDU-fromServer-infoProbe-create'/1,
     'PDU-MonitorPDU-fromServer-infoProbe-update'/1,
     'PDU-MonitorPDU-fromServer-probeReturn'/4,
-    'PDU-MonitorPDU-fromServer-extendedReply'/4,
-    'PDU-MonitorPDU-fromServer-extendedReply-snmpInterfacesInfo'/4
+    elementInterfaceReply/4,
+    simpleReply/4
+
 ]).
 
 
-'PDU-MonitorPDU-fromServer-extendedReply-snmpInterfacesInfo'(QueryId,Status,Last,Info) ->
+elementInterfaceReply(QueryId, Status, Last, Info) ->
     {table, TableRows} = Info,
     IfTable = build_ifTable(TableRows, []),
-    {modMonitorPDU,
-        {fromServer,
-            {extendedReply,
-                {'ExtendedReply',
-                    QueryId,
-                    Status,
-                    Last,
-                    {snmpInterfacesInfo, IfTable}
-                }
-            }
-        }
+    {struct,
+        [
+            {<<"from">>, <<"monitorUser">>},
+            {<<"type">>, <<"elementInterfaceReply">>},
+            {<<"value">>, {struct, [
+                {<<"queryId">>, QueryId},
+                {<<"status">>,  Status},
+                {<<"last">>,    Last},
+                {<<"ifInfo">>,  IfTable}]}}
+        ]
     }.
 
-build_ifTable([], Acc) ->
-    lists:reverse(Acc);
+build_ifTable([], Acc) -> {array, lists:reverse(Acc)};
 build_ifTable([H|T], Acc) ->
     {table_row, IfIndex, IfDescr, IfType, IfMtu, IfSpeed, IfPhysAddress,
         IfAdminStatus, IfOperStatus, IfLastChange} = H,
-    TableRow = {'SnmpInterfaceInfo', IfIndex, IfDescr, IfType, IfMtu,
-        IfSpeed, IfPhysAddress, IfAdminStatus, IfOperStatus, IfLastChange},
-    build_ifTable(T, [TableRow|Acc]).
+    Elem = {struct, [
+        {<<"ifIndex">>, IfIndex},
+        {<<"ifDescr">>, list_to_binary(IfDescr)},
+        {<<"ifType">>,  IfType},
+        {<<"ifMTU">>,   IfMtu},
+        {<<"ifSpeed">>, IfSpeed},
+        {<<"ifPhysAddress">>, list_to_binary(IfPhysAddress)},
+        {<<"ifAdminStatus">>, IfAdminStatus},
+        {<<"ifOperStatus">>,  IfOperStatus},
+        {<<"ifLastChange">>,  list_to_binary(IfLastChange)}
+    ]},
+    build_ifTable(T, [Elem|Acc]).
 
-
-'PDU-MonitorPDU-fromServer-extendedReply'(QueryId,Status,Last,Info) ->
-    {modMonitorPDU,
-        {fromServer,
-            {extendedReply,
-                {'ExtendedReply',
-                    QueryId,
-                    Status,
-                    Last,
-                    Info
-                }
-            }
-        }
+    
+simpleReply(QueryId, Status, Last, Msg) ->
+    {struct,
+        [
+            {<<"from">>, <<"monitorUser">>},
+            {<<"type">>, <<"reply">>},
+            {<<"value">>, {struct, [
+                {<<"queryId">>, QueryId},   
+                {<<"status">>, Status},
+                {<<"last">>, Last},
+                {<<"reply">>, list_to_binary(Msg)}]}}
+        ]
     }.
 
 'PDU-MonitorPDU-fromServer-deleteTarget'(Target) ->

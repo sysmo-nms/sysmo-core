@@ -9,7 +9,7 @@
             {pdu_dispatch,
                 [
                     % {supercast_module_behaviour, key}
-                    {monitor_commander, modMonitorPDU}
+                    {monitor_commander, "monitor"}
                 ]
             },
 
