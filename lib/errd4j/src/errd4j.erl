@@ -55,7 +55,7 @@ create() ->
     File = "./test.rrd",
     Step = 300,
     Rras = [{?CF_AVERAGE, 0.5, 1, 1200}],
-    DSs  = [{"speed", ?DS_COUNTER, 600, 0, 0}],
+    DSs  = [{"speed", ?DS_COUNTER, 600, 'Nan', 'Nan'}],
     Args = {File,Step,Rras,DSs},
     gen_server:call(?MODULE, {call_errd4j, {create, Args}}).
 

@@ -58,6 +58,7 @@ clean: clean-doc
 	rm -f ebin/*.beam
 	rm -f erl_crash.dump
 	rm -f errd4j.log
+	rm -f test.rrd
 
 clean-doc:
 	rm -f doc/erlang.png

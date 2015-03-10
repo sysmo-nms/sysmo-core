@@ -206,63 +206,9 @@ public class Errd4j
         }
     }
 
-    private static void handleRrdCreate(OtpErlangObject caller, OtpErlangTuple tuple) throws Exception
-    {
-        OtpErlangString filePath = (OtpErlangString) (tuple.elementAt(0));
-        OtpErlangLong   step     = (OtpErlangLong)   (tuple.elementAt(1));
-        OtpErlangList   rras     = (OtpErlangList)   (tuple.elementAt(2));
-        OtpErlangList   dss      = (OtpErlangList)   (tuple.elementAt(3));
-
-        RrdDef rrdDef = new RrdDef(filePath.stringValue(), step.uIntValue());
-
-        Iterator<OtpErlangObject> rrasIt = rras.iterator();
-        while (rrasIt.hasNext())
-        {
-            OtpErlangTuple rra      = (OtpErlangTuple) rrasIt.next();
-            OtpErlangLong  rraCf    = (OtpErlangLong)  (rra.elementAt(0));
-            OtpErlangDouble rraXff  = (OtpErlangDouble) (rra.elementAt(1));
-            OtpErlangLong  rraStep  = (OtpErlangLong)  (rra.elementAt(2));
-            OtpErlangLong  rraRows  = (OtpErlangLong)  (rra.elementAt(3));
-            /*rrdDef.addArchive(
-                rraCf.uIntValue(),
-                rraXff.floatValue(),
-                rraStep.uIntValue(),
-                rraRows.uIntValue()
-            )
-            */
-            
-        }
-
-        Iterator<OtpErlangObject> dssIt  = dss.iterator();
-        while (dssIt.hasNext())
-        {
-            OtpErlangTuple  ds      = (OtpErlangTuple) dssIt.next();
-            OtpErlangString dsName  = (OtpErlangString) (ds.elementAt(0));
-            OtpErlangLong   dsType  = (OtpErlangLong)   (ds.elementAt(1));
-            OtpErlangLong   dsHbeat = (OtpErlangLong)   (ds.elementAt(2));
-            OtpErlangLong   dsMin   = (OtpErlangLong)   (ds.elementAt(3));
-            OtpErlangLong   dsMax   = (OtpErlangLong)   (ds.elementAt(4));
-            /* rrdDef.addDataSource(
-                dsName.stringValue(),
-                dsType.uIntValue(),
-                dsHbeat.uIntValue(),
-                dsMin.uIntValue(),
-                dsMax.uIntValue())
-            */
-        }
-
-        //RrdDb rrdDb = new RrdDb(rrdDef);
-        //rrdDb.close();
-
-        OtpErlangTuple ureply = buildOkReply(new OtpErlangString("yoho"));
-        sendReply(caller, ureply);
-    }
-
     // UTILS  UTILS  UTILS  UTILS  UTILS  UTILS  UTILS  UTILS  UTILS 
     // UTILS  UTILS  UTILS  UTILS  UTILS  UTILS  UTILS  UTILS  UTILS 
     // UTILS  UTILS  UTILS  UTILS  UTILS  UTILS  UTILS  UTILS  UTILS 
-
-
     public static OtpErlangTuple buildOkReply(OtpErlangObject msg)
     {
         OtpErlangObject[] valObj   = new OtpErlangObject[2];
@@ -279,6 +225,80 @@ public class Errd4j
         valObj[1] = msg;
         OtpErlangTuple valTuple = new OtpErlangTuple(valObj);
         return valTuple;
+    }
+
+
+
+    
+    /*
+    * Handle create a rrd file.
+    */
+    private static void handleRrdCreate(OtpErlangObject caller, OtpErlangTuple tuple) throws Exception
+    {
+        OtpErlangString filePath = (OtpErlangString) (tuple.elementAt(0));
+        OtpErlangLong   step     = (OtpErlangLong)   (tuple.elementAt(1));
+        OtpErlangList   rras     = (OtpErlangList)   (tuple.elementAt(2));
+        OtpErlangList   dss      = (OtpErlangList)   (tuple.elementAt(3));
+
+        RrdDef rrdDef = new RrdDef(filePath.stringValue(), step.uIntValue());
+
+        Iterator<OtpErlangObject> rrasIt = rras.iterator();
+        while (rrasIt.hasNext())
+        {
+            OtpErlangTuple  rra      = (OtpErlangTuple)     rrasIt.next();
+            OtpErlangString rraCfStr = (OtpErlangString)    (rra.elementAt(0));
+            OtpErlangDouble rraXff   = (OtpErlangDouble)    (rra.elementAt(1));
+            OtpErlangLong   rraStep  = (OtpErlangLong)      (rra.elementAt(2));
+            OtpErlangLong   rraRows  = (OtpErlangLong)      (rra.elementAt(3));
+            
+            ConsolFun rraCf = ConsolFun.valueOf(rraCfStr.stringValue());
+            rrdDef.addArchive(
+                rraCf,
+                rraXff.doubleValue(),
+                rraStep.uIntValue(),
+                rraRows.uIntValue()
+            );
+            
+        }
+
+        Iterator<OtpErlangObject> dssIt  = dss.iterator();
+        while (dssIt.hasNext())
+        {
+            OtpErlangTuple  ds      = (OtpErlangTuple) dssIt.next();
+            OtpErlangString dsName  = (OtpErlangString) (ds.elementAt(0));
+            OtpErlangString dsTypeStr   = (OtpErlangString)   (ds.elementAt(1));
+            OtpErlangLong   dsHbeat = (OtpErlangLong)   (ds.elementAt(2));
+            DsType dsType = DsType.valueOf(dsTypeStr.stringValue());
+
+            Double dsMinVal = null;
+            Double dsMaxVal = null;
+            try {
+                OtpErlangDouble dsMin   = (OtpErlangDouble)   (ds.elementAt(3));
+                dsMinVal = dsMin.doubleValue();
+            } catch (Exception|Error e) {
+                dsMinVal = Double.NaN;
+            }
+            try {
+                OtpErlangDouble  dsMax   = (OtpErlangDouble)   (ds.elementAt(4));
+                dsMaxVal = dsMax.doubleValue();
+            } catch (Exception|Error e) {
+                dsMaxVal = Double.NaN;
+            }
+
+            rrdDef.addDatasource(
+                dsName.stringValue(),
+                dsType,
+                dsHbeat.longValue(),
+                dsMinVal,
+                dsMaxVal
+            );
+        }
+
+        RrdDb rrdDb = new RrdDb(rrdDef);
+        rrdDb.close();
+
+        OtpErlangTuple ureply = buildOkReply(new OtpErlangString("yoho"));
+        sendReply(caller, ureply);
     }
 
 }

@@ -6,6 +6,7 @@
 *.html
 *.css
 *.png
+test.rrd
 doc/edoc-info
 erl_crash.dump
 errd4j.log
