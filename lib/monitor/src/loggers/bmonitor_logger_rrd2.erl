@@ -112,33 +112,16 @@ snmp_table_build_create(RrdCreate,[{_,File}|T],Acc) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 log(State, #probe_return{reply_tuple = ignore} = _ProbeReturn) ->
     ClientUp = [{I, ""} || {I,_} <- State#state.row_index_to_file],
-    Pdu = build_rrd_event(State, ClientUp),
+    Pdu = monitor_pdu:loggerRrdEvent(State#state.target_name, State#state.probe_name, ClientUp),
     {ok, Pdu, State};
 
 log(State, #probe_return{reply_tuple = Rpl, timestamp = Ts} = _ProbeReturn) ->
-
     RIndexFile = State#state.row_index_to_file,
     RIndexTpl  = State#state.row_index_to_tpl,
     RrdUpdate  = State#state.rrd_update,
     {ok, ClientUp} = rrd_update(RIndexFile, RIndexTpl, RrdUpdate, Rpl, Ts),
-
-
-    Pdu = build_rrd_event(State,ClientUp),
-
+    Pdu = monitor_pdu:loggerRrdEvent(State#state.target_name, State#state.probe_name, ClientUp),
     {ok, Pdu, State}.
-
-build_rrd_event(State, ClientUp) ->
-    {modMonitorPDU,
-        {fromServer,
-            {loggerRrdEvent,
-                {'LoggerRrdEvent',
-                    State#state.target_name,
-                    State#state.probe_name,
-                    [{'LoggerRrdUpdate', I, Up} || {I,Up} <- ClientUp]
-                }
-            }
-        }
-    }.
 
 rrd_update(RindexFile, RIndexTpl, RrdUpdate, Rpl, Ts) ->
     rrd_update(RindexFile, RIndexTpl, RrdUpdate, Rpl, Ts, []).
@@ -172,26 +155,11 @@ dump(#state{row_index_to_file = RI, dump_dir = DDir} = State, Caller) ->
 
     {ignore, State}.
 
-build_dump(State, FilePaths, Dir) ->
-    ProbeModule = atom_to_list(?MODULE),
-    {modMonitorPDU,
-        {fromServer,
-            {loggerRrdDump,
-                {'LoggerRrdDump',
-                    State#state.target_name,
-                    State#state.probe_name,
-                    ProbeModule,
-                    [{'LoggerRrdIdToFile', I, F} || {I,F} <- FilePaths],
-                    Dir
-                }
-            }
-        }
-    }.
-
 dump_delayed(Path, Dir, RowIndex, State, Caller) ->
     ok = file:make_dir(Path),
     IndexToFile = dump_delayed_fill_dir(RowIndex, Path),
-    Pdu = build_dump(State, IndexToFile, Dir),
+    Pdu = monitor_pdu:loggerRrdDump(
+        State#state.target_name, State#state.probe_name, ?MODULE, IndexToFile, Dir),
     Fun = fun() ->
         supercast_channel:unicast(Caller, [Pdu])
     end,

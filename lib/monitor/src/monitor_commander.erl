@@ -78,15 +78,17 @@ handle_cast({{"createNchecksQuery", Contents}, CState}, S) ->
     QueryId = proplists:get_value(<<"queryId">>, Contents2),
     io:format("probe newo ~p ~p ~p ~n", [Name, Prop2, Target]),
     ProbeId = monitor:probe_new({nchecks, Name, Prop2}, Target),
-    ReplyPdu = monitor_pdu:simpleReply(QueryId, true, true, ProbeId),
-    supercast_channel:unicast(CState, [ReplyPdu]),
+    ReplyPDU = monitor_pdu:simpleReply(QueryId, true, true, ProbeId),
+    supercast_channel:unicast(CState, [ReplyPDU]),
     {noreply, S};
 
-handle_cast({{extendedQueryFromClient,
-        {_, QueryId, {createIfPerfQuery, {_,Target, Ifs}}}}, CState}, S) ->
-    ProbeId = monitor:probe_new({snmp, if_perfs,Ifs}, Target),
-    ReplyPDU = monitor_pdu:'PDU-MonitorPDU-fromServer-extendedReply'(
-        QueryId, true, true, {string, ProbeId}),
+handle_cast({{"createIfPerfQuery", Contents}, CState}, S) ->
+    {struct, Contents2} = proplists:get_value(<<"value">>, Contents),
+    Target      = binary_to_list(proplists:get_value(<<"target">>, Contents2)),
+    IfSelection = proplists:get_value(<<"ifSelection">>, Contents2),
+    QueryId     = proplists:get_value(<<"queryId">>, Contents2),
+    ProbeId     = monitor:probe_new({snmp, if_perfs, IfSelection}, Target),
+    ReplyPDU    = monitor_pdu:simpleReply(QueryId, true, true, ProbeId),
     supercast_channel:unicast(CState, [ReplyPDU]),
     {noreply, S};
 
@@ -96,8 +98,8 @@ handle_cast({{"deleteProbeQuery", Contents}, CState}, S) ->
     Probe   = binary_to_list(proplists:get_value(<<"name">>,  Contents2)),
     QueryId = proplists:get_value(<<"queryId">>,  Contents2),
     monitor:probe_delete(Probe),
-    ReplyPdu = monitor_pdu:simpleReply(QueryId, true, true, Probe),
-    supercast_channel:unicast(CState, [ReplyPdu]),
+    ReplyPDU = monitor_pdu:simpleReply(QueryId, true, true, Probe),
+    supercast_channel:unicast(CState, [ReplyPDU]),
     {noreply, S};
 
 handle_cast({{"deleteTargetQuery", Contents}, CState}, S) ->
