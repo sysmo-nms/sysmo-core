@@ -1,0 +1,11 @@
+*.beam
+*.class
+*.jar
+*.swp
+*.swo
+*.html
+*.css
+*.png
+doc/edoc-info
+erl_crash.dump
+errd4j.log

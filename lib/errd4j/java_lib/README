@@ -1,0 +1,7 @@
+This directory must contain:
+converter-2.2.jar
+inspector-2.2.jar
+je-4.0.92.jar
+mongo-2.6.5.jar
+OtpErlang.jar
+rrd4j-2.2.jar
