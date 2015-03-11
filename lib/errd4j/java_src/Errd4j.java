@@ -42,9 +42,15 @@ import com.ericsson.otp.erlang.OtpMbox;
 import com.ericsson.otp.erlang.OtpNode;
 
 
-import org.rrd4j.core.*;
+import org.rrd4j.core.RrdDef;
+import org.rrd4j.core.RrdDb;
+import org.rrd4j.core.Sample;
+import org.rrd4j.graph.RrdGraphDef;
+import org.rrd4j.graph.RrdGraph;
 import org.rrd4j.DsType;
 import org.rrd4j.ConsolFun;
+import java.awt.image.BufferedImage;
+import java.awt.Color;
 
 public class Errd4j
 {
@@ -187,8 +193,14 @@ public class Errd4j
                     handleRrdCreate(caller, payload);
                     break;
                 case "update":
-                    OtpErlangTuple ureply = buildOkReply(new OtpErlangString("hello!"));
-                    sendReply(caller, ureply);
+                    handleRrdUpdate(caller, payload);
+                    break;
+
+                case "graph":
+                    handleRrdGraph(caller, payload);
+                    break;
+                case "test":
+                    handleRrdTest(caller, payload);
                     break;
                 default:
                     OtpErlangTuple dreply = buildOkReply(new OtpErlangString("undefined"));
@@ -227,8 +239,110 @@ public class Errd4j
         return valTuple;
     }
 
+    
+
+    /*
+    * Testing create, update, and graph from rrd4j tutorial.
+    */
+    private static void handleRrdTest(OtpErlangObject caller, OtpErlangTuple tuple) throws Exception
+    {
+        // create
+        RrdDef rrdDef = new RrdDef("test.rrd");
+        rrdDef.addDatasource("speed", DsType.COUNTER, 600, Double.NaN, Double.NaN);
+        rrdDef.addArchive(ConsolFun.AVERAGE, 0.5, 1, 24);
+        rrdDef.addArchive(ConsolFun.AVERAGE, 0.5, 6, 10);
+        RrdDb rrdDb = new RrdDb(rrdDef);
+        rrdDb.close();
+
+        // update
+        RrdDb rrdDbu = new RrdDb("./test.rrd");
+        Sample sample = rrdDb.createSample();
+        sample.setAndUpdate("920804700:12345");
+        sample.setAndUpdate("920805000:12357");
+        sample.setAndUpdate("920805300:12363");
+        sample.setAndUpdate("920805600:12363");
+        sample.setAndUpdate("920805900:12363");
+        sample.setAndUpdate("920806200:12373");
+        sample.setAndUpdate("920806500:12383");
+        sample.setAndUpdate("920806800:12393");
+        sample.setAndUpdate("920807100:12399");
+        sample.setAndUpdate("920807400:12405");
+        sample.setAndUpdate("920807700:12411");
+        sample.setAndUpdate("920808000:12415");
+        sample.setAndUpdate("920808300:12420");
+        sample.setAndUpdate("920808600:12422");
+        sample.setAndUpdate("920808900:12423");
+        rrdDbu.close();
+
+        // graph
+        RrdGraphDef graphDef = new RrdGraphDef();
+        graphDef.setTimeSpan(920804400L, 920808000L);
+        graphDef.datasource("myspeed", "./test.rrd", "speed", ConsolFun.AVERAGE);
+        graphDef.line("myspeed", new Color(0xFF, 0, 0), null, 2);
+        graphDef.setFilename("./speed.ig");
+        RrdGraph graph = new RrdGraph(graphDef);
+        BufferedImage bi = new BufferedImage(100,100,BufferedImage.TYPE_INT_RGB);
+        graph.render(bi.getGraphics());
+
+    }
+
+    /*
+    * Handle graph png.
+    */
+    private static void handleRrdGraph(OtpErlangObject caller, OtpErlangTuple tuple) throws Exception
+    {
+        OtpErlangString srcFile = (OtpErlangString) (tuple.elementAt(0));
+        OtpErlangString dstPng  = (OtpErlangString) (tuple.elementAt(1));
+
+        System.out.println("will graph?");
+        RrdGraphDef gDef = new RrdGraphDef();
+        gDef.setWidth(500);
+        gDef.setHeight(300);
+        gDef.setStartTime(-3000);
+        gDef.setEndTime(-1);
+        gDef.setImageFormat("png");
+        gDef.setFilename("test.png");
+        gDef.setTitle("errd4j test");
+        gDef.setVerticalLabel("speed");
+        gDef.datasource("speed", "test.rrd", "speed", ConsolFun.AVERAGE);
+        
+        RrdGraph graph = new RrdGraph(gDef);
+        System.out.println("graph ok?: " + graph.getRrdGraphInfo().getByteCount());
+        
+        OtpErlangTuple ureply = buildOkReply(new OtpErlangLong(graph.getRrdGraphInfo().getByteCount()));
+        sendReply(caller, ureply);
+    }
 
 
+    /*
+    * Handle update a rrd file.
+    */
+    private static void handleRrdUpdate(OtpErlangObject caller, OtpErlangTuple tuple) throws Exception
+    {
+        OtpErlangString filePath = (OtpErlangString) (tuple.elementAt(0));
+        OtpErlangList   updates  = (OtpErlangList)   (tuple.elementAt(1));
+
+        RrdDb rrdDb   = new RrdDb(filePath.stringValue());
+
+        try {
+            Sample sample = rrdDb.createSample();
+            System.out.println("sample time is: " + sample.getTime());
+            Iterator<OtpErlangObject> updatesIt = updates.iterator();
+            while (updatesIt.hasNext())
+            {
+                OtpErlangTuple  up      = (OtpErlangTuple)  updatesIt.next();
+                OtpErlangString name    = (OtpErlangString) (up.elementAt(0));
+                OtpErlangLong   value   = (OtpErlangLong)   (up.elementAt(1));
+                sample.setValue(name.stringValue(), value.longValue());
+            }
+            sample.update();
+        } catch (Exception e) {
+            rrdDb.close();
+            throw e;  
+        }
+        rrdDb.close();
+        sendReply(caller, atomOk);
+    }
     
     /*
     * Handle create a rrd file.

@@ -39,7 +39,9 @@
 
 
 -export([
-    create/0
+    create/0,
+    update/0,
+    graph/0
 ]).
 
 -record(state, {
@@ -51,8 +53,23 @@
 
 -define(ASSERT_TIMEOUT, 5000).
 
+graph() ->
+    File    = "test.rrd",
+    DstFile = "test.png",
+    Start   = 0,
+    End     = 0,
+    Graphs  = [],
+    Args = {File, DstFile, Start, End, Graphs},
+    gen_server:call(?MODULE, {call_errd4j, {graph, Args}}).
+
+update() ->
+    File = "test.rrd",
+    Updates = [{"speed", 3000}],
+    Args = {File, Updates},
+    gen_server:call(?MODULE, {call_errd4j, {update, Args}}).
+
 create() ->
-    File = "./test.rrd",
+    File = "test.rrd",
     Step = 300,
     Rras = [{?CF_AVERAGE, 0.5, 1, 1200}],
     DSs  = [{"speed", ?DS_COUNTER, 600, 'Nan', 'Nan'}],
