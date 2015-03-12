@@ -96,7 +96,7 @@
     description         = ""            :: string(),
     info                = ""            :: string(),
     timeout             = 5             :: integer(), % seconds
-    status              = "DOWN"     :: string(),
+    status              = "OK"          :: string(),
     step                = 300           :: integer(), % seconds
     properties          = []            :: [{string(), any()}],
     active              = true          :: true | false,

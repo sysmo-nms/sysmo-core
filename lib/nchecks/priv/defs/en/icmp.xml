@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <check_def check="icmp">
     <descr>Check host presence using ICMP echo request</descr>
+    <probe_class>nchecks.CheckICMP</probe_class>
     <flags_def>
         <flag_info name="host">
             <usage>Host target as ip version 4/6 or hostname</usage>
@@ -73,5 +74,69 @@
             <hint></hint>
         </flag_info>
     </flags_def>
-    <performances></performances>
+    <performances>
+        <!--
+            In this example, the probe return record must have these properties for errd4j to log
+            corectly:
+                [
+                    {'PercentLost',      x}
+                    {'MinRoundTrip',     x}
+                    {'MaxRoundTrip',     x}
+                    {'AverageRoundTrip', x}
+        -->
+        <data_sources>
+            <ds>
+                <dsName>PercentLost</dsName>
+                <dsType>PERCENT</dsType>
+            </ds>
+            <ds>
+                <dsName>MinRoundTrip</dsName>
+                <dsType>MINIMUM</dsType>
+            </ds>
+            <ds>
+                <dsName>MaxRoundTrip</dsName>
+                <dsType>MAXIMUM</dsType>
+            </ds>
+            <ds>
+                <dsName>AverageRoundTrip</dsName>
+                <dsType>AVERAGE</dsType>
+            </ds>
+        </data_sources>
+        <graphs>
+            <graph_desc>
+                <graphName>ICMPPerfs</graphName>
+                <graphTitle>ICMP performances</graphTitle>
+                <verticalLabel>Milliseconds</verticalLabel>
+                <add>
+                    <name>MaxRoundTrip</name>
+                    <graphType>area</graphType>
+                    <legend>Maximum round trip</legend>
+                    <color>red</color>
+                </add>
+                <add>
+                    <name>MinRoundTrip</name>
+                    <graphType>area</graphType>
+                    <legend>Minimum round trip</legend>
+                    <color>green</color>
+                </add>
+                <add>
+                    <name>AverageRoundTrip</name>
+                    <graphType>area</graphType>
+                    <legend>Average round trip</legend>
+                    <color>blue</color>
+                </add>
+            </graph_desc>
+            <graph_desc>
+                <graphName>ICMPPercents</graphName>
+                <graphTitle>ICMP echo/replies percent lost</graphTitle>
+                <verticalLabel>Percent</verticalLabel>
+                <add>
+                    <name>PercentLost</name>
+                    <graphType>area</graphType>
+                    <legend>Percent packets lost</legend>
+                    <color>red</color>
+                </add>
+            </graph_desc>
+        </graphs>
+    </performances>
 </check_def>

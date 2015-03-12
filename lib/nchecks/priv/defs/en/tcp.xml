@@ -45,5 +45,6 @@
             <hint>Status</hint>
         </flag_info>
     </flags_def>
-    <performances></performances>
+    <performances>
+    </performances>
 </check_def>

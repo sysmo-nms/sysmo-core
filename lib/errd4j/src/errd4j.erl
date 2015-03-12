@@ -41,7 +41,9 @@
 -export([
     create/0,
     update/0,
-    graph/0
+    graph/0,
+    update_fetch/0,
+    test/0
 ]).
 
 -record(state, {
@@ -53,6 +55,15 @@
 
 -define(ASSERT_TIMEOUT, 5000).
 
+update_fetch() ->
+    File    = "test.rrd",
+    Updates = [{"speed", 3000}],
+    Fetch   = [{"speed", -600}],
+    Args = {File, Updates, Fetch},
+    gen_server:call(?MODULE, {call_errd4j, {update_fetch, Args}}).
+
+test() ->
+    gen_server:call(?MODULE, {call_errd4j, {test, {}}}).
 graph() ->
     File    = "test.rrd",
     DstFile = "test.png",

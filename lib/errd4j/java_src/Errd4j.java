@@ -45,6 +45,8 @@ import com.ericsson.otp.erlang.OtpNode;
 import org.rrd4j.core.RrdDef;
 import org.rrd4j.core.RrdDb;
 import org.rrd4j.core.Sample;
+import org.rrd4j.core.FetchData;
+import org.rrd4j.core.FetchRequest;
 import org.rrd4j.graph.RrdGraphDef;
 import org.rrd4j.graph.RrdGraph;
 import org.rrd4j.DsType;
@@ -199,6 +201,9 @@ public class Errd4j
                 case "graph":
                     handleRrdGraph(caller, payload);
                     break;
+                case "update_fetch":
+                    handleRrdUpdateFetch(caller, payload);
+                    break;
                 case "test":
                     handleRrdTest(caller, payload);
                     break;
@@ -242,21 +247,29 @@ public class Errd4j
     
 
     /*
-    * Testing create, update, and graph from rrd4j tutorial.
-    */
+     * Testing create, update, and graph from rrd4j tutorial.
+     */
     private static void handleRrdTest(OtpErlangObject caller, OtpErlangTuple tuple) throws Exception
     {
         // create
         RrdDef rrdDef = new RrdDef("test.rrd");
+        System.out.println("a1");
+        rrdDef.setStartTime(920804400L);
+        System.out.println("a2");
         rrdDef.addDatasource("speed", DsType.COUNTER, 600, Double.NaN, Double.NaN);
+        System.out.println("a3");
         rrdDef.addArchive(ConsolFun.AVERAGE, 0.5, 1, 24);
+        System.out.println("a4");
         rrdDef.addArchive(ConsolFun.AVERAGE, 0.5, 6, 10);
+        System.out.println("a5");
         RrdDb rrdDb = new RrdDb(rrdDef);
+        System.out.println("a6");
         rrdDb.close();
 
+        System.out.println("a7");
         // update
         RrdDb rrdDbu = new RrdDb("./test.rrd");
-        Sample sample = rrdDb.createSample();
+        Sample sample = rrdDbu.createSample();
         sample.setAndUpdate("920804700:12345");
         sample.setAndUpdate("920805000:12357");
         sample.setAndUpdate("920805300:12363");
@@ -279,16 +292,27 @@ public class Errd4j
         graphDef.setTimeSpan(920804400L, 920808000L);
         graphDef.datasource("myspeed", "./test.rrd", "speed", ConsolFun.AVERAGE);
         graphDef.line("myspeed", new Color(0xFF, 0, 0), null, 2);
-        graphDef.setFilename("./speed.ig");
+        graphDef.setFilename("./test.png");
         RrdGraph graph = new RrdGraph(graphDef);
         BufferedImage bi = new BufferedImage(100,100,BufferedImage.TYPE_INT_RGB);
         graph.render(bi.getGraphics());
 
+        
+        // fetch
+        RrdDb rrdDbf = new RrdDb("test.rrd");
+        FetchRequest fetchRequest = rrdDbf.createFetchRequest(ConsolFun.AVERAGE, 920804400L, 920809200L);
+        FetchData fetchData = fetchRequest.fetchData();
+        double avg = fetchData.getAggregate("speed", ConsolFun.AVERAGE);
+        String fdata = fetchData.dump();
+        rrdDbf.close();
+
+        OtpErlangTuple ureply = buildOkReply(new OtpErlangString(fdata + avg));
+        sendReply(caller, ureply);
     }
 
     /*
-    * Handle graph png.
-    */
+     * Handle graph png.
+     */
     private static void handleRrdGraph(OtpErlangObject caller, OtpErlangTuple tuple) throws Exception
     {
         OtpErlangString srcFile = (OtpErlangString) (tuple.elementAt(0));
@@ -315,8 +339,48 @@ public class Errd4j
 
 
     /*
-    * Handle update a rrd file.
-    */
+     * Handle update a rrd file and return a fetch value.
+     */
+    private static void handleRrdUpdateFetch(OtpErlangObject caller, OtpErlangTuple tuple) throws Exception
+    {
+        OtpErlangString filePath = (OtpErlangString) (tuple.elementAt(0));
+        OtpErlangList   updates  = (OtpErlangList)   (tuple.elementAt(1));
+        OtpErlangList   fetchs   = (OtpErlangList)   (tuple.elementAt(2));
+
+        RrdDb rrdDb   = new RrdDb(filePath.stringValue());
+
+        try {
+            Sample sample = rrdDb.createSample();
+            System.out.println("sample time is: " + sample.getTime());
+            Iterator<OtpErlangObject> updatesIt = updates.iterator();
+            while (updatesIt.hasNext())
+            {
+                OtpErlangTuple  up      = (OtpErlangTuple)  updatesIt.next();
+                OtpErlangString name    = (OtpErlangString) (up.elementAt(0));
+                OtpErlangLong   value   = (OtpErlangLong)   (up.elementAt(1));
+                sample.setValue(name.stringValue(), value.longValue());
+            }
+
+            Iterator<OtpErlangObject> fetchsIt = fetchs.iterator();
+            while (fetchsIt.hasNext())
+            {
+                OtpErlangTuple fetch = (OtpErlangTuple) fetchsIt.next();
+                OtpErlangString name    = (OtpErlangString) (fetch.elementAt(0));
+                OtpErlangLong   seconds = (OtpErlangLong)   (fetch.elementAt(1));
+                System.out.println("name is " + name.stringValue() + " step: " + seconds.longValue());
+            }
+            sample.update();
+        } catch (Exception e) {
+            rrdDb.close();
+            throw e;  
+        }
+        rrdDb.close();
+        sendReply(caller, atomOk);
+    }
+
+    /*
+     * Handle update a rrd file.
+     */
     private static void handleRrdUpdate(OtpErlangObject caller, OtpErlangTuple tuple) throws Exception
     {
         OtpErlangString filePath = (OtpErlangString) (tuple.elementAt(0));
@@ -345,8 +409,8 @@ public class Errd4j
     }
     
     /*
-    * Handle create a rrd file.
-    */
+     * Handle create a rrd file.
+     */
     private static void handleRrdCreate(OtpErlangObject caller, OtpErlangTuple tuple) throws Exception
     {
         OtpErlangString filePath = (OtpErlangString) (tuple.elementAt(0));
