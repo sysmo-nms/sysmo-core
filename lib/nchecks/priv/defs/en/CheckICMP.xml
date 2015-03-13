@@ -76,8 +76,9 @@
     </flags_def>
     <performances>
         <!--
-            In this example, the probe return record must have these properties for errd4j to log
+            In this example, the probe return record should have these properties for errd4j to log
             corectly:
+            #probe_return.perf_return = 
                 [
                     {'PercentLost',      x}
                     {'MinRoundTrip',     x}

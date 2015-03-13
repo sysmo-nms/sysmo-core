@@ -70,6 +70,7 @@
  
     timestamp       = 0         :: integer(),
     key_vals        = []        :: [{string(), any()}],
+    perfs           = []        :: [{string(), integer()}],
     % used by inspector property set/get 
  
     reply_tuple     = undefined :: any(),
