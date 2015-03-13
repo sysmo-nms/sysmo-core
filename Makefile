@@ -30,7 +30,7 @@ endif
 export MAKE        = /usr/bin/make
 export REL_NAME    = sysmo
 export REL_VERSION = 0.2.1
-export MODS = supercast monitor errd snmpman sysmo ini nchecks equartz pping 
+export MODS = supercast monitor errd errd4j snmpman sysmo ini nchecks equartz pping 
 
 .PHONY: all compile test doc clean var-clean rel-clean start \
 	unix-release unix-local-release windows-release windows-local-release
@@ -81,6 +81,7 @@ jars:
 	cp lib/snmpman/java_lib/*.jar lib/jars/
 	cp lib/equartz/java_lib/*.jar lib/jars/
 	cp lib/nchecks/java_lib/*.jar lib/jars/
+	cp lib/errd4j/java_lib/*.jar lib/jars/
 
 
 ######################
@@ -121,6 +122,7 @@ ERL_UNTAR   = '\
 ##########################
 windows-local-release: compile $(REL_NAME).script jars
 	cp lib/nchecks/priv/defs/en/* var/yaws/docroot/nchecks/
+	cp lib/nchecks/priv/defs/en/* cfg/nchecks/
 	cp release_tools/sys.config.base ./sys.config
 	chmod -w sys.config
 

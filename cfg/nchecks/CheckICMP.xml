@@ -87,7 +87,7 @@
         <data_sources>
             <ds>
                 <dsName>PercentLost</dsName>
-                <dsType>PERCENT</dsType>
+                <dsType>AVERAGE</dsType>
             </ds>
             <ds>
                 <dsName>MinRoundTrip</dsName>

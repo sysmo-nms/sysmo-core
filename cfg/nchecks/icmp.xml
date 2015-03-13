@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<check_def check="icmp">
+    <descr>Check host presence using ICMP echo request</descr>
+    <probe_class>nchecks.CheckICMP</probe_class>
+    <flags_def>
+        <flag_info name="host">
+            <usage>Host target as ip version 4/6 or hostname</usage>
+            <default></default>
+            <role>mandatory</role>
+            <type>string</type>
+            <hint>Host or IP</hint>
+        </flag_info>
+        <flag_info name="pkts_number">
+            <usage>Number of packets to send</usage>
+            <default>5</default>
+            <role>optional</role>
+            <type>int</type>
+            <hint>Packets number</hint>
+        </flag_info>
+        <flag_info name="pkts_size">
+            <usage>Size of the ICMP body in octets</usage>
+            <default>56</default>
+            <role>optional</role>
+            <type>int</type>
+            <hint>Octets</hint>
+        </flag_info>
+        <flag_info name="pl_warning">
+            <usage>Packet lost "CRITICAL" threshold in percent. Will return a status "WARNING" when packet lost exceed the value</usage>
+            <default>50</default>
+            <role>optional</role>
+            <type>int</type>
+            <hint>Milliseconds</hint>
+        </flag_info>
+        <flag_info name="pl_critical">
+            <usage>Packet lost "CRITICAL" threshold in percent. Will return a status "CRITICAL" when packet lost exceed the value</usage>
+            <default>100</default>
+            <role>optional</role>
+            <type>int</type>
+            <hint>Milliseconds</hint>
+        </flag_info>
+        <flag_info name="ms_warning">
+            <usage>Echo/Reply latency "WARNING" threshold. Will return a status "WARNING" if average reply time exceed the value</usage>
+            <default>200</default>
+            <role>optional</role>
+            <type>int</type>
+            <hint>Milliseconds</hint>
+        </flag_info>
+        <flag_info name="ms_critical">
+            <usage>Echo/Reply latency "CRITICAL" threshold. Will return a status "CRITICAL" if average reply time exceed the value</usage>
+            <default>2500</default>
+            <role>optional</role>
+            <type>int</type>
+            <hint>Milliseconds</hint>
+        </flag_info>
+        <flag_info name="ms_timeout">
+            <usage>Stop waiting reply or refuse reply when it exceed the value</usage>
+            <default>5000</default>
+            <role>optional</role>
+            <type>int</type>
+            <hint>Milliseconds</hint>
+        </flag_info>
+        <flag_info name="ms_interval">
+            <usage>Interval in milliseconds between request packets</usage>
+            <default>100</default>
+            <role>optional</role>
+            <type>int</type>
+            <hint>Milliseconds</hint>
+        </flag_info>
+       <flag_info name="useIpv6">
+            <usage>Force use of the v6 address. Usefull if "host" arg is an hostname</usage>
+            <default>false</default>
+            <role>optional</role>
+            <type>bool</type>
+            <hint></hint>
+        </flag_info>
+    </flags_def>
+    <performances>
+        <!--
+            In this example, the probe return record must have these properties for errd4j to log
+            corectly:
+                [
+                    {'PercentLost',      x}
+                    {'MinRoundTrip',     x}
+                    {'MaxRoundTrip',     x}
+                    {'AverageRoundTrip', x}
+        -->
+        <data_sources>
+            <ds>
+                <dsName>PercentLost</dsName>
+                <dsType>AVERAGE</dsType>
+            </ds>
+            <ds>
+                <dsName>MinRoundTrip</dsName>
+                <dsType>MINIMUM</dsType>
+            </ds>
+            <ds>
+                <dsName>MaxRoundTrip</dsName>
+                <dsType>MAXIMUM</dsType>
+            </ds>
+            <ds>
+                <dsName>AverageRoundTrip</dsName>
+                <dsType>AVERAGE</dsType>
+            </ds>
+        </data_sources>
+        <graphs>
+            <graph_desc>
+                <graphName>ICMPPerfs</graphName>
+                <graphTitle>ICMP performances</graphTitle>
+                <verticalLabel>Milliseconds</verticalLabel>
+                <add>
+                    <name>MaxRoundTrip</name>
+                    <graphType>area</graphType>
+                    <legend>Maximum round trip</legend>
+                    <color>red</color>
+                </add>
+                <add>
+                    <name>MinRoundTrip</name>
+                    <graphType>area</graphType>
+                    <legend>Minimum round trip</legend>
+                    <color>green</color>
+                </add>
+                <add>
+                    <name>AverageRoundTrip</name>
+                    <graphType>area</graphType>
+                    <legend>Average round trip</legend>
+                    <color>blue</color>
+                </add>
+            </graph_desc>
+            <graph_desc>
+                <graphName>ICMPPercents</graphName>
+                <graphTitle>ICMP echo/replies percent lost</graphTitle>
+                <verticalLabel>Percent</verticalLabel>
+                <add>
+                    <name>PercentLost</name>
+                    <graphType>area</graphType>
+                    <legend>Percent packets lost</legend>
+                    <color>red</color>
+                </add>
+            </graph_desc>
+        </graphs>
+    </performances>
+</check_def>

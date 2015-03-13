@@ -19,6 +19,7 @@
                 monitor,
                 snmpman,
                 errd,
+                errd4j,
                 supercast,
                 nchecks,
                 equartz

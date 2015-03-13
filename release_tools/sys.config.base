@@ -105,6 +105,17 @@
             {low_timeout,   25000}
         ]
     },
+    {errd4j, 
+        [
+            {java_node, 
+                [
+                    {java_com,
+"javaw.exe -cp lib/jars/*; io.sysmo.errd4j.Errd4j >var/log/errd4j.log 2>&1"
+                    }
+                ]
+            }
+        ]
+    },
     {nchecks, 
         [
             {java_node, 

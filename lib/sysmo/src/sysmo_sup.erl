@@ -45,6 +45,14 @@ init([]) ->
                     [errd_app]
                 },
                 {
+                    errd4j_app,
+                    {errd4j_app, start, [normal,[]]},
+                    permanent,
+                    2000,
+                    supervisor,
+                    [errd4j_app]
+                },
+                {
                     nchecks_app,
                     {nchecks_app, start, [normal,[]]},
                     permanent,
