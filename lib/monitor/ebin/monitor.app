@@ -44,8 +44,12 @@
             monitor_probe,
             monitor_probe_sup,
             monitor_sup,
-            monitor_utils
-            ]},
+            monitor_utils,
+
+            probe_nchecks,
+            probe_snmp_get,
+            probe_snmp_walk
+        ]},
         {registered, [
                 monitor_sup,
                 'target-MasterChan',
