@@ -2,11 +2,9 @@
 
 ERL         ?= erl
 ERLC        ?= erlc -Werror
-ASNC        ?= erlc -Werror -bber
 
 DIALYZER    ?= dialyzer
 ERLC_DIAL   ?= erlc -Werror +debug_info
-ASNC_DIAL   ?= erlc -Werror +debug_info -bber
 
 EPATH       += -pa ebin
 
@@ -29,7 +27,7 @@ ACCTRL      = $(wildcard src/acctrls/*.erl)
 ACCTRL_DST  = $(patsubst src/acctrls/%.erl, ebin/%.beam, $(ACCTRL))
 
 compile: $(BEHAVIOURS_DST) $(MAIN_DST) $(AUTHS_DST) \
-            $(ENCODERS_DST) $(ACCTRL_DST) pdu
+            $(ENCODERS_DST) $(ACCTRL_DST)
 
 
 ebin/%.beam: src/%.erl $(INCLUDE)
@@ -55,7 +53,6 @@ clean:
 	rm -f doc/*.png
 	rm -f doc/*.css
 	rm -f doc/edoc-info
-	rm -f priv/asn1/build/*
 
 clsupercast:
 	@$(ERL) -pa ebin -eval \
@@ -64,15 +61,6 @@ clsupercast:
 clsupercast2:
 	@$(ERL) -pa ebin -eval \
  'clsupercast:s(), timer:sleep(500), clsupercast:std()'
-# ASN PDUs
-ASN_DEFS    = $(shell find priv/asn1 -name "*.asn")
-ASN_DEST    = $(patsubst priv/asn1/%.asn, ebin/%.beam, $(ASN_DEFS))
-
-pdu: $(ASN_DEST)
-
-$(ASN_DEST): ebin/%.beam: priv/asn1/%.asn
-	$(ASNC) -o priv/asn1/build priv/asn1/$*.asn
-	@cp priv/asn1/build/$*.beam ebin
 
 
 # TEST
@@ -84,7 +72,6 @@ dialize: clean supercast.plt
 	$(DIALYZER) --plts supercast.plt -- ebin/
 
 supercast.plt: ERLC = $(ERLC_DIAL)
-supercast.plt: ASNC = $(ASNC_DIAL)
 supercast.plt: compile
 	$(DIALYZER) -Wno_undefined_callbacks --build_plt --output_plt supercast.plt -pa ebin --apps erts kernel stdlib crypto public_key ssl ebin/
 
