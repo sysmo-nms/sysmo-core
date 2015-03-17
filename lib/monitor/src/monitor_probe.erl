@@ -232,7 +232,7 @@ init(Probe) ->
     {ok, Probe}.
 
 init2(Probe) ->
-    random:seed(erlang:now()).
+    random:seed(erlang:now()),
     {ok, ExecInitState}     = init_probe(Probe),
     {ok, InspectInitState}  = monitor_inspector:init_all(Probe),
     {ok, LoggersInitState}  = monitor_logger:init_all(Probe),
@@ -329,10 +329,7 @@ code_change(_OldVsn, S, _Extra) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% PROBE LAUNCH %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec initiate_start_sequence(
-        Step        :: integer(),
-        Mode        :: normal | random | now
-    ) -> any().
+-spec initiate_start_sequence(Step::integer(),Mode::normal|random|now) -> any().
 initiate_start_sequence(Step, random) ->
     Step2   = random:uniform(Step),
     initiate_start_sequence(Step2);
@@ -363,9 +360,8 @@ read_timer(TRef) ->
         Any   -> Any
     end.
 
-maybe_write_probe(#probe{name=_}=Probe, #probe{name=_}=Probe) -> ok;
-maybe_write_probe(_,Probe2) ->
-    monitor_data_master:update(probe, Probe2).
+maybe_write_probe(Probe, Probe)     -> ok;
+maybe_write_probe(_,     Probe2)    -> monitor_data_master:update(probe, Probe2).
 
 partial_pr(ES) ->
     #probe_return{ 
