@@ -50,7 +50,7 @@
 }).
 
 -record(nchecks_probe_conf, {
-    function                    :: atom(),
+    class                       :: string(),
     args        = []            :: [{string(), any()}]
 }).
 

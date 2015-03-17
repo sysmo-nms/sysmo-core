@@ -63,7 +63,7 @@
             {master_chan_read_perm, ["admin"]},
             {master_chan_write_perm, ["admin"]},
             {targets_data_dir,      "var/monitor"},
-            {rrd_templates_dir,     "cfg/rrds"}
+            {snmp_def_dir,          "cfg/snmp"}
         ]
     },
     {kernel,

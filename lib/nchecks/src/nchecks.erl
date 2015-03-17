@@ -39,8 +39,7 @@
 
 % API
 -export([
-    tcp/1,
-    icmp/1
+    check/2
 ]).
 
 -record(state, {
@@ -52,99 +51,8 @@
 
 -define(ASSERT_TIMEOUT, 60000).
 
--spec tcp(ArgList::[{PropertyConf::string(), Property::any}]) ->
-    {ok, Reply::#nchecks_reply{}} | {error, Reason::any()}.
-% @doc
-% Execute a TCP check. Arglist is a property list of configuration
-% directives.
-%
-% <b>MANDATORY</b>
-%
-% {"host", Host} when Host is a string representing a hostname, an ipv4 address,
-% or an ipv6 address.
-%
-% {"port", Port} when port is an integer representing the port.
-%
-% <b>OPTIONAL</b>
-%
-% {"ms_warning", Value} when Value is an integer representing milliseconds.
-% If the connection time exceed Value, the return will have status of
-% "WARNING". Default is 500.
-%
-% {"ms_critical", Value} when Value is an integer representing milliseconds.
-% If the connection time exceed Value, the return will have status of
-% "CRITICAL". Default is 2500.
-%
-% {"ms_timeout", Value} when Value is an integer representing milliseconds.
-% Abort connection if time exceed Value. Default is 5000.
-%
-% {"refuse", Value} when Value is one of "OK"|"WARNING"|"CRITICAL". If the
-% connexion is refused or fail, set the return status
-% to Value. May be set to "OK" to assert that a service is down. Default
-% is "CRITICAL". Use in conjontion with {accept, _}. Default is "OK". Note
-% that when Value is not "CRITICAL", {ms_warning,_} and {ms_critical,_} are
-% ignored.
-%
-% {"accept", Value} when Value is one of "OK"|"WARNING"|"CRITICAL". If the
-% connexion success set thre return status to Value. May be set to "CRITICAL"
-% to alert that a service is up. Use in conjonction with
-% {"refuse",_}. Default is "OK". Note that when Value is not "OK",
-% {"ms_warning",_} and {ms_critical,_} are ignored.
-%
-% @end
-tcp(ArgList) ->
-    gen_server:call(?MODULE, {call_nchecks, {check_TCP, {ArgList}}}, infinity).
-
-
-
--spec icmp(ArgList::[{PropertyConf::string(), Property::any}]) ->
-    {ok, Reply::#nchecks_reply{}} | {error, Reason::any()}.
-% @doc
-% Execute a ICMP check. Arglist is a property list of configuration
-% directives.
-%
-% <b>MANDATORY</b>
-%
-% {"host", Host} when Host is a string representing a hostname, an ipv4 address,
-% or an ipv6 address.
-%
-% <b>OPTIONAL</b>
-%
-% {"pkts_number", Value} when Value is an integer. Send Value number of packets.
-% Default is 5.
-%
-% {"pkts_size", Value} when Value is an integer. Set the packets size to Value.
-% Default is 56.
-%
-% {"pl_warning", Value} when Value is an integer between 0 and 100 representing
-% percents. If packet lost exceed Value percent, set reply status to
-% "WARNING". Default is 50.
-%
-% {"pl_critical", Value} when Value is an integer between 0 and 100 representing
-% percents. If packet lost exceed Value percent, set reply status to
-% "CRITICAL". Default is 100.
-%
-% {"ms_warning", Value} when Value is an integer representing milliseconds.
-% If the average reply time exceed Value, the return will have status of
-% "WARNING". Default is 200.
-%
-% {"ms_critical", Value} when Value is an integer representing milliseconds.
-% If average reply time exceed Value, the return will have status of
-% "CRITICAL". Default is 2500.
-%
-% {"ms_timeout", Value} when Value is an integer representing milliseconds.
-% Abort if reply time exceed Value. Default is 5000.
-%
-% {"ms_interval", Value} when Value is an integer. Send heach packets with an
-% interval Value milliseconds. Default is 100.
-%
-% {"useIpv6", Value} when Valie is "true" or "false". Will return DOWN status
-% if the Host argument can not be translated to ip version 6. Default is false.
-%
-% @end
-icmp(ArgList) ->
-    gen_server:call(?MODULE, {call_nchecks, {check_ICMP, {ArgList}}}, infinity).
-
+check(Class, ArgList) ->
+    gen_server:call(?MODULE, {call_nchecks, {check, {Class, ArgList}}}, infinity).
 
 % @private
 % @doc

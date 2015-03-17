@@ -79,7 +79,7 @@ fill_test(N,Parent) ->
     ],
 
     K = target_new(SysProp, Prop),
-    Ping = probe_new({nchecks, "icmp", []}, K),
+    Ping = probe_new({nchecks, "CheckICMP", []}, K),
     Snmp = probe_new({snmp, if_perfs, [1,2,3]}, K),
     dependency_new(Ping, Parent),
     dependency_new(Snmp, Parent),
@@ -125,13 +125,13 @@ dependency_new(Probe, Depend) ->
 %%-----------------------------------------------------------------------------
 %% PROBE API
 %%-----------------------------------------------------------------------------
-probe_new({nchecks, "icmp", Args}, Target) ->
+probe_new({nchecks, JavaClass, Args}, Target) ->
     Probe = #probe{
         belong_to   = Target,
-        description = "ICMP:Echo presence",
+        description = lists:concat(["NCHECKS: ", JavaClass]),
         monitor_probe_mod = probe_nchecks,
         monitor_probe_conf = #nchecks_probe_conf{
-            function    = icmp,
+            class       = JavaClass,
             args        = Args
         },
         inspectors  = [
@@ -209,9 +209,6 @@ probe_new({snmp, if_perfs, Indexes}, Target) ->
         ],
         % TEMPLATE END
 
-
-
-
         inspectors = [
             #inspector{
                 module = bmonitor_inspector_status_set, 
@@ -223,7 +220,7 @@ probe_new({snmp, if_perfs, Indexes}, Target) ->
 
 get_rrd_template() ->
     %?RRD_ifPerf_file
-    {ok, R} = application:get_env(monitor, rrd_templates_dir),
+    {ok, R} = application:get_env(monitor, snmp_def_dir),
     TplFile = filename:join(R, ?RRD_ifPerf_file),
     {ok, IniBin} = file:read_file(TplFile),
     IniStr = erlang:binary_to_list(IniBin),

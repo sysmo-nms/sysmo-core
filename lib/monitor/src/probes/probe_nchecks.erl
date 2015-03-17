@@ -31,7 +31,7 @@
 ]).
 
 -record(state, {
-    function,
+    class,
     args
 }).
 
@@ -48,7 +48,7 @@ init(Probe) ->
     ?LOG(Target),
     TargetProp  = Target#target.properties,
     Conf        = Probe#probe.monitor_probe_conf,
-    #nchecks_probe_conf{function = Funct, args = Args} = Conf,
+    #nchecks_probe_conf{class = Class, args = Args} = Conf,
 
     % if "host" is not defined in probe conf, use the target "ip" and
     % "ipVersion" property.
@@ -61,14 +61,14 @@ init(Probe) ->
     end,
     {ok,
         #state{
-            function = Funct,
-            args     = NewArgs
+            class = Class,
+            args  = NewArgs
         }
     }.
 
 
-exec(#state{function = Funct, args = Args} = S) ->
-    case nchecks:Funct(Args) of
+exec(#state{class = Class, args = Args} = S) ->
+    case nchecks:check(Class,Args) of
         {error, Error} ->
             ProbeReturn = #probe_return{
                 status      = "ERROR",

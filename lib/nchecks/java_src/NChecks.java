@@ -238,13 +238,14 @@ public class NChecks
             Map     modArgs;
             switch (command.toString())
             {
-                case "check_TCP":
-                    worker = new NChecksRunnable(new CheckTCP(), caller, payload);
+                case "check":
+                    OtpErlangString erlangClassName = (OtpErlangString) (payload.elementAt(0));
+                    String className = "io.sysmo.nchecks.modules." + erlangClassName.stringValue();
+                    OtpErlangList   args      = (OtpErlangList)   (payload.elementAt(1));
+                    System.out.println("hello" + className + args);
+                    worker = new NChecksRunnable(Class.forName(className).newInstance(), caller, args);
                     threadPool.execute(worker);
-                    break;
-                case "check_ICMP":
-                    worker = new NChecksRunnable(new CheckICMP(), caller, payload);
-                    threadPool.execute(worker);
+                    System.out.println("hello");
                     break;
                 case "init":
                     handleInit(payload);
@@ -257,10 +258,9 @@ public class NChecks
         catch (Exception|Error e)
         {
             OtpErlangTuple reply = buildErrorReply(
-                new OtpErlangString("Java CATCH: Failed to honour command "
-                    + command.toString() + " -> " + e.getMessage())
+                new OtpErlangString("nchecks error: " + e
+                    + " " + command.toString() + " -> " + e.getMessage())
             );
-
             sendReply(caller, reply);
         }
     }
@@ -284,22 +284,22 @@ class NChecksRunnable implements Runnable
 {
     private NChecksInterface check;
     private OtpErlangObject  caller;
-    private OtpErlangTuple   payload;
+    private OtpErlangList    args;
 
     public NChecksRunnable(
             Object          checkObj,
             OtpErlangObject callerObj,
-            OtpErlangTuple  payloadTuple)
+            OtpErlangList   argsList)
     {
         check   = (NChecksInterface) checkObj;
         caller  = callerObj;
-        payload = payloadTuple;
+        args    = argsList;
     }
 
     @Override
     public void run()
     {
-        check.setConfig(decodeArgs(payload));
+        check.setConfig(decodeArgs(args));
         Reply checkReply = check.execute();
         OtpErlangObject reply = NChecks.buildOkReply(checkReply.asTuple());
         NChecks.sendReply(caller, reply);
@@ -310,10 +310,9 @@ class NChecksRunnable implements Runnable
         return this.caller;
     }
 
-    private static Map<String,Argument> decodeArgs(OtpErlangTuple payload)
+    private static Map<String,Argument> decodeArgs(OtpErlangList argList)
     {
         Map<String,Argument> result = new HashMap<String,Argument>();
-        OtpErlangList argList = (OtpErlangList) (payload.elementAt(0));
         Iterator<OtpErlangObject> itr = argList.iterator();
         OtpErlangTuple element;
         while (itr.hasNext())

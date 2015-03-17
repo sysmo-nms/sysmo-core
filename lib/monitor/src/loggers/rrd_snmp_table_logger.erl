@@ -48,6 +48,7 @@
 %%%% INIT (rrdcreate) %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 log_init(Conf, Probe) ->
+    io:format("conf is ~p~n",[Conf]),
     [Target]        = monitor_data_master:get(target, Probe#probe.belong_to),
     ConfType        = proplists:get_value(type, Conf),
     {ok, DumpDir}   = application:get_env(supercast, http_sync_dir),
