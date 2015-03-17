@@ -87,10 +87,6 @@
         -->
         <data_sources>
             <ds>
-                <dsName>PercentLost</dsName>
-                <dsType>AVERAGE</dsType>
-            </ds>
-            <ds>
                 <dsName>MinRoundTrip</dsName>
                 <dsType>MINIMUM</dsType>
             </ds>
@@ -100,6 +96,10 @@
             </ds>
             <ds>
                 <dsName>AverageRoundTrip</dsName>
+                <dsType>AVERAGE</dsType>
+            </ds>
+            <ds>
+                <dsName>PercentLost</dsName>
                 <dsType>AVERAGE</dsType>
             </ds>
         </data_sources>
