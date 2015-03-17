@@ -23,7 +23,7 @@
 % #probe_return.key_val record.
 % To work a valid #rrd_def record must be givent at init conf input.
 % @end
--module(bmonitor_logger_rrd3).
+-module(rrd_nchecks_logger).
 -behaviour(monitor_logger).
 -include("include/monitor.hrl").
 

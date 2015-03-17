@@ -96,7 +96,7 @@ triggered_return2(CState, S) ->
 
     PartialPR = #probe_return{ 
         status          = ES#ets_state.status,
-        original_reply  = "",
+        reply_string    = "",
         timestamp       = 0,
         key_vals        = []
     },
@@ -366,7 +366,7 @@ maybe_write_probe(_,     Probe2)    -> monitor_data_master:update(probe, Probe2)
 partial_pr(ES) ->
     #probe_return{ 
         status          = ES#ets_state.status,
-        original_reply  = "",
+        reply_string    = "",
         timestamp       = 0,
         key_vals        = []
     }.

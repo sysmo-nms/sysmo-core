@@ -41,13 +41,15 @@
 -export([
     create/0,
     update/0,
+    updates/0,
     graph/0,
     update_fetch/0,
+    updates_fetch/0,
     test/0
 ]).
 
 -record(state, {
-    errd4j_pid       = undefined,
+    errd4j_pid      = undefined,
     replies_waiting = [],
     java_com        = "",
     assert_init     = undefined
@@ -62,8 +64,17 @@ update_fetch() ->
     Args = {File, Updates, Fetch},
     gen_server:call(?MODULE, {call_errd4j, {update_fetch, Args}}).
 
+updates_fetch() ->
+    File    = "test.rrd",
+    Updates = [{"speed", 3000}],
+    Fetchs  = [{"speed", -600}],
+    Args = [{File, Updates, Fetchs}],
+    gen_server:call(?MODULE, {call_errd4j, {updates_fetch, Args}}).
+
+
 test() ->
     gen_server:call(?MODULE, {call_errd4j, {test, {}}}).
+
 graph() ->
     File    = "test.rrd",
     DstFile = "test.png",
@@ -79,6 +90,10 @@ update() ->
     Args = {File, Updates},
     gen_server:call(?MODULE, {call_errd4j, {update, Args}}).
 
+updates() ->
+    Updates = [{"test.rrd", [{"speed", 3000}]}],
+    gen_server:call(?MODULE, {call_errd4j, {updates, Updates}}).
+    
 create() ->
     File = "test.rrd",
     Step = 300,

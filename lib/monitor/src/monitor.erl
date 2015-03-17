@@ -129,7 +129,7 @@ probe_new({nchecks, "icmp", Args}, Target) ->
     Probe = #probe{
         belong_to   = Target,
         description = "ICMP:Echo presence",
-        monitor_probe_mod = bmonitor_probe_nchecks,
+        monitor_probe_mod = probe_nchecks,
         monitor_probe_conf = #nchecks_probe_conf{
             function    = icmp,
             args        = Args
@@ -151,7 +151,7 @@ probe_new({snmp, if_perfs, Indexes}, Target) ->
     Probe = #probe{
         belong_to   = Target,
         description = "SNMP:Interfaces performances",
-        monitor_probe_mod = bmonitor_probe_snmp,
+        monitor_probe_mod = probe_snmp,
 
 
 
@@ -176,7 +176,7 @@ probe_new({snmp, if_perfs, Indexes}, Target) ->
 
         loggers = [
             #logger{
-                module = bmonitor_logger_rrd2, 
+                module = rrd_snmp_table_logger, 
                 conf = [
                     {type,                  snmp_table},
                     {rrd_create,            RrdCreate},

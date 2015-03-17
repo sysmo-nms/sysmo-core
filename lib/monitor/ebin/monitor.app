@@ -23,11 +23,8 @@
         {description, "Data store of monitors configuration"},
         {vsn, "0.1.0"},
         {modules, [
-            bmonitor_inspector_fire_alert,
-            bmonitor_inspector_property_set,
-            bmonitor_inspector_status_set,
-            bmonitor_logger_rrd,
-            bmonitor_logger_rrd2,
+            rrd_nchecks_logger,
+            rrd_snmp_table_logger,
             bmonitor_probe_nchecks,
             bmonitor_probe_snmp,
             monitor,

@@ -19,7 +19,7 @@
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 % @private
--module(bmonitor_probe_nchecks).
+-module(probe_nchecks).
 -behaviour(monitor_exec).
 -include("include/monitor.hrl").
 -include("../nchecks/include/nchecks.hrl").
@@ -72,7 +72,7 @@ exec(#state{function = Funct, args = Args} = S) ->
         {error, Error} ->
             ProbeReturn = #probe_return{
                 status      = "ERROR",
-                original_reply = Error
+                reply_string   = Error
             };
         {ok, Reply} ->
             #nchecks_reply{
@@ -80,7 +80,7 @@ exec(#state{function = Funct, args = Args} = S) ->
             } = Reply,
             ProbeReturn = #probe_return{
                 status          = Status,
-                original_reply  = Str,
+                reply_string    = Str,
                 timestamp       = Ts,
                 key_vals        = Perfs
             }

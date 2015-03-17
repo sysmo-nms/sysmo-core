@@ -18,7 +18,7 @@
 % 
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
--module(bmonitor_probe_snmp).
+-module(probe_snmp).
 -behaviour(monitor_exec).
 -include("include/monitor.hrl").
 
@@ -76,7 +76,7 @@ exec(#state{method = get} = State) ->
             S  = "CRITICAL",
             PR = #probe_return{
                 status          = S,
-                original_reply  = OR,
+                reply_string    = OR,
                 key_vals        = KV,
                 timestamp       = MicroSec2},
             {ok, State, PR};
@@ -106,7 +106,7 @@ exec(#state{method=walk_table, oids=Table} = State) ->
             S  = "CRITICAL",
             PR = #probe_return{
                 status          = S,
-                original_reply  = OR,
+                reply_string    = OR,
                 reply_tuple     = ignore,
                 key_vals        = KV,
                 timestamp       = ReplyT},
@@ -118,7 +118,7 @@ exec(#state{method=walk_table, oids=Table} = State) ->
                 reply_tuple     = SnmpReply,
                 status          = "OK",
                 key_vals        = KV,
-                original_reply  = to_string(SnmpReply)
+                reply_string    = to_string(SnmpReply)
             },
             {ok, State, PR}
     end.
@@ -141,7 +141,7 @@ eval_snmp_return(VarBinds, Oids) ->
     ],
     #probe_return{
         status          = "OK",
-        original_reply  = to_string(VarBinds),
+        reply_string    = to_string(VarBinds),
         key_vals        = [{"status", "OK"} | KeyVals]
     }.
 

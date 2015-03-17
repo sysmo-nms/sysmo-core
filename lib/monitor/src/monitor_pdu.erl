@@ -153,7 +153,8 @@ probeReturn(ProbeReturn, Target, Probe, NextReturn) ->
                 {<<"target">>,      list_to_binary(Target)},
                 {<<"name">>,        list_to_binary(Probe)},
                 {<<"status">>,      list_to_binary(ProbeReturn#probe_return.status)},
-                {<<"originalRep">>, list_to_binary(ProbeReturn#probe_return.original_reply)},
+                {<<"replyString">>, list_to_binary(ProbeReturn#probe_return.reply_string)},
+                {<<"replyCode">>,   ProbeReturn#probe_return.reply_code},
                 {<<"timestamp">>,   ProbeReturn#probe_return.timestamp},
                 {<<"keyVals">>,     {struct, JKeyVal}},
                 {<<"nextReturn">>,  NextReturn}
@@ -222,7 +223,7 @@ gen_json_probe_inspectors(Inspectors) ->
         [{atom_to_binary(Key, utf8), list_to_binary(io_lib:format("~p", [Conf]))} || {_,Key,Conf} <- Inspectors]
     }.
     
-gen_json_probe_loggers([{logger, bmonitor_logger_rrd2, Cfg}]) ->
+gen_json_probe_loggers([{logger, rrd_snmp_table_logger, Cfg}]) ->
 
     Type    = proplists:get_value(type, Cfg),
     RCreate = proplists:get_value(rrd_create, Cfg),
@@ -231,7 +232,7 @@ gen_json_probe_loggers([{logger, bmonitor_logger_rrd2, Cfg}]) ->
     RGraphs2 = [list_to_binary(G) || G <- RGraphs],
     Indexes = [I || {I,_} <- proplists:get_value(row_index_to_rrd_file, Cfg)],
     {struct,
-        [{atom_to_binary(bmonitor_logger_rrd2, utf8),
+        [{atom_to_binary(rrd_snmp_table_logger, utf8),
             {struct,
                 [
                     {<<"type">>,        atom_to_binary(Type, utf8)},

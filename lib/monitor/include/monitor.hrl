@@ -61,34 +61,29 @@
 }).
 
 -record(probe_return, {
-    status          = "DOWN" :: string(),
-    % "OK" | "DOWN" | "WARNING" | "CRITICAL" | "PAUSED",
-    % used by inspector status set
-
-    original_reply  = "undefined" :: string(),
-    % used by the text logger
- 
-    timestamp       = 0         :: integer(),
-    key_vals        = []        :: [{string(), any()}],
-    perfs           = []        :: [{string(), integer()}],
+    status          = "DOWN"        :: string(),
+    % "OK" | "DOWN" | "WARNING" | "CRITICAL",
+    reply_string    = "undefined"   :: string(),
+    reply_code      = 0             :: integer(),
+    timestamp       = 0             :: integer(),
+    key_vals        = []            :: [{string(), any()}],
+    perfs           = []            :: [{string(), integer()}],
     % used by inspector property set/get 
- 
-    reply_tuple     = undefined :: any(),
+    reply_tuple     = undefined     :: any(),
     % used by the rrd logger/walk table
- 
-    is_event        = false     :: true | false %
+    is_event        = false         :: true | false
     % used by monitor_logger_events app
 }).
 
 -record(job, {
-    name        = undefined         :: string(),
-    belong_to   = "undefined"       :: string(),
-    trigger     = "undefined"       :: string(),
-    module      = undefined         :: atom(),
-    function    = undefined         :: atom(),
-    argument    = "undefined"       :: string(),
-    info        = "undefined"       :: string(),
-    permissions = ?DEFAULT_PERM_CONF :: #perm_conf{}
+    name        = undefined             :: string(),
+    belong_to   = "undefined"           :: string(),
+    trigger     = "undefined"           :: string(),
+    module      = undefined             :: atom(),
+    function    = undefined             :: atom(),
+    argument    = "undefined"           :: string(),
+    info        = "undefined"           :: string(),
+    permissions = ?DEFAULT_PERM_CONF    :: #perm_conf{}
 }).
 
 -record(probe, {
@@ -110,16 +105,10 @@
 }).
 
 -record(target, {
-    name        = undefined     :: string(),
-
+    name        = undefined             :: string(),
     % sys_properties only accessible to users having write access
-    sys_properties = []         :: [{atom(), string()}],
-
+    sys_properties = []                 :: [{atom(), string()}],
     % properties accessible to all users having read access
     properties  = ?DEFAULT_TARGET_PROPERTIES :: [{string(), string()}],
-
-    %probes      = []            :: [#probe{}],
-    %jobs        = []            :: [#job{}],
-
-    permissions         = ?DEFAULT_PERM_CONF :: #perm_conf{}
+    permissions = ?DEFAULT_PERM_CONF    :: #perm_conf{}
 }).
