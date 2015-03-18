@@ -21,10 +21,10 @@
 % @doc
 % @end
 -module(probe_nchecks).
--include("../nchecks/include/nchecks.hrl").
 -behaviour(gen_server).
 -behaviour(supercast_channel).
 -include("include/monitor.hrl").
+-include("../nchecks/include/nchecks.hrl").
 -include_lib("xmerl/include/xmerl.hrl").
 
 
@@ -53,23 +53,24 @@
 
 
 
-%%----------------------------------------------------------------------------
-%% GEN_SERVER INIT
-%%----------------------------------------------------------------------------
 start_link(#probe{name=Name} = Probe) ->
     gen_server:start_link({via, supercast_registrar, {?MODULE, Name}}, ?MODULE, Probe, []).
 
-% to let multiple probes initialize in the same time, init is delayed.
+%%----------------------------------------------------------------------------
+%% GEN_SERVER INIT
+%%----------------------------------------------------------------------------
 init(Probe) ->
+    % to let multiple probes initialize in the same time, init is delayed.
     gen_server:cast(self(), continue_init),
     {ok, Probe}.
 
+% called from :cast,continue_init
 init2(Probe) ->
     random:seed(erlang:now()),
-    {ok, DumpDir} = application:get_env(supercast, http_sync_dir),
-    {Class, Args} = init_probe(Probe),
-    RrdFile       = rrd4j_init(Probe),
-    TRef = initiate_start_sequence(Probe#probe.step, random),
+    {ok, DumpDir}   = application:get_env(supercast, http_sync_dir),
+    {Class, Args}   = nchecks_init(Probe),
+    RrdFile         = rrd4j_init(Probe),
+    TRef            = initiate_start_sequence(Probe#probe.step, random),
     ES = #ets_state{
         class            = Class,
         args             = Args,
@@ -82,8 +83,10 @@ init2(Probe) ->
         status_from      = erlang:now(),
         status           = Probe#probe.status
     },
+
     monitor_data_master:set_probe_state(ES),
-    % BEGIN partial return for clients
+
+    % partial return for clients allready connected
     PartialReturn = partial_pr(ES),
     MilliRem = read_timer(ES#ets_state.tref),
     Pdu = monitor_pdu:probeReturn(
@@ -92,7 +95,6 @@ init2(Probe) ->
         ES#ets_state.name,
         MilliRem
     ),
-    % END partial return for clients
     supercast_channel:emit(?MASTER_CHANNEL, {ES#ets_state.permissions, Pdu}),
     ok.
 
@@ -234,7 +236,7 @@ handle_probe_return(PR, S) ->
     % errd4j update
     RrdFile = ES#ets_state.loggers_state,
     Perfs   = PR#probe_return.perfs,
-    errd4j:update(RrdFile, Perfs),
+    ok = errd4j:update(RrdFile, Perfs),
 
     % initiate LAUNCH
     TRef        = initiate_start_sequence(Probe#probe.step, normal),
@@ -257,13 +259,8 @@ handle_probe_return(PR, S) ->
         }
     ).
 
-
-
-
-
-
 %%----------------------------------------------------------------------------
-%% HANDLE_CAST
+%% GEN_SERVER HANDLE_CAST
 %%----------------------------------------------------------------------------
 handle_cast(continue_init, Probe) ->
     init2(Probe),
@@ -285,7 +282,7 @@ handle_cast(_Cast, S) ->
     {noreply, S}.
 
 %%----------------------------------------------------------------------------
-%% HANDLE_CALL
+%% GEN_SERVER HANDLE_CALL
 %%----------------------------------------------------------------------------
 handle_call(shut_it_down, _F, #state{name=Name} = S) ->
     supercast_channel:delete(Name),
@@ -373,7 +370,7 @@ partial_pr(ES) ->
 %%----------------------------------------------------------------------------
 %% Nchecks functions
 %%----------------------------------------------------------------------------
-init_probe(Probe) ->
+nchecks_init(Probe) ->
     [Target]    = monitor_data_master:get(target, Probe#probe.belong_to),
     TargetProp  = Target#target.properties,
     Conf        = Probe#probe.monitor_probe_conf,

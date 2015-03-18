@@ -347,11 +347,10 @@ public class Errd4j
         OtpErlangList   updates  = (OtpErlangList)   (tuple.elementAt(1));
         OtpErlangList   fetchs   = (OtpErlangList)   (tuple.elementAt(2));
 
-        RrdDb rrdDb   = new RrdDb(filePath.stringValue());
 
+        RrdDb rrdDb   = new RrdDb(filePath.stringValue());
         try {
             Sample sample = rrdDb.createSample();
-            System.out.println("sample time is: " + sample.getTime());
             Iterator<OtpErlangObject> updatesIt = updates.iterator();
             while (updatesIt.hasNext())
             {
@@ -367,7 +366,6 @@ public class Errd4j
                 OtpErlangTuple fetch = (OtpErlangTuple) fetchsIt.next();
                 OtpErlangString name    = (OtpErlangString) (fetch.elementAt(0));
                 OtpErlangLong   seconds = (OtpErlangLong)   (fetch.elementAt(1));
-                System.out.println("name is " + name.stringValue() + " step: " + seconds.longValue());
             }
             sample.update();
         } catch (Exception e) {
@@ -386,11 +384,10 @@ public class Errd4j
         OtpErlangString filePath = (OtpErlangString) (tuple.elementAt(0));
         OtpErlangList   updates  = (OtpErlangList)   (tuple.elementAt(1));
 
-        RrdDb rrdDb   = new RrdDb(filePath.stringValue());
+        RrdDb rrdDb = new RrdDb(filePath.stringValue());
 
         try {
             Sample sample = rrdDb.createSample();
-            System.out.println("sample time is: " + sample.getTime());
             Iterator<OtpErlangObject> updatesIt = updates.iterator();
             while (updatesIt.hasNext())
             {
