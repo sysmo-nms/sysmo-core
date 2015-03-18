@@ -91,7 +91,7 @@ do_new(probe, Probe) ->
     Name = generate_id(probe),
     IProbe = Probe#probe{name=Name},
     mnesia:dirty_write(IProbe),
-    monitor_probe_sup:launch(IProbe),
+    launch_probe(IProbe),
     Name;
 do_new(target, Target) ->
     {ok, DataDir} = application:get_env(monitor,targets_data_dir),
@@ -370,7 +370,7 @@ init_targets() ->
 
 init_probes() ->
     do_iterate(probe, fun(P,_) ->
-        monitor_probe_sup:launch(P)
+        launch_probe(P)
     end).
 
 init_jobs() ->
@@ -378,6 +378,11 @@ init_jobs() ->
         #job{name=Name,trigger=Tr,module=M,function=F,argument=A} = J,
         equartz:register_internal_job(Name,Tr,{M,F,A})
     end).
+
+launch_probe(#probe{monitor_probe_mod=probe_nchecks} = Probe) ->
+    probe_nchecks_sup:launch(Probe);
+launch_probe(Probe) ->
+    monitor_probe_sup:launch(Probe).
 
 %%----------------------------------------------------------------------------
 %% UTILS    

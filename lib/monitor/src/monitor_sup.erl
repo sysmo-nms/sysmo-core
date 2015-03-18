@@ -50,6 +50,14 @@ init([]) ->
                     [monitor_probe_sup]
                 },
                 {
+                    probe_nchecks_sup,
+                    {probe_nchecks_sup, start_link, []},
+                    permanent,
+                    infinity,
+                    supervisor,
+                    [probe_nchecks_sup]
+                },
+                {
                     monitor_commander,
                     {monitor_commander, start_link, []},
                     permanent,

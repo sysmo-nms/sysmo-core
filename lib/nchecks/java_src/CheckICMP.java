@@ -40,7 +40,8 @@ public class CheckICMP implements NChecksInterface
     private static String STATUS_OK       = "OK";
     private static String STATUS_WARNING  = "WARNING";
     private static String STATUS_CRITICAL = "CRITICAL";
-    private static String STATUS_DOWN  = "DOWN";
+    private static String STATUS_DOWN     = "DOWN";
+    private static String STATUS_ERROR    = "ERROR";
     private String  host        = "";
     private int     pktsNumber  = 5;
     private int     pktsSize    = 56;
@@ -173,14 +174,15 @@ public class CheckICMP implements NChecksInterface
 
         } catch (Exception e) {
             e.printStackTrace();
-            reply.setStatus(STATUS_DOWN);
-            reply.setReply(e.getMessage());
+            reply.setStatus(STATUS_ERROR);
+            String errorMsg = e + e.getMessage();
+            reply.setReply(errorMsg);
             return reply;
         }
 
         if (returnStatus != 0) {
-            reply.setStatus(STATUS_DOWN);
-            reply.setReply(stderrReturn + stdoutReturn + "when trying: " + Arrays.toString(cmd));
+            reply.setStatus(STATUS_ERROR);
+            reply.setReply("CheckICMP ERROR: " + stdoutReturn + stderrReturn + "when trying: " + Arrays.toString(cmd));
             return reply;
         }
 
@@ -188,7 +190,7 @@ public class CheckICMP implements NChecksInterface
         String[] ppingReturn = stdoutReturn.split(",");
         if (! "<PPING_RETURN>".equals(ppingReturn[0])) {
             reply.setStatus(STATUS_DOWN);
-            reply.setReply(stderrReturn + stdoutReturn + "when trying: " + Arrays.toString(cmd));
+            reply.setReply("CheckICMP ERROR: " + stderrReturn + stdoutReturn + "when trying: " + Arrays.toString(cmd));
             return reply;
         } 
 
@@ -196,10 +198,10 @@ public class CheckICMP implements NChecksInterface
         long minReplyTime = Long.valueOf(ppingReturn[2]).longValue();
         long avgReplyTime = Long.valueOf(ppingReturn[3]).longValue();
         long maxReplyTime = Long.valueOf(ppingReturn[4]).longValue();
-        reply.putPerformance("percent_loss",          percentLoss);
-        reply.putPerformance("ms_min_reply_duration", minReplyTime);
-        reply.putPerformance("ms_avg_reply_duration", avgReplyTime);
-        reply.putPerformance("ms_max_reply_duration", maxReplyTime);
+        reply.putPerformance("PercentLost",         percentLoss);
+        reply.putPerformance("MinRoundTrip",        minReplyTime);
+        reply.putPerformance("AverageRoundTrip",    avgReplyTime);
+        reply.putPerformance("MaxRoundTrip",        maxReplyTime);
         reply.setReply(stdoutReturn);
 
         if (percentLoss == 100) {

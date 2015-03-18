@@ -80,27 +80,27 @@
             corectly:
             #probe_return.perf_return = 
                 [
-                    {'PercentLost',      x}
-                    {'MinRoundTrip',     x}
-                    {'MaxRoundTrip',     x}
-                    {'AverageRoundTrip', x}
+                    {"PercentLost",      x}
+                    {"MinRoundTrip",     x}
+                    {"MaxRoundTrip",     x}
+                    {"AverageRoundTrip", x}
         -->
         <data_sources>
             <ds>
                 <dsName>MinRoundTrip</dsName>
-                <dsType>MINIMUM</dsType>
+                <dsType>ABSOLUTE</dsType>
             </ds>
             <ds>
                 <dsName>MaxRoundTrip</dsName>
-                <dsType>MAXIMUM</dsType>
+                <dsType>ABSOLUTE</dsType>
             </ds>
             <ds>
                 <dsName>AverageRoundTrip</dsName>
-                <dsType>AVERAGE</dsType>
+                <dsType>ABSOLUTE</dsType>
             </ds>
             <ds>
                 <dsName>PercentLost</dsName>
-                <dsType>AVERAGE</dsType>
+                <dsType>ABSOLUTE</dsType>
             </ds>
         </data_sources>
         <graphs>
