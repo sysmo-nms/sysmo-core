@@ -44,7 +44,7 @@
     args,
     permissions,
     target_name,
-    inspectors_state,
+    dump_dir,
     loggers_state,
     tref,
     status_from,
@@ -66,10 +66,9 @@ init(Probe) ->
 
 init2(Probe) ->
     random:seed(erlang:now()),
+    {ok, DumpDir} = application:get_env(supercast, http_sync_dir),
     {Class, Args} = init_probe(Probe),
-    RrdFile = rrd_init(Probe),
-    {ok, InspectInitState}  = monitor_inspector:init_all(Probe),
-    %{ok, LoggersInitState}  = monitor_logger:init_all(Probe),
+    RrdFile       = rrd4j_init(Probe),
     TRef = initiate_start_sequence(Probe#probe.step, random),
     ES = #ets_state{
         class            = Class,
@@ -77,7 +76,7 @@ init2(Probe) ->
         name             = Probe#probe.name,
         permissions      = Probe#probe.permissions,
         target_name      = Probe#probe.belong_to,
-        inspectors_state = InspectInitState,
+        dump_dir         = DumpDir,
         loggers_state    = RrdFile,
         tref             = TRef,
         status_from      = erlang:now(),
@@ -216,47 +215,47 @@ force2(S) ->
 % Called by handle_info(probe_return). This function do not need to be exported.
 % @end
 handle_probe_return(PR, S) ->
+    % get the probe state
     ES  = monitor_data_master:get_probe_state(S#state.name),
 
-    % INSPECT TODO do use case better than behaviour
+    % set status and update monitor_events and data_master if required
     [Probe]  = monitor_data_master:get(probe, S#state.name),
-    IState = ES#ets_state.inspectors_state,
-    {ok, IState2, Probe2} = monitor_inspector:inspect_all(IState, Probe, PR),
+    OldStatus = Probe#probe.status,
+    NewStatus = PR#probe_return.status,
+    case NewStatus of
+        OldStatus ->
+            monitor_events:notify(S#state.name, OldStatus);
+        _ ->
+            monitor_events:notify_move(S#state.name, NewStatus),
+            NewProbe = Probe#probe{status = NewStatus},
+            monitor_data_master:update(probe, NewProbe)
+    end,
 
-    % LOGGER TODO do use case better than behaviour
-    %LState = ES#ets_state.loggers_state,
-    %{ok, Pdus, LState2} = monitor_logger:log_all(LState,PR),
-    %emit_all(ES#ets_state.name, ES#ets_state.permissions, Pdus),
-    rrd_log(ES#ets_state.loggers_state, PR),
+    % errd4j update
+    RrdFile = ES#ets_state.loggers_state,
+    Perfs   = PR#probe_return.perfs,
+    errd4j:update(RrdFile, Perfs),
 
-    % LAUNCH
+    % initiate LAUNCH
     TRef        = initiate_start_sequence(Probe#probe.step, normal),
     MilliRem    = read_timer(TRef),
 
-    % SEND MESSAGES
+    % SEND MESSAGES to subscribers
     Pdu = monitor_pdu:probeReturn(
         PR,
         ES#ets_state.target_name,
         ES#ets_state.name,
-        MilliRem
-    ),
+        MilliRem),
     supercast_channel:emit(?MASTER_CHANNEL, {ES#ets_state.permissions, Pdu}),
 
     % WRITE
     monitor_data_master:set_probe_state(
         ES#ets_state{
-            inspectors_state=IState2,
             tref=TRef,
             status_from = erlang:now(),
-            status=Probe2#probe.status
+            status=PR#probe_return.status
         }
-    ),
-
-    case Probe of
-        Probe2 -> ok;
-        _ ->
-            monitor_data_master:update(probe, Probe2)
-    end.
+    ).
 
 
 
@@ -396,8 +395,8 @@ exec_nchecks({Class, Args}) ->
     case nchecks:check(Class,Args) of
         {error, Error} ->
             ProbeReturn = #probe_return{
-                status      = "ERROR",
-                reply_string   = Error
+                status          = "ERROR",
+                reply_string    = Error
             };
         {ok, Reply} ->
             #nchecks_reply{
@@ -410,7 +409,7 @@ exec_nchecks({Class, Args}) ->
                 status          = Status,
                 reply_string    = Str,
                 timestamp       = Ts,
-                key_vals        = Perfs
+                perfs           = Perfs
             }
     end,
     {ok, ProbeReturn}.
@@ -418,7 +417,7 @@ exec_nchecks({Class, Args}) ->
 %%----------------------------------------------------------------------------
 %% errd4j functions
 %%----------------------------------------------------------------------------
-rrd_init(#probe{name=Name, step=Step, belong_to=TargetName, monitor_probe_conf=NCheck} = _P) ->
+rrd4j_init(#probe{name=Name, step=Step, belong_to=TargetName, monitor_probe_conf=NCheck} = _P) ->
 
     % get the target directory TargetDir
     [Target]    = monitor_data_master:get(target, TargetName),
@@ -433,15 +432,13 @@ rrd_init(#probe{name=Name, step=Step, belong_to=TargetName, monitor_probe_conf=N
             ProbeFilePath;
         false ->
             % we will create the rrd file defined in the nchecks class xml file
-            % first get the dump dir for future client sync request
-            {ok, _DumpDir} = application:get_env(supercast, http_sync_dir),
             % get the NChecks working class Class
             #nchecks_probe_conf{class = Class} = NCheck,
-            % get the rrd definition from the NChecks XML file of the Class
+            % retreive the xml file definition name
             ClassFile       = string:concat(Class, ".xml"),
             ClassFilePath   = filename:join(["cfg", "nchecks", ClassFile]),
 
-            % read the xml file
+            % read it
             {#xmlDocument{content=DocumentContent}, _} = xmerl_scan:file(ClassFilePath, [{document, true}]),
             % extract <check_def> content
             #xmlElement{content=CheckDefContent} = lists:keyfind(check_def, 2, DocumentContent),
@@ -463,13 +460,9 @@ rrd_init(#probe{name=Name, step=Step, belong_to=TargetName, monitor_probe_conf=N
                 {DSName, DSType, Step * 2, 'Nan', 'Nan'}
             end, DSElements),
 
-            ?LOG({"init_loggers...... for", ProbeFilePath, DSDef, Step}),
-
+            % create rrd file
             errd4j:create(ProbeFilePath, Step, DSDef),
 
             % return the processed filepath
             ProbeFilePath
     end.
-
-rrd_log(File, Updates) ->
-    ?LOG({update, File, Updates}).

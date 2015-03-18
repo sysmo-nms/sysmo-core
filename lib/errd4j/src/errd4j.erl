@@ -88,9 +88,10 @@ graph() ->
     Args = {File, DstFile, Start, End, Graphs},
     gen_server:call(?MODULE, {call_errd4j, {graph, Args}}).
 
-update(File, Updates) ->
+update(File, _Updates) ->
     %File = "test.rrd",
-    %Updates = [{"speed", 3000}],
+    io:format("~p~n", [{what_is_update, _Updates}]),
+    Updates = [{"MaxRoundTrip", 3000}, {"MinRoundTrip", 399}],
     Args = {File, Updates},
     gen_server:call(?MODULE, {call_errd4j, {update, Args}}).
 
