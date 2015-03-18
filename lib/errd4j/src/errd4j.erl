@@ -40,9 +40,9 @@
 
 -export([
     create/3,
-    update/0,
-    updates/0,
+    update/2,
     graph/0,
+    updates/0,
     update_fetch/0,
     updates_fetch/0,
     test/0
@@ -88,9 +88,9 @@ graph() ->
     Args = {File, DstFile, Start, End, Graphs},
     gen_server:call(?MODULE, {call_errd4j, {graph, Args}}).
 
-update() ->
-    File = "test.rrd",
-    Updates = [{"speed", 3000}],
+update(File, Updates) ->
+    %File = "test.rrd",
+    %Updates = [{"speed", 3000}],
     Args = {File, Updates},
     gen_server:call(?MODULE, {call_errd4j, {update, Args}}).
 

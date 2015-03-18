@@ -26,9 +26,7 @@
 
 
 encode(ETerm) ->
-    io:format("should encode ~p~n", [ETerm]),
     mochijson2:encode(ETerm).
 
 decode(Json) ->
-    io:format("should decode ~p~n", [Json]),
     mochijson2:decode(Json).

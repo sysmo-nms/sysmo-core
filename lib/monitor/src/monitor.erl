@@ -37,6 +37,7 @@
     which_probes/0,
     which_jobs/0,
 
+    force/1,
     fill_test/1
 ]).
 
@@ -121,6 +122,12 @@ job_fire(JobId) ->
 dependency_new(Probe, Depend) ->
     monitor_data_master:new(dependency, #dependency{a_probe=Probe,his_parent=Depend}).
 
+force(Probe) ->
+    case supercast_registrar:whereis_name(Probe) of
+        undefined -> ok;
+        Pid ->
+            gen_server:cast(Pid, force)
+    end.
 
 %%-----------------------------------------------------------------------------
 %% PROBE API

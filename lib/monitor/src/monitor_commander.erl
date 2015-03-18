@@ -114,12 +114,19 @@ handle_cast({{"deleteTargetQuery", Contents}, CState}, S) ->
 
 handle_cast({{"forceProbeQuery", Contents}, CState}, S) ->
     % TODO check permissions
+    ?LOG({forceeeeeeeeeeeeeeeeeeeeeeee}),
     {struct, Contents2}  = proplists:get_value(<<"value">>, Contents),
+    ?LOG({forceeeeeeeeeeeeeeeeeeeeeeee}),
     Probe   = binary_to_list(proplists:get_value(<<"name">>, Contents2)),
+    ?LOG({forceeeeeeeeeeeeeeeeeeeeeeee}),
     QueryId = proplists:get_value(<<"queryId">>, Contents2),
-    monitor_probe:force(Probe),
+    ?LOG({forceeeeeeeeeeeeeeeeeeeeeeee}),
+    monitor:force(Probe),
+    ?LOG({forceeeeeeeeeeeeeeeeeeeeeeee}),
     ReplyPDU = monitor_pdu:simpleReply(QueryId, true, true, Probe),
+    ?LOG({forceeeeeeeeeeeeeeeeeeeeeeee}),
     supercast_channel:unicast(CState, [ReplyPDU]),
+    ?LOG({forceeeeeeeeeeeeeeeeeeeeeeee}),
     {noreply, S};
 
 handle_cast({{"snmpElementInterfaceQuery", Contents}, CState}, S) ->

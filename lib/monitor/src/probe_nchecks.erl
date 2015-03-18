@@ -67,7 +67,7 @@ init(Probe) ->
 init2(Probe) ->
     random:seed(erlang:now()),
     {Class, Args} = init_probe(Probe),
-    RrdFile = init_logger(Probe),
+    RrdFile = rrd_init(Probe),
     {ok, InspectInitState}  = monitor_inspector:init_all(Probe),
     %{ok, LoggersInitState}  = monitor_logger:init_all(Probe),
     TRef = initiate_start_sequence(Probe#probe.step, random),
@@ -190,7 +190,8 @@ force(PidName) ->
 force2(S) ->
     ES  = monitor_data_master:get_probe_state(S#state.name),
     case erlang:cancel_timer(ES#ets_state.tref) of
-        false -> ok;
+        false ->
+            ok;
         _ ->
             TRef = initiate_start_sequence(undefined, now),
             monitor_data_master:set_probe_state(ES#ets_state{tref=TRef}),
@@ -223,9 +224,10 @@ handle_probe_return(PR, S) ->
     {ok, IState2, Probe2} = monitor_inspector:inspect_all(IState, Probe, PR),
 
     % LOGGER TODO do use case better than behaviour
-    LState = ES#ets_state.loggers_state,
-    {ok, Pdus, LState2} = monitor_logger:log_all(LState,PR),
-    emit_all(ES#ets_state.name, ES#ets_state.permissions, Pdus),
+    %LState = ES#ets_state.loggers_state,
+    %{ok, Pdus, LState2} = monitor_logger:log_all(LState,PR),
+    %emit_all(ES#ets_state.name, ES#ets_state.permissions, Pdus),
+    rrd_log(ES#ets_state.loggers_state, PR),
 
     % LAUNCH
     TRef        = initiate_start_sequence(Probe#probe.step, normal),
@@ -244,7 +246,6 @@ handle_probe_return(PR, S) ->
     monitor_data_master:set_probe_state(
         ES#ets_state{
             inspectors_state=IState2,
-            loggers_state=LState2,
             tref=TRef,
             status_from = erlang:now(),
             status=Probe2#probe.status
@@ -306,7 +307,7 @@ handle_info(take_of, S) ->
     handle_take_of(S),
     {noreply, S};
 
-handle_info(_, SData) ->
+handle_info(_I, SData) ->
     {noreply, SData}.
 
 %%----------------------------------------------------------------------------
@@ -340,18 +341,19 @@ handle_take_of(S) ->
     ES      = monitor_data_master:get_probe_state(S#state.name),
     Class   = ES#ets_state.class,
     Args    = ES#ets_state.args,
+    Parent  = self(),
     erlang:spawn(fun() ->
         {ok, Return}  = ?MODULE:exec_nchecks({Class, Args}),
-        erlang:send(self(), {probe_return, Return})
+        erlang:send(Parent, {probe_return, Return})
     end).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% UTILS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-emit_all(_, _, []) -> ok;
-emit_all(Name, Perm, [Pdu|T]) ->
-    supercast_channel:emit(Name,{Perm, Pdu}),
-    emit_all(Name,Perm,T).
+%emit_all(_, _, []) -> ok;
+%emit_all(Name, Perm, [Pdu|T]) ->
+%    supercast_channel:emit(Name,{Perm, Pdu}),
+%    emit_all(Name,Perm,T).
 
 read_timer(TRef) ->
     case erlang:read_timer(TRef) of
@@ -398,9 +400,11 @@ exec_nchecks({Class, Args}) ->
                 reply_string   = Error
             };
         {ok, Reply} ->
-            io:format("reply is: ~p~n", [Reply]),
             #nchecks_reply{
-               status=Status,performances=Perfs,reply_string=Str,timestamp=Ts
+               status=Status,
+                performances=Perfs,
+                reply_string=Str,
+                timestamp=Ts
             } = Reply,
             ProbeReturn = #probe_return{
                 status          = Status,
@@ -414,7 +418,7 @@ exec_nchecks({Class, Args}) ->
 %%----------------------------------------------------------------------------
 %% errd4j functions
 %%----------------------------------------------------------------------------
-init_logger(#probe{name=Name, step=Step, belong_to=TargetName, monitor_probe_conf=NCheck} = _P) ->
+rrd_init(#probe{name=Name, step=Step, belong_to=TargetName, monitor_probe_conf=NCheck} = _P) ->
 
     % get the target directory TargetDir
     [Target]    = monitor_data_master:get(target, TargetName),
@@ -466,3 +470,6 @@ init_logger(#probe{name=Name, step=Step, belong_to=TargetName, monitor_probe_con
             % return the processed filepath
             ProbeFilePath
     end.
+
+rrd_log(File, Updates) ->
+    ?LOG({update, File, Updates}).
