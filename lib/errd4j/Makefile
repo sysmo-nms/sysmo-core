@@ -77,5 +77,5 @@ $(JRRD4J): $(JSRC)/Errd4j.java
 
 # utils
 start: compile
-	$(ERL) -setcookie AAAAAA -pa ebin -sname master -config ./sys -eval 'application:start(errd4j)'
+	$(ERL) -setcookie AAAAAA -pa ebin -sname sysmo -config ./sys -eval 'application:start(errd4j)'
 

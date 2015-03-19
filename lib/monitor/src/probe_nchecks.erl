@@ -117,6 +117,7 @@ get_perms(PidName) ->
 sync_request(PidName, CState) ->
     gen_server:cast({via, supercast_registrar, PidName}, {sync_request, CState}).
 sync_request2(CState, S) ->
+    ?LOG(sync_request),
     ES = monitor_data_master:get_probe_state(S#state.name),
     LS = ES#ets_state.loggers_state,
     {ok, Pdus, LS2} = monitor_logger:dump_all(LS, CState),
@@ -458,7 +459,7 @@ rrd4j_init(#probe{name=Name, step=Step, belong_to=TargetName, monitor_probe_conf
             end, DSElements),
 
             % create rrd file
-            errd4j:create(ProbeFilePath, Step, DSDef),
+            ok = errd4j:create(ProbeFilePath, Step, DSDef, "default"),
 
             % return the processed filepath
             ProbeFilePath

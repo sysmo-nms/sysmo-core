@@ -43,6 +43,7 @@ import com.ericsson.otp.erlang.OtpNode;
 
 
 import org.rrd4j.core.RrdDef;
+import org.rrd4j.core.ArcDef;
 import org.rrd4j.core.RrdDb;
 import org.rrd4j.core.Sample;
 import org.rrd4j.core.FetchData;
@@ -69,9 +70,14 @@ public class Errd4j
     public static OtpErlangAtom atomReply       = new OtpErlangAtom("reply");
     public static OtpErlangAtom atomOk          = new OtpErlangAtom("ok");
     public static OtpErlangAtom atomError       = new OtpErlangAtom("error");
+
     // erlang server
     private static  OtpNode self = null;
     private static  OtpMbox mbox = null;
+
+    // rra definitions
+    private static ArcDef[] rraDefault = null;
+    private static ArcDef[] rraPrecise = null;
 
     public static void main(String[] args)
     {
@@ -83,8 +89,10 @@ public class Errd4j
             selfNodeName     = prop.getProperty("self_name");
             foreignNodeName  = prop.getProperty("foreign_node");
             foreignPidName   = prop.getProperty("foreign_pid");
+            rraDefault       = decodeRRADef(prop.getProperty("rra_default"));
+            rraPrecise       = decodeRRADef(prop.getProperty("rra_precise"));
         }
-        catch(IOException e)
+        catch(Exception|Error e)
         {
             e.printStackTrace();
             return;
@@ -216,7 +224,7 @@ public class Errd4j
         {
             OtpErlangTuple reply = buildErrorReply(
                 new OtpErlangString("Java CATCH: Failed to honour command "
-                    + command.toString() + " -> " + e.getMessage())
+                    + command.toString() + " -> " + e + e.getMessage())
             );
 
             sendReply(caller, reply);
@@ -412,28 +420,15 @@ public class Errd4j
     {
         OtpErlangString filePath = (OtpErlangString) (tuple.elementAt(0));
         OtpErlangLong   step     = (OtpErlangLong)   (tuple.elementAt(1));
-        OtpErlangList   rras     = (OtpErlangList)   (tuple.elementAt(2));
+        OtpErlangString rraType  = (OtpErlangString) (tuple.elementAt(2));
         OtpErlangList   dss      = (OtpErlangList)   (tuple.elementAt(3));
 
         RrdDef rrdDef = new RrdDef(filePath.stringValue(), step.uIntValue());
 
-        Iterator<OtpErlangObject> rrasIt = rras.iterator();
-        while (rrasIt.hasNext())
-        {
-            OtpErlangTuple  rra      = (OtpErlangTuple)     rrasIt.next();
-            OtpErlangString rraCfStr = (OtpErlangString)    (rra.elementAt(0));
-            OtpErlangDouble rraXff   = (OtpErlangDouble)    (rra.elementAt(1));
-            OtpErlangLong   rraStep  = (OtpErlangLong)      (rra.elementAt(2));
-            OtpErlangLong   rraRows  = (OtpErlangLong)      (rra.elementAt(3));
-            
-            ConsolFun rraCf = ConsolFun.valueOf(rraCfStr.stringValue());
-            rrdDef.addArchive(
-                rraCf,
-                rraXff.doubleValue(),
-                rraStep.uIntValue(),
-                rraRows.uIntValue()
-            );
-            
+        if (rraType.stringValue().equals("precise")) {
+            rrdDef.addArchive(rraPrecise);
+        } else {
+            rrdDef.addArchive(rraDefault);
         }
 
         Iterator<OtpErlangObject> dssIt  = dss.iterator();
@@ -472,8 +467,23 @@ public class Errd4j
         RrdDb rrdDb = new RrdDb(rrdDef);
         rrdDb.close();
 
-        OtpErlangTuple ureply = buildOkReply(new OtpErlangString("yoho"));
-        sendReply(caller, ureply);
+        sendReply(caller, atomOk);
     }
 
+    private static ArcDef[] decodeRRADef(String rraDef) throws Exception
+    {
+        String[] defs       = rraDef.split(",");
+        ArcDef[] archiveDef = new ArcDef[defs.length];
+        for (int i = 0; i < defs.length; i++) {
+            String def = defs[i];
+            String[] defElements = def.split(":");
+            ConsolFun   cf    = ConsolFun.valueOf(defElements[1]);
+            double      xff   = Double.parseDouble(defElements[2]);
+            int         steps = Integer.parseInt(defElements[3]);
+            int         rows  = Integer.parseInt(defElements[4]);
+            ArcDef archive = new ArcDef(cf,xff,steps,rows);
+            archiveDef[i] = archive;
+        }
+        return archiveDef;
+    }
 }

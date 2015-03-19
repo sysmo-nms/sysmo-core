@@ -39,7 +39,9 @@
 
 
 -export([
+    create_test/0,
     create/3,
+    create/4,
     update/2,
     graph/0,
     updates/0,
@@ -56,10 +58,6 @@
 }).
 
 -define(ASSERT_TIMEOUT, 5000).
-
--define(DEFAULT_RRAS, [
-    {?CF_AVERAGE, 0.5, 1, 1200}
-]).
 
 update_fetch() ->
     File    = "test.rrd",
@@ -97,12 +95,22 @@ updates() ->
     Updates = [{"test.rrd", [{"speed", 3000}]}],
     gen_server:call(?MODULE, {call_errd4j, {updates, Updates}}).
     
-create(File, Step, DSs) ->
-    Rras = ?DEFAULT_RRAS,
-    %File = "test.rrd",
-    %Step = 300,
-    %DSs  = [{"speed", ?DS_COUNTER, 600, 'Nan', 'Nan'}],
-    Args = {File,Step,Rras,DSs},
+create_test() ->
+    File = "test.rrd",
+    Step = 300,
+    DSs  = [{"speed", ?DS_COUNTER, 600, 'Nan', 'Nan'}],
+    create(File,Step, DSs).
+    
+create(File,Step, DSs) ->
+
+    create(File,Step,DSs, "default").
+
+-spec create(File::string(), Step::integer(), DSs::[], RRAType::string()) -> ok.
+% @doc
+% where RRAType is "default" or "precise"
+% @end
+create(File, Step, DSs, RRAType) ->
+    Args = {File,Step,RRAType,DSs},
     gen_server:call(?MODULE, {call_errd4j, {create, Args}}).
 
 % @private
