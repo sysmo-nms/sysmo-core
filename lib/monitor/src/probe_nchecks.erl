@@ -30,11 +30,26 @@
 
 -export([start_link/1]).
 % supercast_channel
--export([get_perms/1,sync_request/2]).
+-export([
+    get_perms/1,
+    sync_request/2]).
+
 % gen_server
--export([init/1,handle_call/3, handle_cast/2,handle_info/2,terminate/2,code_change/3]).
+-export([
+    init/1,
+    handle_call/3,
+    handle_cast/2,
+    handle_info/2,
+    terminate/2,
+    code_change/3]).
 % API
--export([triggered_return/2,shutdown/1,force/1,exec_nchecks/1]).
+-export([
+    triggered_return/2,
+    shutdown/1,
+    force/1]).
+
+% local only
+-export([exec_nchecks/2]).
 
 % records
 -record(state, {name}).
@@ -340,7 +355,7 @@ handle_take_of(S) ->
     Args    = ES#ets_state.args,
     Parent  = self(),
     erlang:spawn(fun() ->
-        {ok, Return}  = ?MODULE:exec_nchecks({Class, Args}),
+        {ok, Return}  = ?MODULE:exec_nchecks(Class, Args),
         erlang:send(Parent, {probe_return, Return})
     end).
 
@@ -389,7 +404,7 @@ nchecks_init(Probe) ->
     {Class, NewArgs}.
 
 
-exec_nchecks({Class, Args}) ->
+exec_nchecks(Class, Args) ->
     case nchecks:check(Class,Args) of
         {error, Error} ->
             ProbeReturn = #probe_return{
@@ -421,18 +436,19 @@ rrd4j_init(#probe{name=Name, step=Step, belong_to=TargetName, monitor_probe_conf
     [Target]    = monitor_data_master:get(target, TargetName),
     TargetDir   = proplists:get_value(var_directory, Target#target.sys_properties),
 
-    % does the rrd file allready exists?
+    % generate rrd file path
     ProbeFile       = string:concat(Name, ".rrd"),
     ProbeFilePath   = filename:join([TargetDir, ProbeFile]),
+
+    % does the rrd file allready exists?
     case filelib:is_regular(ProbeFilePath) of
         true ->
             % only return the processed filepath
             ProbeFilePath;
         false ->
             % we will create the rrd file defined in the nchecks class xml file
-            % get the NChecks working class Class
-            #nchecks_probe_conf{class = Class} = NCheck,
             % retreive the xml file definition name
+            Class           = NCheck#nchecks_probe_conf.class,
             ClassFile       = string:concat(Class, ".xml"),
             ClassFilePath   = filename:join(["cfg", "nchecks", ClassFile]),
 
@@ -449,10 +465,8 @@ rrd4j_init(#probe{name=Name, step=Step, belong_to=TargetName, monitor_probe_conf
             % extract ds variables (ds name, ds type ABSOLUTE|COUNTER|DERIVE|GAUGE)
             % ex: DSDef = [{"MaxRoundTrip", "ABSOLUTE}]
             DSDef = lists:map(fun(#xmlElement{content=DS}) ->
-                #xmlElement{content=DSNameContent} = lists:keyfind(dsName, 2, DS),
-                #xmlElement{content=DSTypeContent} = lists:keyfind(dsType, 2, DS),
-                [DSNameTextElement] = DSNameContent,
-                [DSTypeTextElement] = DSTypeContent,
+                #xmlElement{content=[DSNameTextElement]} = lists:keyfind(dsName, 2, DS),
+                #xmlElement{content=[DSTypeTextElement]} = lists:keyfind(dsType, 2, DS),
                 DSName = DSNameTextElement#xmlText.value,
                 DSType = DSTypeTextElement#xmlText.value,
                 {DSName, DSType, Step * 2, 'Nan', 'Nan'}
