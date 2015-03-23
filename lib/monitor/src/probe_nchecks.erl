@@ -125,24 +125,45 @@ get_perms(PidName) ->
     #ets_state{permissions=Perm} = monitor_data_master:get_probe_state(PidName),
     Perm.
 
+
+
 % @private
 % @doc
 % Supercast behaviour required.
 % @end
 sync_request(PidName, CState) ->
+    ?LOG("sync request!!!!!!!!!!!!!!!!!!!!!"),
     gen_server:cast({via, supercast_registrar, PidName}, {sync_request, CState}).
 sync_request2(CState, S) ->
-    ?LOG(sync_request),
-    ES = monitor_data_master:get_probe_state(S#state.name),
-    LS = ES#ets_state.loggers_state,
-    {ok, Pdus, LS2} = monitor_logger:dump_all(LS, CState),
+    ES       = monitor_data_master:get_probe_state(S#state.name),
+    % the rrd file
+    RrdFile  = ES#ets_state.loggers_state,
+    RrdFileBase = filename:basename(RrdFile),
+
+    % generate tmp dir in dump dir
+    DumpDir  = ES#ets_state.dump_dir,
+    TmpDir   = generate_tmp_dir(),
+    TmpPath  = filename:join(DumpDir, TmpDir),
+    file:make_dir(TmpPath),
+
+    % copy rrdfile to tmpdir
+    DumpFile = filename:join(TmpPath,RrdFileBase),
+    R = file:copy(RrdFile, DumpFile),
+    ?LOG({"will copy", RrdFile, DumpFile, R}),
+
+    % build the PDU
+    Pdu = monitor_pdu:nchecksDumpMessage(S#state.name, TmpDir, RrdFileBase),
+    ?LOG({rrdfile, RrdFile,dump_file, DumpFile}),
+    %{ok, Pdus, LS2} = monitor_logger:dump_all(LS, CState),
     ok  = supercast_channel:subscribe(ES#ets_state.name, CState),
-    ok  = supercast_channel:unicast(CState, Pdus),
-    monitor_data_master:set_probe_state(ES#ets_state{loggers_state=LS2}),
+    ok  = supercast_channel:unicast(CState, [Pdu]),
     ok.
 
-
-
+generate_tmp_dir() ->
+    {_,Sec,Micro} = os:timestamp(),
+    Microsec = Sec * 1000000 + Micro,
+    lists:concat(["tmp-", Microsec]).
+    
 
 
 -spec triggered_return(PidName::string(), CState::#client_state{}) -> ok.

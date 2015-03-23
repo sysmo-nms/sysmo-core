@@ -33,6 +33,7 @@
     elementInterfaceReply/4,
     simpleReply/4,
 
+    nchecksDumpMessage/3,
     loggerRrdEvent/3,
     loggerRrdDump/5
 ]).
@@ -67,6 +68,21 @@ loggerRrdEvent(Target, Probe, ClientUp) ->
                 {<<"target">>, list_to_binary(Target)},
                 {<<"name">>,  list_to_binary(Probe)},
                 {<<"updates">>, {struct, Updates}}]}
+            }
+        ]
+    }.
+
+nchecksDumpMessage(Probe, DumpDir, RrdFile) ->
+     {struct,
+        [
+            {<<"from">>, <<"monitor">>},
+            {<<"type">>, <<"ncheckDumpMessage">>},
+            {<<"value">>, 
+                {struct, [
+                    {<<"name">>,        list_to_binary(Probe)},
+                    {<<"httpDumpDir">>, list_to_binary(DumpDir)},
+                    {<<"rrdFile">>,     list_to_binary(RrdFile)}
+                ]}
             }
         ]
     }.
@@ -193,6 +209,14 @@ infoProbe(Probe, InfoType) ->
     
     JR = [list_to_binary(G) || G <- R],
     JW = [list_to_binary(G) || G <- W],
+
+    case is_record(ProbeConf, nchecks_probe_conf) of
+        true ->
+            {_,Class,_} = ProbeConf;
+        false ->
+            Class = gen_str_probe_conf(ProbeConf)
+    end,
+
     {struct,
         [
             {<<"from">>, <<"monitor">>},
@@ -204,7 +228,7 @@ infoProbe(Probe, InfoType) ->
                 {<<"info">>,        list_to_binary(Probe#probe.info)},
                 {<<"perm">>,        {struct, [{<<"read">>, {array, JR}}, {<<"write">>, {array, JW}}]}},
                 {<<"probeMod">>,    atom_to_binary(Probe#probe.monitor_probe_mod, utf8)},
-                {<<"probeconf">>,   list_to_binary(gen_str_probe_conf(ProbeConf))},
+                {<<"probeClass">>,  list_to_binary(Class)},
                 {<<"status">>,      list_to_binary(Probe#probe.status)},
                 {<<"timeout">>,     Probe#probe.timeout},
                 {<<"step">>,        Probe#probe.step},
