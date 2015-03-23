@@ -76,7 +76,7 @@ nchecksDumpMessage(Probe, DumpDir, RrdFile) ->
      {struct,
         [
             {<<"from">>, <<"monitor">>},
-            {<<"type">>, <<"ncheckDumpMessage">>},
+            {<<"type">>, <<"nchecksDumpMessage">>},
             {<<"value">>, 
                 {struct, [
                     {<<"name">>,        list_to_binary(Probe)},
