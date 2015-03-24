@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <check_def check="icmp">
     <descr>Check host presence using ICMP echo request</descr>
-    <probe_class>nchecks.CheckICMP</probe_class>
+    <probe_class>io.sysmo.nchecks.modules.CheckICMP</probe_class>
     <flags_def>
         <flag_info name="host">
             <usage>Host target as ip version 4/6 or hostname</usage>
@@ -80,10 +80,11 @@
             corectly:
             #probe_return.perf_return = 
                 [
-                    {"PercentLost",      x}
-                    {"MinRoundTrip",     x}
-                    {"MaxRoundTrip",     x}
+                    {"PercentLost",      x},
+                    {"MinRoundTrip",     x},
+                    {"MaxRoundTrip",     x},
                     {"AverageRoundTrip", x}
+                ]
         -->
         <data_sources>
             <ds>
@@ -112,30 +113,34 @@
                     <name>MaxRoundTrip</name>
                     <graphType>area</graphType>
                     <legend>Maximum round trip</legend>
-                    <color>red</color>
+                    <consolFun>MAX</consolFun>
+                    <color>#FF0000FF</color>
                 </add>
                 <add>
                     <name>MinRoundTrip</name>
                     <graphType>area</graphType>
                     <legend>Minimum round trip</legend>
-                    <color>green</color>
+                    <consolFun>MIN</consolFun>
+                    <color>#00FF00FF</color>
                 </add>
                 <add>
                     <name>AverageRoundTrip</name>
                     <graphType>area</graphType>
                     <legend>Average round trip</legend>
-                    <color>blue</color>
+                    <consolFun>AVERAGE</consolFun>
+                    <color>#0000FFFF</color>
                 </add>
             </graph_desc>
             <graph_desc>
-                <graphName>ICMPPercents</graphName>
-                <graphTitle>ICMP echo/replies percent lost</graphTitle>
+                <graphName>ICMPPercentsLost</graphName>
+                <graphTitle>ICMP echo/replies lost</graphTitle>
                 <verticalLabel>Percent</verticalLabel>
                 <add>
                     <name>PercentLost</name>
                     <graphType>area</graphType>
                     <legend>Percent packets lost</legend>
-                    <color>red</color>
+                    <consolFun>AVERAGE</consolFun>
+                    <color>#F0F000FF</color>
                 </add>
             </graph_desc>
         </graphs>
