@@ -137,7 +137,7 @@
                 <verticalLabel>Percent</verticalLabel>
                 <add>
                     <name>PercentLost</name>
-                    <graphType>area</graphType>
+                    <graphType>line</graphType>
                     <legend>Percent packets lost</legend>
                     <consolFun>AVERAGE</consolFun>
                     <color>#edd400</color>
