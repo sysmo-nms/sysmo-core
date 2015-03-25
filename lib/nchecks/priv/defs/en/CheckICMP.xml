@@ -114,21 +114,21 @@
                     <graphType>area</graphType>
                     <legend>Maximum round trip</legend>
                     <consolFun>MAX</consolFun>
-                    <color>#FF0000FF</color>
-                </add>
-                <add>
-                    <name>MinRoundTrip</name>
-                    <graphType>area</graphType>
-                    <legend>Minimum round trip</legend>
-                    <consolFun>MIN</consolFun>
-                    <color>#00FF00FF</color>
+                    <color>#a40000</color>
                 </add>
                 <add>
                     <name>AverageRoundTrip</name>
                     <graphType>area</graphType>
                     <legend>Average round trip</legend>
                     <consolFun>AVERAGE</consolFun>
-                    <color>#0000FFFF</color>
+                    <color>#cc0000</color>
+                </add>
+                <add>
+                    <name>MinRoundTrip</name>
+                    <graphType>area</graphType>
+                    <legend>Minimum round trip</legend>
+                    <consolFun>MIN</consolFun>
+                    <color>#ef2929</color>
                 </add>
             </graph_desc>
             <graph_desc>
@@ -140,7 +140,7 @@
                     <graphType>area</graphType>
                     <legend>Percent packets lost</legend>
                     <consolFun>AVERAGE</consolFun>
-                    <color>#F0F000FF</color>
+                    <color>#edd400</color>
                 </add>
             </graph_desc>
         </graphs>
