@@ -42,7 +42,7 @@
     create_test/0,
     create/3,
     create/4,
-    update/2,
+    update/3,
     graph/0,
     updates/0,
     update_fetch/0,
@@ -86,9 +86,9 @@ graph() ->
     Args = {File, DstFile, Start, End, Graphs},
     gen_server:call(?MODULE, {call_errd4j, {graph, Args}}).
 
-update(File, Updates) ->
+update(File, Updates, Timestamp) ->
     %Updates = [{"MaxRoundTrip", 3000}, {"MinRoundTrip", 399}],
-    Args = {File, Updates},
+    Args = {File, Updates, Timestamp},
     gen_server:call(?MODULE, {call_errd4j, {update, Args}}).
 
 updates() ->

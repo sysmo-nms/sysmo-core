@@ -389,13 +389,15 @@ public class Errd4j
      */
     private static void handleRrdUpdate(OtpErlangObject caller, OtpErlangTuple tuple) throws Exception
     {
-        OtpErlangString filePath = (OtpErlangString) (tuple.elementAt(0));
-        OtpErlangList   updates  = (OtpErlangList)   (tuple.elementAt(1));
+        OtpErlangString filePath  = (OtpErlangString) (tuple.elementAt(0));
+        OtpErlangList   updates   = (OtpErlangList)   (tuple.elementAt(1));
+        OtpErlangLong   timestamp = (OtpErlangLong) (tuple.elementAt(2));
 
         RrdDb rrdDb = new RrdDb(filePath.stringValue());
 
         try {
             Sample sample = rrdDb.createSample();
+            sample.setTime(timestamp.longValue());
             Iterator<OtpErlangObject> updatesIt = updates.iterator();
             while (updatesIt.hasNext())
             {

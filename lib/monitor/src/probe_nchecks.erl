@@ -273,13 +273,17 @@ handle_probe_return(PR, S) ->
     % errd4j update
     RrdFile = ES#ets_state.loggers_state,
     Perfs   = PR#probe_return.perfs,
-    ok = errd4j:update(RrdFile, Perfs),
+    ok = errd4j:update(RrdFile, Perfs, PR#probe_return.timestamp),
+
+    % SEND MESSAGE to subscribers of self() to update their rrds
+    Pdu2 = monitor_pdu:nchecksUpdateMessage(S#state.name,PR#probe_return.timestamp,Perfs),
+    supercast_channel:emit(S#state.name, {ES#ets_state.permissions, Pdu2}),
 
     % initiate LAUNCH
     TRef        = initiate_start_sequence(Probe#probe.step, normal),
     MilliRem    = read_timer(TRef),
 
-    % SEND MESSAGES to subscribers
+    % SEND MESSAGES to subscribers of master channel
     Pdu = monitor_pdu:probeReturn(
         PR,
         ES#ets_state.target_name,
