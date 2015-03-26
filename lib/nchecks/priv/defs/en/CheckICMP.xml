@@ -89,19 +89,19 @@
         <data_sources>
             <ds>
                 <dsName>MinRoundTrip</dsName>
-                <dsType>ABSOLUTE</dsType>
+                <dsType>GAUGE</dsType>
             </ds>
             <ds>
                 <dsName>MaxRoundTrip</dsName>
-                <dsType>ABSOLUTE</dsType>
+                <dsType>GAUGE</dsType>
             </ds>
             <ds>
                 <dsName>AverageRoundTrip</dsName>
-                <dsType>ABSOLUTE</dsType>
+                <dsType>GAUGE</dsType>
             </ds>
             <ds>
                 <dsName>PercentLost</dsName>
-                <dsType>ABSOLUTE</dsType>
+                <dsType>GAUGE</dsType>
             </ds>
         </data_sources>
         <graphs>
@@ -109,6 +109,12 @@
                 <graphName>ICMPPerfs</graphName>
                 <graphTitle>ICMP performances</graphTitle>
                 <verticalLabel>Milliseconds</verticalLabel>
+                <min>0</min>
+                <max>undefined</max>
+                <rigid>false</rigid>
+                <base>1000</base>
+                <unit>ms</unit>
+                <unitExponent>0</unitExponent>
                 <add>
                     <name>MaxRoundTrip</name>
                     <graphType>area</graphType>
@@ -135,6 +141,12 @@
                 <graphName>ICMPPercentsLost</graphName>
                 <graphTitle>ICMP echo/replies lost</graphTitle>
                 <verticalLabel>Percent</verticalLabel>
+                <min>0</min>
+                <max>100</max>
+                <rigid>true</rigid>
+                <base>1000</base>
+                <unit>%</unit>
+                <unitExponent>0</unitExponent>
                 <add>
                     <name>PercentLost</name>
                     <graphType>line</graphType>
