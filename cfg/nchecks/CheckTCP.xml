@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <check_def check="tcp">
     <descr>Check TCP service availability on the specified host</descr>
+    <probe_class>CheckTCP</probe_class>
     <flags_def>
         <flag_info name="host">
+            <name>host</name>
             <usage>Host target as ip version 4/6 or hostname</usage>
             <default></default>
             <role>mandatory</role>
@@ -10,6 +12,7 @@
             <hint>Hostname or IP</hint>
         </flag_info>
         <flag_info name="port">
+            <name>port</name>
             <usage>TCP port number to query</usage>
             <default></default>
             <role>mandatory</role>
@@ -17,6 +20,7 @@
             <hint>Port</hint>
         </flag_info>
         <flag_info name="ms_warning">
+            <name>ms_warning</name>
             <usage>If connection time exceed the value, set the return status to "WARNING".</usage>
             <default>500</default>
             <role>optional</role>
@@ -24,6 +28,7 @@
             <hint>Milliseconds</hint>
         </flag_info>
         <flag_info name="ms_critical">
+            <name>ms_critical</name>
             <usage>If connection time exceed the value, set the return status to "CRITICAL".</usage>
             <default>2500</default>
             <role>optional</role>
@@ -31,6 +36,7 @@
             <hint>Milliseconds</hint>
         </flag_info>
         <flag_info name="ms_timeout">
+            <name>ms_timeout</name>
             <usage>Abort connection if it exceed the value</usage>
             <default>5000</default>
             <role>optional</role>
@@ -38,6 +44,7 @@
             <hint>Milliseconds</hint>
         </flag_info>
        <flag_info name="accept">
+            <name>accept</name>
            <usage>If the connexion succeed, set the return status to one of "CRITICAL"|"WARNING"|"OK". "OK" is the default behaviour. If set to something other than "OK", "ms_warning" and "ms_critical" are ignored. Usefull if we want the service monitored to be down, and to be alerted when it comes up</usage> 
             <default>OK</default>
             <role>optional</role>
@@ -46,5 +53,9 @@
         </flag_info>
     </flags_def>
     <performances>
+        <data_sources>
+        </data_sources>
+        <graphs>
+        </graphs>
     </performances>
 </check_def>
