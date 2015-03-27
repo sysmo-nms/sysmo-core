@@ -1,72 +1,82 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <check_def check="icmp">
     <descr>Check host presence using ICMP echo request</descr>
-    <probe_class>io.sysmo.nchecks.modules.CheckICMP</probe_class>
+    <probe_class>CheckICMP</probe_class>
     <flags_def>
-        <flag_info name="host">
+        <flag_info>
+            <name>host</name>
             <usage>Host target as ip version 4/6 or hostname</usage>
             <default></default>
             <role>mandatory</role>
             <type>string</type>
             <hint>Host or IP</hint>
         </flag_info>
-        <flag_info name="pkts_number">
+        <flag_info>
+            <name>pkts_number</name>
             <usage>Number of packets to send</usage>
             <default>5</default>
             <role>optional</role>
             <type>int</type>
             <hint>Packets number</hint>
         </flag_info>
-        <flag_info name="pkts_size">
+        <flag_info>
+            <name>pkts_size</name>
             <usage>Size of the ICMP body in octets</usage>
             <default>56</default>
             <role>optional</role>
             <type>int</type>
             <hint>Octets</hint>
         </flag_info>
-        <flag_info name="pl_warning">
+        <flag_info>
+            <name>pl_warning</name>
             <usage>Packet lost "CRITICAL" threshold in percent. Will return a status "WARNING" when packet lost exceed the value</usage>
             <default>50</default>
             <role>optional</role>
             <type>int</type>
             <hint>Milliseconds</hint>
         </flag_info>
-        <flag_info name="pl_critical">
+        <flag_info>
+            <name>pl_critical</name>
             <usage>Packet lost "CRITICAL" threshold in percent. Will return a status "CRITICAL" when packet lost exceed the value</usage>
             <default>100</default>
             <role>optional</role>
             <type>int</type>
             <hint>Milliseconds</hint>
         </flag_info>
-        <flag_info name="ms_warning">
+        <flag_info>
+            <name>ms_warning</name>
             <usage>Echo/Reply latency "WARNING" threshold. Will return a status "WARNING" if average reply time exceed the value</usage>
             <default>200</default>
             <role>optional</role>
             <type>int</type>
             <hint>Milliseconds</hint>
         </flag_info>
-        <flag_info name="ms_critical">
+        <flag_info>
+            <name>ms_critical</name>
             <usage>Echo/Reply latency "CRITICAL" threshold. Will return a status "CRITICAL" if average reply time exceed the value</usage>
             <default>2500</default>
             <role>optional</role>
             <type>int</type>
             <hint>Milliseconds</hint>
         </flag_info>
-        <flag_info name="ms_timeout">
+        <flag_info>
+            <name>ms_timeout</name>
             <usage>Stop waiting reply or refuse reply when it exceed the value</usage>
             <default>5000</default>
             <role>optional</role>
             <type>int</type>
             <hint>Milliseconds</hint>
         </flag_info>
-        <flag_info name="ms_interval">
+        <flag_info>
+            <name>ms_interval</name>
             <usage>Interval in milliseconds between request packets</usage>
             <default>100</default>
             <role>optional</role>
             <type>int</type>
             <hint>Milliseconds</hint>
         </flag_info>
-       <flag_info name="useIpv6">
+       <flag_info>
+            <name>useIpv6</name>
             <usage>Force use of the v6 address. Usefull if "host" arg is an hostname</usage>
             <default>false</default>
             <role>optional</role>
@@ -118,23 +128,23 @@
                 <add>
                     <name>MaxRoundTrip</name>
                     <graphType>area</graphType>
-                    <legend>Maximum round trip</legend>
+                    <legend>Max round trip</legend>
                     <consolFun>MAX</consolFun>
-                    <color>#a40000</color>
+                    <color>#204A87AA</color>
                 </add>
                 <add>
                     <name>AverageRoundTrip</name>
-                    <graphType>area</graphType>
+                    <graphType>line</graphType>
                     <legend>Average round trip</legend>
                     <consolFun>AVERAGE</consolFun>
-                    <color>#cc0000</color>
+                    <color>#729FCFFF</color>
                 </add>
                 <add>
                     <name>MinRoundTrip</name>
                     <graphType>area</graphType>
-                    <legend>Minimum round trip</legend>
+                    <legend>Min round trip</legend>
                     <consolFun>MIN</consolFun>
-                    <color>#ef2929</color>
+                    <color>#3465A4AA</color>
                 </add>
             </graph_desc>
             <graph_desc>
@@ -149,11 +159,19 @@
                 <unitExponent>0</unitExponent>
                 <add>
                     <name>PercentLost</name>
-                    <graphType>line</graphType>
-                    <legend>Percent packets lost</legend>
-                    <consolFun>AVERAGE</consolFun>
-                    <color>#edd400</color>
+                    <graphType>area</graphType>
+                    <legend>Maximum Percent packets lost</legend>
+                    <consolFun>MAX</consolFun>
+                    <color>#AD7FA8FF</color>
                 </add>
+                <add>
+                    <name>PercentLost</name>
+                    <graphType>line</graphType>
+                    <legend>Average Percent packets lost</legend>
+                    <consolFun>AVERAGE</consolFun>
+                    <color>#5C3566FF</color>
+                </add>
+
             </graph_desc>
         </graphs>
     </performances>
