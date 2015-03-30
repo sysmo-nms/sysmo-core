@@ -17,7 +17,7 @@
             <default></default>
             <role>mandatory</role>
             <type>int</type>
-            <hint>Port</hint>
+            <hint>IP Port</hint>
         </flag_info>
         <flag_info name="ms_warning">
             <name>ms_warning</name>
