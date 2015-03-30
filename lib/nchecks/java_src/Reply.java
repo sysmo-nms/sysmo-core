@@ -21,14 +21,20 @@
 package io.sysmo.nchecks;
 import java.util.Map;
 import java.util.HashMap;
+import java.io.Serializable;
 import com.ericsson.otp.erlang.*;
 
+/**
+* The Reply class contain all the values and informations related to the execution of 
+* a module implementing NCheckInterface (a check module).
+*/
 public class Reply
 {
     private static OtpErlangAtom atomNchecksReply = new OtpErlangAtom("nchecks_reply");
     private String replyMsg;
     private String errorMsg;
     private String status;
+    private Serializable opaque;
     private long   timestamp;
     private Map<String,Long> perfValues;
 
@@ -41,21 +47,48 @@ public class Reply
         perfValues = new HashMap<String,Long>();
     }
 
+    /**
+    * Set the reply string of this check. It should be a human readable string.
+    * @param str the string to set.
+    */
     public void setReply(String str) {
         replyMsg = str;
     }
+    /**
+    * Get the reply string or null if unset.
+    */
     public String getReply() {
         return replyMsg;
     }
 
+    /**
+    * Set an opaque object in the reply. This data will be serialized, stored
+    * and returned on the next call of the check. This mechanism is actualy used
+    * to store and compare COUNTER type values, but can be used as your wish.
+    * @param value A serializable java object
+    */
+    public void setOpaque(Serializable value) {
+    
+    }
 
+    /**
+    * Set the return status.
+    * @param str A return status as defined in the Const class
+    */
     public void setStatus(String str) {
         status = str;
     }
+    /**
+    * Get the return status.
+    */
     public String getStatus() {
         return status;
     }
 
+    /**
+    * Store a performance value. These performances values will be interpreted
+    * by rrd as defined in your module xml definition file.
+    */
     public void putPerformance(String key, long value) {
         perfValues.put(key, new Long(value));
     }

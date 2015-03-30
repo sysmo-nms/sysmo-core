@@ -38,6 +38,10 @@ NCHECKS_IF	= $(NCHECK_DIR)/NChecksInterface.class
 NCHECKS_IF_SRC = $(JSRC)/NChecksInterface.java
 NCHECKS_IF_TARGET = $(patsubst $(JSRC)/%.java, $(NCHECKS_DIR)/%.class, $(NCHECKS_IF_SRC))
 
+NCHECKS_CONST = $(NCHECK_DIR)/Const.class
+NCHECKS_CONST_SRC = $(JSRC)/Const.java
+NCHECKS_CONST_TARGET = $(patsubst $(JSRC)/%.java, $(NCHECKS_DIR)/%.class, $(NCHECKS_CONST_SRC))
+
 NCHECKS_ARG	= $(NCHECK_DIR)/Argument.class
 NCHECKS_ARG_SRC = $(JSRC)/Argument.java
 NCHECKS_ARG_TARGET = $(patsubst $(JSRC)/%.java, $(NCHECKS_DIR)/%.class, $(NCHECKS_ARG_SRC))
@@ -88,7 +92,7 @@ ebin/%.beam: src/%.erl
 $(NCHECKS_DIR)/NChecks.class: $(JSRC)/NChecks.java $(JINTERFACE_DEP) $(NCHECKS_TARGETS)
 	$(JAVAC) -d $(JBIN) -classpath $(JCLASSPATH) $(JSRC)/NChecks.java
 
-$(NCHECKS_IF_TARGET): $(JSRC)/NChecksInterface.java $(NCHECKS_ARG_TARGET) $(NCHECKS_RPL_TARGET)
+$(NCHECKS_IF_TARGET): $(JSRC)/NChecksInterface.java $(NCHECKS_ARG_TARGET) $(NCHECKS_RPL_TARGET) $(NCHECKS_CONST_TARGET)
 	$(JAVAC) -d $(JBIN) -classpath $(JBIN) $(JSRC)/NChecksInterface.java
 
 $(NCHECKS_ARG_TARGET): $(JSRC)/Argument.java
@@ -96,6 +100,10 @@ $(NCHECKS_ARG_TARGET): $(JSRC)/Argument.java
 
 $(NCHECKS_RPL_TARGET): $(JSRC)/Reply.java
 	$(JAVAC) -d $(JBIN) -classpath $(JCLASSPATH) $(JSRC)/Reply.java
+
+$(NCHECKS_CONST_TARGET): $(JSRC)/Const.java
+	$(JAVAC) -d $(JBIN) -classpath $(JCLASSPATH) $(JSRC)/Const.java
+
 
 $(NCHECKS_MOD_DIR)/%.class: java_src/%.java $(NCHECKS_IF_TARGET)
 	$(JAVAC) -d $(JBIN) -classpath $(JBIN) $(JSRC)/$*.java

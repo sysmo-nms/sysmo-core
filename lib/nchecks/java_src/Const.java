@@ -20,25 +20,11 @@
  */
 package io.sysmo.nchecks;
 
-public class Argument
+public class Const
 {
-    public static int STRING_VALUE  = 1;
-    public static int INT_VALUE     = 2;
-
-    public String   stringValue = "";
-    public int      intValue    = -1;
-    public int      type;
-
-    public void setInt(int val) {
-        intValue = val;
-        type = INT_VALUE;
-    }
-
-    public int getInt() { return intValue; }
-
-    public void     setStr(String val) {
-        stringValue = val;
-        type = STRING_VALUE;
-    }
-    public String getStr() { return stringValue; }
+    public static String STATUS_OK       = "OK";
+    public static String STATUS_WARNING  = "WARNING";
+    public static String STATUS_CRITICAL = "CRITICAL";
+    public static String STATUS_DOWN     = "DOWN";
+    public static String STATUS_ERROR    = "ERROR";
 }

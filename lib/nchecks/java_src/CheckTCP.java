@@ -24,6 +24,8 @@ package io.sysmo.nchecks.modules;
 import io.sysmo.nchecks.NChecksInterface;
 import io.sysmo.nchecks.Argument;
 import io.sysmo.nchecks.Reply;
+import io.sysmo.nchecks.Const;
+
 import java.util.Map;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -34,18 +36,13 @@ import java.net.InetAddress;
 
 public class CheckTCP implements NChecksInterface
 {
-    public static String STATE_OK       = "OK";
-    public static String STATE_WARNING  = "WARNING";
-    public static String STATE_CRITICAL = "CRITICAL";
-    public static String STATE_DOWN     = "DOWN";
-
     private String  host        = "";
     private int     port        = 0;
     private int     msWarning   = 500;
     private int     msCritical  = 2500;
     private int     msTimeout   = 5000;
-    private String  refuseState = STATE_CRITICAL;
-    private String  acceptState = STATE_OK;
+    private String  refuseState = Const.STATUS_CRITICAL;
+    private String  acceptState = Const.STATUS_OK;
 
     public CheckTCP()
     {
@@ -77,8 +74,8 @@ public class CheckTCP implements NChecksInterface
         Reply reply = new Reply();
 
         if (port == 0 || port > 65535) {
-            reply.setStatus(STATE_DOWN);
-            reply.setReply("Bad port definition: " + port);
+            reply.setStatus(Const.STATUS_ERROR);
+            reply.setReply("CheckTCP ERROR: Bad port definition " + port);
             return reply;
         }
 
@@ -86,8 +83,8 @@ public class CheckTCP implements NChecksInterface
         try {
             addr = InetAddress.getByName(host);
         } catch (Exception e) {
-            reply.setStatus(STATE_DOWN);
-            reply.setReply("Host lookup fail for: " + host);
+            reply.setStatus(Const.STATUS_DOWN);
+            reply.setReply("CheckTCP DOWN: Host lookup fail for: " + host);
             return reply;
         }
 
@@ -107,23 +104,22 @@ public class CheckTCP implements NChecksInterface
         }
 
         long elapsed = ChronoUnit.MILLIS.between(start,stop);
-        reply.setReply("Time elapsed: "  + elapsed + " milliseconds");
-        reply.putPerformance("ms_elapsed", elapsed);
-        if (STATE_OK.equals(acceptState))
+        reply.putPerformance("ReplyDuration", elapsed);
+        String st = null;
+        if (Const.STATUS_OK.equals(acceptState))
         {
             if (elapsed >= msCritical) {
-                reply.setStatus(STATE_CRITICAL);
-                return reply;
+                st = Const.STATUS_CRITICAL;
             } else if (elapsed >= msWarning) {
-                reply.setStatus(STATE_WARNING);
-                return reply;
+                st = Const.STATUS_WARNING;
             } else {
-                reply.setStatus(STATE_OK);
-                return reply;
+                st = Const.STATUS_OK;
             }
         } else {
-            reply.setStatus(acceptState);
-            return reply;
+            st = acceptState;
         }
+        reply.setStatus(st);
+        reply.setReply("CheckTCP " + st + "Time elapsed: "  + elapsed + " milliseconds");
+        return reply;
     }
 }

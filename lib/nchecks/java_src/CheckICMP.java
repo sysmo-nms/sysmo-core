@@ -24,6 +24,7 @@ package io.sysmo.nchecks.modules;
 import io.sysmo.nchecks.NChecksInterface;
 import io.sysmo.nchecks.Argument;
 import io.sysmo.nchecks.Reply;
+import io.sysmo.nchecks.Const;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -37,11 +38,6 @@ import java.net.InetAddress;
 
 public class CheckICMP implements NChecksInterface
 {
-    private static String STATUS_OK       = "OK";
-    private static String STATUS_WARNING  = "WARNING";
-    private static String STATUS_CRITICAL = "CRITICAL";
-    private static String STATUS_DOWN     = "DOWN";
-    private static String STATUS_ERROR    = "ERROR";
     private String  host        = "";
     private int     pktsNumber  = 5;
     private int     pktsSize    = 56;
@@ -108,7 +104,7 @@ public class CheckICMP implements NChecksInterface
         Reply reply = new Reply();
 
         if ("".equals(host)) {
-            reply.setStatus(STATUS_DOWN);
+            reply.setStatus(Const.STATUS_DOWN);
             reply.setReply("Host must be specified");
             return reply;
         }
@@ -118,7 +114,7 @@ public class CheckICMP implements NChecksInterface
             addr = InetAddress.getByName(host);
             this.host = addr.getHostAddress();
         } catch (Exception e) {
-            reply.setStatus(STATUS_DOWN);
+            reply.setStatus(Const.STATUS_DOWN);
             reply.setReply("Host lookup fail for: " + host);
             return reply;
         }
@@ -174,23 +170,23 @@ public class CheckICMP implements NChecksInterface
 
         } catch (Exception e) {
             e.printStackTrace();
-            reply.setStatus(STATUS_ERROR);
+            reply.setStatus(Const.STATUS_ERROR);
             String errorMsg = e + e.getMessage();
             reply.setReply(errorMsg);
             return reply;
         }
 
         if (returnStatus != 0) {
-            reply.setStatus(STATUS_ERROR);
-            reply.setReply("CheckICMP ERROR: " + stdoutReturn + stderrReturn + "when trying: " + Arrays.toString(cmd));
+            reply.setStatus(Const.STATUS_ERROR);
+            reply.setReply("CheckICMP ERROR: " + stdoutReturn + stderrReturn);
             return reply;
         }
 
 
         String[] ppingReturn = stdoutReturn.split(",");
         if (! "<PPING_RETURN>".equals(ppingReturn[0])) {
-            reply.setStatus(STATUS_DOWN);
-            reply.setReply("CheckICMP ERROR: " + stderrReturn + stdoutReturn + "when trying: " + Arrays.toString(cmd));
+            reply.setStatus(Const.STATUS_DOWN);
+            reply.setReply(String.format("CheckICMP ERROR: stdout=%s, stderr=%s", stderrReturn, stdoutReturn));
             return reply;
         } 
 
@@ -202,17 +198,24 @@ public class CheckICMP implements NChecksInterface
         reply.putPerformance("MinRoundTrip",        minReplyTime);
         reply.putPerformance("AverageRoundTrip",    avgReplyTime);
         reply.putPerformance("MaxRoundTrip",        maxReplyTime);
-        reply.setReply(stdoutReturn);
 
+        String st = null;
         if (percentLoss == 100) {
-            reply.setStatus(STATUS_DOWN);
+            st = Const.STATUS_DOWN;
         }else if (percentLoss >= plCritical || avgReplyTime >= msCritical) {
-            reply.setStatus(STATUS_CRITICAL);
+            st = Const.STATUS_CRITICAL;
         } else if (percentLoss >= plWarning || avgReplyTime >= msWarning) {
-            reply.setStatus(STATUS_WARNING);
+            st = Const.STATUS_WARNING;
         } else {
-            reply.setStatus(STATUS_OK);
+            st = Const.STATUS_OK;
         }
+        String formated = String.format(
+            "CheckICMP %s: PktsLoss=%d%%, RTMin=%d, RTAverage=%d, RTMax=%d",
+            st, percentLoss, minReplyTime, avgReplyTime, maxReplyTime
+        );
+        reply.setStatus(st);
+        reply.setReply(formated);
+
         return reply;
     }
 }
