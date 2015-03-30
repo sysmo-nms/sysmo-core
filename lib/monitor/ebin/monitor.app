@@ -25,8 +25,6 @@
         {modules, [
             rrd_nchecks_logger,
             rrd_snmp_table_logger,
-            bmonitor_probe_nchecks,
-            bmonitor_probe_snmp,
             monitor,
             monitor_app,
             monitor_channel,
@@ -43,9 +41,7 @@
             monitor_sup,
             monitor_utils,
 
-            probe_nchecks,
-            probe_snmp_get,
-            probe_snmp_walk
+            probe_nchecks
         ]},
         {registered, [
                 monitor_sup,
