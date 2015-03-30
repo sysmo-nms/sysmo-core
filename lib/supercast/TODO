@@ -1,7 +1,11 @@
-- delayed sync included in supercast, require that every channel event is
+1 - delayed sync included in supercast, require that every channel event is
 recognized by supercast.
+2 - remove mpd (everything done by the channel)
 
 # in the future
-- protobuff or json support
-- Behaviour in a distributed environment with multiple supercast servers
-running?
+3 - Behaviour in a distributed environment with multiple supercast servers
+running (see 2)?
+
+#
+- ROR like project builder
+- Example apps (risk game, chat like forum, sysmo)
