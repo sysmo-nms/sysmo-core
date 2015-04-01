@@ -79,14 +79,13 @@ init(Probe) ->
 init2(Probe) ->
     random:seed(erlang:now()),
     {ok, ExecInitState}     = init_snmp_walk(Probe),
-    {ok, InspectInitState}  = monitor_inspector:init_all(Probe),
     {ok, LoggersInitState}  = monitor_logger:init_all(Probe),
     TRef = initiate_start_sequence(Probe#probe.step, random),
     ES = #ets_state{
         name             = Probe#probe.name,
         permissions      = Probe#probe.permissions,
         target_name      = Probe#probe.belong_to,
-        inspectors_state = InspectInitState,
+        inspectors_state = none,
         loggers_state    = LoggersInitState,
         exec_state       = ExecInitState,
         exec_mod         = Probe#probe.monitor_probe_mod,
@@ -218,18 +217,28 @@ force2(S) ->
 %%----------------------------------------------------------------------------
 %% INTERNALS
 %%----------------------------------------------------------------------------
--spec handle_probe_return(ProbeState::any(), Pr::any(), S::any()) -> ok.
+-spec handle_probe_return(Pr::any(), S::any()) -> ok.
 % @private
 % @doc
 % Called by handle_info(probe_return). This function do not need to be exported.
 % @end
-handle_probe_return(NewProbeState, PR, S) ->
+handle_probe_return(PR, S) ->
     ES  = monitor_data_master:get_probe_state(S#state.name),
 
     % INSPECT TODO do use case better than behaviour
     [Probe]  = monitor_data_master:get(probe, S#state.name),
-    IState = ES#ets_state.inspectors_state,
-    {ok, IState2, Probe2} = monitor_inspector:inspect_all(IState, Probe, PR),
+    %IState = ES#ets_state.inspectors_state,
+    %{ok, IState2, Probe2} = monitor_inspector:inspect_all(IState, Probe, PR),
+    OldStatus = Probe#probe.status,
+    NewStatus = PR#probe_return.status,
+    case NewStatus of
+        OldStatus ->
+            monitor_events:notify(S#state.name, OldStatus);
+        _ ->
+            monitor_events:notify_move(S#state.name, NewStatus),
+            NewProbe = Probe#probe{status=NewStatus},
+            monitor_data_master:update(probe,NewProbe)
+    end,
 
     % LOGGER TODO do use case better than behaviour
     LState = ES#ets_state.loggers_state,
@@ -252,28 +261,24 @@ handle_probe_return(NewProbeState, PR, S) ->
     % WRITE
     monitor_data_master:set_probe_state(
         ES#ets_state{
-            inspectors_state=IState2,
+            %inspectors_state=IState2,
             loggers_state=LState2,
             tref=TRef,
-            exec_state=NewProbeState,
+            %exec_state=NewProbeState,
             status_from= erlang:now(),
-            status=Probe2#probe.status
+            status=PR#probe_return.status
         }
-    ),
-
-    maybe_write_probe(Probe, Probe2),
-    ok.
+    ).
 
 handle_take_of(S) ->
     ES = monitor_data_master:get_probe_state(S#state.name),
-    %Mod = ES#ets_state.exec_mod,
     ExS = ES#ets_state.exec_state,
     take_of(self(), ExS).
 
 take_of(Parent, ProbeState) ->
     erlang:spawn(fun() ->
-        {ok, ProbeState2, Return}  = exec_snmp_walk(ProbeState),
-        erlang:send(Parent, {probe_return, ProbeState2, Return})
+        {ok, Return}  = exec_snmp_walk(ProbeState),
+        erlang:send(Parent, {probe_return, Return})
     end).
 
 
@@ -316,8 +321,8 @@ handle_call(_Call, _From, S) ->
 %%----------------------------------------------------------------------------
 %% HANDLE_INFO
 %%----------------------------------------------------------------------------
-handle_info({probe_return, NewProbeState, PR}, S) ->
-    handle_probe_return(NewProbeState, PR, S),
+handle_info({probe_return, PR}, S) ->
+    handle_probe_return(PR, S),
     {noreply, S};
 
 handle_info(take_of, S) ->
@@ -368,9 +373,6 @@ read_timer(TRef) ->
         Any   -> Any
     end.
 
-maybe_write_probe(Probe, Probe)     -> ok;
-maybe_write_probe(_,     Probe2)    -> monitor_data_master:update(probe, Probe2).
-
 partial_pr(ES) ->
     #probe_return{ 
         status          = ES#ets_state.status,
@@ -417,7 +419,7 @@ exec_snmp_walk(#table_state{method = get} = State) ->
                 reply_string    = OR,
                 key_vals        = KV,
                 timestamp       = MicroSec2},
-            {ok, State, PR};
+            {ok, PR};
         {ok, SnmpReply} ->
             PR  = eval_snmp_get_return(SnmpReply, Oids),
             KV  = PR#probe_return.key_vals,
@@ -425,7 +427,7 @@ exec_snmp_walk(#table_state{method = get} = State) ->
             PR2 = PR#probe_return{
                 timestamp = MicroSec2,
                 key_vals  = KV2},
-            {ok, State, PR2}
+            {ok, PR2}
     end;
 
 exec_snmp_walk(#table_state{method=walk_table, oids=Table} = State) ->
@@ -448,7 +450,7 @@ exec_snmp_walk(#table_state{method=walk_table, oids=Table} = State) ->
                 reply_tuple     = ignore,
                 key_vals        = KV,
                 timestamp       = ReplyT},
-            {ok, State, PR};
+            {ok, PR};
         {ok, {table, SnmpReply}} ->
             KV  = [{"status","OK"},{"sys_latency", MicroSec2 - MicroSec1}],
             PR = #probe_return{
@@ -458,7 +460,7 @@ exec_snmp_walk(#table_state{method=walk_table, oids=Table} = State) ->
                 key_vals        = KV,
                 reply_string    = to_string(SnmpReply)
             },
-            {ok, State, PR}
+            {ok, PR}
     end.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

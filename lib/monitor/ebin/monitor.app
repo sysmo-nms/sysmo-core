@@ -31,7 +31,6 @@
             monitor_commander,
             monitor_data_master,
             monitor_events,
-            monitor_inspector,
             monitor_jobs,
             monitor_logger,
             monitor_pdu,
