@@ -1,3 +1,4 @@
+0 add ref() to probe_nchecks (race condition with send_after())
 1 dependencies/alertes apres x CRITICAL (and remove inspectors)
 2 template system
     - for probes
