@@ -152,7 +152,7 @@ do_delete(target, Key) ->
     lists:foreach(fun(P) -> do_delete(probe, P) end, do_get_probes(Key)),
     mnesia:dirty_delete({target,Key});
 do_delete(probe, Key) ->
-    monitor:probe_shutdown(Key),
+    shutdown_probe(Key),
     case do_get(dependency, Key) of
         []  -> ok;
         [_] ->
@@ -397,3 +397,10 @@ generate_id() ->
     B = crypto:rand_bytes(8),
     N = lists:foldl(fun(N,Acc) -> Acc * 256 + N end, 0, binary_to_list(B)),
     integer_to_list(N).
+
+shutdown_probe(PidName) ->
+    case supercast_registrar:whereis_name(PidName) of
+        undefined -> ok;
+        Pid ->
+            gen_server:call(Pid, shut_it_down)
+    end.

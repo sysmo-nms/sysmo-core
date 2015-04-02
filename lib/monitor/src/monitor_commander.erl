@@ -54,13 +54,13 @@ handle_cast({{"createTargetQuery", Contents}, CState}, S) ->
     NProp    = [{binary_to_list(Key), maybe_str(Val)} || {Key,Val} <- Prop],
     NSysProp = [{binary_to_list(Key), maybe_str(Val)} || {Key,Val} <- SProp],
     NSysProp2 = sysprop_guard(NSysProp),
-    TargetId = monitor:target_new(NSysProp2, NProp),
+    TargetId = monitor:new_target(NSysProp2, NProp),
     case snmp_enabled(NSysProp2) of
         true ->
-            SInfoJob  = monitor:job_new({internal, update_snmp_system_info}, TargetId),
-            IfInfoJob = monitor:job_new({internal, update_snmp_if_aliases},  TargetId),
-            monitor:job_fire(SInfoJob),
-            monitor:job_fire(IfInfoJob);
+            SInfoJob  = monitor:new_job({internal, update_snmp_system_info}, TargetId),
+            IfInfoJob = monitor:new_job({internal, update_snmp_if_aliases},  TargetId),
+            monitor:fire_job(SInfoJob),
+            monitor:fire_job(IfInfoJob);
         false -> ok
     end,
     ReplyPDU = monitor_pdu:simpleReply(QueryId, true, true, TargetId),
@@ -76,7 +76,7 @@ handle_cast({{"createNchecksQuery", Contents}, CState}, S) ->
     Target  = binary_to_list(proplists:get_value(<<"target">>, Contents2)),
     QueryId = proplists:get_value(<<"queryId">>, Contents2),
     io:format("probe newo ~p ~p ~p ~n", [Name, Prop2, Target]),
-    ProbeId = monitor:probe_new({nchecks, Name, Prop2}, Target),
+    ProbeId = monitor:new_probe({probe_nchecks, Name, Prop2}, Target),
     ReplyPDU = monitor_pdu:simpleReply(QueryId, true, true, ProbeId),
     supercast_channel:unicast(CState, [ReplyPDU]),
     {noreply, S};
@@ -86,7 +86,7 @@ handle_cast({{"createIfPerfQuery", Contents}, CState}, S) ->
     Target      = binary_to_list(proplists:get_value(<<"target">>, Contents2)),
     IfSelection = proplists:get_value(<<"ifSelection">>, Contents2),
     QueryId     = proplists:get_value(<<"queryId">>, Contents2),
-    ProbeId     = monitor:probe_new({snmp, if_perfs, IfSelection}, Target),
+    ProbeId     = monitor:new_probe({snmp_ifPerf, IfSelection}, Target),
     ReplyPDU    = monitor_pdu:simpleReply(QueryId, true, true, ProbeId),
     supercast_channel:unicast(CState, [ReplyPDU]),
     {noreply, S};
@@ -96,7 +96,7 @@ handle_cast({{"deleteProbeQuery", Contents}, CState}, S) ->
     {struct, Contents2} = proplists:get_value(<<"value">>, Contents),
     Probe   = binary_to_list(proplists:get_value(<<"name">>,  Contents2)),
     QueryId = proplists:get_value(<<"queryId">>,  Contents2),
-    monitor:probe_delete(Probe),
+    monitor:del_probe(Probe),
     ReplyPDU = monitor_pdu:simpleReply(QueryId, true, true, Probe),
     supercast_channel:unicast(CState, [ReplyPDU]),
     {noreply, S};
@@ -106,7 +106,7 @@ handle_cast({{"deleteTargetQuery", Contents}, CState}, S) ->
     {struct, Contents2}  = proplists:get_value(<<"value">>, Contents),
     Target  = binary_to_list(proplists:get_value(<<"name">>, Contents2)),
     QueryId = proplists:get_value(<<"queryId">>, Contents2),
-    monitor:target_delete(Target),
+    monitor:del_target(Target),
     ReplyPDU = monitor_pdu:simpleReply(QueryId, true, true, Target),
     supercast_channel:unicast(CState, [ReplyPDU]),
     {noreply, S};
@@ -116,7 +116,7 @@ handle_cast({{"forceProbeQuery", Contents}, CState}, S) ->
     {struct, Contents2}  = proplists:get_value(<<"value">>, Contents),
     Probe   = binary_to_list(proplists:get_value(<<"name">>, Contents2)),
     QueryId = proplists:get_value(<<"queryId">>, Contents2),
-    monitor:probe_force(Probe),
+    monitor:force_probe(Probe),
     ReplyPDU = monitor_pdu:simpleReply(QueryId, true, true, Probe),
     supercast_channel:unicast(CState, [ReplyPDU]),
     {noreply, S};
