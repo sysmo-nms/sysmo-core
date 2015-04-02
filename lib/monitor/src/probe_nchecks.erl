@@ -28,27 +28,19 @@
 -include_lib("xmerl/include/xmerl.hrl").
 
 
--export([start_link/1]).
-% supercast_channel
--export([
-    get_perms/1,
-    sync_request/2]).
-
 % gen_server
 -export([
+    start_link/1,
     init/1,
     handle_call/3,
     handle_cast/2,
     handle_info/2,
     terminate/2,
     code_change/3]).
-
-% local only
+-export([get_perms/1,sync_request/2]).
 -export([exec_nchecks/2]).
 
-% records
 -record(state, {name}).
-
 -record(nstate, {
     class,
     args,
@@ -57,24 +49,18 @@
 }).
 
 
+
+
+
 start_link(#probe{name=Name} = Probe) ->
     gen_server:start_link({via, supercast_registrar, {?MODULE, Name}}, ?MODULE, Probe, []).
 
-%%----------------------------------------------------------------------------
-%% GEN_SERVER INIT
-%%----------------------------------------------------------------------------
-init(Probe) ->
-    % to let multiple probes initialize in the same time, init is delayed.
-    gen_server:cast(self(), continue_init),
-    {ok, Probe}.
-
-% called from :cast,continue_init
 do_init(Probe) ->
     random:seed(erlang:now()),
     {ok, DumpDir}   = application:get_env(supercast, http_sync_dir),
     {Class, Args}   = nchecks_init(Probe),
     RrdFile         = rrd4j_init(Probe),
-    TRef            = initiate_start_sequence(Probe#probe.step, random),
+    TRef            = monitor:send_after_rand(Probe#probe.step, take_of),
     NS = #nstate{
         class = Class,
         args = Args,
@@ -95,7 +81,7 @@ do_init(Probe) ->
 
     % partial return for clients allready connected
     PartialReturn = partial_pr(ES),
-    MilliRem = read_timer(ES#ets_state.tref),
+    MilliRem = monitor:read_timer(ES#ets_state.tref),
     Pdu = monitor_pdu:probeReturn(
         PartialReturn,
         ES#ets_state.belong_to,   
@@ -106,26 +92,20 @@ do_init(Probe) ->
     ok.
 
 
+
+
+
 %%----------------------------------------------------------------------------
 %% supercast channel behaviour API
 %%----------------------------------------------------------------------------
-% @private
-% @doc
-% Supercast behaviour required.
-% @end
 get_perms(PidName) ->
     #ets_state{permissions=Perm} = monitor_data_master:get_probe_state(PidName),
     Perm.
 
-
-
-% @private
-% @doc
-% Supercast behaviour required.
-% @end
 sync_request(PidName, CState) ->
     ?LOG("sync request!!!!!!!!!!!!!!!!!!!!!"),
     gen_server:cast({via, supercast_registrar, PidName}, {sync_request, CState}).
+
 do_sync_request(CState, S) ->
     ES       = monitor_data_master:get_probe_state(S#state.name),
     % the rrd file
@@ -134,7 +114,7 @@ do_sync_request(CState, S) ->
 
     % generate tmp dir in dump dir
     DumpDir  = ES#ets_state.local_state#nstate.dump_dir,
-    TmpDir   = generate_tmp_dir(),
+    TmpDir   = monitor:generate_temp_dir(),
     TmpPath  = filename:join(DumpDir, TmpDir),
     file:make_dir(TmpPath),
 
@@ -151,13 +131,17 @@ do_sync_request(CState, S) ->
     ok  = supercast_channel:subscribe(ES#ets_state.name, CState),
     ok  = supercast_channel:unicast(CState, [Pdu]),
     ok.
+%%----------------------------------------------------------------------------
+%% supercast channel behaviour API END
+%%----------------------------------------------------------------------------
 
-generate_tmp_dir() ->
-    {_,Sec,Micro} = os:timestamp(),
-    Microsec = Sec * 1000000 + Micro,
-    lists:concat(["tmp-", Microsec]).
-    
 
+
+
+
+%%----------------------------------------------------------------------------
+%% monitor API
+%%----------------------------------------------------------------------------
 do_trigger_return(CState, S) ->
     ES = monitor_data_master:get_probe_state(S#state.name),
 
@@ -168,7 +152,7 @@ do_trigger_return(CState, S) ->
         key_vals        = []
     },
 
-    MilliRem = read_timer(ES#ets_state.tref),
+    MilliRem = monitor:read_timer(ES#ets_state.tref),
     Pdu = monitor_pdu:probeReturn(
         PartialPR,
         ES#ets_state.belong_to,
@@ -184,7 +168,7 @@ do_force(S) ->
         false ->
             ok;
         _ ->
-            TRef = initiate_start_sequence(undefined, now),
+            TRef = monitor:send_after(0, take_of),
             monitor_data_master:set_probe_state(ES#ets_state{tref=TRef}),
             PartialReturn = partial_pr(ES),
             Pdu = monitor_pdu:probeReturn(
@@ -195,18 +179,18 @@ do_force(S) ->
             ),
             supercast_channel:emit(?MASTER_CHANNEL, {ES#ets_state.permissions, Pdu})
     end.
+%%----------------------------------------------------------------------------
+%% monitor API END
+%%----------------------------------------------------------------------------
+
+
 
 
 
 %%----------------------------------------------------------------------------
 %% INTERNALS
 %%----------------------------------------------------------------------------
--spec handle_probe_return(PR::any(), S::any()) -> ok.
-% @private
-% @doc
-% Called by handle_info(probe_return). This function do not need to be exported.
-% @end
-handle_probe_return(PR, S) ->
+do_handle_probe_return(PR, S) ->
     % get the probe state
     ES  = monitor_data_master:get_probe_state(S#state.name),
 
@@ -233,8 +217,8 @@ handle_probe_return(PR, S) ->
     supercast_channel:emit(S#state.name, {ES#ets_state.permissions, Pdu2}),
 
     % initiate LAUNCH
-    TRef        = initiate_start_sequence(Probe#probe.step, normal),
-    MilliRem    = read_timer(TRef),
+    TRef        = monitor:send_after(Probe#probe.step, take_of),
+    MilliRem    = monitor:read_timer(TRef),
 
     % SEND MESSAGES to subscribers of master channel
     Pdu = monitor_pdu:probeReturn(
@@ -253,12 +237,35 @@ handle_probe_return(PR, S) ->
         }
     ).
 
+do_take_of(S) ->
+    ES      = monitor_data_master:get_probe_state(S#state.name),
+    Class   = ES#ets_state.local_state#nstate.class,
+    Args    = ES#ets_state.local_state#nstate.args,
+    ToPid   = self(),
+    erlang:spawn(fun() ->
+        {ok, Return}  = ?MODULE:exec_nchecks(Class, Args),
+        erlang:send(ToPid, {probe_return, Return})
+    end).
 %%----------------------------------------------------------------------------
-%% GEN_SERVER HANDLE_CAST
+%% INTERNALS END
 %%----------------------------------------------------------------------------
-handle_cast(continue_init, Probe) ->
+
+
+
+
+
+%%----------------------------------------------------------------------------
+%% GEN_SERVER
+%%----------------------------------------------------------------------------
+init(Probe) ->
+    % to let multiple probes initialize in the same time, init is delayed.
+    gen_server:cast(self(), do_init),
+    {ok, Probe}.
+
+
+handle_cast(do_init, #probe{name=PName} = Probe) ->
     do_init(Probe),
-    {noreply, #state{name=Probe#probe.name}};
+    {noreply, #state{name=PName}};
 
 handle_cast({sync_request, CState}, S) ->
     do_sync_request(CState, S),
@@ -275,82 +282,42 @@ handle_cast(force, S) ->
 handle_cast(_Cast, S) ->
     {noreply, S}.
 
-%%----------------------------------------------------------------------------
-%% GEN_SERVER HANDLE_CALL
-%%----------------------------------------------------------------------------
+
 handle_call(shut_it_down, _F, #state{name=Name} = S) ->
     supercast_channel:delete(Name),
     {stop, shutdown, ok, S};
 
-
 handle_call(_Call, _From, S) ->
     {noreply, S}.
 
-%%----------------------------------------------------------------------------
-%% HANDLE_INFO
-%%----------------------------------------------------------------------------
+
 handle_info({probe_return, PR}, S) ->
-    handle_probe_return(PR, S),
+    do_handle_probe_return(PR, S),
     {noreply, S};
 
 handle_info(take_of, S) ->
-    handle_take_of(S),
+    do_take_of(S),
     {noreply, S};
 
 handle_info(_I, SData) ->
     {noreply, SData}.
 
-%%----------------------------------------------------------------------------
-%% OTHER GEN_SERVER
-%%----------------------------------------------------------------------------
+
 terminate(_Reason, _S) ->
     normal.
+
 
 code_change(_OldVsn, S, _Extra) ->
     {ok, S}.
 
 
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% PROBE LAUNCH %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec initiate_start_sequence(Step::integer(),Mode::normal|random|now) -> any().
-initiate_start_sequence(Step, random) ->
-    Step2   = random:uniform(Step),
-    initiate_start_sequence(Step2);
-initiate_start_sequence(Step, normal) ->
-    initiate_start_sequence(Step);
-initiate_start_sequence(_, now) ->
-    initiate_start_sequence(0).
-
-initiate_start_sequence(Step) ->
-    erlang:send_after(Step * 1000, self(), take_of).
-
-handle_take_of(S) ->
-    ES      = monitor_data_master:get_probe_state(S#state.name),
-    Class   = ES#ets_state.local_state#nstate.class,
-    Args    = ES#ets_state.local_state#nstate.args,
-    Parent  = self(),
-    erlang:spawn(fun() ->
-        {ok, Return}  = ?MODULE:exec_nchecks(Class, Args),
-        erlang:send(Parent, {probe_return, Return})
-    end).
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% UTILS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%
+%% UTILS
+%%
 %emit_all(_, _, []) -> ok;
 %emit_all(Name, Perm, [Pdu|T]) ->
 %    supercast_channel:emit(Name,{Perm, Pdu}),
 %    emit_all(Name,Perm,T).
-
-read_timer(TRef) ->
-    case erlang:read_timer(TRef) of
-        false -> 0;
-        Any   -> Any
-    end.
-
 
 partial_pr(ES) ->
     #probe_return{ 

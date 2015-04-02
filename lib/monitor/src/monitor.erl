@@ -41,7 +41,14 @@
 
     probe_trigger_return/2,
     probe_shutdown/1,
-    probe_force/1
+    probe_force/1,
+
+    % probe utils 
+    timestamp/0,
+    read_timer/1,
+    generate_temp_dir/0,
+    send_after/2,
+    send_after_rand/2
 ]).
 
 -define(RRD_ifPerf_file, "snmp_if_perf.ini").
@@ -188,3 +195,50 @@ probe_force(PidName) ->
         Pid ->
             gen_server:cast(Pid, force)
     end.
+
+-spec timestamp() -> {Seconds::integer(), Microseconds::integer()}.
+% @private
+% @doc
+% @end
+timestamp() ->
+    {Meg,Sec,Micro} = os:timestamp(),
+    Seconds = Meg * 1000000 + Sec,
+    MicroSeconds = Seconds * 1000000 + Micro,
+    {Seconds, MicroSeconds}.
+
+-spec read_timer(TimerReference::tuple()) -> Microseconds::integer().
+% @private
+% @doc
+% Do erlang:read_timer(Tref) but return 0 if read_timer return false.
+% @end
+read_timer(TRef) ->
+    case erlang:read_timer(TRef) of
+        false -> 0;
+        Any -> Any
+    end.
+
+-spec generate_temp_dir() -> TmpdirString::string().
+% @private
+% @doc
+% The string returned can be used to create a temporary directory under dump.
+% @end
+generate_temp_dir() ->
+    {_,Sec,Micro} = os:timestamp(),
+    MicroSec = Sec * 1000000 + Micro,
+    lists:concat(["tmp-", MicroSec]).
+
+-spec send_after(Step::integer(), Msg::any()) -> TRef::tuple().
+% @private
+% @doc
+% send Msg after Step seconds
+% @end
+send_after(Step, Msg) ->
+    erlang:send_after(Step * 1000, self(), Msg).
+
+-spec send_after_rand(Step::integer(), Msg::any()) -> TRef::tuple().
+% @private
+% @doc
+% send Msg after random time between 0 and Step seconds
+% @end
+send_after_rand(Step, Msg) ->
+    send_after(random:uniform(Step), Msg).

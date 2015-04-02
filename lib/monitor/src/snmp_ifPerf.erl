@@ -26,45 +26,6 @@
 -include("include/monitor.hrl").
 -include("include/monitor_snmp.hrl").
 
-
--export([
-    start_link/1
-]).
-
-% supercast_channel
--export([
-    get_perms/1,
-    sync_request/2
-]).
-
-% gen_server
--export([
-    init/1,
-    handle_call/3,
-    handle_cast/2,
-    handle_info/2,
-    terminate/2,
-    code_change/3
-]).
-
-% API
--export([
-    exec_snmp_walk/1
-]).
-
-% records
--record(state, {name}).
-
-%-record(ets_state, {
-    %name,
-    %permissions,
-    %belong_to,
-    %tref,
-    %current_status_from,
-    %current_status,
-    %local_state
-%}).
-
 -define(IF_PERF_OIDS, [
     ?IF_INDEX,
     ?IF_DESCR,
@@ -78,20 +39,28 @@
     ?IF_OUT_ERRORS
 ]).
 
+-export([
+    start_link/1,
+    init/1,
+    handle_call/3,
+    handle_cast/2,
+    handle_info/2,
+    terminate/2,
+    code_change/3]).
+-export([get_perms/1, sync_request/2]).
+-export([exec_snmp_walk/1]).
+
+-record(state, {name}).
+
+
+
+
 start_link(#probe{name=Name} = Probe) ->
     gen_server:start_link({via, supercast_registrar, {?MODULE, Name}}, ?MODULE, Probe, []).
 
-%%----------------------------------------------------------------------------
-%% GEN_SERVER INIT
-%%----------------------------------------------------------------------------
-init(Probe) ->
-    % to let multiple probes initialize in the same time, init is delayed.
-    gen_server:cast(self(), continue_init),
-    {ok, Probe}.
-
-init2(Probe) ->
+do_init(Probe) ->
     random:seed(erlang:now()),
-    TRef = initiate_start_sequence(Probe#probe.step, random),
+    TRef = monitor:send_after_rand(Probe#probe.step, take_of),
     ES = #ets_state{
         name                = Probe#probe.name,
         permissions         = Probe#probe.permissions,
@@ -103,7 +72,7 @@ init2(Probe) ->
     monitor_data_master:set_probe_state(ES),
     % BEGIN partial return for clients
     PartialReturn = partial_pr(ES),
-    MilliRem = read_timer(ES#ets_state.tref),
+    MilliRem = monitor:read_timer(ES#ets_state.tref),
     Pdu = monitor_pdu:probeReturn(
         PartialReturn,
         ES#ets_state.belong_to,
@@ -118,7 +87,6 @@ init2(Probe) ->
 
 
 
-
 %%----------------------------------------------------------------------------
 %% supercast channel behaviour API
 %%----------------------------------------------------------------------------
@@ -128,16 +96,24 @@ get_perms(PidName) ->
 
 sync_request(PidName, CState) ->
     gen_server:cast({via, supercast_registrar, PidName}, {sync_request, CState}).
-sync_request2(CState, S) ->
+
+do_sync_request(CState, S) ->
     ES = monitor_data_master:get_probe_state(S#state.name),
     Pdus = [],
     ok  = supercast_channel:subscribe(ES#ets_state.name, CState),
     ok  = supercast_channel:unicast(CState, Pdus),
     ok.
+%%----------------------------------------------------------------------------
+%% supercast channel behaviour API END
+%%----------------------------------------------------------------------------
 
 
 
 
+
+%%----------------------------------------------------------------------------
+%% monitor API
+%%----------------------------------------------------------------------------
 do_triggered_return(CState, S) ->
     ES = monitor_data_master:get_probe_state(S#state.name),
 
@@ -148,7 +124,7 @@ do_triggered_return(CState, S) ->
         key_vals        = []
     },
 
-    MilliRem = read_timer(ES#ets_state.tref),
+    MilliRem = monitor:read_timer(ES#ets_state.tref),
     Pdu = monitor_pdu:probeReturn(
         PartialPR,
         ES#ets_state.belong_to,
@@ -163,7 +139,7 @@ do_force(S) ->
     case erlang:cancel_timer(ES#ets_state.tref) of
         false -> ok;
         _ ->
-            TRef = initiate_start_sequence(undefined, now),
+            TRef = monitor:send_after(0, take_of),
             monitor_data_master:set_probe_state(ES#ets_state{tref=TRef}),
             PartialReturn = partial_pr(ES),
             Pdu = monitor_pdu:probeReturn(
@@ -174,6 +150,9 @@ do_force(S) ->
             ),
             supercast_channel:emit(?MASTER_CHANNEL, {ES#ets_state.permissions, Pdu})
     end.
+%%----------------------------------------------------------------------------
+%% monitor API END
+%%----------------------------------------------------------------------------
 
 
 
@@ -182,12 +161,7 @@ do_force(S) ->
 %%----------------------------------------------------------------------------
 %% INTERNALS
 %%----------------------------------------------------------------------------
--spec handle_probe_return(Pr::any(), S::any()) -> ok.
-% @private
-% @doc
-% Called by handle_info(probe_return). This function do not need to be exported.
-% @end
-handle_probe_return(PR, S) ->
+do_handle_probe_return(PR, S) ->
     ES  = monitor_data_master:get_probe_state(S#state.name),
     [Probe]  = monitor_data_master:get(probe, S#state.name),
     OldStatus = Probe#probe.status,
@@ -206,9 +180,13 @@ handle_probe_return(PR, S) ->
     %{ok, Pdu} = rrd_log(LState,PR),
     %emit_all(ES#ets_state.name, ES#ets_state.permissions, [Pdu]),
 
+    % TODO log to rrd and emit pdus
+    % TODO check interfaces status and critical on down
+    % TODO check return values and warn or crit
+
     % LAUNCH
-    TRef = initiate_start_sequence(Probe#probe.step, normal),
-    MilliRem  = read_timer(TRef),
+    TRef = monitor:send_after(Probe#probe.step, take_of),
+    MilliRem  = monitor:read_timer(TRef),
 
     % SEND MESSAGES
     Pdu = monitor_pdu:probeReturn(
@@ -228,30 +206,38 @@ handle_probe_return(PR, S) ->
         }
     ).
 
-handle_take_of(#state{name=PName}) ->
-    ES = monitor_data_master:get_probe_state(PName),
-    Agent = ES#ets_state.belong_to,
-    take_of(self(), Agent).
-
-take_of(ParentPid, Agent) ->
+do_take_of(#state{name=PName}) ->
+    ES      = monitor_data_master:get_probe_state(PName),
+    Agent   = ES#ets_state.belong_to,
+    ToPid   = self(),
     erlang:spawn(fun() ->
-        {ok, Return}  = exec_snmp_walk(Agent),
-        erlang:send(ParentPid, {probe_return, Return})
+        {ok, Return}  = ?MODULE:exec_snmp_walk(Agent),
+        erlang:send(ToPid, {probe_return, Return})
     end).
+%%----------------------------------------------------------------------------
+%% INTERNALS END
+%%----------------------------------------------------------------------------
+
 
 
 
 
 
 %%----------------------------------------------------------------------------
-%% HANDLE_CAST
+%% GEN_SERVER
 %%----------------------------------------------------------------------------
-handle_cast(continue_init, Probe) ->
-    init2(Probe),
-    {noreply, #state{name=Probe#probe.name}};
+init(Probe) ->
+    % to let multiple probes initialize in the same time, init is delayed.
+    gen_server:cast(self(), do_init),
+    {ok, Probe}.
+
+
+handle_cast(do_init, #probe{name=PName} = Probe) ->
+    do_init(Probe),
+    {noreply, #state{name=PName}};
 
 handle_cast({sync_request, CState}, S) ->
-    sync_request2(CState, S),
+    do_sync_request(CState, S),
     {noreply, S};
 
 handle_cast({triggered_return, CState}, S) ->
@@ -265,71 +251,42 @@ handle_cast(force, S) ->
 handle_cast(_Cast, S) ->
     {noreply, S}.
 
-%%----------------------------------------------------------------------------
-%% HANDLE_CALL
-%%----------------------------------------------------------------------------
+
 handle_call(shut_it_down, _F, #state{name=Name} = S) ->
     supercast_channel:delete(Name),
     {stop, shutdown, ok, S};
 
-
 handle_call(_Call, _From, S) ->
     {noreply, S}.
 
-%%----------------------------------------------------------------------------
-%% HANDLE_INFO
-%%----------------------------------------------------------------------------
+
 handle_info({probe_return, PR}, S) ->
-    handle_probe_return(PR, S),
+    do_handle_probe_return(PR, S),
     {noreply, S};
 
 handle_info(take_of, S) ->
-    handle_take_of(S),
+    do_take_of(S),
     {noreply, S};
 
 handle_info(_, SData) ->
     {noreply, SData}.
 
-%%----------------------------------------------------------------------------
-%% OTHER GEN_SERVER
-%%----------------------------------------------------------------------------
+
 terminate(_Reason, _S) ->
     normal.
+
 
 code_change(_OldVsn, S, _Extra) ->
     {ok, S}.
 
 
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% PROBE LAUNCH %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec initiate_start_sequence(Step::integer(),Mode::normal|random|now) -> any().
-initiate_start_sequence(Step, random) ->
-    Step2   = random:uniform(Step),
-    initiate_start_sequence(Step2);
-initiate_start_sequence(Step, normal) ->
-    initiate_start_sequence(Step);
-initiate_start_sequence(_, now) ->
-    initiate_start_sequence(0).
-
-initiate_start_sequence(Step) ->
-    erlang:send_after(Step * 1000, self(), take_of).
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% UTILS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%----------------------------------------------------------------------------
+%% UTILS
+%%----------------------------------------------------------------------------
 %emit_all(_, _, []) -> ok;
 %emit_all(Name, Perm, [Pdu|T]) ->
 %    supercast_channel:emit(Name,{Perm, Pdu}),
 %    emit_all(Name,Perm,T).
-
-read_timer(TRef) ->
-    case erlang:read_timer(TRef) of
-        false -> 0;
-        Any   -> Any
-    end.
 
 partial_pr(ES) ->
     #probe_return{ 
@@ -339,47 +296,30 @@ partial_pr(ES) ->
         key_vals        = []
     }.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% SNMP TABLE INIT %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%----------------------------------------------------------------------------
+%% SNMP TABLE INIT
+%%----------------------------------------------------------------------------
 exec_snmp_walk(Agent) ->
-    {_, MicroSec1}  = sys_timestamp(),
-    Reply = snmpman:walk_table(Agent, ?IF_PERF_OIDS),
-    {ReplyT, MicroSec2}  = sys_timestamp(),
+    Reply       = snmpman:walk_table(Agent, ?IF_PERF_OIDS),
+    {ReplyT, _} = monitor:timestamp(),
 
     case Reply of
         {error, _Error} = R ->
             error_logger:info_msg("snmp fail ~p ~p ~p for agent ~p", [?MODULE, ?LINE, R, Agent]),
-            KV = [{"status","CRITICAL"},{"sys_latency",MicroSec2 - MicroSec1}],
-            OR = to_string(R),
+            OR = lists:flatten(io_lib:format("~p",[R])),
             S  = "CRITICAL",
             PR = #probe_return{
+                timestamp       = ReplyT,
                 status          = S,
-                reply_string    = OR,
                 reply_tuple     = ignore,
-                key_vals        = KV,
-                timestamp       = ReplyT},
+                reply_string    = OR},
             {ok, PR};
         {ok, {table, SnmpReply}} ->
-            KV  = [{"status","OK"},{"sys_latency", MicroSec2 - MicroSec1}],
             PR = #probe_return{
                 timestamp       = ReplyT,
-                reply_tuple     = SnmpReply,
                 status          = "OK",
-                key_vals        = KV,
-                reply_string    = to_string(SnmpReply)
+                reply_tuple     = SnmpReply,
+                reply_string    = lists:flatten(io_lib:format("~p",[SnmpReply]))
             },
             {ok, PR}
     end.
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% UTILS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-to_string(Term) ->
-    lists:flatten(io_lib:format("~p", [Term])).
-
-sys_timestamp() ->
-    {Meg, Sec, Micro} = os:timestamp(),
-    Seconds      = Meg      * 1000000 + Sec,
-    Microseconds = Seconds  * 1000000 + Micro,
-    {Seconds, Microseconds}.
