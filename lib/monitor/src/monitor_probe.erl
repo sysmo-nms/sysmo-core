@@ -24,46 +24,62 @@
 -behaviour(gen_server).
 -behaviour(supercast_channel).
 -include("include/monitor.hrl").
+-include("include/monitor_snmp.hrl").
 
 
--export([start_link/1]).
+-export([
+    start_link/1
+]).
+
 % supercast_channel
--export([get_perms/1,sync_request/2]).
+-export([
+    get_perms/1,
+    sync_request/2
+]).
+
 % gen_server
--export([init/1,handle_call/3, handle_cast/2,handle_info/2,terminate/2,code_change/3]).
+-export([
+    init/1,
+    handle_call/3,
+    handle_cast/2,
+    handle_info/2,
+    terminate/2,
+    code_change/3
+]).
+
 % API
--export([triggered_return/2,shutdown/1,force/1,exec_snmp_walk/1]).
+-export([
+    triggered_return/2,
+    shutdown/1,
+    force/1,
+    exec_snmp_walk/1
+]).
 
 % records
 -record(state, {name}).
 
--record(ets_state, {
-    name,
-    permissions,
-    target_name,
-    inspectors_state,
-    loggers_state,
-    exec_state,
-    exec_mod,
-    tref,
-    status_from,
-    status}).
+%-record(ets_state, {
+    %name,
+    %permissions,
+    %belong_to,
+    %tref,
+    %current_status_from,
+    %current_status,
+    %local_state
+%}).
 
--record(varbind, {
-    oid,
-    type,
-    value
-}).
-
--record(table_state, {
-    agent,
-    oids,
-    request_oids,
-    method
-}).
-
-
-
+-define(IF_PERF_OIDS, [
+    ?IF_INDEX,
+    ?IF_DESCR,
+    ?IF_IN_OCTETS,
+    ?IF_IN_UCASTPKTS,
+    ?IF_IN_NUCASTPKTS,
+    ?IF_IN_ERRORS,
+    ?IF_OUT_OCTETS,
+    ?IF_OUT_UCASTPKTS,
+    ?IF_OUT_NUCASTPKTS,
+    ?IF_OUT_ERRORS
+]).
 
 start_link(#probe{name=Name} = Probe) ->
     gen_server:start_link({via, supercast_registrar, {?MODULE, Name}}, ?MODULE, Probe, []).
@@ -78,20 +94,14 @@ init(Probe) ->
 
 init2(Probe) ->
     random:seed(erlang:now()),
-    {ok, ExecInitState}     = init_snmp_walk(Probe),
-    {ok, LoggersInitState}  = monitor_logger:init_all(Probe),
     TRef = initiate_start_sequence(Probe#probe.step, random),
     ES = #ets_state{
-        name             = Probe#probe.name,
-        permissions      = Probe#probe.permissions,
-        target_name      = Probe#probe.belong_to,
-        inspectors_state = none,
-        loggers_state    = LoggersInitState,
-        exec_state       = ExecInitState,
-        exec_mod         = Probe#probe.monitor_probe_mod,
-        tref             = TRef,
-        status_from      = erlang:now(),
-        status           = Probe#probe.status
+        name                = Probe#probe.name,
+        permissions         = Probe#probe.permissions,
+        belong_to           = Probe#probe.belong_to,
+        tref                = TRef,
+        current_status_from = erlang:now(),
+        current_status      = Probe#probe.status
     },
     monitor_data_master:set_probe_state(ES),
     % BEGIN partial return for clients
@@ -99,7 +109,7 @@ init2(Probe) ->
     MilliRem = read_timer(ES#ets_state.tref),
     Pdu = monitor_pdu:probeReturn(
         PartialReturn,
-        ES#ets_state.target_name,
+        ES#ets_state.belong_to,
         ES#ets_state.name,
         MilliRem
     ),
@@ -123,11 +133,9 @@ sync_request(PidName, CState) ->
     gen_server:cast({via, supercast_registrar, PidName}, {sync_request, CState}).
 sync_request2(CState, S) ->
     ES = monitor_data_master:get_probe_state(S#state.name),
-    LS = ES#ets_state.loggers_state,
-    {ok, Pdus, LS2} = monitor_logger:dump_all(LS, CState),
+    Pdus = [],
     ok  = supercast_channel:subscribe(ES#ets_state.name, CState),
     ok  = supercast_channel:unicast(CState, Pdus),
-    monitor_data_master:set_probe_state(ES#ets_state{loggers_state=LS2}),
     ok.
 
 
@@ -150,7 +158,7 @@ triggered_return2(CState, S) ->
     ES = monitor_data_master:get_probe_state(S#state.name),
 
     PartialPR = #probe_return{ 
-        status          = ES#ets_state.status,
+        status          = ES#ets_state.current_status,
         reply_string    = "",
         timestamp       = 0,
         key_vals        = []
@@ -159,7 +167,7 @@ triggered_return2(CState, S) ->
     MilliRem = read_timer(ES#ets_state.tref),
     Pdu = monitor_pdu:probeReturn(
         PartialPR,
-        ES#ets_state.target_name,
+        ES#ets_state.belong_to,
         ES#ets_state.name,
         MilliRem
     ),
@@ -203,7 +211,7 @@ force2(S) ->
             PartialReturn = partial_pr(ES),
             Pdu = monitor_pdu:probeReturn(
                 PartialReturn,
-                ES#ets_state.target_name,
+                ES#ets_state.belong_to,
                 ES#ets_state.name,
                 500
             ),
@@ -224,11 +232,7 @@ force2(S) ->
 % @end
 handle_probe_return(PR, S) ->
     ES  = monitor_data_master:get_probe_state(S#state.name),
-
-    % INSPECT TODO do use case better than behaviour
     [Probe]  = monitor_data_master:get(probe, S#state.name),
-    %IState = ES#ets_state.inspectors_state,
-    %{ok, IState2, Probe2} = monitor_inspector:inspect_all(IState, Probe, PR),
     OldStatus = Probe#probe.status,
     NewStatus = PR#probe_return.status,
     case NewStatus of
@@ -241,9 +245,9 @@ handle_probe_return(PR, S) ->
     end,
 
     % LOGGER TODO do use case better than behaviour
-    LState = ES#ets_state.loggers_state,
-    {ok, Pdus, LState2} = monitor_logger:log_all(LState,PR),
-    emit_all(ES#ets_state.name, ES#ets_state.permissions, Pdus),
+    %LState = ES#ets_state.loggers_state,
+    %{ok, Pdu} = rrd_log(LState,PR),
+    %emit_all(ES#ets_state.name, ES#ets_state.permissions, [Pdu]),
 
     % LAUNCH
     TRef = initiate_start_sequence(Probe#probe.step, normal),
@@ -252,7 +256,7 @@ handle_probe_return(PR, S) ->
     % SEND MESSAGES
     Pdu = monitor_pdu:probeReturn(
         PR,
-        ES#ets_state.target_name,
+        ES#ets_state.belong_to,
         ES#ets_state.name,
         MilliRem
     ),
@@ -261,24 +265,21 @@ handle_probe_return(PR, S) ->
     % WRITE
     monitor_data_master:set_probe_state(
         ES#ets_state{
-            %inspectors_state=IState2,
-            loggers_state=LState2,
             tref=TRef,
-            %exec_state=NewProbeState,
-            status_from= erlang:now(),
-            status=PR#probe_return.status
+            current_status_from= erlang:now(),
+            current_status=PR#probe_return.status
         }
     ).
 
-handle_take_of(S) ->
-    ES = monitor_data_master:get_probe_state(S#state.name),
-    ExS = ES#ets_state.exec_state,
-    take_of(self(), ExS).
+handle_take_of(#state{name=PName}) ->
+    ES = monitor_data_master:get_probe_state(PName),
+    Agent = ES#ets_state.belong_to,
+    take_of(self(), Agent).
 
-take_of(Parent, ProbeState) ->
+take_of(ParentPid, Agent) ->
     erlang:spawn(fun() ->
-        {ok, Return}  = exec_snmp_walk(ProbeState),
-        erlang:send(Parent, {probe_return, Return})
+        {ok, Return}  = exec_snmp_walk(Agent),
+        erlang:send(ParentPid, {probe_return, Return})
     end).
 
 
@@ -362,10 +363,10 @@ initiate_start_sequence(Step) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% UTILS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-emit_all(_, _, []) -> ok;
-emit_all(Name, Perm, [Pdu|T]) ->
-    supercast_channel:emit(Name,{Perm, Pdu}),
-    emit_all(Name,Perm,T).
+%emit_all(_, _, []) -> ok;
+%emit_all(Name, Perm, [Pdu|T]) ->
+%    supercast_channel:emit(Name,{Perm, Pdu}),
+%    emit_all(Name,Perm,T).
 
 read_timer(TRef) ->
     case erlang:read_timer(TRef) of
@@ -375,7 +376,7 @@ read_timer(TRef) ->
 
 partial_pr(ES) ->
     #probe_return{ 
-        status          = ES#ets_state.status,
+        status          = ES#ets_state.current_status,
         reply_string    = "",
         timestamp       = 0,
         key_vals        = []
@@ -384,58 +385,9 @@ partial_pr(ES) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% SNMP TABLE INIT %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-init_snmp_walk(Probe) ->
-    AgentName   = Probe#probe.belong_to,
-    Conf        = Probe#probe.monitor_probe_conf,
-    Method      = Conf#snmp_probe_conf.method,
-    Oids        = Conf#snmp_probe_conf.oids,
-    {ok,
-        #table_state{
-            agent           = AgentName,
-            oids            = Oids,
-            request_oids    = [Oid || {_, Oid} <- Oids],
-            method          = Method
-        }
-    }.
-
-exec_snmp_walk(#table_state{method = get} = State) ->
-
-    Agent           = State#table_state.agent,
-    Request         = State#table_state.request_oids,
-    Oids            = State#table_state.oids,
-
+exec_snmp_walk(Agent) ->
     {_, MicroSec1}  = sys_timestamp(),
-    Reply = snmpman:get(Agent, Request),
-    {_, MicroSec2}  = sys_timestamp(),
-
-    case Reply of
-        {error, _Error} = R ->
-            error_logger:info_msg("snmp fail ~p ~p ~p for agent ~p", [?MODULE, ?LINE, R, Agent]),
-            KV = [{"status","CRITICAL"},{"sys_latency",MicroSec2 - MicroSec1}],
-            OR = to_string(R),
-            S  = "CRITICAL",
-            PR = #probe_return{
-                status          = S,
-                reply_string    = OR,
-                key_vals        = KV,
-                timestamp       = MicroSec2},
-            {ok, PR};
-        {ok, SnmpReply} ->
-            PR  = eval_snmp_get_return(SnmpReply, Oids),
-            KV  = PR#probe_return.key_vals,
-            KV2 = [{"sys_latency", MicroSec2 - MicroSec1} | KV],
-            PR2 = PR#probe_return{
-                timestamp = MicroSec2,
-                key_vals  = KV2},
-            {ok, PR2}
-    end;
-
-exec_snmp_walk(#table_state{method=walk_table, oids=Table} = State) ->
-
-    Agent           = State#table_state.agent,
-
-    {_, MicroSec1}  = sys_timestamp(),
-    Reply = snmpman:walk_table(Agent, Table),
+    Reply = snmpman:walk_table(Agent, ?IF_PERF_OIDS),
     {ReplyT, MicroSec2}  = sys_timestamp(),
 
     case Reply of
@@ -466,25 +418,6 @@ exec_snmp_walk(#table_state{method=walk_table, oids=Table} = State) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% UTILS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% @private
-eval_snmp_get_return({varbinds, VarBinds}, Oids) ->
-    eval_snmp_return(VarBinds, Oids).
-
-%eval_snmp_walk_return(VarBinds, Oids) ->
-    %OidsN = [{K, lists:droplast(O)} || {K, O} <- Oids],
-    %eval_snmp_return(VarBinds, OidsN).
-
-eval_snmp_return(VarBinds, Oids) ->
-    KeyVals = [
-        {Key, (lists:keyfind(Oid, 2, VarBinds))#varbind.value} || 
-        {Key, Oid} <- Oids
-    ],
-    #probe_return{
-        status          = "OK",
-        reply_string    = to_string(VarBinds),
-        key_vals        = [{"status", "OK"} | KeyVals]
-    }.
-
 to_string(Term) ->
     lists:flatten(io_lib:format("~p", [Term])).
 

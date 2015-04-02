@@ -140,106 +140,17 @@ probe_new({nchecks, JavaClass, Args}, Target) ->
         monitor_probe_conf = #nchecks_probe_conf{
             class       = JavaClass,
             args        = Args
-        },
-        inspectors  = [
-            #inspector{
-                module   = bmonitor_inspector_status_set,
-                conf     = []
-            }
-        ]
+        }
     },
     monitor_data_master:new(probe, Probe);
 
 probe_new({snmp, if_perfs, Indexes}, Target) ->
-    {RrdCreate, RrdUpdate, RrdGraphs} = get_rrd_template(),
-
     IndexesFiles = [{Index,lists:concat(["index",Index,".rrd"])} || Index <- Indexes],
     io:format("indexes: ~p~n",[IndexesFiles]),
     Probe = #probe{
         belong_to   = Target,
         description = "SNMP:Interfaces performances",
         monitor_probe_mod = probe_snmp,
-
-
-
-        % TEMPLATE BEGIN
-        % This is a ifperf probe. This must be defined in a template file.
-        monitor_probe_conf = #snmp_probe_conf{
-            method      = walk_table,
-            retries     = 1,
-            oids        = [
-                ?IF_INDEX,
-                ?IF_DESCR,
-                ?IF_IN_OCTETS,
-                ?IF_IN_UCASTPKTS,
-                ?IF_IN_NUCASTPKTS,
-                ?IF_IN_ERRORS,
-                ?IF_OUT_OCTETS,
-                ?IF_OUT_UCASTPKTS,
-                ?IF_OUT_NUCASTPKTS,
-                ?IF_OUT_ERRORS
-            ]
-        },
-
-        loggers = [
-            #logger{
-                module = rrd_snmp_table_logger, 
-                conf = [
-                    {type,                  snmp_table},
-                    {rrd_create,            RrdCreate},
-                    {row_index_to_rrd_file,
-                        %[
-                            %{1, "index1.rrd"},
-                            %{2, "index2.rrd"},
-                            %{3, "index3.rrd"}
-                        %]
-                        IndexesFiles
-                    },
-                    {rrd_update,            RrdUpdate},
-                    {rrd_graph,             RrdGraphs},
-                    {row_index_pos_to_rrd_template,
-                        % as defined in walk_table method 
-                        % (+ 1 for the atom table_row)
-                        [
-                            4, %?IF_IN_OCTETS
-                            8, %?IF_OUT_OCTETS
-                            5, %?IF_IN_UCASTPKTS
-                            6, %?IF_IN_NUCASTPKTS
-                            7, %?IF_IN_ERRORS
-                            9, %?IF_OUT_UCASTPKTS
-                            10,%?IF_OUT_NUCASTPKTS
-                            11 %?IF_OUT_ERRORS
-                        ]
-                    }
-                ]
-            }
-        ],
-        % TEMPLATE END
-
-        inspectors = [
-            #inspector{
-                module = bmonitor_inspector_status_set, 
-                conf   = []
-            }
-        ]
+        monitor_probe_conf = IndexesFiles
     },
     monitor_data_master:new(probe, Probe).
-
-get_rrd_template() ->
-    %?RRD_ifPerf_file
-    {ok, R} = application:get_env(monitor, snmp_def_dir),
-    TplFile = filename:join(R, ?RRD_ifPerf_file),
-    {ok, IniBin} = file:read_file(TplFile),
-    IniStr = erlang:binary_to_list(IniBin),
-    {ok, IniVal} = ini:parse_string(IniStr),
-
-    CreatePart = proplists:get_value(create, IniVal),
-    CreateComm = proplists:get_value(command, CreatePart),
-
-    UpdatePart = proplists:get_value(update, IniVal),
-    UpdateComm = proplists:get_value(command, UpdatePart),
-
-    GraphPart  = proplists:get_value(graph,  IniVal),
-    GraphComm  = [Graph || {graph, Graph} <- GraphPart],
-
-    {CreateComm,UpdateComm,GraphComm}.

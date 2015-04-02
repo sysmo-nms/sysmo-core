@@ -53,19 +53,22 @@
 
 % records
 -record(state, {name}).
--record(ets_state, {
-    name,
+%-record(ets_state, {
+    %name,
+    %permissions,
+    %belong_to,
+    %tref,
+    %current_status_from,
+    %current_status,
+    %local_state
+%}).
+
+-record(nstate, {
     class,
     args,
-    permissions,
-    target_name,
     dump_dir,
-    loggers_state,
-    tref,
-    status_from,
-    status}).
-
-
+    rrd_file_path
+}).
 
 
 start_link(#probe{name=Name} = Probe) ->
@@ -86,17 +89,20 @@ init2(Probe) ->
     {Class, Args}   = nchecks_init(Probe),
     RrdFile         = rrd4j_init(Probe),
     TRef            = initiate_start_sequence(Probe#probe.step, random),
+    NS = #nstate{
+        class = Class,
+        args = Args,
+        dump_dir = DumpDir,
+        rrd_file_path = RrdFile
+    },
     ES = #ets_state{
-        class            = Class,
-        args             = Args,
         name             = Probe#probe.name,
         permissions      = Probe#probe.permissions,
-        target_name      = Probe#probe.belong_to,
-        dump_dir         = DumpDir,
-        loggers_state    = RrdFile,
+        belong_to        = Probe#probe.belong_to,
         tref             = TRef,
-        status_from      = erlang:now(),
-        status           = Probe#probe.status
+        current_status_from = erlang:now(),
+        current_status   = Probe#probe.status,
+        local_state = NS
     },
 
     monitor_data_master:set_probe_state(ES),
@@ -106,7 +112,7 @@ init2(Probe) ->
     MilliRem = read_timer(ES#ets_state.tref),
     Pdu = monitor_pdu:probeReturn(
         PartialReturn,
-        ES#ets_state.target_name,
+        ES#ets_state.belong_to,   
         ES#ets_state.name,
         MilliRem
     ),
@@ -137,11 +143,11 @@ sync_request(PidName, CState) ->
 sync_request2(CState, S) ->
     ES       = monitor_data_master:get_probe_state(S#state.name),
     % the rrd file
-    RrdFile  = ES#ets_state.loggers_state,
+    RrdFile  = ES#ets_state.local_state#nstate.rrd_file_path,
     RrdFileBase = filename:basename(RrdFile),
 
     % generate tmp dir in dump dir
-    DumpDir  = ES#ets_state.dump_dir,
+    DumpDir  = ES#ets_state.local_state#nstate.dump_dir,
     TmpDir   = generate_tmp_dir(),
     TmpPath  = filename:join(DumpDir, TmpDir),
     file:make_dir(TmpPath),
@@ -155,6 +161,7 @@ sync_request2(CState, S) ->
     Pdu = monitor_pdu:nchecksDumpMessage(S#state.name, TmpDir, RrdFileBase),
     ?LOG({rrdfile, RrdFile,dump_file, DumpFile}),
     %{ok, Pdus, LS2} = monitor_logger:dump_all(LS, CState),
+
     ok  = supercast_channel:subscribe(ES#ets_state.name, CState),
     ok  = supercast_channel:unicast(CState, [Pdu]),
     ok.
@@ -179,7 +186,7 @@ triggered_return2(CState, S) ->
     ES = monitor_data_master:get_probe_state(S#state.name),
 
     PartialPR = #probe_return{ 
-        status          = ES#ets_state.status,
+        status          = ES#ets_state.current_status,
         reply_string    = "",
         timestamp       = 0,
         key_vals        = []
@@ -188,7 +195,7 @@ triggered_return2(CState, S) ->
     MilliRem = read_timer(ES#ets_state.tref),
     Pdu = monitor_pdu:probeReturn(
         PartialPR,
-        ES#ets_state.target_name,
+        ES#ets_state.belong_to,
         ES#ets_state.name,
         MilliRem
     ),
@@ -236,7 +243,7 @@ force2(S) ->
             PartialReturn = partial_pr(ES),
             Pdu = monitor_pdu:probeReturn(
                 PartialReturn,
-                ES#ets_state.target_name,
+                ES#ets_state.belong_to,
                 ES#ets_state.name,
                 500
             ),
@@ -271,7 +278,7 @@ handle_probe_return(PR, S) ->
     end,
 
     % errd4j update
-    RrdFile = ES#ets_state.loggers_state,
+    RrdFile = ES#ets_state.local_state#nstate.rrd_file_path,
     Perfs   = PR#probe_return.perfs,
     ok = errd4j:update(RrdFile, Perfs, PR#probe_return.timestamp),
 
@@ -286,7 +293,7 @@ handle_probe_return(PR, S) ->
     % SEND MESSAGES to subscribers of master channel
     Pdu = monitor_pdu:probeReturn(
         PR,
-        ES#ets_state.target_name,
+        ES#ets_state.belong_to,
         ES#ets_state.name,
         MilliRem),
     supercast_channel:emit(?MASTER_CHANNEL, {ES#ets_state.permissions, Pdu}),
@@ -295,8 +302,8 @@ handle_probe_return(PR, S) ->
     monitor_data_master:set_probe_state(
         ES#ets_state{
             tref=TRef,
-            status_from = erlang:now(),
-            status=PR#probe_return.status
+            current_status_from = erlang:now(),
+            current_status=PR#probe_return.status
         }
     ).
 
@@ -376,8 +383,8 @@ initiate_start_sequence(Step) ->
 
 handle_take_of(S) ->
     ES      = monitor_data_master:get_probe_state(S#state.name),
-    Class   = ES#ets_state.class,
-    Args    = ES#ets_state.args,
+    Class   = ES#ets_state.local_state#nstate.class,
+    Args    = ES#ets_state.local_state#nstate.args,
     Parent  = self(),
     erlang:spawn(fun() ->
         {ok, Return}  = ?MODULE:exec_nchecks(Class, Args),
@@ -401,7 +408,7 @@ read_timer(TRef) ->
 
 partial_pr(ES) ->
     #probe_return{ 
-        status          = ES#ets_state.status,
+        status          = ES#ets_state.current_status,
         reply_string    = "",
         timestamp       = 0,
         key_vals        = []
@@ -417,8 +424,7 @@ nchecks_init(Probe) ->
     Conf        = Probe#probe.monitor_probe_conf,
     #nchecks_probe_conf{class = Class, args = Args} = Conf,
 
-    % if "host" is not defined in probe conf, use the target "ip" and
-    % "ipVersion" property.
+    % if "host" is not defined in probe conf, use the target "host" property
     case proplists:lookup("host", Args) of
         none ->
             TargHost = proplists:lookup("host", TargetProp),
@@ -471,8 +477,7 @@ rrd4j_init(#probe{name=Name, step=Step, belong_to=TargetName, monitor_probe_conf
             % only return the processed filepath
             ProbeFilePath;
         false ->
-            % we will create the rrd file defined in the nchecks class xml file
-            % retreive the xml file definition name
+            % we will create the rrd defined in the nchecks class xml file
             Class           = NCheck#nchecks_probe_conf.class,
             ClassFile       = string:concat(Class, ".xml"),
             ClassFilePath   = filename:join(["cfg", "nchecks", ClassFile]),
@@ -488,7 +493,7 @@ rrd4j_init(#probe{name=Name, step=Step, belong_to=TargetName, monitor_probe_conf
             % only keep ds xmlElements
             DSElements = lists:filter(fun(E) -> is_record(E, xmlElement) end, DSContent),
             % extract ds variables (ds name, ds type ABSOLUTE|COUNTER|DERIVE|GAUGE)
-            % ex: DSDef = [{"MaxRoundTrip", "ABSOLUTE}]
+            % ex: DSDef = [{"MaxRoundTrip", "GAUGE"}]
             DSDef = lists:map(fun(#xmlElement{content=DS}) ->
                 #xmlElement{content=[DSNameTextElement]} = lists:keyfind(dsName, 2, DS),
                 #xmlElement{content=[DSTypeTextElement]} = lists:keyfind(dsType, 2, DS),

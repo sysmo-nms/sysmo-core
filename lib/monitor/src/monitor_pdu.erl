@@ -249,51 +249,16 @@ infoProbe(Probe, InfoType) ->
                 {<<"status">>,      list_to_binary(Probe#probe.status)},
                 {<<"timeout">>,     Probe#probe.timeout},
                 {<<"step">>,        Probe#probe.step},
-                {<<"inspectors">>,  gen_json_probe_inspectors(Probe#probe.inspectors)},
-                {<<"loggers">>,     gen_json_probe_loggers(Probe#probe.loggers)},
-
                 {<<"properties">>,  {struct, [{list_to_binary(Key), maybe_str(Val)} || {Key, Val} <- Probe#probe.properties]}},
                 {<<"active">>,      Probe#probe.active},
                 {<<"infoType">>,      InfoType}]}
             }
         ]
     }.
-
-gen_json_probe_inspectors(Inspectors) ->
-    {struct,
-        [{atom_to_binary(Key, utf8), list_to_binary(io_lib:format("~p", [Conf]))} || {_,Key,Conf} <- Inspectors]
-    }.
-    
-gen_json_probe_loggers([{logger, rrd_snmp_table_logger, Cfg}]) ->
-
-    Type    = proplists:get_value(type, Cfg),
-    RCreate = proplists:get_value(rrd_create, Cfg),
-    RUpdate = proplists:get_value(rrd_update, Cfg),
-    RGraphs = proplists:get_value(rrd_graph,  Cfg),
-    RGraphs2 = [list_to_binary(G) || G <- RGraphs],
-    Indexes = [I || {I,_} <- proplists:get_value(row_index_to_rrd_file, Cfg)],
-    {struct,
-        [{atom_to_binary(rrd_snmp_table_logger, utf8),
-            {struct,
-                [
-                    {<<"type">>,        atom_to_binary(Type, utf8)},
-                    {<<"rrdCreate">>,   list_to_binary(RCreate)},
-                    {<<"rrdUpdate">>,   list_to_binary(RUpdate)},
-                    {<<"rgraphs">>,     {array, RGraphs2}},
-                    {<<"indexes">>,     {array, Indexes}}
-                ]
-            }
-        }]
-    };
-gen_json_probe_loggers(A) ->
-    io:format("what what waht ~p ~n", [A]),
-    {struct, []}.
             
 
 % UTILS
-gen_str_probe_conf(Conf) when is_record(Conf, nchecks_probe_conf) ->
-    lists:flatten(io_lib:format("~p", [Conf]));
-gen_str_probe_conf(Conf) when is_record(Conf, snmp_probe_conf) ->
+gen_str_probe_conf(Conf) ->
     lists:flatten(io_lib:format("~p", [Conf])).
 
 

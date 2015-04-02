@@ -39,25 +39,19 @@
     his_parent
 }).
 
--record(inspector, {
-    module,
-    conf
-}).
-
--record(logger, {
-    module,
-    conf
+-record(ets_state, {
+    name,
+    permissions,
+    belong_to,
+    tref,
+    current_status_from,
+    current_status,
+    local_state
 }).
 
 -record(nchecks_probe_conf, {
     class                       :: string(),
     args        = []            :: [{string(), any()}]
-}).
-
--record(snmp_probe_conf, {
-    oids        = []            :: [any()],
-    method      = get           :: get | {walk, [string()], [tuple()]},
-    retries     = 1             :: integer()
 }).
 
 -record(probe_return, {
@@ -98,8 +92,6 @@
     active              = true          :: true | false,
     monitor_probe_mod   = undefined     :: undefined | module(),
     monitor_probe_conf  = undefined     :: [any()],
-    inspectors          = []            :: [#inspector{}],
-    loggers             = []            :: [#logger{}],
 
     permissions         = ?DEFAULT_PERM_CONF :: #perm_conf{}
 }).

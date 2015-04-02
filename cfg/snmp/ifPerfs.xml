@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<snmp_def>
+    <descr>Check TCP service availability on the specified host</descr>
+    <type>walk</type>
+    <performances>
+        <data_sources>
+            <ds>
+                <dsName>ReplyDuration</dsName>
+                <dsType>GAUGE</dsType>
+            </ds>
+        </data_sources>
+        <graphs>
+            <graph_desc>
+                <graphName>TCPLatency</graphName>
+                <graphTitle>TCP Performances</graphTitle>
+                <verticalLabel>Milliseconds</verticalLabel>
+                <min>0</min>
+                <max>undefined</max>
+                <rigid>false</rigid>
+                <base>1000</base>
+                <unit>ms</unit>
+                <unitExponent>0</unitExponent>
+                <add>
+                    <name>ReplyDuration</name>
+                    <graphType>line</graphType>
+                    <legend>Max reply latency</legend>
+                    <consolFun>MAX</consolFun>
+                    <color>#729FCFFF</color>
+                </add>
+                <add>
+                    <name>ReplyDuration</name>
+                    <graphType>line</graphType>
+                    <legend>Average reply latency</legend>
+                    <consolFun>AVERAGE</consolFun>
+                    <color>#204A87FF</color>
+                </add>
+                <add>
+                    <name>ReplyDuration</name>
+                    <graphType>line</graphType>
+                    <legend>Min reply latency</legend>
+                    <consolFun>MIN</consolFun>
+                    <color>#3665A4FF</color>
+                </add>
+            </graph_desc>
+        </graphs>
+    </performances>
+</snmp_def>
