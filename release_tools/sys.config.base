@@ -63,7 +63,9 @@
             {master_chan_read_perm, ["admin"]},
             {master_chan_write_perm, ["admin"]},
             {targets_data_dir,      "var/monitor"},
-            {snmp_def_dir,          "cfg/snmp"}
+            {snmp_def_dir,          "cfg/snmp"},
+            % TODO handle alerts (mail,sms) commands.
+            {alert_commands, []}
         ]
     },
     {kernel,
