@@ -222,7 +222,7 @@ infoProbeUpdate(Probe) -> infoProbe(Probe, <<"update">>).
 infoProbe(Probe, InfoType) ->
     #probe{
         permissions         = #perm_conf{read = R, write = W},
-        monitor_probe_conf  = ProbeConf } = Probe,
+        module_config       = ProbeConf } = Probe,
     
     JR = [list_to_binary(G) || G <- R],
     JW = [list_to_binary(G) || G <- W],
@@ -242,14 +242,12 @@ infoProbe(Probe, InfoType) ->
                 {<<"target">>,      list_to_binary(Probe#probe.belong_to)},
                 {<<"name">>,        list_to_binary(Probe#probe.name)},
                 {<<"descr">>,       list_to_binary(Probe#probe.description)},
-                {<<"info">>,        list_to_binary(Probe#probe.info)},
                 {<<"perm">>,        {struct, [{<<"read">>, {array, JR}}, {<<"write">>, {array, JW}}]}},
-                {<<"probeMod">>,    atom_to_binary(Probe#probe.monitor_probe_mod, utf8)},
+                {<<"probeMod">>,    atom_to_binary(Probe#probe.module, utf8)},
                 {<<"probeClass">>,  list_to_binary(Class)},
                 {<<"status">>,      list_to_binary(Probe#probe.status)},
                 {<<"timeout">>,     Probe#probe.timeout},
                 {<<"step">>,        Probe#probe.step},
-                {<<"properties">>,  {struct, [{list_to_binary(Key), maybe_str(Val)} || {Key, Val} <- Probe#probe.properties]}},
                 {<<"active">>,      Probe#probe.active},
                 {<<"infoType">>,      InfoType}]}
             }

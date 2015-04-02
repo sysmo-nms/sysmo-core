@@ -63,10 +63,8 @@
     key_vals        = []            :: [{string(), any()}],
     perfs           = []            :: [{string(), integer()}],
     % used by inspector property set/get 
-    reply_tuple     = undefined     :: any(),
+    reply_tuple     = undefined     :: any()
     % used by the rrd logger/walk table
-    is_event        = false         :: true | false
-    % used by monitor_logger_events app
 }).
 
 -record(job, {
@@ -84,14 +82,12 @@
     name                = undefined     :: string(),
     belong_to           = "undefined"   :: string(),
     description         = ""            :: string(),
-    info                = ""            :: string(),
     timeout             = 5             :: integer(), % seconds
     status              = "OK"          :: string(),
     step                = 300           :: integer(), % seconds
-    properties          = []            :: [{string(), any()}],
     active              = true          :: true | false,
-    monitor_probe_mod   = undefined     :: undefined | module(),
-    monitor_probe_conf  = undefined     :: [any()],
+    module              = undefined     :: undefined | module(),
+    module_config       = undefined     :: [any()],
 
     permissions         = ?DEFAULT_PERM_CONF :: #perm_conf{}
 }).

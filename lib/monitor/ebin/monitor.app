@@ -23,8 +23,6 @@
         {description, "Data store of monitors configuration"},
         {vsn, "0.1.0"},
         {modules, [
-            rrd_nchecks_logger,
-            rrd_snmp_table_logger,
             monitor,
             monitor_app,
             monitor_channel,
@@ -32,20 +30,21 @@
             monitor_data_master,
             monitor_events,
             monitor_jobs,
-            monitor_logger,
             monitor_pdu,
-            monitor_probe,
-            monitor_probe_sup,
             monitor_sup,
             monitor_utils,
-
-            probe_nchecks
+            probe_nchecks,
+            probe_nchecks_sup,
+            snmp_ifPerf,
+            snmp_ifPerf_sup
         ]},
         {registered, [
-                monitor_sup,
-                'target-MasterChan',
                 monitor_commander,
-                monitor_probe_sup
+                monitor_data_master,
+                monitor_events,
+                monitor_sup,
+                snmp_ifPerf_sup,
+                probe_nchecks_sup
             ]},
         {applications, 
             [kernel, stdlib, mnesia, supercast, errd, snmpman, ini]

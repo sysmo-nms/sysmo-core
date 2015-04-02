@@ -2,7 +2,7 @@
 
 ERL         ?= erl
 ERLC        ?= erlc -Werror
-EPATH       += -pa ../supercast/ebin -pa ebin
+EPATH       += -pa ../supercast/ebin
 
 APP             = monitor
 

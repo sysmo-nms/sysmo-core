@@ -132,8 +132,8 @@ probe_new({nchecks, JavaClass, Args}, Target) ->
     Probe = #probe{
         belong_to   = Target,
         description = lists:concat(["NCHECKS: ", JavaClass]),
-        monitor_probe_mod = probe_nchecks,
-        monitor_probe_conf = #nchecks_probe_conf{
+        module = probe_nchecks,
+        module_config = #nchecks_probe_conf{
             class       = JavaClass,
             args        = Args
         }
@@ -146,8 +146,8 @@ probe_new({snmp, if_perfs, Indexes}, Target) ->
     Probe = #probe{
         belong_to   = Target,
         description = "SNMP:Interfaces performances",
-        monitor_probe_mod = snmp_ifPerf,
-        monitor_probe_conf = IndexesFiles
+        module = snmp_ifPerf,
+        module_config = IndexesFiles
     },
     monitor_data_master:new(probe, Probe).
 

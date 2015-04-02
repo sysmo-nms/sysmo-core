@@ -367,7 +367,7 @@ partial_pr(ES) ->
 nchecks_init(Probe) ->
     [Target]    = monitor_data_master:get(target, Probe#probe.belong_to),
     TargetProp  = Target#target.properties,
-    Conf        = Probe#probe.monitor_probe_conf,
+    Conf        = Probe#probe.module_config,
     #nchecks_probe_conf{class = Class, args = Args} = Conf,
 
     % if "host" is not defined in probe conf, use the target "host" property
@@ -407,7 +407,7 @@ exec_nchecks(Class, Args) ->
 %%----------------------------------------------------------------------------
 %% errd4j functions
 %%----------------------------------------------------------------------------
-rrd4j_init(#probe{name=Name, step=Step, belong_to=TargetName, monitor_probe_conf=NCheck} = _P) ->
+rrd4j_init(#probe{name=Name, step=Step, belong_to=TargetName, module_config=NCheck} = _P) ->
 
     % get the target directory TargetDir
     [Target]    = monitor_data_master:get(target, TargetName),
