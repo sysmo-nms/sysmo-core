@@ -48,6 +48,7 @@ doc:
 	$(MAKE) -C lib doc
 
 clean: var-clean crash-clean rel-clean
+	rm -f pping.exe
 	$(MAKE) -C lib clean
 
 var-clean:
@@ -123,6 +124,7 @@ ERL_UNTAR   = '\
 windows-local-release: compile $(REL_NAME).script jars
 	cp lib/nchecks/priv/defs/en/* var/yaws/docroot/nchecks/
 	cp lib/nchecks/priv/defs/en/* cfg/nchecks/
+	cp lib/pping/pping.exe .
 	cp release_tools/sys.config.base ./sys.config
 	chmod -w sys.config
 
