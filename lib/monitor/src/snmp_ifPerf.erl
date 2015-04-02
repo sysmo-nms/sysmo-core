@@ -181,7 +181,7 @@ do_handle_probe_return(PR, S) ->
     %emit_all(ES#ets_state.name, ES#ets_state.permissions, [Pdu]),
 
     % TODO log to rrd and emit pdus
-    % TODO check interfaces status and critical on down
+    % TODO check interfaces status and critical on down (external snmp manager?)
     % TODO check return values and warn or crit
 
     % LAUNCH

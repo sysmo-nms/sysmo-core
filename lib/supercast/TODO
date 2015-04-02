@@ -1,6 +1,7 @@
 1 - delayed sync included in supercast, require that every channel event is
 recognized by supercast.
 2 - remove mpd (everything done by the channel)
+3 - channel live update of their permissions change
 
 # in the future
 3 - Behaviour in a distributed environment with multiple supercast servers
