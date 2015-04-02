@@ -37,14 +37,6 @@ init([]) ->
                     [snmpman_app]
                 },
                 {
-                    errd_app,
-                    {errd_app, start, [normal,[]]},
-                    permanent,
-                    2000,
-                    supervisor,
-                    [errd_app]
-                },
-                {
                     errd4j_app,
                     {errd4j_app, start, [normal,[]]},
                     permanent,

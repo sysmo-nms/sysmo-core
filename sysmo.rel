@@ -12,11 +12,9 @@
         {ssl,           "5.3.8"},
         {supercast,     "2.0.0"},
         {sysmo,      "0.1.0"},
-        {errd,          "0.1.0"},
         {errd4j,        "0.1.0"},
         {monitor,       "0.1.0"},
         {snmpman,       "0.1.0"},
-        {ini,           "0.1"},
         {nchecks,       "0.1.0"},
         {equartz,       "0.1.0"}
 

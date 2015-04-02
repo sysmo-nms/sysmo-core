@@ -47,7 +47,7 @@
                 probe_nchecks_sup
             ]},
         {applications, 
-            [kernel, stdlib, mnesia, supercast, errd, snmpman, ini]
+            [kernel, stdlib, mnesia, supercast, equartz, errd4j, snmpman]
         },
         {start_phases, []},
         {mod, {monitor_app, []}}

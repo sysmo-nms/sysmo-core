@@ -96,15 +96,6 @@
             }
         ]
     },
-    {errd,
-        [
-            {rrdtool,       "rrdtool"},
-            {high_prio,     normal},
-            {high_timeout,  5000},
-            {low_prio,      low},
-            {low_timeout,   25000}
-        ]
-    },
     {errd4j, 
         [
             {java_node, 
@@ -138,10 +129,4 @@
             }
         ]
     },
-    {fcgisrv,
-        [
-            {executable, "lib/fcgisrv/priv/sysmo-webif/sysmo_web_if.fcgi"}
-        ]
-    }
-
 ].

@@ -1,3 +1,0 @@
-*.beam
-src/ini_lexer.erl
-src/ini_parser.erl
