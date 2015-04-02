@@ -165,7 +165,6 @@ do_delete(probe, Key) ->
                     ['$1']}
                 ]
             ),
-            ?LOG(Others),
             lists:foreach(fun(X) -> do_delete(dependency, X) end, Others)
     end,
     mnesia:dirty_delete({probe,Key});

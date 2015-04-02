@@ -39,4 +39,4 @@
     ?IF_LAST_CHANGE]).
 -define(IF_TABLE, "1.3.6.1.2.1.2.2").
 -define(IF_X_TABLE, ".1.3.6.1.2.1.31.1.1").
--define(TMP_ELEMENT, "testTarget").
+-define(TMP_AGENT, "testAgent-xxx").

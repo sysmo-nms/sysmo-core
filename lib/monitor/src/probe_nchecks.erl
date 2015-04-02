@@ -103,7 +103,6 @@ get_perms(PidName) ->
     Perm.
 
 sync_request(PidName, CState) ->
-    ?LOG("sync request!!!!!!!!!!!!!!!!!!!!!"),
     gen_server:cast({via, supercast_registrar, PidName}, {sync_request, CState}).
 
 do_sync_request(CState, S) ->
@@ -120,13 +119,10 @@ do_sync_request(CState, S) ->
 
     % copy rrdfile to tmpdir
     DumpFile = filename:join(TmpPath,RrdFileBase),
-    R = file:copy(RrdFile, DumpFile),
-    ?LOG({"will copy", RrdFile, DumpFile, R}),
+    file:copy(RrdFile, DumpFile),
 
     % build the PDU
     Pdu = monitor_pdu:nchecksDumpMessage(S#state.name, TmpDir, RrdFileBase),
-    ?LOG({rrdfile, RrdFile,dump_file, DumpFile}),
-    %{ok, Pdus, LS2} = monitor_logger:dump_all(LS, CState),
 
     ok  = supercast_channel:subscribe(ES#ets_state.name, CState),
     ok  = supercast_channel:unicast(CState, [Pdu]),
