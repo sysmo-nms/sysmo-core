@@ -20,7 +20,6 @@
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 % @private
 -module(monitor_commander).
-%-include("include/monitor_snmp.hrl").
 -include("include/monitor.hrl").
 -behaviour(supercast_commander).
 -behaviour(gen_server).
@@ -40,6 +39,10 @@
 -export([
     handle_command/2
 ]).
+
+% TODO handle_command might be spawned when no log is required.
+% Actual lock is required for walk_ifTable (because of the temporary
+% agent)
 
 handle_command(Command, CState) ->
     % TODO check permissions here?
