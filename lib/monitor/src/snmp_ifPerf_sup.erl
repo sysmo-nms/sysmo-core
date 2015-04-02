@@ -19,7 +19,7 @@
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 % @private
--module(monitor_probe_sup).
+-module(snmp_ifPerf_sup).
 -behaviour(supervisor).
 -include("include/monitor.hrl").
 
@@ -42,12 +42,12 @@ init([]) ->
             {simple_one_for_one, 1, 60},
             [
                 {
-                    monitor_probe,
-                    {monitor_probe, start_link, []},
+                    snmp_ifPerf,
+                    {snmp_ifPerf, start_link, []},
                     transient,
                     2000,
                     worker,
-                    [monitor_probe]
+                    [snmp_ifPerf]
                }
             ]
         }

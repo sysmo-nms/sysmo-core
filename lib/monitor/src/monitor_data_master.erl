@@ -152,7 +152,7 @@ do_delete(target, Key) ->
     lists:foreach(fun(P) -> do_delete(probe, P) end, do_get_probes(Key)),
     mnesia:dirty_delete({target,Key});
 do_delete(probe, Key) ->
-    monitor_probe:shutdown(Key),
+    monitor:probe_shutdown(Key),
     case do_get(dependency, Key) of
         []  -> ok;
         [_] ->
@@ -381,8 +381,8 @@ init_jobs() ->
 
 launch_probe(#probe{monitor_probe_mod=probe_nchecks} = Probe) ->
     probe_nchecks_sup:launch(Probe);
-launch_probe(Probe) ->
-    monitor_probe_sup:launch(Probe).
+launch_probe(#probe{monitor_probe_mod=snmp_ifPerf} = Probe) ->
+    snmp_ifPerf_sup:launch(Probe).
 
 %%----------------------------------------------------------------------------
 %% UTILS    

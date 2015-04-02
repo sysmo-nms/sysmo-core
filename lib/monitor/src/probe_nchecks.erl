@@ -42,26 +42,12 @@
     handle_info/2,
     terminate/2,
     code_change/3]).
-% API
--export([
-    triggered_return/2,
-    shutdown/1,
-    force/1]).
 
 % local only
 -export([exec_nchecks/2]).
 
 % records
 -record(state, {name}).
-%-record(ets_state, {
-    %name,
-    %permissions,
-    %belong_to,
-    %tref,
-    %current_status_from,
-    %current_status,
-    %local_state
-%}).
 
 -record(nstate, {
     class,
@@ -83,7 +69,7 @@ init(Probe) ->
     {ok, Probe}.
 
 % called from :cast,continue_init
-init2(Probe) ->
+do_init(Probe) ->
     random:seed(erlang:now()),
     {ok, DumpDir}   = application:get_env(supercast, http_sync_dir),
     {Class, Args}   = nchecks_init(Probe),
@@ -140,7 +126,7 @@ get_perms(PidName) ->
 sync_request(PidName, CState) ->
     ?LOG("sync request!!!!!!!!!!!!!!!!!!!!!"),
     gen_server:cast({via, supercast_registrar, PidName}, {sync_request, CState}).
-sync_request2(CState, S) ->
+do_sync_request(CState, S) ->
     ES       = monitor_data_master:get_probe_state(S#state.name),
     % the rrd file
     RrdFile  = ES#ets_state.local_state#nstate.rrd_file_path,
@@ -172,17 +158,7 @@ generate_tmp_dir() ->
     lists:concat(["tmp-", Microsec]).
     
 
-
--spec triggered_return(PidName::string(), CState::#client_state{}) -> ok.
-% @private
-% @doc
-% Used by the monitor main channel to initialize clients. This function send
-% a Partial Probe return PDU to the specified client, including the next expected
-% return time.
-% @end
-triggered_return(PidName, CState) ->
-    gen_server:cast({via, supercast_registrar, PidName}, {triggered_return, CState}).
-triggered_return2(CState, S) ->
+do_trigger_return(CState, S) ->
     ES = monitor_data_master:get_probe_state(S#state.name),
 
     PartialPR = #probe_return{ 
@@ -202,37 +178,7 @@ triggered_return2(CState, S) ->
     supercast_channel:unicast(CState, [Pdu]),
     ok.
 
-
-%%----------------------------------------------------------------------------
-%% API
-%%----------------------------------------------------------------------------
--spec shutdown(PidName::string()) -> ok.
-% @private
-% @doc
-% Used by monitor datamaster. It shut down the probe specified wile data master
-% delete it from the db.
-% @end
-shutdown(PidName) ->
-    case supercast_registrar:whereis_name(PidName) of
-        undefined ->
-            ok;
-        Pid ->
-            gen_server:call(Pid, shut_it_down)
-    end.
-
--spec force(PidName::string()) -> ok.
-% @private
-% @doc
-% Force a probe check as soon as possible. Used mainly from monitor API.
-% @end
-force(PidName) ->
-    case supercast_registrar:whereis_name(PidName) of
-        undefined ->
-            ok;
-        Pid ->
-            gen_server:cast(Pid, force)
-    end.
-force2(S) ->
+do_force(S) ->
     ES  = monitor_data_master:get_probe_state(S#state.name),
     case erlang:cancel_timer(ES#ets_state.tref) of
         false ->
@@ -311,19 +257,19 @@ handle_probe_return(PR, S) ->
 %% GEN_SERVER HANDLE_CAST
 %%----------------------------------------------------------------------------
 handle_cast(continue_init, Probe) ->
-    init2(Probe),
+    do_init(Probe),
     {noreply, #state{name=Probe#probe.name}};
 
 handle_cast({sync_request, CState}, S) ->
-    sync_request2(CState, S),
+    do_sync_request(CState, S),
     {noreply, S};
 
-handle_cast({triggered_return, CState}, S) ->
-    triggered_return2(CState, S),
+handle_cast({trigger_return, CState}, S) ->
+    do_trigger_return(CState, S),
     {noreply, S};
 
 handle_cast(force, S) ->
-    force2(S),
+    do_force(S),
     {noreply, S};
 
 handle_cast(_Cast, S) ->

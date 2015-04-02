@@ -116,7 +116,7 @@ handle_cast({{"forceProbeQuery", Contents}, CState}, S) ->
     {struct, Contents2}  = proplists:get_value(<<"value">>, Contents),
     Probe   = binary_to_list(proplists:get_value(<<"name">>, Contents2)),
     QueryId = proplists:get_value(<<"queryId">>, Contents2),
-    monitor:force(Probe),
+    monitor:probe_force(Probe),
     ReplyPDU = monitor_pdu:simpleReply(QueryId, true, true, Probe),
     supercast_channel:unicast(CState, [ReplyPDU]),
     {noreply, S};

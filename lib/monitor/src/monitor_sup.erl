@@ -42,12 +42,12 @@ init([]) ->
                     [monitor_events]
                 },
                 {
-                    monitor_probe_sup,
-                    {monitor_probe_sup, start_link, []},
+                    snmp_ifPerf_sup,
+                    {snmp_ifPerf_sup, start_link, []},
                     permanent,
                     infinity,
                     supervisor,
-                    [monitor_probe_sup]
+                    [snmp_ifPerf_sup]
                 },
                 {
                     probe_nchecks_sup,

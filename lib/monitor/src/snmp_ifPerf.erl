@@ -20,7 +20,7 @@
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 % @doc
 % @end
--module(monitor_probe).
+-module(snmp_ifPerf).
 -behaviour(gen_server).
 -behaviour(supercast_channel).
 -include("include/monitor.hrl").
@@ -49,9 +49,6 @@
 
 % API
 -export([
-    triggered_return/2,
-    shutdown/1,
-    force/1,
     exec_snmp_walk/1
 ]).
 
@@ -141,20 +138,7 @@ sync_request2(CState, S) ->
 
 
 
-
-%%----------------------------------------------------------------------------
-%% API
-%%----------------------------------------------------------------------------
--spec triggered_return(PidName::string(), CState::#client_state{}) -> ok.
-% @private
-% @doc
-% Used by the monitor main channel to initialize clients. This function send
-% a Partial Probe return PDU to the specified client, including the next expected
-% return time.
-% @end
-triggered_return(PidName, CState) ->
-    gen_server:cast({via, supercast_registrar, PidName}, {triggered_return, CState}).
-triggered_return2(CState, S) ->
+do_triggered_return(CState, S) ->
     ES = monitor_data_master:get_probe_state(S#state.name),
 
     PartialPR = #probe_return{ 
@@ -174,34 +158,7 @@ triggered_return2(CState, S) ->
     supercast_channel:unicast(CState, [Pdu]),
     ok.
 
-
--spec shutdown(PidName::string()) -> ok.
-% @private
-% @doc
-% Used by monitor datamaster. It shut down the probe specified wile data master
-% delete it from the db.
-% @end
-shutdown(PidName) ->
-    case supercast_registrar:whereis_name(PidName) of
-        undefined ->
-            ok;
-        Pid ->
-            gen_server:call(Pid, shut_it_down)
-    end.
-
--spec force(PidName::string()) -> ok.
-% @private
-% @doc
-% Force a probe check as soon as possible. Used mainly from monitor API.
-% @end
-force(PidName) ->
-    case supercast_registrar:whereis_name(PidName) of
-        undefined ->
-            ok;
-        Pid ->
-            gen_server:cast(Pid, force)
-    end.
-force2(S) ->
+do_force(S) ->
     ES  = monitor_data_master:get_probe_state(S#state.name),
     case erlang:cancel_timer(ES#ets_state.tref) of
         false -> ok;
@@ -298,11 +255,11 @@ handle_cast({sync_request, CState}, S) ->
     {noreply, S};
 
 handle_cast({triggered_return, CState}, S) ->
-    triggered_return2(CState, S),
+    do_triggered_return(CState, S),
     {noreply, S};
 
 handle_cast(force, S) ->
-    force2(S),
+    do_force(S),
     {noreply, S};
 
 handle_cast(_Cast, S) ->

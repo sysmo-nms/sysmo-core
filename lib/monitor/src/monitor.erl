@@ -37,8 +37,11 @@
     which_probes/0,
     which_jobs/0,
 
-    force/1,
-    fill_test/1
+    fill_test/1,
+
+    probe_trigger_return/2,
+    probe_shutdown/1,
+    probe_force/1
 ]).
 
 -define(RRD_ifPerf_file, "snmp_if_perf.ini").
@@ -122,13 +125,6 @@ job_fire(JobId) ->
 dependency_new(Probe, Depend) ->
     monitor_data_master:new(dependency, #dependency{a_probe=Probe,his_parent=Depend}).
 
-force(Probe) ->
-    case supercast_registrar:whereis_name(Probe) of
-        undefined -> ok;
-        Pid ->
-            gen_server:cast(Pid, force)
-    end.
-
 %%-----------------------------------------------------------------------------
 %% PROBE API
 %%-----------------------------------------------------------------------------
@@ -150,7 +146,45 @@ probe_new({snmp, if_perfs, Indexes}, Target) ->
     Probe = #probe{
         belong_to   = Target,
         description = "SNMP:Interfaces performances",
-        monitor_probe_mod = probe_snmp,
+        monitor_probe_mod = snmp_ifPerf,
         monitor_probe_conf = IndexesFiles
     },
     monitor_data_master:new(probe, Probe).
+
+
+-spec probe_trigger_return(PidName::string(), CState::#client_state{}) -> ok.
+% @private
+% @doc
+% Used by the monitor main channel to initialize clients. This function send
+% a Partial Probe return PDU to the specified client, including the next expected
+% return time.
+% @end
+probe_trigger_return(PidName, CState) ->
+    gen_server:cast({via, supercast_registrar, PidName}, {trigger_return, CState}).
+
+-spec probe_shutdown(PidName::string()) -> ok.
+% @private
+% @doc
+% Used by monitor datamaster. It shut down the probe specified wile data master
+% delete it from the db.
+% @end
+probe_shutdown(PidName) ->
+    case supercast_registrar:whereis_name(PidName) of
+        undefined ->
+            ok;
+        Pid ->
+            gen_server:call(Pid, shut_it_down)
+    end.
+
+-spec probe_force(PidName::string()) -> ok.
+% @private
+% @doc
+% Force a probe check as soon as possible. Used mainly from monitor API.
+% @end
+probe_force(PidName) ->
+    case supercast_registrar:whereis_name(PidName) of
+        undefined ->
+            ok;
+        Pid ->
+            gen_server:cast(Pid, force)
+    end.
