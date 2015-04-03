@@ -28,6 +28,7 @@
 
 -define(IF_PERF_OIDS, [
     ?IF_INDEX,
+
     ?IF_IN_OCTETS,
     ?IF_OUT_OCTETS,
 
@@ -53,10 +54,9 @@
 -export([exec_snmp_walk/1]).
 
 -record(state, {name,ref}).
-%-record(iftable_state, {
-    %indexes
-%}).
-
+-record(iftable_state, {
+    indexes
+}).
 
 
 start_link(#probe{name=Name} = Probe) ->
@@ -64,7 +64,7 @@ start_link(#probe{name=Name} = Probe) ->
 
 do_init(Probe, Ref) ->
     {ok, _DumpDir} = application:get_env(supercast, http_sync_dir),
-    _ = rrd4j_init(Probe),
+    IToF = rrd4j_init(Probe),
     random:seed(erlang:now()),
     TRef = monitor:send_after_rand(Probe#probe.step, {take_of, Ref}),
     ES = #ets_state{
@@ -73,7 +73,8 @@ do_init(Probe, Ref) ->
         belong_to           = Probe#probe.belong_to,
         tref                = TRef,
         current_status_from = erlang:now(),
-        current_status      = Probe#probe.status
+        current_status      = Probe#probe.status,
+        local_state         = #iftable_state{indexes=IToF}
     },
     monitor_data_master:set_probe_state(ES),
     % BEGIN partial return for clients
@@ -86,8 +87,7 @@ do_init(Probe, Ref) ->
         MilliRem
     ),
     % END partial return for clients
-    supercast_channel:emit(?MASTER_CHANNEL, {ES#ets_state.permissions, Pdu}),
-    ok.
+    supercast_channel:emit(?MASTER_CHANNEL, {ES#ets_state.permissions, Pdu}).
 
 
 
@@ -175,13 +175,19 @@ do_handle_probe_return(PR, #state{name=PName,ref=Ref}) ->
             monitor_data_master:update(probe,NewProbe)
     end,
 
-    % LOGGER TODO do use case better than behaviour
-    %LState = ES#ets_state.loggers_state,
+    % generate rrd updates
+    IToF = ES#ets_state.local_state#iftable_state.indexes,
+    Walk = PR#probe_return.reply_tuple,
+    Ret = errd4j:sysmo_ifperf_update(IToF, Walk),
+    ?LOG({ret_is, Ret}),
+    ?LOG({walk, Walk}),
+    ?LOG({idx, IToF}),
+    
+
+    % TODO emit
     %{ok, Pdu} = rrd_log(LState,PR),
     %emit_all(ES#ets_state.name, ES#ets_state.permissions, [Pdu]),
-
-    % TODO log to rrd and emit pdus
-    % TODO check interfaces status and critical on down (external snmp manager?)
+    
     % TODO check return values and warn or crit
 
     % LAUNCH
@@ -320,7 +326,7 @@ exec_snmp_walk(Agent) ->
 %%----------------------------------------------------------------------------
 %% errd4j functions
 %%----------------------------------------------------------------------------
-rrd4j_init(#probe{name=PName,step=_Step,belong_to=TargetName,module_config=_Indexes}) ->
+rrd4j_init(#probe{name=PName,step=Step,belong_to=TargetName,module_config=Indexes}) ->
 
     % get the target directory TargetDir
     [Target]    = monitor_data_master:get(target, TargetName),
@@ -328,13 +334,60 @@ rrd4j_init(#probe{name=PName,step=_Step,belong_to=TargetName,module_config=_Inde
 
     % generate the probe directory
     ProbeDirPath = filename:join([TargetDir, PName]),
-    ok = make_dir(ProbeDirPath),
-
-    ok.
-
-make_dir(Path) ->
-    case filelib:is_dir(Path) of
+    case filelib:is_dir(ProbeDirPath) of
         true  -> ok;
-        false -> file:make_dir(Path)
-    end.
+        false ->
+            ok = file:make_dir(ProbeDirPath)
+    end,
+
+
+    % generate indexes to rrdfiles bind
+    IndexesToFiles = [
+        {
+            Index,
+            filename:join([ProbeDirPath, lists:concat(["ifPerfIndex",Index,".rrd"])])
+        } || Index <- Indexes],
+
+    % test if files exist and keep missing index files
+    MissingFiles = lists:filter(fun({_,File}) ->
+        case filelib:is_regular(File) of
+            true -> false;
+            false -> true
+        end
+    end, IndexesToFiles),
+
+    % create DS definition for missing files if non empty
+    case MissingFiles of
+        [] -> ok;
+        _ ->
+            HeartBeat = Step * 2,
+            MCreate = [
+                {
+                    File,
+                    Step,
+                    make_ds(HeartBeat),
+                    "default"
+                } || {_,File} <- MissingFiles],
+            ok = errd4j:multi_create(MCreate)
+    end,
+
+    % return indexes to files
+    IndexesToFiles.
+
+
+make_ds(HeartBeat) ->
+    [
+        {"OctetsIn",                "COUNTER", HeartBeat, 0, 'Nan'},
+        {"OctetsOut",               "COUNTER", HeartBeat, 0, 'Nan'},
+        {"UnicastPacketsIn",        "COUNTER", HeartBeat, 0, 'Nan'},
+        {"UnicastPacketsOut",       "COUNTER", HeartBeat, 0, 'Nan'},
+        {"NonUnicastPacketsIn",     "COUNTER", HeartBeat, 0, 'Nan'},
+        {"NonUnicastPacketsOut",    "COUNTER", HeartBeat, 0, 'Nan'},
+        {"ErrosIn",                 "COUNTER", HeartBeat, 0, 'Nan'},
+        {"ErrorsOut",               "COUNTER", HeartBeat, 0, 'Nan'}
+    ].
+
+
+
+
 

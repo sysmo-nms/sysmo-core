@@ -44,7 +44,8 @@
     multi_create/1,
 
     update/3,
-    multi_update/1
+    multi_update/1,
+    sysmo_ifperf_update/2
 
     % MAYBE
     %update_fetch/0,
@@ -60,6 +61,7 @@
 
 -define(ASSERT_TIMEOUT, 5000).
 
+
 -spec multi_update(Updates::[tuple()]) -> ok.
 % @doc
 % Send multiple update/3 in one call. Arg is a list of tuple.
@@ -67,6 +69,14 @@
 % @end
 multi_update(Updates) ->
     gen_server:call(?MODULE, {call_errd4j, {multi_update, {Updates}}}).
+
+-spec sysmo_ifperf_update(Indexes::[{Index::integer(), File::string()}], Walk::[tuple()]) -> ok.
+% @private
+% @doc
+% Walk is a list of tuple returned by snmpman:walk_table/2.
+% @end
+sysmo_ifperf_update(Indexes, Walk) ->
+    gen_server:call(?MODULE, {call_errd4j, {sysmo_ifperf_update, {Indexes,Walk}}}).
 
 -spec update(File::string(), Updates::{string(), integer()}, Timstamp::integer()) -> ok.
 % @doc
@@ -77,6 +87,7 @@ update(File, Updates, Timestamp) ->
     Args = {File, Updates, Timestamp},
     gen_server:call(?MODULE, {call_errd4j, {update, Args}}).
     
+
 -spec multi_create(Args::list()) -> ok.
 % @doc
 % Send multiple create command in one call. Args is a list of tuples with the

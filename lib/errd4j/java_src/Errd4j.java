@@ -224,13 +224,12 @@ public class Errd4j
         return valTuple;
     }
 
-
-    /*
-     * Handle update a rrd file.
-     */
+   /*
+    * Handle updates
+    */
     public static void handleRrdMultiUpdate(OtpErlangObject caller, OtpErlangTuple tuple) throws Exception
     {
-         OtpErlangList updates = (OtpErlangList) (tuple.elementAt(0));
+        OtpErlangList updates = (OtpErlangList) (tuple.elementAt(0));
         Iterator<OtpErlangObject> updatesIt = updates.iterator();
         while (updatesIt.hasNext())
         {
@@ -412,8 +411,11 @@ class RrdRunnable implements Runnable
                 case "create":
                     Errd4j.handleRrdCreate(caller, payload);
                     break;
+                case "sysmo_ifperf_update":
+                    SysmoUtils.handleSysmoIfPerfUpdate(caller, payload);
+                    break;
                 default:
-                    OtpErlangTuple dreply = Errd4j.buildOkReply(new OtpErlangString("undefined"));
+                    OtpErlangTuple dreply = Errd4j.buildErrorReply(new OtpErlangString("undefined"));
                     Errd4j.sendReply(caller, dreply);
             }
         }
@@ -444,4 +446,45 @@ class RrdReject implements RejectedExecutionHandler
     }
 }
 
+class SysmoUtils
+{
+    public static void handleSysmoIfPerfUpdate(OtpErlangObject caller, OtpErlangTuple tuple) throws Exception
+    {
+        OtpErlangList indexes = (OtpErlangList) (tuple.elementAt(0));
+        OtpErlangList walk    = (OtpErlangList) (tuple.elementAt(1));
 
+        Iterator<OtpErlangObject> indexesIt = indexes.iterator();
+
+        // list of integers for quickly filter long walk table
+        List<Long>  indexesList = new ArrayList<Long>();
+        // the we will iterate this array
+        int idLen = indexes.arity();
+        SysmoIndexToFile[] indexesObj   = new SysmoIndexToFile[idLen];
+        
+        int count = 0;
+        while (indexesIt.hasNext())
+        {
+            OtpErlangTuple  idToF = (OtpErlangTuple)  indexesIt.next();
+            OtpErlangLong   index = (OtpErlangLong)   (idToF.elementAt(0));
+            OtpErlangString file  = (OtpErlangString) (idToF.elementAt(1));
+            long    indexLong = index.longValue();
+            String  fileString = file.stringValue();
+            indexesList.add(indexLong);
+            indexesObj[count] = new SysmoIndexToFile(indexLong, fileString);
+            count = count + 1;
+        }
+        
+        Errd4j.sendReply(caller, Errd4j.atomOk);
+    }
+}    
+
+class SysmoIndexToFile
+{
+    public long     index;
+    public String   file;
+    public SysmoIndexToFile(long indexArg, String fileArg)
+    {
+        index = indexArg;
+        file  = fileArg;
+    }
+}
