@@ -28,14 +28,16 @@
 
 -define(IF_PERF_OIDS, [
     ?IF_INDEX,
-    ?IF_DESCR,
     ?IF_IN_OCTETS,
-    ?IF_IN_UCASTPKTS,
-    ?IF_IN_NUCASTPKTS,
-    ?IF_IN_ERRORS,
     ?IF_OUT_OCTETS,
+
+    ?IF_IN_UCASTPKTS,
     ?IF_OUT_UCASTPKTS,
+
+    ?IF_IN_NUCASTPKTS,
     ?IF_OUT_NUCASTPKTS,
+
+    ?IF_IN_ERRORS,
     ?IF_OUT_ERRORS
 ]).
 
@@ -50,17 +52,21 @@
 -export([get_perms/1, sync_request/2]).
 -export([exec_snmp_walk/1]).
 
--record(state, {name}).
-
+-record(state, {name,ref}).
+%-record(iftable_state, {
+    %indexes
+%}).
 
 
 
 start_link(#probe{name=Name} = Probe) ->
     gen_server:start_link({via, supercast_registrar, {?MODULE, Name}}, ?MODULE, Probe, []).
 
-do_init(Probe) ->
+do_init(Probe, Ref) ->
+    {ok, _DumpDir} = application:get_env(supercast, http_sync_dir),
+    _ = rrd4j_init(Probe),
     random:seed(erlang:now()),
-    TRef = monitor:send_after_rand(Probe#probe.step, take_of),
+    TRef = monitor:send_after_rand(Probe#probe.step, {take_of, Ref}),
     ES = #ets_state{
         name                = Probe#probe.name,
         permissions         = Probe#probe.permissions,
@@ -71,7 +77,7 @@ do_init(Probe) ->
     },
     monitor_data_master:set_probe_state(ES),
     % BEGIN partial return for clients
-    PartialReturn = partial_pr(ES),
+    PartialReturn = #probe_return{status=ES#ets_state.current_status},
     MilliRem = monitor:read_timer(ES#ets_state.tref),
     Pdu = monitor_pdu:probeReturn(
         PartialReturn,
@@ -100,9 +106,8 @@ sync_request(PidName, CState) ->
 do_sync_request(CState, S) ->
     ES = monitor_data_master:get_probe_state(S#state.name),
     Pdus = [],
-    ok  = supercast_channel:subscribe(ES#ets_state.name, CState),
-    ok  = supercast_channel:unicast(CState, Pdus),
-    ok.
+    supercast_channel:subscribe(ES#ets_state.name, CState),
+    supercast_channel:unicast(CState, Pdus).
 %%----------------------------------------------------------------------------
 %% supercast channel behaviour API END
 %%----------------------------------------------------------------------------
@@ -117,12 +122,7 @@ do_sync_request(CState, S) ->
 do_triggered_return(CState, S) ->
     ES = monitor_data_master:get_probe_state(S#state.name),
 
-    PartialPR = #probe_return{ 
-        status          = ES#ets_state.current_status,
-        reply_string    = "",
-        timestamp       = 0,
-        key_vals        = []
-    },
+    PartialPR = #probe_return{status=ES#ets_state.current_status},
 
     MilliRem = monitor:read_timer(ES#ets_state.tref),
     Pdu = monitor_pdu:probeReturn(
@@ -134,14 +134,14 @@ do_triggered_return(CState, S) ->
     supercast_channel:unicast(CState, [Pdu]),
     ok.
 
-do_force(S) ->
-    ES  = monitor_data_master:get_probe_state(S#state.name),
+do_force(#state{name=PName,ref=Ref}) ->
+    ES  = monitor_data_master:get_probe_state(PName),
     case erlang:cancel_timer(ES#ets_state.tref) of
         false -> ok;
         _ ->
-            TRef = monitor:send_after(0, take_of),
+            TRef = monitor:send_after(0, {take_of,Ref}),
             monitor_data_master:set_probe_state(ES#ets_state{tref=TRef}),
-            PartialReturn = partial_pr(ES),
+            PartialReturn = #probe_return{status=ES#ets_state.current_status},
             Pdu = monitor_pdu:probeReturn(
                 PartialReturn,
                 ES#ets_state.belong_to,
@@ -161,16 +161,16 @@ do_force(S) ->
 %%----------------------------------------------------------------------------
 %% INTERNALS
 %%----------------------------------------------------------------------------
-do_handle_probe_return(PR, S) ->
-    ES  = monitor_data_master:get_probe_state(S#state.name),
-    [Probe]  = monitor_data_master:get(probe, S#state.name),
+do_handle_probe_return(PR, #state{name=PName,ref=Ref}) ->
+    ES  = monitor_data_master:get_probe_state(PName),
+    [Probe]  = monitor_data_master:get(probe,PName),
     OldStatus = Probe#probe.status,
     NewStatus = PR#probe_return.status,
     case NewStatus of
         OldStatus ->
-            monitor_events:notify(S#state.name, OldStatus);
+            monitor_events:notify(PName, OldStatus);
         _ ->
-            monitor_events:notify_move(S#state.name, NewStatus),
+            monitor_events:notify_move(PName, NewStatus),
             NewProbe = Probe#probe{status=NewStatus},
             monitor_data_master:update(probe,NewProbe)
     end,
@@ -185,8 +185,8 @@ do_handle_probe_return(PR, S) ->
     % TODO check return values and warn or crit
 
     % LAUNCH
-    TRef = monitor:send_after(Probe#probe.step, take_of),
-    MilliRem  = monitor:read_timer(TRef),
+    TRef     = monitor:send_after(Probe#probe.step, {take_of, Ref}),
+    MilliRem = monitor:read_timer(TRef),
 
     % SEND MESSAGES
     Pdu = monitor_pdu:probeReturn(
@@ -206,13 +206,13 @@ do_handle_probe_return(PR, S) ->
         }
     ).
 
-do_take_of(#state{name=PName}) ->
+do_take_of(#state{name=PName,ref=Ref}) ->
     ES      = monitor_data_master:get_probe_state(PName),
     Agent   = ES#ets_state.belong_to,
     ToPid   = self(),
     erlang:spawn(fun() ->
         {ok, Return}  = ?MODULE:exec_snmp_walk(Agent),
-        erlang:send(ToPid, {probe_return, Return})
+        erlang:send(ToPid, {probe_return, Ref, Return})
     end).
 %%----------------------------------------------------------------------------
 %% INTERNALS END
@@ -233,8 +233,9 @@ init(Probe) ->
 
 
 handle_cast(do_init, #probe{name=PName} = Probe) ->
-    do_init(Probe),
-    {noreply, #state{name=PName}};
+    Ref = make_ref(),
+    do_init(Probe, Ref),
+    {noreply, #state{name=PName,ref=Ref}};
 
 handle_cast({sync_request, CState}, S) ->
     do_sync_request(CState, S),
@@ -260,11 +261,11 @@ handle_call(_Call, _From, S) ->
     {noreply, S}.
 
 
-handle_info({probe_return, PR}, S) ->
+handle_info({probe_return, Ref, PR}, #state{ref=Ref} = S) ->
     do_handle_probe_return(PR, S),
     {noreply, S};
 
-handle_info(take_of, S) ->
+handle_info({take_of, Ref}, #state{ref=Ref} = S) ->
     do_take_of(S),
     {noreply, S};
 
@@ -287,14 +288,6 @@ code_change(_OldVsn, S, _Extra) ->
 %emit_all(Name, Perm, [Pdu|T]) ->
 %    supercast_channel:emit(Name,{Perm, Pdu}),
 %    emit_all(Name,Perm,T).
-
-partial_pr(ES) ->
-    #probe_return{ 
-        status          = ES#ets_state.current_status,
-        reply_string    = "",
-        timestamp       = 0,
-        key_vals        = []
-    }.
 
 %%----------------------------------------------------------------------------
 %% SNMP TABLE INIT
@@ -323,3 +316,25 @@ exec_snmp_walk(Agent) ->
             },
             {ok, PR}
     end.
+
+%%----------------------------------------------------------------------------
+%% errd4j functions
+%%----------------------------------------------------------------------------
+rrd4j_init(#probe{name=PName,step=_Step,belong_to=TargetName,module_config=_Indexes}) ->
+
+    % get the target directory TargetDir
+    [Target]    = monitor_data_master:get(target, TargetName),
+    TargetDir   = proplists:get_value(var_directory, Target#target.sys_properties),
+
+    % generate the probe directory
+    ProbeDirPath = filename:join([TargetDir, PName]),
+    ok = make_dir(ProbeDirPath),
+
+    ok.
+
+make_dir(Path) ->
+    case filelib:is_dir(Path) of
+        true  -> ok;
+        false -> file:make_dir(Path)
+    end.
+

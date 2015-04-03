@@ -112,13 +112,13 @@ new_probe({probe_nchecks, JavaClass, Args}, Target) ->
     monitor_data_master:new(probe, Probe);
 
 new_probe({snmp_ifPerf, Indexes}, Target) ->
-    IndexesFiles = [{Index,lists:concat(["index",Index,".rrd"])} || Index <- Indexes],
-    io:format("indexes: ~p~n",[IndexesFiles]),
+    %IndexesFiles = [{Index,lists:concat(["index",Index,".rrd"])} || Index <- Indexes],
+    %io:format("indexes: ~p~n",[IndexesFiles]),
     Probe = #probe{
         belong_to   = Target,
         description = "SNMP:Interfaces performances",
         module = snmp_ifPerf,
-        module_config = IndexesFiles
+        module_config = Indexes
     },
     monitor_data_master:new(probe, Probe).
 

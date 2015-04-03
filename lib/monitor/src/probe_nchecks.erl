@@ -40,8 +40,8 @@
 -export([get_perms/1,sync_request/2]).
 -export([exec_nchecks/2]).
 
--record(state, {name}).
--record(nstate, {
+-record(state, {name,ref}).
+-record(nchecks_state, {
     class,
     args,
     dump_dir,
@@ -55,13 +55,13 @@
 start_link(#probe{name=Name} = Probe) ->
     gen_server:start_link({via, supercast_registrar, {?MODULE, Name}}, ?MODULE, Probe, []).
 
-do_init(Probe) ->
+do_init(Probe, Ref) ->
     random:seed(erlang:now()),
     {ok, DumpDir}   = application:get_env(supercast, http_sync_dir),
     {Class, Args}   = nchecks_init(Probe),
     RrdFile         = rrd4j_init(Probe),
-    TRef            = monitor:send_after_rand(Probe#probe.step, take_of),
-    NS = #nstate{
+    TRef            = monitor:send_after_rand(Probe#probe.step, {take_of, Ref}),
+    NS = #nchecks_state{
         class = Class,
         args = Args,
         dump_dir = DumpDir,
@@ -80,7 +80,7 @@ do_init(Probe) ->
     monitor_data_master:set_probe_state(ES),
 
     % partial return for clients allready connected
-    PartialReturn = partial_pr(ES),
+    PartialReturn = #probe_return{status=ES#ets_state.current_status},
     MilliRem = monitor:read_timer(ES#ets_state.tref),
     Pdu = monitor_pdu:probeReturn(
         PartialReturn,
@@ -108,11 +108,11 @@ sync_request(PidName, CState) ->
 do_sync_request(CState, S) ->
     ES       = monitor_data_master:get_probe_state(S#state.name),
     % the rrd file
-    RrdFile  = ES#ets_state.local_state#nstate.rrd_file_path,
+    RrdFile  = ES#ets_state.local_state#nchecks_state.rrd_file_path,
     RrdFileBase = filename:basename(RrdFile),
 
     % generate tmp dir in dump dir
-    DumpDir  = ES#ets_state.local_state#nstate.dump_dir,
+    DumpDir  = ES#ets_state.local_state#nchecks_state.dump_dir,
     TmpDir   = monitor:generate_temp_dir(),
     TmpPath  = filename:join(DumpDir, TmpDir),
     file:make_dir(TmpPath),
@@ -123,10 +123,8 @@ do_sync_request(CState, S) ->
 
     % build the PDU
     Pdu = monitor_pdu:nchecksDumpMessage(S#state.name, TmpDir, RrdFileBase),
-
-    ok  = supercast_channel:subscribe(ES#ets_state.name, CState),
-    ok  = supercast_channel:unicast(CState, [Pdu]),
-    ok.
+    supercast_channel:subscribe(ES#ets_state.name, CState),
+    supercast_channel:unicast(CState, [Pdu]).
 %%----------------------------------------------------------------------------
 %% supercast channel behaviour API END
 %%----------------------------------------------------------------------------
@@ -141,12 +139,7 @@ do_sync_request(CState, S) ->
 do_trigger_return(CState, S) ->
     ES = monitor_data_master:get_probe_state(S#state.name),
 
-    PartialPR = #probe_return{ 
-        status          = ES#ets_state.current_status,
-        reply_string    = "",
-        timestamp       = 0,
-        key_vals        = []
-    },
+    PartialPR = #probe_return{status=ES#ets_state.current_status},
 
     MilliRem = monitor:read_timer(ES#ets_state.tref),
     Pdu = monitor_pdu:probeReturn(
@@ -158,15 +151,15 @@ do_trigger_return(CState, S) ->
     supercast_channel:unicast(CState, [Pdu]),
     ok.
 
-do_force(S) ->
+do_force(#state{ref=Ref} = S) ->
     ES  = monitor_data_master:get_probe_state(S#state.name),
     case erlang:cancel_timer(ES#ets_state.tref) of
         false ->
             ok;
         _ ->
-            TRef = monitor:send_after(0, take_of),
+            TRef = monitor:send_after(0, {take_of, Ref}),
             monitor_data_master:set_probe_state(ES#ets_state{tref=TRef}),
-            PartialReturn = partial_pr(ES),
+            PartialReturn = #probe_return{status=ES#ets_state.current_status},
             Pdu = monitor_pdu:probeReturn(
                 PartialReturn,
                 ES#ets_state.belong_to,
@@ -186,7 +179,7 @@ do_force(S) ->
 %%----------------------------------------------------------------------------
 %% INTERNALS
 %%----------------------------------------------------------------------------
-do_handle_probe_return(PR, S) ->
+do_handle_probe_return(PR, #state{ref=Ref} = S) ->
     % get the probe state
     ES  = monitor_data_master:get_probe_state(S#state.name),
 
@@ -204,7 +197,7 @@ do_handle_probe_return(PR, S) ->
     end,
 
     % errd4j update
-    RrdFile = ES#ets_state.local_state#nstate.rrd_file_path,
+    RrdFile = ES#ets_state.local_state#nchecks_state.rrd_file_path,
     Perfs   = PR#probe_return.perfs,
     ok = errd4j:update(RrdFile, Perfs, PR#probe_return.timestamp),
 
@@ -213,7 +206,7 @@ do_handle_probe_return(PR, S) ->
     supercast_channel:emit(S#state.name, {ES#ets_state.permissions, Pdu2}),
 
     % initiate LAUNCH
-    TRef        = monitor:send_after(Probe#probe.step, take_of),
+    TRef        = monitor:send_after(Probe#probe.step, {take_of,Ref}),
     MilliRem    = monitor:read_timer(TRef),
 
     % SEND MESSAGES to subscribers of master channel
@@ -233,14 +226,14 @@ do_handle_probe_return(PR, S) ->
         }
     ).
 
-do_take_of(S) ->
-    ES      = monitor_data_master:get_probe_state(S#state.name),
-    Class   = ES#ets_state.local_state#nstate.class,
-    Args    = ES#ets_state.local_state#nstate.args,
+do_take_of(#state{ref=Ref,name=PName}) ->
+    ES      = monitor_data_master:get_probe_state(PName),
+    Class   = ES#ets_state.local_state#nchecks_state.class,
+    Args    = ES#ets_state.local_state#nchecks_state.args,
     ToPid   = self(),
     erlang:spawn(fun() ->
         {ok, Return}  = ?MODULE:exec_nchecks(Class, Args),
-        erlang:send(ToPid, {probe_return, Return})
+        erlang:send(ToPid, {probe_return, Ref, Return})
     end).
 %%----------------------------------------------------------------------------
 %% INTERNALS END
@@ -260,8 +253,9 @@ init(Probe) ->
 
 
 handle_cast(do_init, #probe{name=PName} = Probe) ->
-    do_init(Probe),
-    {noreply, #state{name=PName}};
+    Ref = make_ref(),
+    do_init(Probe, Ref),
+    {noreply, #state{name=PName,ref=Ref}};
 
 handle_cast({sync_request, CState}, S) ->
     do_sync_request(CState, S),
@@ -287,11 +281,11 @@ handle_call(_Call, _From, S) ->
     {noreply, S}.
 
 
-handle_info({probe_return, PR}, S) ->
+handle_info({probe_return, Ref, PR}, #state{ref=Ref} = S) ->
     do_handle_probe_return(PR, S),
     {noreply, S};
 
-handle_info(take_of, S) ->
+handle_info({take_of, Ref}, #state{ref=Ref} = S) ->
     do_take_of(S),
     {noreply, S};
 
@@ -314,14 +308,6 @@ code_change(_OldVsn, S, _Extra) ->
 %emit_all(Name, Perm, [Pdu|T]) ->
 %    supercast_channel:emit(Name,{Perm, Pdu}),
 %    emit_all(Name,Perm,T).
-
-partial_pr(ES) ->
-    #probe_return{ 
-        status          = ES#ets_state.current_status,
-        reply_string    = "",
-        timestamp       = 0,
-        key_vals        = []
-    }.
 
 
 %%----------------------------------------------------------------------------
@@ -370,7 +356,7 @@ exec_nchecks(Class, Args) ->
 %%----------------------------------------------------------------------------
 %% errd4j functions
 %%----------------------------------------------------------------------------
-rrd4j_init(#probe{name=Name, step=Step, belong_to=TargetName, module_config=NCheck} = _P) ->
+rrd4j_init(#probe{name=Name,step=Step,belong_to=TargetName,module_config=NCheck}) ->
 
     % get the target directory TargetDir
     [Target]    = monitor_data_master:get(target, TargetName),

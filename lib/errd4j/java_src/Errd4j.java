@@ -202,10 +202,12 @@ public class Errd4j
                 case "create":
                     handleRrdCreate(caller, payload);
                     break;
+                case "multi_create":
+                    handleRrdMultiCreate(caller, payload);
+                    break;
                 case "update":
                     handleRrdUpdate(caller, payload);
                     break;
-
                 case "graph":
                     handleRrdGraph(caller, payload);
                     break;
@@ -415,15 +417,33 @@ public class Errd4j
         sendReply(caller, atomOk);
     }
     
+    private static void handleRrdMultiCreate(OtpErlangObject caller, OtpErlangTuple tuple) throws Exception
+    {
+        OtpErlangList creates = (OtpErlangList) (tuple.elementAt(0));
+        Iterator<OtpErlangObject> createsIt = creates.iterator();
+        while (createsIt.hasNext())
+        {
+            OtpErlangTuple ctuple = (OtpErlangTuple) createsIt.next();
+            rrdCreate(ctuple);
+        }
+        sendReply(caller, atomOk);
+    }
+
     /*
      * Handle create a rrd file.
      */
     private static void handleRrdCreate(OtpErlangObject caller, OtpErlangTuple tuple) throws Exception
     {
+        rrdCreate(tuple);
+        sendReply(caller, atomOk);
+    } 
+
+    private static void rrdCreate(OtpErlangTuple tuple) throws Exception
+    {
         OtpErlangString filePath = (OtpErlangString) (tuple.elementAt(0));
         OtpErlangLong   step     = (OtpErlangLong)   (tuple.elementAt(1));
-        OtpErlangString rraType  = (OtpErlangString) (tuple.elementAt(2));
-        OtpErlangList   dss      = (OtpErlangList)   (tuple.elementAt(3));
+        OtpErlangList   dss      = (OtpErlangList)   (tuple.elementAt(2));
+        OtpErlangString rraType  = (OtpErlangString) (tuple.elementAt(3));
 
         RrdDef rrdDef = new RrdDef(filePath.stringValue(), step.uIntValue());
 
@@ -468,8 +488,6 @@ public class Errd4j
 
         RrdDb rrdDb = new RrdDb(rrdDef);
         rrdDb.close();
-
-        sendReply(caller, atomOk);
     }
 
     private static ArcDef[] decodeRRADef(String rraDef) throws Exception

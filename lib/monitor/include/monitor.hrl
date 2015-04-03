@@ -57,7 +57,7 @@
 -record(probe_return, {
     status          = "DOWN"        :: string(),
     % "OK" | "DOWN" | "WARNING" | "CRITICAL",
-    reply_string    = "undefined"   :: string(),
+    reply_string    = ""            :: string(),
     reply_code      = 0             :: integer(),
     timestamp       = 0             :: integer(),
     key_vals        = []            :: [{string(), any()}],

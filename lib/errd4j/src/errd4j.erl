@@ -42,6 +42,8 @@
     create_test/0,
     create/3,
     create/4,
+    multi_create/1,
+
     update/3,
     graph/0,
     updates/0,
@@ -101,16 +103,33 @@ create_test() ->
     DSs  = [{"speed", ?DS_COUNTER, 600, 'Nan', 'Nan'}],
     create(File,Step, DSs).
     
+-spec multi_create(Args::list()) -> ok.
+% @doc
+% send multiple create command in one call. Args is a list of tuples with the
+% same elements as in create/4 call.
+% Example = [{"jojo.rrd",300,[{"speed", "COUNTER", 600, 0, 'Nan'}],"default"}...]
+% @end
+multi_create(Args) ->
+    gen_server:call(?MODULE, {call_errd4j, {multi_create, {Args}}}).
+    
+    
+-spec create(File::string(), Step::integer(), DDs::[]) -> ok.
+% @doc
+% Same as create(File,Step,DDs,"default")
+% @end
 create(File,Step, DSs) ->
-
-    create(File,Step,DSs, "default").
+    create(File,Step,DSs,"default").
 
 -spec create(File::string(), Step::integer(), DSs::[], RRAType::string()) -> ok.
 % @doc
 % where RRAType is "default" or "precise"
+% File: a string represnting the rrd file created
+% Step: an integer
+% DSs: [{DsName::string(), DsType::string(), HeartBeat::integer(), Min::integer(), Max::integer()}]
+%   example: [{"speed", "COUNTER", 600, 0, 'Nan'}]
 % @end
 create(File, Step, DSs, RRAType) ->
-    Args = {File,Step,RRAType,DSs},
+    Args = {File,Step,DSs,RRAType},
     gen_server:call(?MODULE, {call_errd4j, {create, Args}}).
 
 % @private

@@ -1,14 +1,43 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <snmp_def>
-    <descr>Check TCP service availability on the specified host</descr>
-    <type>walk</type>
+    <descr>Intefaces performances</descr>
+    <type>table</type>
     <performances>
+    <!-- hard coded in lib/monitor/src/snmp_ifPerf.erl
         <data_sources>
             <ds>
-                <dsName>ReplyDuration</dsName>
-                <dsType>GAUGE</dsType>
+                <dsName>OctetsIn</dsName>
+                <dsType>COUNTER</dsType>
             </ds>
+            <ds>
+                <dsName>OctetsOut</dsName>
+                <dsType>COUNTER</dsType>
+            </ds>
+
+            <ds>
+                <dsName>UnicastPacketsIn</dsName>
+                <dsType>COUNTER</dsType>
+            </ds>
+            <ds>
+                <dsName>UnicastPacketsOut</dsName>
+                <dsType>COUNTER</dsType>
+            </ds>
+
+            <ds>
+                <dsName>NonUnicastPacketsIn</dsName>
+                <dsType>COUNTER</dsType>
+            </ds>
+            <ds>
+                <dsName>ErrorsIn</dsName>
+                <dsType>COUNTER</dsType>
+            </ds>
+            <ds>
+                <dsName>ErrorsOut</dsName>
+                <dsType>COUNTER</dsType>
+            </ds>
+
         </data_sources>
+    -->
         <graphs>
             <graph_desc>
                 <graphName>TCPLatency</graphName>
