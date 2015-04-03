@@ -39,18 +39,16 @@
 
 
 -export([
-    create_test/0,
     create/3,
     create/4,
     multi_create/1,
 
     update/3,
-    graph/0,
+    multi_update/1
 
-    % TODO
+    % MAYBE
     %update_fetch/0,
     %updates_fetch/0,
-    test/0
 ]).
 
 -record(state, {
@@ -62,47 +60,26 @@
 
 -define(ASSERT_TIMEOUT, 5000).
 
-% update_fetch() ->
-%     File    = "test.rrd",
-%     Updates = [{"speed", 3000}],
-%     Fetch   = [{"speed", -600}],
-%     Args = {File, Updates, Fetch},
-%     gen_server:call(?MODULE, {call_errd4j, {update_fetch, Args}}).
-% 
-% updates_fetch() ->
-%     File    = "test.rrd",
-%     Updates = [{"speed", 3000}],
-%     Fetchs  = [{"speed", -600}],
-%     Args = [{File, Updates, Fetchs}],
-%     gen_server:call(?MODULE, {call_errd4j, {updates_fetch, Args}}).
+-spec multi_update(Updates::[tuple()]) -> ok.
+% @doc
+% Send multiple update/3 in one call. Arg is a list of tuple.
+% Each tuple have the same content as update/3.
+% @end
+multi_update(Updates) ->
+    gen_server:call(?MODULE, {call_errd4j, {multi_update, {Updates}}}).
 
-
-test() ->
-    gen_server:call(?MODULE, {call_errd4j, {test, {}}}).
-
-graph() ->
-    File    = "test.rrd",
-    DstFile = "test.png",
-    Start   = 0,
-    End     = 0,
-    Graphs  = [],
-    Args = {File, DstFile, Start, End, Graphs},
-    gen_server:call(?MODULE, {call_errd4j, {graph, Args}}).
-
+-spec update(File::string(), Updates::{string(), integer()}, Timstamp::integer()) -> ok.
+% @doc
+% Execute an update to a single rrdfile.
+% example: Updates = [{"MaxRoundTrip", 3000}, {"MinRoundTrip", 399}],
+% @end
 update(File, Updates, Timestamp) ->
-    %Updates = [{"MaxRoundTrip", 3000}, {"MinRoundTrip", 399}],
     Args = {File, Updates, Timestamp},
     gen_server:call(?MODULE, {call_errd4j, {update, Args}}).
-
-create_test() ->
-    File = "test.rrd",
-    Step = 300,
-    DSs  = [{"speed", ?DS_COUNTER, 600, 'Nan', 'Nan'}],
-    create(File,Step, DSs).
     
 -spec multi_create(Args::list()) -> ok.
 % @doc
-% send multiple create command in one call. Args is a list of tuples with the
+% Send multiple create command in one call. Args is a list of tuples with the
 % same elements as in create/4 call.
 % Example = [{"jojo.rrd",300,[{"speed", "COUNTER", 600, 0, 'Nan'}],"default"}...]
 % @end
@@ -119,7 +96,7 @@ create(File,Step, DSs) ->
 
 -spec create(File::string(), Step::integer(), DSs::[], RRAType::string()) -> ok.
 % @doc
-% where RRAType is "default" or "precise"
+% Where RRAType is "default" or "precise"
 % File: a string represnting the rrd file created
 % Step: an integer
 % DSs: [{DsName::string(), DsType::string(), HeartBeat::integer(), Min::integer(), Max::integer()}]
@@ -128,6 +105,10 @@ create(File,Step, DSs) ->
 create(File, Step, DSs, RRAType) ->
     Args = {File,Step,DSs,RRAType},
     gen_server:call(?MODULE, {call_errd4j, {create, Args}}).
+
+
+
+
 
 % @private
 start_link() ->
