@@ -26,6 +26,11 @@ import java.io.*;
 import java.util.*;
 import java.nio.file.*;
 
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.RejectedExecutionHandler;
+
 import com.ericsson.otp.erlang.OtpErlangString;
 import com.ericsson.otp.erlang.OtpErlangList;
 import com.ericsson.otp.erlang.OtpErlangAtom;
@@ -48,6 +53,7 @@ import org.rrd4j.core.RrdDb;
 import org.rrd4j.core.Sample;
 import org.rrd4j.core.FetchData;
 import org.rrd4j.core.FetchRequest;
+import org.rrd4j.core.RrdDbPool;
 import org.rrd4j.graph.RrdGraphDef;
 import org.rrd4j.graph.RrdGraph;
 import org.rrd4j.DsType;
@@ -78,6 +84,13 @@ public class Errd4j
     // rra definitions
     private static ArcDef[] rraDefault = null;
     private static ArcDef[] rraPrecise = null;
+
+    // threads
+    public  static RrdDbPool rrdDbPool = null;
+    private static ThreadPoolExecutor threadPool = null;
+    private static int threadMaxPoolSize    = 20;
+    private static int threadCorePoolSize   = 8;
+    private static int threadQueueCapacity  = 2000;
 
     public static void main(String[] args)
     {
@@ -130,12 +143,24 @@ public class Errd4j
         // when it is ok, inform the erl errd4j process
         acknowledgeOtpConnexion();
 
+        // set up the threads
+        threadPool = new ThreadPoolExecutor(
+            threadCorePoolSize,
+            threadMaxPoolSize,
+            60,
+            TimeUnit.MINUTES,
+            new ArrayBlockingQueue<Runnable>(threadQueueCapacity),
+            new RrdReject()
+        );
+        rrdDbPool = RrdDbPool.getInstance();    
+
         // then begin to loop and wait for calls
         OtpErlangObject call = null;
+        RrdRunnable worker;
         while (true) try 
         {
             call = mbox.receive();
-            handleMsg(call);
+            threadPool.execute(new RrdRunnable(call));
         } 
         catch (OtpErlangExit e) 
         {
@@ -176,66 +201,6 @@ public class Errd4j
         }
     }
 
-    private static void handleMsg(OtpErlangObject msg)
-    {
-        OtpErlangTuple  tuple;
-        OtpErlangAtom   command;
-        OtpErlangObject caller;
-        OtpErlangTuple  payload;
-        try
-        {
-            tuple       = (OtpErlangTuple) msg;
-            command     = (OtpErlangAtom)   (tuple.elementAt(0));
-            caller      = (OtpErlangObject) (tuple.elementAt(1));
-            payload     = (OtpErlangTuple)  (tuple.elementAt(2));
-        }
-        catch (Exception|Error e)
-        {
-            e.printStackTrace();
-            return;
-        }
-
-        try
-        {
-            switch (command.toString())
-            {
-                case "create":
-                    handleRrdCreate(caller, payload);
-                    break;
-                case "multi_create":
-                    handleRrdMultiCreate(caller, payload);
-                    break;
-                case "update":
-                    handleRrdUpdate(caller, payload);
-                    break;
-                case "graph":
-                    handleRrdGraph(caller, payload);
-                    break;
-                case "update_fetch":
-                    handleRrdUpdateFetch(caller, payload);
-                    break;
-                case "test":
-                    handleRrdTest(caller, payload);
-                    break;
-                default:
-                    OtpErlangTuple dreply = buildOkReply(new OtpErlangString("undefined"));
-                    sendReply(caller, dreply);
-            }
-        }
-        catch (Exception|Error e)
-        {
-            OtpErlangTuple reply = buildErrorReply(
-                new OtpErlangString("Java CATCH: Failed to honour command "
-                    + command.toString() + " -> " + e + e.getMessage())
-            );
-
-            sendReply(caller, reply);
-        }
-    }
-
-    // UTILS  UTILS  UTILS  UTILS  UTILS  UTILS  UTILS  UTILS  UTILS 
-    // UTILS  UTILS  UTILS  UTILS  UTILS  UTILS  UTILS  UTILS  UTILS 
-    // UTILS  UTILS  UTILS  UTILS  UTILS  UTILS  UTILS  UTILS  UTILS 
     public static OtpErlangTuple buildOkReply(OtpErlangObject msg)
     {
         OtpErlangObject[] valObj   = new OtpErlangObject[2];
@@ -259,7 +224,7 @@ public class Errd4j
     /*
      * Testing create, update, and graph from rrd4j tutorial.
      */
-    private static void handleRrdTest(OtpErlangObject caller, OtpErlangTuple tuple) throws Exception
+    public static void handleRrdTest(OtpErlangObject caller, OtpErlangTuple tuple) throws Exception
     {
         // create
         RrdDef rrdDef = new RrdDef("test.rrd");
@@ -323,7 +288,7 @@ public class Errd4j
     /*
      * Handle graph png.
      */
-    private static void handleRrdGraph(OtpErlangObject caller, OtpErlangTuple tuple) throws Exception
+    public static void handleRrdGraph(OtpErlangObject caller, OtpErlangTuple tuple) throws Exception
     {
         OtpErlangString srcFile = (OtpErlangString) (tuple.elementAt(0));
         OtpErlangString dstPng  = (OtpErlangString) (tuple.elementAt(1));
@@ -349,53 +314,15 @@ public class Errd4j
 
 
     /*
-     * Handle update a rrd file and return a fetch value.
-     */
-    private static void handleRrdUpdateFetch(OtpErlangObject caller, OtpErlangTuple tuple) throws Exception
-    {
-        OtpErlangString filePath = (OtpErlangString) (tuple.elementAt(0));
-        OtpErlangList   updates  = (OtpErlangList)   (tuple.elementAt(1));
-        OtpErlangList   fetchs   = (OtpErlangList)   (tuple.elementAt(2));
-
-
-        RrdDb rrdDb   = new RrdDb(filePath.stringValue());
-        try {
-            Sample sample = rrdDb.createSample();
-            Iterator<OtpErlangObject> updatesIt = updates.iterator();
-            while (updatesIt.hasNext())
-            {
-                OtpErlangTuple  up      = (OtpErlangTuple)  updatesIt.next();
-                OtpErlangString name    = (OtpErlangString) (up.elementAt(0));
-                OtpErlangLong   value   = (OtpErlangLong)   (up.elementAt(1));
-                sample.setValue(name.stringValue(), value.longValue());
-            }
-
-            Iterator<OtpErlangObject> fetchsIt = fetchs.iterator();
-            while (fetchsIt.hasNext())
-            {
-                OtpErlangTuple fetch = (OtpErlangTuple) fetchsIt.next();
-                OtpErlangString name    = (OtpErlangString) (fetch.elementAt(0));
-                OtpErlangLong   seconds = (OtpErlangLong)   (fetch.elementAt(1));
-            }
-            sample.update();
-        } catch (Exception e) {
-            rrdDb.close();
-            throw e;  
-        }
-        rrdDb.close();
-        sendReply(caller, atomOk);
-    }
-
-    /*
      * Handle update a rrd file.
      */
-    private static void handleRrdUpdate(OtpErlangObject caller, OtpErlangTuple tuple) throws Exception
+    public static void handleRrdUpdate(OtpErlangObject caller, OtpErlangTuple tuple) throws Exception
     {
         OtpErlangString filePath  = (OtpErlangString) (tuple.elementAt(0));
         OtpErlangList   updates   = (OtpErlangList)   (tuple.elementAt(1));
         OtpErlangLong   timestamp = (OtpErlangLong) (tuple.elementAt(2));
 
-        RrdDb rrdDb = new RrdDb(filePath.stringValue());
+        RrdDb rrdDb = rrdDbPool.requestRrdDb(filePath.stringValue());
 
         try {
             Sample sample = rrdDb.createSample();
@@ -410,14 +337,14 @@ public class Errd4j
             }
             sample.update();
         } catch (Exception e) {
-            rrdDb.close();
+            //rrdDb.close();
             throw e;  
         }
-        rrdDb.close();
+        //rrdDb.close();
         sendReply(caller, atomOk);
     }
     
-    private static void handleRrdMultiCreate(OtpErlangObject caller, OtpErlangTuple tuple) throws Exception
+    public static void handleRrdMultiCreate(OtpErlangObject caller, OtpErlangTuple tuple) throws Exception
     {
         OtpErlangList creates = (OtpErlangList) (tuple.elementAt(0));
         Iterator<OtpErlangObject> createsIt = creates.iterator();
@@ -432,7 +359,7 @@ public class Errd4j
     /*
      * Handle create a rrd file.
      */
-    private static void handleRrdCreate(OtpErlangObject caller, OtpErlangTuple tuple) throws Exception
+    public static void handleRrdCreate(OtpErlangObject caller, OtpErlangTuple tuple) throws Exception
     {
         rrdCreate(tuple);
         sendReply(caller, atomOk);
@@ -507,3 +434,85 @@ public class Errd4j
         return archiveDef;
     }
 }
+
+class RrdRunnable implements Runnable
+{
+    private OtpErlangObject caller;
+    private OtpErlangObject msg;
+
+    public RrdRunnable(OtpErlangObject message)
+    {
+        msg = message;
+    }
+
+    @Override
+    public void run()
+    {
+        OtpErlangTuple  tuple;
+        OtpErlangAtom   command;
+        OtpErlangTuple  payload;
+        try
+        {
+            tuple       = (OtpErlangTuple)  msg;
+            command     = (OtpErlangAtom)   (tuple.elementAt(0));
+            caller      = (OtpErlangObject) (tuple.elementAt(1));
+            payload     = (OtpErlangTuple)  (tuple.elementAt(2));
+        }
+        catch (Exception|Error e)
+        {
+            e.printStackTrace();
+            return;
+        }
+
+        try
+        {
+            switch (command.toString())
+            {
+                case "create":
+                    Errd4j.handleRrdCreate(caller, payload);
+                    break;
+                case "multi_create":
+                    Errd4j.handleRrdMultiCreate(caller, payload);
+                    break;
+                case "update":
+                    Errd4j.handleRrdUpdate(caller, payload);
+                    break;
+                case "graph":
+                    Errd4j.handleRrdGraph(caller, payload);
+                    break;
+                case "test":
+                    Errd4j.handleRrdTest(caller, payload);
+                    break;
+                default:
+                    OtpErlangTuple dreply = Errd4j.buildOkReply(new OtpErlangString("undefined"));
+                    Errd4j.sendReply(caller, dreply);
+            }
+        }
+        catch (Exception|Error e)
+        {
+            OtpErlangTuple reply = Errd4j.buildErrorReply(
+                new OtpErlangString("Java CATCH: Failed to honour command "
+                    + command.toString() + " -> " + e + e.getMessage())
+            );
+
+            Errd4j.sendReply(caller, reply);
+        }
+    }
+
+    public OtpErlangObject getCaller()
+    {
+        return caller;
+    }
+}
+
+
+class RrdReject implements RejectedExecutionHandler
+{
+    public void rejectedExecution(Runnable r, ThreadPoolExecutor executor)
+    {
+        RrdRunnable failRunner = (RrdRunnable) r;
+        Errd4j.sendReply(failRunner.getCaller(), Errd4j.atomOk);
+    }
+}
+
+

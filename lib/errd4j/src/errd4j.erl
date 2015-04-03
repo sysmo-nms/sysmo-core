@@ -46,9 +46,10 @@
 
     update/3,
     graph/0,
-    updates/0,
-    update_fetch/0,
-    updates_fetch/0,
+
+    % TODO
+    %update_fetch/0,
+    %updates_fetch/0,
     test/0
 ]).
 
@@ -61,19 +62,19 @@
 
 -define(ASSERT_TIMEOUT, 5000).
 
-update_fetch() ->
-    File    = "test.rrd",
-    Updates = [{"speed", 3000}],
-    Fetch   = [{"speed", -600}],
-    Args = {File, Updates, Fetch},
-    gen_server:call(?MODULE, {call_errd4j, {update_fetch, Args}}).
-
-updates_fetch() ->
-    File    = "test.rrd",
-    Updates = [{"speed", 3000}],
-    Fetchs  = [{"speed", -600}],
-    Args = [{File, Updates, Fetchs}],
-    gen_server:call(?MODULE, {call_errd4j, {updates_fetch, Args}}).
+% update_fetch() ->
+%     File    = "test.rrd",
+%     Updates = [{"speed", 3000}],
+%     Fetch   = [{"speed", -600}],
+%     Args = {File, Updates, Fetch},
+%     gen_server:call(?MODULE, {call_errd4j, {update_fetch, Args}}).
+% 
+% updates_fetch() ->
+%     File    = "test.rrd",
+%     Updates = [{"speed", 3000}],
+%     Fetchs  = [{"speed", -600}],
+%     Args = [{File, Updates, Fetchs}],
+%     gen_server:call(?MODULE, {call_errd4j, {updates_fetch, Args}}).
 
 
 test() ->
@@ -93,10 +94,6 @@ update(File, Updates, Timestamp) ->
     Args = {File, Updates, Timestamp},
     gen_server:call(?MODULE, {call_errd4j, {update, Args}}).
 
-updates() ->
-    Updates = [{"test.rrd", [{"speed", 3000}]}],
-    gen_server:call(?MODULE, {call_errd4j, {updates, Updates}}).
-    
 create_test() ->
     File = "test.rrd",
     Step = 300,
