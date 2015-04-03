@@ -165,12 +165,16 @@ public class Errd4j
         catch (OtpErlangExit e) 
         {
             e.printStackTrace();
+            threadPool.shutdown();
             break;
         }
         catch (OtpErlangDecodeException e)
         {
             e.printStackTrace();
+            threadPool.shutdown();
+            break;
         }
+        System.exit(0);
     }
 
     private static void acknowledgeOtpConnexion()
