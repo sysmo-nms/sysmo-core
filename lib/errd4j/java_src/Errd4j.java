@@ -266,6 +266,7 @@ public class Errd4j
             }
             sample.update();
         } catch (Exception e) {
+            e.printStackTrace();
             rrdDbPool.release(rrdDb);
             throw e;  
         }
@@ -420,9 +421,10 @@ class RrdRunnable implements Runnable
         {
             OtpErlangTuple reply = Errd4j.buildErrorReply(
                 new OtpErlangString("Java CATCH: Failed to honour command "
-                    + command.toString() + " -> " + e + e.getMessage())
+                    + command.toString() + " -> " + e + " " + e.getMessage())
             );
 
+            e.printStackTrace();
             Errd4j.sendReply(caller, reply);
         }
     }

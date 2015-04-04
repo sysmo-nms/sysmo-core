@@ -288,7 +288,7 @@ public class Snmpman
                 new OtpErlangString("Java CATCH: Failed to honour command "
                     + command.toString() + " -> " + e.getMessage())
             );
-
+            e.printStackTrace();
             sendReply(caller, reply);
         }
     }
