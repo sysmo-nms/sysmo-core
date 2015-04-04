@@ -123,8 +123,7 @@ public class Snmpman
             byte[] engineId = getEngineId(args[0]);
             transport       = new DefaultUdpTransportMapping();
             snmp4jSession   = new Snmp(transport);
-            USM usm         = new USM(SecurityProtocols.getInstance(),
-                    new OctetString(engineId), 0);
+            USM usm         = new USM(SecurityProtocols.getInstance(), new OctetString(engineId), 0);
             SecurityModels.getInstance().addSecurityModel(usm);
             transport.listen();
         }

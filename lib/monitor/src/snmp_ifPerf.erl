@@ -28,19 +28,24 @@
 
 -define(IF_PERF_OIDS, [
     ?IF_INDEX,
-
     ?IF_IN_OCTETS,
-    ?IF_OUT_OCTETS,
-
     ?IF_IN_UCASTPKTS,
-    ?IF_OUT_UCASTPKTS,
-
     ?IF_IN_NUCASTPKTS,
-    ?IF_OUT_NUCASTPKTS,
-
     ?IF_IN_ERRORS,
-    ?IF_OUT_ERRORS
-]).
+    ?IF_OUT_OCTETS,
+    ?IF_OUT_UCASTPKTS,
+    ?IF_OUT_NUCASTPKTS,
+    ?IF_OUT_ERRORS]).
+-record(table_row, {
+    index,
+    in_octets,
+    in_ucastpkts,
+    in_nucastpkts,
+    in_errors,
+    out_octets,
+    out_ucastpkts,
+    out_nucastpkts,
+    out_errors}).
 
 -export([
     start_link/1,
@@ -175,18 +180,13 @@ do_handle_probe_return(PR, #state{name=PName,ref=Ref}) ->
             monitor_data_master:update(probe,NewProbe)
     end,
 
-    % generate rrd updates
+    % log rrd
     IToF = ES#ets_state.local_state#iftable_state.indexes,
     Walk = PR#probe_return.reply_tuple,
-    Ret = errd4j:sysmo_ifperf_update(IToF, Walk),
-    ?LOG({ret_is, Ret}),
-    ?LOG({walk, Walk}),
-    ?LOG({idx, IToF}),
-    
-
+    Ts   = PR#probe_return.timestamp,
+    _RrdUpdatePdu = rrd4j_log(Ts, IToF, Walk),
     % TODO emit
-    %{ok, Pdu} = rrd_log(LState,PR),
-    %emit_all(ES#ets_state.name, ES#ets_state.permissions, [Pdu]),
+    %emit_all(ES#ets_state.name, ES#ets_state.permissions, [RrdUpdatePdu]),
     
     % TODO check return values and warn or crit
 
@@ -318,7 +318,7 @@ exec_snmp_walk(Agent) ->
                 timestamp       = ReplyT,
                 status          = "OK",
                 reply_tuple     = SnmpReply,
-                reply_string    = lists:flatten(io_lib:format("~p",[SnmpReply]))
+                reply_string    = "Snmpwalk OK: ifPerfs Walk Success"
             },
             {ok, PR}
     end.
@@ -374,7 +374,39 @@ rrd4j_init(#probe{name=PName,step=Step,belong_to=TargetName,module_config=Indexe
     % return indexes to files
     IndexesToFiles.
 
+rrd4j_log(Ts, IToF, Walk) ->
+    Updates = make_up(Ts,IToF,Walk),
+    Ret = errd4j:multi_update(Updates),
+    ?LOG({ret,      Ret}),
+    ?LOG({up,       Updates}),
+    ?LOG({idx,      IToF}),
+    ?LOG({walk,     Walk}).
 
+make_up(Ts, IToF, Walk) -> make_up(Ts,IToF,Walk,[]).
+make_up(_ , []  , _   ,Up) -> Up;
+make_up(Ts,[{Index,File}|Rest],Walk, Up) ->
+    % TODO test
+    % lists:keytake reduce the size of the list at each iteration, but it 
+    % also create a new list. Does it really increase performances?
+    case lists:keytake(Index, 2, Walk) of
+        {value, Row, FWalk} ->
+            Updates = [
+                {"OctetsIn",            Row#table_row.in_octets},
+                {"UnicastPacketsIn",    Row#table_row.in_ucastpkts},
+                {"NonUnicastPacketsIn", Row#table_row.in_nucastpkts},
+                {"ErrorsIn",            Row#table_row.in_errors},
+
+                {"OctetsOut",           Row#table_row.out_octets},
+                {"UnicastPacketsOut",   Row#table_row.out_ucastpkts},
+                {"NonUnicastPacketsOut",Row#table_row.out_nucastpkts},
+                {"ErrorsOut",           Row#table_row.out_errors}
+            ],
+            UpCom = {File, Updates, Ts},
+            make_up(Ts,Rest,FWalk,[UpCom|Up]);
+        false ->
+            make_up(Ts,Rest,Walk,Up)
+    end.
+    
 make_ds(HeartBeat) ->
     [
         {"OctetsIn",                "COUNTER", HeartBeat, 0, 'Nan'},
@@ -383,11 +415,6 @@ make_ds(HeartBeat) ->
         {"UnicastPacketsOut",       "COUNTER", HeartBeat, 0, 'Nan'},
         {"NonUnicastPacketsIn",     "COUNTER", HeartBeat, 0, 'Nan'},
         {"NonUnicastPacketsOut",    "COUNTER", HeartBeat, 0, 'Nan'},
-        {"ErrosIn",                 "COUNTER", HeartBeat, 0, 'Nan'},
+        {"ErrorsIn",                "COUNTER", HeartBeat, 0, 'Nan'},
         {"ErrorsOut",               "COUNTER", HeartBeat, 0, 'Nan'}
     ].
-
-
-
-
-

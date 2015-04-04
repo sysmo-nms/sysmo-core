@@ -44,8 +44,7 @@
     multi_create/1,
 
     update/3,
-    multi_update/1,
-    sysmo_ifperf_update/2
+    multi_update/1
 
     % MAYBE
     %update_fetch/0,
@@ -69,14 +68,6 @@
 % @end
 multi_update(Updates) ->
     gen_server:call(?MODULE, {call_errd4j, {multi_update, {Updates}}}).
-
--spec sysmo_ifperf_update(Indexes::[{Index::integer(), File::string()}], Walk::[tuple()]) -> ok.
-% @private
-% @doc
-% Walk is a list of tuple returned by snmpman:walk_table/2.
-% @end
-sysmo_ifperf_update(Indexes, Walk) ->
-    gen_server:call(?MODULE, {call_errd4j, {sysmo_ifperf_update, {Indexes,Walk}}}).
 
 -spec update(File::string(), Updates::{string(), integer()}, Timstamp::integer()) -> ok.
 % @doc
