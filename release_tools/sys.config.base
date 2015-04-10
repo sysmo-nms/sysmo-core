@@ -46,16 +46,9 @@
                     {encoder, supercast_encoder_json}
                 ]
             },
-            {http_sync_dir, "var/yaws/docroot"},
+            {http_sync_dir, "var/docroot"},
             {http_port,     8080},
-            {http_use_ssl,  false},
-            {http_conf,
-                [
-                    {logdir, "var/yaws/log"},
-                    {listen, {0,0,0,0}},
-                    {compression_level, best_speed}
-                ]
-            }
+            {http_use_ssl,  false}
         ]
     },
     {monitor,

@@ -110,6 +110,7 @@ sync_request(PidName, CState) ->
 
 do_sync_request(CState, S) ->
     ES = monitor_data_master:get_probe_state(S#state.name),
+    % TODO sync
     Pdus = [],
     supercast_channel:subscribe(ES#ets_state.name, CState),
     supercast_channel:unicast(CState, Pdus).

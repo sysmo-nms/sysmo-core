@@ -54,7 +54,7 @@ clean: var-clean crash-clean rel-clean
 var-clean:
 	rm -f lib/jars/*.jar
 	rm -rf var/monitor/*/
-	rm -rf var/yaws/docroot/tmp-*/
+	rm -rf var/docroot/tmp-*/
 	rm -rf var/monitor/targets.dets
 	rm -rf var/monitor_events
 	rm -f var/snmp/snmpm_config_db
@@ -73,7 +73,7 @@ rel-clean:
 	rm -f $(REL_NAME).script
 	rm -f $(REL_NAME).boot
 	rm -f sys.config
-	rm -f var/yaws/docroot/nchecks/*.xml
+	rm -f var/docroot/nchecks/*.xml
 	rm -f $(REL_NAME).tar
 	rm -f $(REL_NAME)-$(REL_VERSION).tar.gz
 	rm -rf $(REL_NAME)-win32-$(REL_VERSION)
@@ -122,7 +122,7 @@ ERL_UNTAR   = '\
 # WINDOWS RELEASES BEGIN #
 ##########################
 windows-local-release: compile $(REL_NAME).script jars
-	cp lib/nchecks/priv/defs/en/* var/yaws/docroot/nchecks/
+	cp lib/nchecks/priv/defs/en/* var/docroot/nchecks/
 	cp lib/nchecks/priv/defs/en/* cfg/nchecks/
 	cp lib/pping/pping.exe .
 	cp release_tools/sys.config.base ./sys.config
@@ -137,7 +137,7 @@ windows-release: var-clean rel-clean compile jars
 	rm -f   $(REL_NAME).tar.gz
 	$(ERL) -noinput -eval $(ERL_UNTAR)
 	cp -R var $(TMP_DIR)
-	cp lib/nchecks/priv/defs/en/* $(TMP_DIR)/var/yaws/docroot/nchecks/
+	cp lib/nchecks/priv/defs/en/* $(TMP_DIR)/var/docroot/nchecks/
 	mkdir $(TMP_DIR)/nt-tools
 	cp release_tools/win32/nt-*         $(TMP_DIR)/nt-tools/
 	cp release_tools/win32/erl.ini.src  $(TMP_DIR)/erts-$(ERTS_VER)/bin/erl.ini.src
@@ -156,7 +156,7 @@ windows-release: var-clean rel-clean compile jars
 # UNIX RELEASES BEGIN #
 #######################
 unix-local-release: compile $(REL_NAME).script
-	cp lib/nchecks/priv/defs/en/* var/yaws/docroot/nchecks/
+	cp lib/nchecks/priv/defs/en/* var/docroot/nchecks/
 	cp release_tools/local/sys.config.dev.unix sys.config
 	chmod -w sys.config
 
