@@ -145,6 +145,7 @@ windows-release: var-clean rel-clean compile jars
 	cp release_tools/sysmo.io.URL		$(TMP_DIR)/
 	mkdir $(TMP_DIR)/cfg
 	cp -r cfg/* $(TMP_DIR)/cfg/
+	rm -f $(TMP_DIR)/cfg/users.xml
 	mkdir -p $(TMP_DIR)/lib/jars
 	cp lib/jars/*.jar $(TMP_DIR)/lib/jars/
 	cp lib/pping/pping.exe $(TMP_DIR)/

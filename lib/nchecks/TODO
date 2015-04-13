@@ -16,4 +16,5 @@
     . dns
     . smb
 
+include snmpman
 make javapackager (single executable)

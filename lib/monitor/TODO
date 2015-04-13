@@ -1,10 +1,11 @@
-0 add ref() to probe_nchecks (race condition with send_after())
+0 snmp probes executed by nchecks
 1 dependencies/alertes apres x CRITICAL (and remove inspectors)
 2 template system
     - for probes
     - for snmp
     - events (scheduler/alerts)
 3 general code cleanup/refactor/test (eunit/dializer)
+4 data_master should use dets (why mnesia?)
 
 #
 4 monitor_data_master should not lock on client synchro. Fecth from another
