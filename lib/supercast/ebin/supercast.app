@@ -35,6 +35,7 @@
             supercast_auth,
             supercast_auth_ldap,
             supercast_auth_local,
+            supercast_users_xml,
             supercast_channel,
             supercast_clients_sup,
             supercast_commander,
