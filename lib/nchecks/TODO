@@ -11,10 +11,32 @@
     . imap
     . telnet
  - ssl validity. To check TCP service using SSL, use checkTCP --with-ssl
+
  - udp/perfs
     . dhcp
     . dns
     . smb
 
-include snmpman
+- snmp
+    . cpu/ram
+    . ifperfs
+    . routing protocols
+
+- wmi
+    . cpu/ram
+    . check updates (windows updates) (nograph)
+
+- (ssh? wmi? other?)
+    . check apt (nograph)
+    . check yum (nograph)
+
 make javapackager (single executable)
+
+- Include snmpman
+- Include an "helper" API. Will allow to run a function
+to get (for example):
+    - ifIndexes to choose from,
+    - discover/autofill configuration flags (for example what alg for
+monitoring CPU, RAM, ect wich is different for Cisco/hP/others/?).
+
+- allow nograph xml def
