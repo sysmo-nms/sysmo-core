@@ -1,3 +1,5 @@
+Checks
+======
 - tcp/perfs
     . ssh
     . ntp
@@ -24,19 +26,29 @@
 
 - wmi
     . cpu/ram
+    . processes/services?
     . check updates (windows updates) (nograph)
 
 - (ssh? wmi? other?)
     . check apt (nograph)
     . check yum (nograph)
 
-make javapackager (single executable)
 
-- Include snmpman
+API
+===
+- Native Java API (allow use of nchecks from other languages),
+- Erlang API as module,
+- Offer "opaque" state data to checks ,
+- Include snmpman,
 - Include an "helper" API. Will allow to run a function
-to get (for example):
-    - ifIndexes to choose from,
-    - discover/autofill configuration flags (for example what alg for
-monitoring CPU, RAM, ect wich is different for Cisco/hP/others/?).
+  to get (for example):
+    . ifIndexes to choose from,
+    . discover/autofill configuration flags (for example what alg for
+      monitoring CPU, RAM, ect wich is different for Cisco/hP/others/?).
+- Allow nograph xml def
 
-- allow nograph xml def
+
+Packaging
+=========
+- Make javapackager (single executable)
+
