@@ -389,6 +389,7 @@ make_up(Ts,[{Index,File}|Rest],Walk, Up) ->
     % TODO test
     % lists:keytake reduce the size of the list at each iteration, but it 
     % also create a new list. Does it really increase performances?
+    % Use keysort and takewhile?
     case lists:keytake(Index, 2, Walk) of
         {value, Row, FWalk} ->
             Updates = [
