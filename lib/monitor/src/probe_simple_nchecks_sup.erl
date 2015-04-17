@@ -19,7 +19,7 @@
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 % @private
--module(probe_nchecks_sup).
+-module(probe_simple_nchecks_sup).
 -behaviour(supervisor).
 -include("include/monitor.hrl").
 
@@ -42,12 +42,12 @@ init([]) ->
             {simple_one_for_one, 1, 60},
             [
                 {
-                    probe_nchecks,
-                    {probe_nchecks, start_link, []},
+                    probe_simple_nchecks,
+                    {probe_simple_nchecks, start_link, []},
                     transient,
                     2000,
                     worker,
-                    [probe_nchecks]
+                    [probe_simple_nchecks]
                }
             ]
         }

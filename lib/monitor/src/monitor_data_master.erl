@@ -378,8 +378,8 @@ init_jobs() ->
         equartz:register_internal_job(Name,Tr,{M,F,A})
     end).
 
-launch_probe(#probe{module=probe_nchecks} = Probe) ->
-    probe_nchecks_sup:launch(Probe);
+launch_probe(#probe{module=probe_simple_nchecks} = Probe) ->
+    probe_simple_nchecks_sup:launch(Probe);
 launch_probe(#probe{module=snmp_ifPerf} = Probe) ->
     snmp_ifPerf_sup:launch(Probe).
 

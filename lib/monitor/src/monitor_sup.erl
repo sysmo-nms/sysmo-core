@@ -50,12 +50,12 @@ init([]) ->
                     [snmp_ifPerf_sup]
                 },
                 {
-                    probe_nchecks_sup,
-                    {probe_nchecks_sup, start_link, []},
+                    probe_simple_nchecks_sup,
+                    {probe_simple_nchecks_sup, start_link, []},
                     permanent,
                     infinity,
                     supervisor,
-                    [probe_nchecks_sup]
+                    [probe_simple_nchecks_sup]
                 },
                 {
                     monitor_commander,

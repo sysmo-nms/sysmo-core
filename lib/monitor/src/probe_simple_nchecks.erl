@@ -20,7 +20,7 @@
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 % @doc
 % @end
--module(probe_nchecks).
+-module(probe_simple_nchecks).
 -behaviour(gen_server).
 -behaviour(supercast_channel).
 -include("include/monitor.hrl").
