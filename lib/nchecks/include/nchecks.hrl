@@ -2,5 +2,6 @@
     status,
     performances,
     reply_string,
-    timestamp
+    timestamp,
+    opaque
 }).

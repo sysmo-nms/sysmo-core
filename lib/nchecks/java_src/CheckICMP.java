@@ -61,6 +61,10 @@ public class CheckICMP implements NChecksInterface
     {
     }
 
+    public void setOpaqueData(byte[] opaqueData)
+    {
+    }
+
     public void setConfig(Map<String,Argument> config)
     {
         Argument hostArg     = config.get("host");

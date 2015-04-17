@@ -27,4 +27,5 @@ public interface NChecksInterface
 {
     public Reply execute();
     public void  setConfig(Map<String,Argument> config);
+    public void  setOpaqueData(byte[] opaqueData);
 }

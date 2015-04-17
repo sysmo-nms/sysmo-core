@@ -34,7 +34,7 @@ public class Reply
     private String replyMsg;
     private String errorMsg;
     private String status;
-    private Serializable opaque;
+    private byte[] opaque;
     private long   timestamp;
     private Map<String,Long> perfValues;
 
@@ -45,6 +45,7 @@ public class Reply
         status   = "DOWN";
         timestamp = System.currentTimeMillis() / 1000;
         perfValues = new HashMap<String,Long>();
+        opaque = new byte[0];
     }
 
     /**
@@ -67,8 +68,8 @@ public class Reply
     * to store and compare COUNTER type values, but can be used as your wish.
     * @param value A serializable java object
     */
-    public void setOpaque(Serializable value) {
-    
+    public void setOpaque(byte[] value) {
+        opaque = value;
     }
 
     /**
@@ -108,12 +109,13 @@ public class Reply
         }
         OtpErlangList perfValueList = new OtpErlangList(perfValuesObj);
 
-        OtpErlangObject[] replyRecord = new OtpErlangObject[5];
+        OtpErlangObject[] replyRecord = new OtpErlangObject[6];
         replyRecord[0] = atomNchecksReply;
         replyRecord[1] = new OtpErlangString(status);
         replyRecord[2] = perfValueList;
         replyRecord[3] = new OtpErlangString(replyMsg);
         replyRecord[4] = new OtpErlangLong(timestamp);
+        replyRecord[5] = new OtpErlangBinary(opaque);
 
         OtpErlangTuple replyTuple = new OtpErlangTuple(replyRecord);
         return replyTuple;

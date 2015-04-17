@@ -242,8 +242,9 @@ public class NChecks
                     OtpErlangString erlangClassName = (OtpErlangString) (payload.elementAt(0));
                     String className = "io.sysmo.nchecks.modules." + erlangClassName.stringValue();
                     OtpErlangList   args      = (OtpErlangList)   (payload.elementAt(1));
-                    System.out.println("hello" + className + args);
-                    worker = new NChecksRunnable(Class.forName(className).newInstance(), caller, args);
+                    OtpErlangBinary opaque    = (OtpErlangBinary) (payload.elementAt(2));
+                    System.out.println("hello" + className + args + opaque);
+                    worker = new NChecksRunnable(Class.forName(className).newInstance(), caller, args, opaque);
                     threadPool.execute(worker);
                     System.out.println("hello");
                     break;
@@ -285,21 +286,25 @@ class NChecksRunnable implements Runnable
     private NChecksInterface check;
     private OtpErlangObject  caller;
     private OtpErlangList    args;
+    private OtpErlangBinary  opaqueData;
 
     public NChecksRunnable(
             Object          checkObj,
             OtpErlangObject callerObj,
-            OtpErlangList   argsList)
+            OtpErlangList   argsList,
+            OtpErlangBinary opaque)
     {
         check   = (NChecksInterface) checkObj;
         caller  = callerObj;
         args    = argsList;
+        opaqueData = opaque;
     }
 
     @Override
     public void run()
     {
         check.setConfig(decodeArgs(args));
+        check.setOpaqueData(opaqueData.binaryValue());
         Reply checkReply = check.execute();
         OtpErlangObject reply = NChecks.buildOkReply(checkReply.asTuple());
         NChecks.sendReply(caller, reply);

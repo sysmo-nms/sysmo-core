@@ -63,8 +63,9 @@
     key_vals        = []            :: [{string(), any()}],
     perfs           = []            :: [{string(), integer()}],
     % used by inspector property set/get 
-    reply_tuple     = undefined     :: any()
+    reply_tuple     = undefined     :: any(),
     % used by the rrd logger/walk table
+    opaque          = <<>>          :: any()
 }).
 
 -record(job, {

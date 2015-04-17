@@ -38,14 +38,15 @@
     terminate/2,
     code_change/3]).
 -export([get_perms/1,sync_request/2]).
--export([exec_nchecks/2]).
+-export([exec_nchecks/3]).
 
 -record(state, {name,ref}).
 -record(nchecks_state, {
     class,
     args,
     dump_dir,
-    rrd_file_path
+    rrd_file_path,
+    opaque = <<>>
 }).
 
 
@@ -230,9 +231,10 @@ do_take_of(#state{ref=Ref,name=PName}) ->
     ES      = monitor_data_master:get_probe_state(PName),
     Class   = ES#ets_state.local_state#nchecks_state.class,
     Args    = ES#ets_state.local_state#nchecks_state.args,
+    Opaque  = ES#ets_state.local_state#nchecks_state.opaque,
     ToPid   = self(),
     erlang:spawn(fun() ->
-        {ok, Return}  = ?MODULE:exec_nchecks(Class, Args),
+        {ok, Return}  = ?MODULE:exec_nchecks(Class, Args, Opaque),
         erlang:send(ToPid, {probe_return, Ref, Return})
     end).
 %%----------------------------------------------------------------------------
@@ -330,25 +332,28 @@ nchecks_init(Probe) ->
     {Class, NewArgs}.
 
 
-exec_nchecks(Class, Args) ->
-    case nchecks:check(Class,Args) of
+exec_nchecks(Class, Args, Opaque) ->
+    case nchecks:check(Class,Args, Opaque) of
         {error, Error} ->
             ProbeReturn = #probe_return{
                 status          = "ERROR",
-                reply_string    = Error
+                reply_string    = Error,
+                opaque          = Opaque
             };
         {ok, Reply} ->
             #nchecks_reply{
                status=Status,
                 performances=Perfs,
                 reply_string=Str,
-                timestamp=Ts
+                timestamp=Ts,
+                opaque=Opaque
             } = Reply,
             ProbeReturn = #probe_return{
                 status          = Status,
                 reply_string    = Str,
                 timestamp       = Ts,
-                perfs           = Perfs
+                perfs           = Perfs,
+                opaque          = Opaque
             }
     end,
     {ok, ProbeReturn}.

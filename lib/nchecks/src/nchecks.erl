@@ -39,7 +39,7 @@
 
 % API
 -export([
-    check/2
+    check/3
 ]).
 
 -record(state, {
@@ -51,8 +51,8 @@
 
 -define(ASSERT_TIMEOUT, 60000).
 
-check(Class, ArgList) ->
-    gen_server:call(?MODULE, {call_nchecks, {check, {Class, ArgList}}}, infinity).
+check(Class, ArgList, Opaque) ->
+    gen_server:call(?MODULE, {call_nchecks, {check, {Class, ArgList, Opaque}}}, infinity).
 
 % @private
 % @doc

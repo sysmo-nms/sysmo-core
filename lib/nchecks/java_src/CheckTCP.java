@@ -49,6 +49,25 @@ public class CheckTCP implements NChecksInterface
         System.out.println("init runnable");
     }
 
+    public void setOpaqueData(byte[] opaqueData)
+    {
+        /* DESERIALIZATION EXAMPLE
+        ByteArrayInputStream b = new ByteArrayInputStream(opaqueData);
+        ObjectInputStream o = new ObjectInputStream(b);
+
+        Object myObject = o.readObject();
+            or beter
+        MyObjectClass = (MyObjectClass) o.readObject();
+        */
+
+        /* SERICALIZATION EXAMPLE
+        ByteArrayOutputStream b = new ByteArrayOutputStream();
+        ObjectOutputStream o = new ObjectOutputStream(b);
+        o.writeObject(myObject);
+        opaqueData = b.toByteArray();
+        */
+    }
+
     public void setConfig(Map<String,Argument> config)
     {
         Argument hostArg        = config.get("host");
