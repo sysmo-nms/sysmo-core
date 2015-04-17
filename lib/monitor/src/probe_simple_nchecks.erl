@@ -59,7 +59,7 @@ start_link(#probe{name=Name} = Probe) ->
 do_init(Probe, Ref) ->
     random:seed(erlang:now()),
     {ok, DumpDir}   = application:get_env(supercast, http_sync_dir),
-    {Class, Args}   = nchecks_init(Probe),
+    {Class, Args}   = init_nchecks(Probe),
     RrdFile         = rrd4j_init(Probe),
     TRef            = monitor:send_after_rand(Probe#probe.step, {take_of, Ref}),
     NS = #nchecks_state{
@@ -315,13 +315,14 @@ code_change(_OldVsn, S, _Extra) ->
 %%----------------------------------------------------------------------------
 %% Nchecks functions
 %%----------------------------------------------------------------------------
-nchecks_init(Probe) ->
+init_nchecks(Probe) ->
     [Target]    = monitor_data_master:get(target, Probe#probe.belong_to),
     TargetProp  = Target#target.properties,
     Conf        = Probe#probe.module_config,
     #nchecks_probe_conf{class = Class, args = Args} = Conf,
 
     % if "host" is not defined in probe conf, use the target "host" property
+    % TODO use Check.xml definition
     case proplists:lookup("host", Args) of
         none ->
             TargHost = proplists:lookup("host", TargetProp),
@@ -333,13 +334,7 @@ nchecks_init(Probe) ->
 
 
 exec_nchecks(Class, Args, Opaque) ->
-    case nchecks:check(Class,Args, Opaque) of
-        {error, Error} ->
-            ProbeReturn = #probe_return{
-                status          = "ERROR",
-                reply_string    = Error,
-                opaque          = Opaque
-            };
+    case nchecks:check(Class,Args,Opaque) of
         {ok, Reply} ->
             #nchecks_reply{
                status=Status,
@@ -354,7 +349,16 @@ exec_nchecks(Class, Args, Opaque) ->
                 timestamp       = Ts,
                 perfs           = Perfs,
                 opaque          = Opaque
+            };
+        %{error, busy} ->       TODO (status UNKNOWN)
+        %{error, no_worker} ->  TODO (status UNKNOWN)
+        {error, Error} ->
+            ProbeReturn = #probe_return{
+                status          = "ERROR",
+                reply_string    = Error,
+                opaque          = Opaque
             }
+
     end,
     {ok, ProbeReturn}.
 

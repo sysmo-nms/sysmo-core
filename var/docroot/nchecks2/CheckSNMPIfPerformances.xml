@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<NChecks xmlns="http://schemas.sysmo.io/2015/NChecks">
+    <Check
+        Id="CheckSNMPIfPerformances"
+        Type="snmp"
+        Descr="Monitor and log interfaces performances values"
+        Class="io.sysmo.nchecks.CheckSNMPIfPerformances" >
+        <HelperTable>
+            <Helper
+                Id="SelectIfFromTable"
+                Return="table"
+                Description="Offer a list view of the device interfaces"
+                AutoStart="true"
+                Class="io.sysmo.nchecks.HelperSNMPIfPerformances" >
+                <!--
+                "io.sysmo.nchecks.CheckSNMPIfPerformancesHelper" should return a json object like:
+                {
+                    "name": "SelectIfFromTable",
+                    "rows": [
+                        {"ifType": "9", "ifDescr": "fa0/0", "ifIndex": "0", "ifPhysAddress": "aa"}
+                    ]
+                }
+                -->
+                <HelperTableReturn
+                    TreeRoot="ifType"
+                    Usage="Please select interfaces you want to monitor from the list."
+                    Select="ifIndex"
+                    SelectionType="multiple"
+                    Sort="ifIndex"
+                    Fill="if_selection">
+                    <Column Id="ifType"  Position="0" Type="string"  />
+                    <Column Id="ifDescr" Position="1" Type="string"  />
+                    <Column Id="ifIndex" Position="2" Type="integer" />
+                    <Column Id="ifPhysAddress" Position="3" Type="string" />
+                </HelperTableReturn>
+            </Helper>
+        </HelperTable>
+        <FlagTable>
+            <Flag
+                Id="if_selection"
+                Usage="Comma separated list of integers representing snmp interface indexes"
+                Role="mandatory"
+                Default=""
+                Type="string"
+                Hint="If indexes list"
+                Helper="SelectIfFromTable" />
+        </FlagTable>
+        <Performances Type="table" TableFlag="if_selection">
+            <DataSourceTable>
+                <DataSource Id="IfInOctets"       Type="COUNTER" />
+                <DataSource Id="IfInUcastPkts"    Type="COUNTER" />
+                <DataSource Id="IfInNucastPkts"   Type="COUNTER" />
+                <DataSource Id="IfInErrors"       Type="COUNTER" />
+                <DataSource Id="IfOutOctets"      Type="COUNTER" />
+                <DataSource Id="IfOutUcastPkts"   Type="COUNTER" />
+                <DataSource Id="IfOutNucastPkts"  Type="COUNTER" />
+                <DataSource Id="IfOutErrors"      Type="COUNTER" />
+            </DataSourceTable>
+            <GraphTable>
+                <Graph
+                    Id="OctetsInOut"
+                    Title="Octets In/Out"
+                    VerticalLabel="octets"
+                    Minimum="0"
+                    Maximum="undefined"
+                    Rigid="false"
+                    Base="1000"
+                    Units="octets"
+                    UnitExponent="0" >
+                    <Draw
+                        Type="line"
+                        DataSource="IfInOctets"
+                        Legend="Octets in"
+                        Consolidation="MAX"
+                        Color="#FFFFFFFF" />
+    
+                     <Draw
+                        Type="line"
+                        DataSource="IfOutOctets"
+                        Legend="Octets out"
+                        Consolidation="MAX"
+                        Color="#FFFF00FF" />
+                </Graph>
+                <Graph
+                    Id="UnicastNonUnicast"
+                    Title="Unicast/Non Unicast Packets In/Out"
+                    VerticalLabel="packets"
+                    Minimum="0"
+                    Maximum="undefined"
+                    Rigid="false"
+                    Base="1000"
+                    Units="packets"
+                    UnitExponent="0" >
+                    <Draw
+                        Type="line"
+                        DataSource="IfInUcastPkts"
+                        Legend="Unicast packets In"
+                        Consolidation="MAX"
+                        Color="#FFFFFFFF" />
+    
+                    <Draw
+                        Type="line"
+                        DataSource="IfOutUcastPkts"
+                        Legend="Unicast packets Out"
+                        Consolidation="MAX"
+                        Color="#FFFF00FF" />
+                    <Draw
+                        Type="line"
+                        DataSource="IfInNucastPkts"
+                        Legend="Non Unicast Packets In"
+                        Consolidation="MAX"
+                        Color="#FFFFFFFF" />
+    
+                    <Draw
+                        Type="line"
+                        DataSource="IfOutNucastPkts"
+                        Legend="Non Unicast packets Out"
+                        Consolidation="MAX"
+                        Color="#FFFF00FF" />
+                </Graph>
+                <Graph
+                    Id="ErrorsInOut"
+                    Title="Errors In/Out"
+                    VerticalLabel="Errors"
+                    Minimum="0"
+                    Maximum="undefined"
+                    Rigid="false"
+                    Base="1000"
+                    Units="errors"
+                    UnitExponent="0" >
+                    <Draw
+                        Type="line"
+                        DataSource="IfInErrors"
+                        Legend="Octets in"
+                        Consolidation="MAX"
+                        Color="#FFFFFFFF" />
+    
+                     <Draw
+                        Type="line"
+                        DataSource="IfOutErrors"
+                        Legend="Octets out"
+                        Consolidation="MAX"
+                        Color="#FFFF00FF" />
+                </Graph>
+            </GraphTable>
+        </Performances>
+    </Check>
+</NChecks>
