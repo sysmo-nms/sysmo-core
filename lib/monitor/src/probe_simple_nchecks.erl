@@ -386,28 +386,38 @@ rrd4j_init(#probe{name=Name,step=Step,belong_to=TargetName,module_config=NCheck}
             ClassFile       = string:concat(Class, ".xml"),
             ClassFilePath   = filename:join(["cfg", "nchecks", ClassFile]),
 
-            % read it
-            {#xmlDocument{content=DocumentContent}, _} = xmerl_scan:file(ClassFilePath, [{document, true}]),
-            % extract <check_def> content
-            #xmlElement{content=CheckDefContent} = lists:keyfind(check_def, 2, DocumentContent),
-            % extract <performances> content
-            #xmlElement{content=PerfContent} = lists:keyfind(performances, 2, CheckDefContent),
-            % extract <data_source>
-            #xmlElement{content=DSContent} = lists:keyfind(data_sources, 2, PerfContent),
-            % only keep ds xmlElements
-            DSElements = lists:filter(fun(E) -> is_record(E, xmlElement) end, DSContent),
-            % extract ds variables (ds name, ds type ABSOLUTE|COUNTER|DERIVE|GAUGE)
-            % ex: DSDef = [{"MaxRoundTrip", "GAUGE"}]
-            DSDef = lists:map(fun(#xmlElement{content=DS}) ->
-                #xmlElement{content=[DSNameTextElement]} = lists:keyfind(dsName, 2, DS),
-                #xmlElement{content=[DSTypeTextElement]} = lists:keyfind(dsType, 2, DS),
-                DSName = DSNameTextElement#xmlText.value,
-                DSType = DSTypeTextElement#xmlText.value,
-                {DSName, DSType, Step * 2, 'Nan', 'Nan'}
-            end, DSElements),
+            % extract XML file content
+            {#xmlDocument{content=Document_Content}, _} = xmerl_scan:file(ClassFilePath, [{document, true}]),
+            % extract <NChecks>
+            #xmlElement{content=NChecks_Content} = lists:keyfind('NChecks', 2, Document_Content),
+            % extract <Check>
+            #xmlElement{content=Check_Content} = lists:keyfind('Check', 2, NChecks_Content),
+            % extract <Performances> content
+            #xmlElement{
+                content=Performances_Content,
+                attributes=Performances_Attrib
+            } = lists:keyfind('Performances', 2, Check_Content),
+            % <Performances Type="simple" | "table">
+            #xmlAttribute{value=_Type} = lists:keyfind('Type', 2, Performances_Attrib),
+            % TODO if Type = "table" chech attr TableFlag -> module_config -> Args -> Flag
+            #xmlElement{
+                content=DataSourceTable_Content
+            } = lists:keyfind('DataSourceTable', 2, Performances_Content),
+            
+            % only keep xmlElements
+            DataSourceTableElements = lists:filter(fun(E) ->
+                is_record(E, xmlElement)
+            end, DataSourceTable_Content),
+
+            % build DS definition tuples
+            DataSourceDefinitions = lists:map(fun(#xmlElement{attributes=Attrib}) ->
+                #xmlAttribute{value=DsId}    = lists:keyfind('Id', 2, Attrib),
+                #xmlAttribute{value=DsType}  = lists:keyfind('Type', 2, Attrib),
+                {DsId, DsType, Step *2, 'Nan', 'Nan'}
+            end, DataSourceTableElements),
 
             % create rrd file
-            ok = errd4j:create(ProbeFilePath, Step, DSDef, "default"),
+            ok = errd4j:create(ProbeFilePath, Step, DataSourceDefinitions, "default"),
 
             % return the processed filepath
             ProbeFilePath

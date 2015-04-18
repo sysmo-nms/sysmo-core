@@ -45,7 +45,7 @@
                 Hint="If indexes list"
                 Helper="SelectIfFromTable" />
         </FlagTable>
-        <Performances Type="table" TableFlag="if_selection">
+        <Performances Type="table" FromFlag="if_selection">
             <DataSourceTable>
                 <DataSource Id="IfInOctets"       Type="COUNTER" />
                 <DataSource Id="IfInUcastPkts"    Type="COUNTER" />

@@ -1,97 +1,104 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<check_def check="tcp">
-    <descr>Check TCP service availability on the specified host</descr>
-    <probe_class>CheckTCP</probe_class>
-    <flags_def>
-        <flag_info name="host">
-            <name>host</name>
-            <usage>Host target as ip version 4/6 or hostname</usage>
-            <default></default>
-            <role>mandatory</role>
-            <type>string</type>
-            <hint>Hostname or IP</hint>
-        </flag_info>
-        <flag_info name="port">
-            <name>port</name>
-            <usage>TCP port number to query</usage>
-            <default></default>
-            <role>mandatory</role>
-            <type>int</type>
-            <hint>IP Port</hint>
-        </flag_info>
-        <flag_info name="ms_warning">
-            <name>ms_warning</name>
-            <usage>If connection time exceed the value, set the return status to "WARNING".</usage>
-            <default>500</default>
-            <role>optional</role>
-            <type>int</type>
-            <hint>Milliseconds</hint>
-        </flag_info>
-        <flag_info name="ms_critical">
-            <name>ms_critical</name>
-            <usage>If connection time exceed the value, set the return status to "CRITICAL".</usage>
-            <default>2500</default>
-            <role>optional</role>
-            <type>int</type>
-            <hint>Milliseconds</hint>
-        </flag_info>
-        <flag_info name="ms_timeout">
-            <name>ms_timeout</name>
-            <usage>Abort connection if it exceed the value</usage>
-            <default>5000</default>
-            <role>optional</role>
-            <type>int</type>
-            <hint>Milliseconds</hint>
-        </flag_info>
-       <flag_info name="accept">
-            <name>accept</name>
-           <usage>If the connexion succeed, set the return status to one of "CRITICAL"|"WARNING"|"OK". "OK" is the default behaviour. If set to something other than "OK", "ms_warning" and "ms_critical" are ignored. Usefull if we want the service monitored to be down, and to be alerted when it comes up</usage> 
-            <default>OK</default>
-            <role>optional</role>
-            <type>string</type>
-            <hint>Status</hint>
-        </flag_info>
-    </flags_def>
-    <performances>
-        <data_sources File="TODO tcpPerfs">
-            <ds>
-                <dsName>ReplyDuration</dsName>
-                <dsType>GAUGE</dsType>
-            </ds>
-        </data_sources>
-        <graphs>
-            <graph_desc>
-                <graphName>TCPLatency</graphName>
-                <graphTitle>TCP Performances</graphTitle>
-                <verticalLabel>Milliseconds</verticalLabel>
-                <min>0</min>
-                <max>undefined</max>
-                <rigid>false</rigid>
-                <base>1000</base>
-                <unit>ms</unit>
-                <unitExponent>0</unitExponent>
-                <add>
-                    <name>ReplyDuration</name>
-                    <graphType>line</graphType>
-                    <legend>Max reply latency</legend>
-                    <consolFun>MAX</consolFun>
-                    <color>#729FCFFF</color>
-                </add>
-                <add>
-                    <name>ReplyDuration</name>
-                    <graphType>line</graphType>
-                    <legend>Average reply latency</legend>
-                    <consolFun>AVERAGE</consolFun>
-                    <color>#204A87FF</color>
-                </add>
-                <add>
-                    <name>ReplyDuration</name>
-                    <graphType>line</graphType>
-                    <legend>Min reply latency</legend>
-                    <consolFun>MIN</consolFun>
-                    <color>#3665A4FF</color>
-                </add>
-            </graph_desc>
-        </graphs>
-    </performances>
-</check_def>
+<NChecks xmlns="http://schemas.sysmo.io/2015/NChecks">
+    <Check
+        Id="CheckTCP"
+        Type="simple"
+        Descr="Check TCP service availability on the specified host"
+        Class="io.sysmo.nchecks.CheckTCP" >
+        <FlagTable>
+            <Flag
+                Id="host"
+                Usage="Host target as ip version 4/6 or hostname"
+                AutoFill="host"
+                Default=""
+                Role="mandatory"
+                Type="string"
+                Hint="Hostname or IP" />
+            <Flag
+                Id="port"
+                Usage="TCP port number to query"
+                Min="1"
+                Max="65535"
+                Default="8080"
+                Role="mandatory"
+                Type="integer"
+                Hint="IP protocol port" />
+            <Flag
+                Id="ms_warning"
+                Usage="If connection time exceed the value, set the return status to WARNING."
+                Min="0"
+                Max="60000"
+                Default="500"
+                Role="mandatory"
+                Type="integer"
+                Hint="Milliseconds" />
+            <Flag
+                Id="ms_critical"
+                Usage="If connection time exceed the value, set the return status to CRITICAL."
+                Role="mandatory"
+                Min="0"
+                Max="60000"
+                Default="2500"
+                Type="integer"
+                Hint="Milliseconds" />
+            <Flag
+                Id="ms_timeout"
+                Usage="Abort connection if it exceed the value."
+                Min="0"
+                Max="60000"
+                Default="5000"
+                Role="mandatory"
+                Type="integer"
+                Hint="Milliseconds" />
+            <Flag
+                Id="accept"
+                Usage="If the connexion succeed, set the return status to one of CRITICAL|WARNING|OK. OK is the default behaviour. If set to something other than OK, ms_warning and ms_critical are ignored. Usefull if we want the service monitored to be down, and to be alerted when it comes up."
+                Default="OK"
+                Role="mandatory"
+                Type="string"
+                Hint="CRITICAL | WARNING | OK" >
+                <FlagChoice>
+                    <Choice Id="Status CRITICAL"   Value="CRITICAL" />
+                    <Choice Id="Status WARNING"    Value="WARNING" />
+                    <Choice Id="Status OK"         Value="OK" />
+                </FlagChoice>
+            </Flag>
+        </FlagTable>
+        <Performances Type="simple">
+            <DataSourceTable>
+                <DataSource Id="ReplyDuration" Type="GAUGE" />
+            </DataSourceTable>
+            <GraphTable>
+                <Graph
+                    Id="TCPLatency"
+                    Title="TCP Performances"
+                    VerticalLabel="Milliseconds"
+                    Min="0"
+                    Max="undefined"
+                    Rigid="false"
+                    Base="1000"
+                    Unit="ms"
+                    UnitExponent="0" >
+                    <Draw
+                        Type="line"
+                        DataSource="ReplyDuration"
+                        Legend="Max reply latency"
+                        Consolidation="MAX"
+                        Color="#729FCFFF" />
+                    <Draw
+                        Type="line"
+                        DataSource="ReplyDuration"
+                        Legend="Average reply latency"
+                        Consolidation="MAX"
+                        Color="#204A87FF" />
+                    <Draw
+                        Type="line"
+                        DataSource="ReplyDuration"
+                        Legend="Min reply latency"
+                        Consolidation="MAX"
+                        Color="#3665A4FF" />
+                </Graph>
+            </GraphTable>
+        </Performances>
+    </Check>
+</NChecks>
