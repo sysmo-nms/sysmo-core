@@ -25,30 +25,35 @@ JLIB		= java_lib
 JBIN		= java_bin
 JSRC		= java_src
 NCHECKS_PKG = io/sysmo/nchecks
+
 NCHECKS_MOD_DIR = $(JBIN)/io/sysmo/nchecks/modules
 NCHECKS_SRC = $(wildcard $(JSRC)/Check*.java)
 NCHECKS_TARGETS = $(patsubst $(JSRC)/%.java, $(NCHECKS_MOD_DIR)/%.class, $(NCHECKS_SRC))
+
+HELPERS_DIR = $(JBIN)/io/sysmo/nchecks/helpers
+HELPERS_SRC = $(wildcard $(JSRC)/Helper*.java)
+HELPERS_TARGETS = $(patsubst $(JSRC)/%.java, $(HELPERS_DIR)/%.class, $(HELPERS_SRC))
+
 
 NCHECKS_DIR = $(JBIN)/io/sysmo/nchecks
 
 NCHECKS_MAIN_SRC = $(JSRC)/NChecks.java
 NCHECKS_MAIN_TARGET = $(patsubst $(JSRC)/%.java, $(NCHECKS_DIR)/%.class, $(NCHECKS_MAIN_SRC))
 
-NCHECKS_IF	= $(NCHECK_DIR)/NChecksInterface.class
 NCHECKS_IF_SRC = $(JSRC)/NChecksInterface.java
 NCHECKS_IF_TARGET = $(patsubst $(JSRC)/%.java, $(NCHECKS_DIR)/%.class, $(NCHECKS_IF_SRC))
 
-NCHECKS_CONST = $(NCHECK_DIR)/Const.class
 NCHECKS_CONST_SRC = $(JSRC)/Const.java
 NCHECKS_CONST_TARGET = $(patsubst $(JSRC)/%.java, $(NCHECKS_DIR)/%.class, $(NCHECKS_CONST_SRC))
 
-NCHECKS_ARG	= $(NCHECK_DIR)/Argument.class
 NCHECKS_ARG_SRC = $(JSRC)/Argument.java
 NCHECKS_ARG_TARGET = $(patsubst $(JSRC)/%.java, $(NCHECKS_DIR)/%.class, $(NCHECKS_ARG_SRC))
 
-NCHECKS_RPL	= $(NCHECK_DIR)/Reply.class
 NCHECKS_RPL_SRC = $(JSRC)/Reply.java
 NCHECKS_RPL_TARGET = $(patsubst $(JSRC)/%.java, $(NCHECKS_DIR)/%.class, $(NCHECKS_RPL_SRC))
+
+HELPERS_IF_SRC = $(JSRC)/NHelpersInterface.java
+HELPERS_IF_TARGET = $(patsubst $(JSRC)/%.java, $(NCHECKS_DIR)/%.class, $(HELPERS_IF_SRC))
 
 # define java libs
 JINTERFACE		= OtpErlang.jar
@@ -89,11 +94,14 @@ ebin/%.beam: src/%.erl
 
 # java targets:
 
-$(NCHECKS_DIR)/NChecks.class: $(JSRC)/NChecks.java $(JINTERFACE_DEP) $(NCHECKS_TARGETS)
+$(NCHECKS_DIR)/NChecks.class: $(JSRC)/NChecks.java $(JINTERFACE_DEP) $(NCHECKS_TARGETS) $(HELPERS_TARGETS)
 	$(JAVAC) -d $(JBIN) -classpath $(JCLASSPATH) $(JSRC)/NChecks.java
 
 $(NCHECKS_IF_TARGET): $(JSRC)/NChecksInterface.java $(NCHECKS_ARG_TARGET) $(NCHECKS_RPL_TARGET) $(NCHECKS_CONST_TARGET)
 	$(JAVAC) -d $(JBIN) -classpath $(JBIN) $(JSRC)/NChecksInterface.java
+
+$(HELPERS_IF_TARGET): $(JSRC)/NHelpersInterface.java $(NCHECKS_ARG_TARGET) $(NCHECKS_CONST_TARGET)
+	$(JAVAC) -d $(JBIN) -classpath $(JBIN) $(JSRC)/NHelpersInterface.java
 
 $(NCHECKS_ARG_TARGET): $(JSRC)/Argument.java
 	$(JAVAC) -d $(JBIN) -classpath $(JBIN) $(JSRC)/Argument.java
@@ -104,8 +112,11 @@ $(NCHECKS_RPL_TARGET): $(JSRC)/Reply.java
 $(NCHECKS_CONST_TARGET): $(JSRC)/Const.java
 	$(JAVAC) -d $(JBIN) -classpath $(JCLASSPATH) $(JSRC)/Const.java
 
-
 $(NCHECKS_MOD_DIR)/%.class: java_src/%.java $(NCHECKS_IF_TARGET)
+	$(JAVAC) -d $(JBIN) -classpath $(JBIN) $(JSRC)/$*.java
+
+$(HELPERS_DIR)/%.class: java_src/%.java $(HELPERS_IF_TARGET)
+	echo $(HELPERS_DIR)/$*.class
 	$(JAVAC) -d $(JBIN) -classpath $(JBIN) $(JSRC)/$*.java
 
 # java dependency libs
