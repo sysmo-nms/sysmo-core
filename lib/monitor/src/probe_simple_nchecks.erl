@@ -49,6 +49,11 @@
     opaque = <<>>
 }).
 
+-record(rrd_table, {
+    elements,
+    suffix,
+    base
+}).
 
 
 
@@ -222,6 +227,7 @@ do_handle_probe_return(PR, #state{ref=Ref} = S) ->
             % TODO
             ok;
         _ ->
+            % TODO
             crap
     end,
 
@@ -387,6 +393,9 @@ exec_nchecks(Class, Args, Opaque) ->
 
 rrd4j_init(#probe{name=Name,step=Step,belong_to=TargetName,module_config=NCheck}) ->
 
+    % Extract check config
+    #nchecks_probe_conf{class=Class,args=Args} = NCheck,
+
     % Get the target directory TargetDir
     [Target]    = monitor_data_master:get(target, TargetName),
     TargetDir   = proplists:get_value(var_directory, Target#target.sys_properties),
@@ -399,7 +408,6 @@ rrd4j_init(#probe{name=Name,step=Step,belong_to=TargetName,module_config=NCheck}
     end,
 
     % Generate XML Class definition file path
-    Class = NCheck#nchecks_probe_conf.class,
     ClassDefinitionFile = string:concat(Class, ".xml"),
     ClassDefinitionPath = filename:join(["cfg", "nchecks", ClassDefinitionFile]),
     
@@ -431,8 +439,48 @@ rrd4j_init(#probe{name=Name,step=Step,belong_to=TargetName,module_config=NCheck}
             % "table" Performance type mean one rrd file definition
             % for x files. For monitoring lists of things that return
             % values. For example, interfaces staticstics.
-            % TODO
-            {table, []};
+
+            % Get the prefix used to build file names
+            #xmlAttribute{value=XPerformances_Attr_FilePrefix} =
+                lists:keyfind('FilePrefix', 2, XPerformances_Attrib),
+            % Get the suffix used to build file names
+            #xmlAttribute{value=XPerformances_Attr_FileSuffix} =
+                lists:keyfind('FileSuffix', 2, XPerformances_Attrib),
+
+            % Get the flag from where we will create rrds
+            #xmlAttribute{value=XPerformances_Attr_Flag} =
+                lists:keyfind('Flag', 2, XPerformances_Attrib),
+            % Get the flag conf himself. It should exist because it must be
+            % a mandatory flag.
+            {_Key,FlagValue} = lists:keyfind(XPerformances_Attr_Flag, 1, Args),
+            
+            % Get the flag from where we will create rrds
+            #xmlAttribute{value=XPerformances_Attr_FlagSeparator} =
+                lists:keyfind('FlagSeparator', 2, XPerformances_Attrib),
+
+            % With FlagSeparator and Args[Flag] content, generate a list
+            % of elements
+            RRDList = string:tokens(FlagValue, XPerformances_Attr_FlagSeparator),
+            
+            % Generate the path prefix/suffix
+            BasePrefix = filename:join([ProbeDir, XPerformances_Attr_FilePrefix]),
+            Suffix = XPerformances_Attr_FileSuffix,
+
+            % Create ds definitions
+            DSDefinitions = build_DS_Def(XPerformances_Content, Step),
+
+            % Maybe create rrd file
+            lists:foreach(fun(Element) ->
+                FilePath = lists:flatten([BasePrefix, Element, Suffix]),
+                case filelib:is_regular(FilePath) of
+                    true -> ok;
+                    false ->
+                        ok = errd4j:create(FilePath, Step, DSDefinitions, "default")
+                end
+            end, RRDList),
+
+            ?LOG({RRDList, BasePrefix, Suffix}),
+            {table, #rrd_table{elements=RRDList, base=BasePrefix, suffix=Suffix}};
         "simple" ->
             % "simple" Performance type mean only one rrd file (but off course
             % possibly multiple datasources)
@@ -449,26 +497,10 @@ rrd4j_init(#probe{name=Name,step=Step,belong_to=TargetName,module_config=NCheck}
                     % Allready done
                     {simple, RrdFilePath};
                 false ->
-
-                    % Get the list of RRD datasources
-                    #xmlElement{content=XDataSourceTable_Content} =
-                        lists:keyfind('DataSourceTable', 2, XPerformances_Content),
-            
-                    % Filter and only keep xmlElements
-                    XDataSourceTable_Elements = lists:filter(fun(E) ->
-                        is_record(E, xmlElement)
-                    end, XDataSourceTable_Content),
-
-                    % Build DS definition tuples for errd4j
-                    DSDefinitions = lists:map(fun(#xmlElement{attributes=XAttrib}) ->
-                        #xmlAttribute{value=DsId}    = lists:keyfind('Id', 2, XAttrib),
-                        #xmlAttribute{value=DsType}  = lists:keyfind('Type', 2, XAttrib),
-                        {DsId, DsType, Step *2, 'Nan', 'Nan'}
-                    end, XDataSourceTable_Elements),
-
+                    % Create ds definitions
+                    DSDefinitions = build_DS_Def(XPerformances_Content, Step),
                     % Create rrd file.
                     ok = errd4j:create(RrdFilePath, Step, DSDefinitions, "default"),
-
                     % Return rrd file path
                     {simple, RrdFilePath}
             end;
@@ -476,6 +508,24 @@ rrd4j_init(#probe{name=Name,step=Step,belong_to=TargetName,module_config=NCheck}
             error
     end.
 
+
+build_DS_Def(XPerformances_Content, Step) ->
+    % Get DataSourceTable
+    #xmlElement{content=XDataSourceTable_Content} =
+        lists:keyfind('DataSourceTable', 2, XPerformances_Content),
+
+    % Filter and only keep xmlElements
+    XDataSourceTable_Elements = lists:filter(fun(E) ->
+        is_record(E, xmlElement)
+    end, XDataSourceTable_Content),
+
+    % Build DS definition tuples for errd4j
+    DSDefinitions = lists:map(fun(#xmlElement{attributes=XAttrib}) ->
+        #xmlAttribute{value=DsId}    = lists:keyfind('Id', 2, XAttrib),
+        #xmlAttribute{value=DsType}  = lists:keyfind('Type', 2, XAttrib),
+        {DsId, DsType, Step *2, 'Nan', 'Nan'}
+    end, XDataSourceTable_Elements),
+    DSDefinitions.
 
 % rrd4j_init2(#probe{name=Name,step=Step,belong_to=TargetName,module_config=NCheck}) ->
 % 

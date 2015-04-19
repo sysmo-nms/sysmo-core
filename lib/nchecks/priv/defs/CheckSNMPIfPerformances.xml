@@ -47,7 +47,8 @@
         </FlagTable>
         <Performances
             Type="table"
-            FromFlag="if_selection"
+            Flag="if_selection"
+            FlagSeparator=","
             FilePrefix="ifIndex"
             FileSuffix=".rrd"
             PropertyPrefix="ifIndex"
