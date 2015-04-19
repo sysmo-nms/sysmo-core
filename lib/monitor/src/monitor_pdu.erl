@@ -35,6 +35,7 @@
 
     nchecksSimpleUpdateMessage/3,
     nchecksSimpleDumpMessage/3,
+    nchecksTableDumpMessage/3,
     loggerRrdEvent/3,
     loggerRrdDump/5
 ]).
@@ -90,7 +91,7 @@ nchecksSimpleUpdateMessage(Probe, Ts, Updates) ->
     }.
 
 nchecksSimpleDumpMessage(Probe, DumpDir, RrdFile) ->
-     {struct,
+    {struct,
         [
             {<<"from">>, <<"monitor">>},
             {<<"type">>, <<"nchecksSimpleDumpMessage">>},
@@ -99,6 +100,22 @@ nchecksSimpleDumpMessage(Probe, DumpDir, RrdFile) ->
                     {<<"name">>,        list_to_binary(Probe)},
                     {<<"httpDumpDir">>, list_to_binary(DumpDir)},
                     {<<"rrdFile">>,     list_to_binary(RrdFile)}
+                ]}
+            }
+        ]
+    }.
+
+nchecksTableDumpMessage(Probe, DumpDir, ElemToFile) ->
+    ElToFile = [{list_to_binary(A), list_to_binary(B)} || {A,B} <- ElemToFile],
+    {struct,
+        [
+            {<<"from">>, <<"monitor">>},
+            {<<"type">>, <<"nchecksTableDumpMessage">>},
+            {<<"value">>, 
+                {struct, [
+                    {<<"name">>,        list_to_binary(Probe)},
+                    {<<"httpDumpDir">>, list_to_binary(DumpDir)},
+                    {<<"elementToFile">>,   {struct, ElToFile}}
                 ]}
             }
         ]

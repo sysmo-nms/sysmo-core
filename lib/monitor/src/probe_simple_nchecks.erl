@@ -52,6 +52,7 @@
 -record(rrd_table, {
     elements,
     suffix,
+    prefix,
     base
 }).
 
@@ -113,30 +114,44 @@ sync_request(PidName, CState) ->
 
 do_sync_request(CState, S) ->
     ES       = monitor_data_master:get_probe_state(S#state.name),
+
+    % generate tmp dir in dump dir
+    DumpDir  = ES#ets_state.local_state#nchecks_state.dump_dir,
+    TmpDir   = monitor:generate_temp_dir(),
+    DumpPath = filename:join(DumpDir, TmpDir),
+
     % the rrd file
     {Type, RrdCfg}  = ES#ets_state.local_state#nchecks_state.rrd_config,
     case Type of
         simple ->
+            file:make_dir(DumpPath),
             RrdFile = RrdCfg,
+            % basename needed???
             RrdFileBase = filename:basename(RrdFile),
 
-            % generate tmp dir in dump dir
-            DumpDir  = ES#ets_state.local_state#nchecks_state.dump_dir,
-            TmpDir   = monitor:generate_temp_dir(),
-            TmpPath  = filename:join(DumpDir, TmpDir),
-            file:make_dir(TmpPath),
-
             % copy rrdfile to tmpdir
-            DumpFile = filename:join(TmpPath,RrdFileBase),
+            DumpFile = filename:join(DumpPath,RrdFileBase),
             file:copy(RrdFile, DumpFile),
 
             % build the PDU
-            Pdu = monitor_pdu:nchecksSimpleDumpMessage(S#state.name, TmpDir, RrdFileBase),
+            Pdu = monitor_pdu:nchecksSimpleDumpMessage(
+                        S#state.name, TmpDir, RrdFileBase),
             supercast_channel:subscribe(ES#ets_state.name, CState),
             supercast_channel:unicast(CState, [Pdu]);
         table ->
-            % TODO
-            ok;
+            file:make_dir(DumpPath),
+            #rrd_table{elements=Elements,suffix=Suffix,base=Base,prefix=Prefix} = RrdCfg,
+            ElementToFile = lists:map(fun(X) ->
+                FileName   = lists:flatten([Prefix,X,Suffix]),
+                RrdDstPath = filename:join(DumpPath,FileName),
+                RrdSrcPath = lists:flatten([Base,X,Suffix]),
+                file:copy(RrdSrcPath,RrdDstPath),
+                {X,FileName}
+            end, Elements),
+            Pdu = monitor_pdu:nchecksTableDumpMessage(
+                        S#state.name, TmpDir, ElementToFile),
+            supercast_channel:subscribe(ES#ets_state.name, CState),
+            supercast_channel:unicast(CState, [Pdu]);
         _ ->
             ok
     end.
@@ -487,6 +502,7 @@ rrd4j_init(ProbeName, Step, Args, TargetDir, XCheck_Content) ->
             % Generate the path prefix/suffix
             BasePrefix = filename:join([ProbeDir, XPerformances_Attr_FilePrefix]),
             Suffix = XPerformances_Attr_FileSuffix,
+            Prefix = XPerformances_Attr_FilePrefix,
 
             % Create ds definitions
             DSDefinitions = build_DS_Def(XPerformances_Content, Step),
@@ -502,7 +518,7 @@ rrd4j_init(ProbeName, Step, Args, TargetDir, XCheck_Content) ->
             end, RRDList),
 
             ?LOG({RRDList, BasePrefix, Suffix}),
-            {table, #rrd_table{elements=RRDList, base=BasePrefix, suffix=Suffix}};
+            {table, #rrd_table{elements=RRDList, base=BasePrefix, suffix=Suffix, prefix=Prefix}};
         "simple" ->
             % "simple" Performance type mean only one rrd file (but off course
             % possibly multiple datasources)
