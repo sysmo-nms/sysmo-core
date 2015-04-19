@@ -66,6 +66,7 @@
 % Send multiple update/3 in one call. Arg is a list of tuple.
 % Each tuple have the same content as update/3.
 % @end
+multi_update([]) -> ok;
 multi_update(Updates) ->
     gen_server:call(?MODULE, {call_errd4j, {multi_update, {Updates}}}).
 

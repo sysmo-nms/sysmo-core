@@ -39,6 +39,7 @@ public class CheckSNMPIfPerformances implements NChecksInterface
     private String  ifSelection;
 
     private Integer snmpPort;
+    private String  elementName;
     private String  snmpVersion;
     private String  snmpSeclevel;
     private String  snmpCommunity;
@@ -77,6 +78,7 @@ public class CheckSNMPIfPerformances implements NChecksInterface
     public void setConfig(Map<String,Argument> config)
     {
         this.ifSelection    = config.get("if_selection").getStr();
+        this.elementName    = config.get("target_id").getStr();
         this.snmpPort       = config.get("snmp_port").getInt();
         this.snmpVersion    = config.get("snmp_version").getStr();
         this.snmpSeclevel   = config.get("snmp_seclevel").getStr();
@@ -96,15 +98,15 @@ public class CheckSNMPIfPerformances implements NChecksInterface
         String[] indexes = ifSelection.split(",");
         for (String i: indexes)
         {
-            reply.putPerformance(i, "OctetsIn",             500);
-            reply.putPerformance(i, "UnicastPacketsIn",     500);
-            reply.putPerformance(i, "NonUnicastPacketsIn",  500);
-            reply.putPerformance(i, "ErrorsIn",             500);
+            reply.putPerformance(i, "IfInOctets",       500);
+            reply.putPerformance(i, "IfInUcastPkts",    500);
+            reply.putPerformance(i, "IfInNucastPkts",   500);
+            reply.putPerformance(i, "IfInErrors",       500);
 
-            reply.putPerformance(i, "OctetsOut",            500);
-            reply.putPerformance(i, "UnicastPacketsOut",    500);
-            reply.putPerformance(i, "NonUnicastPacketsOut", 500);
-            reply.putPerformance(i, "ErrorsOut",            500);
+            reply.putPerformance(i, "IfOutOctets",      500);
+            reply.putPerformance(i, "IfOutUcastPkts",   500);
+            reply.putPerformance(i, "IfOutNucastPkts",  500);
+            reply.putPerformance(i, "IfOutErrors",      500);
         }
         reply.setStatus(Const.STATUS_OK);
         reply.setReply("IfPerTableTest success fetch for: " + ifSelection);

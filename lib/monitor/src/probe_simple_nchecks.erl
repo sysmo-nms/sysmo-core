@@ -65,8 +65,7 @@ do_init(Probe) ->
     Ref = make_ref(),
     random:seed(erlang:now()),
     {ok, DumpDir}   = application:get_env(supercast, http_sync_dir),
-    {Class, Args}   = init_nchecks(Probe),
-    RrdConfig       = rrd4j_init(Probe),
+    {{Class, Args}, RrdConfig} = init_nchecks(Probe),
     TRef            = monitor:send_after_rand(Probe#probe.step, {take_of, Ref}),
     NS = #nchecks_state{
         class = Class,
@@ -213,22 +212,24 @@ do_handle_probe_return(PR, #state{ref=Ref} = S) ->
     end,
 
     % errd4j update
-    {Type, RrdCfg} = ES#ets_state.local_state#nchecks_state.rrd_config,
-    case Type of
-        simple ->
-            RrdFile = RrdCfg,
-            [{_,Perfs}] = PR#probe_return.perfs,
-            ok = errd4j:update(RrdFile, Perfs, PR#probe_return.timestamp),
-
-            % SEND MESSAGE to subscribers of self() to update their rrds
-            Pdu2 = monitor_pdu:nchecksSimpleUpdateMessage(S#state.name,PR#probe_return.timestamp,Perfs),
-            supercast_channel:emit(S#state.name, {ES#ets_state.permissions, Pdu2});
-        table ->
-            % TODO
-            ok;
-        _ ->
-            % TODO
-            crap
+    Ts  = PR#probe_return.timestamp,
+    Pfs = PR#probe_return.perfs,
+    case ES#ets_state.local_state#nchecks_state.rrd_config of
+        {simple, RrdFile} ->
+            case Pfs of
+                [] -> ok;
+                [{"simple",Perfs}] ->
+                    ok   = errd4j:update(RrdFile, Perfs, Ts),
+                    Pdu2 = monitor_pdu:nchecksSimpleUpdateMessage(
+                        S#state.name,PR#probe_return.timestamp,Perfs),
+                    supercast_channel:emit(S#state.name, {ES#ets_state.permissions, Pdu2})
+            end;
+        {table, Record} ->
+            #rrd_table{base=BasePrefix,suffix=Suffix} = Record,
+            RrdMultiUpdates = [
+                {lists:flatten([BasePrefix, XE, Suffix]), XP, Ts}
+                    || {XE,XP} <- Pfs],
+            errd4j:multi_update(RrdMultiUpdates)
     end,
 
     % initiate LAUNCH
@@ -327,34 +328,76 @@ code_change(_OldVsn, S, _Extra) ->
     {ok, S}.
 
 
-%%
-%% UTILS
-%%
-%emit_all(_, _, []) -> ok;
-%emit_all(Name, Perm, [Pdu|T]) ->
-%    supercast_channel:emit(Name,{Perm, Pdu}),
-%    emit_all(Name,Perm,T).
-
-
 %%----------------------------------------------------------------------------
 %% Nchecks functions
 %%----------------------------------------------------------------------------
-init_nchecks(Probe) ->
-    [Target]    = monitor_data_master:get(target, Probe#probe.belong_to),
-    TargetProp  = Target#target.properties,
-    Conf        = Probe#probe.module_config,
-    #nchecks_probe_conf{class = Class, args = Args} = Conf,
+init_nchecks(#probe{belong_to=TargetName,module_config=NCheck} = Probe) ->
+
+    % Get the target directory TargetDir
+    [Target]    = monitor_data_master:get(target, TargetName),
+    TargetDir   = proplists:get_value(var_directory, Target#target.sys_properties),
+
+    TargetProp      = Target#target.properties,
+    TargetSysProp   = Target#target.sys_properties,
+    #nchecks_probe_conf{class=Class, args=Args} = NCheck,
 
     % if "host" is not defined in probe conf, use the target "host" property
     % TODO use Check.xml definition
+
     case proplists:lookup("host", Args) of
         none ->
             TargHost = proplists:lookup("host", TargetProp),
-            NewArgs  = [TargHost|Args];
+            Args2  = [TargHost|Args];
         _ ->
-            NewArgs = Args
+            Args2 = Args
     end,
-    {Class, NewArgs}.
+
+    % Generate XML Class definition file path
+    ClassDefinitionFile = string:concat(Class, ".xml"),
+    ClassDefinitionPath = filename:join(["cfg", "nchecks", ClassDefinitionFile]),
+    
+    % Load XML file content
+    {#xmlDocument{content=XDocument_Content}, _} =
+        xmerl_scan:file(ClassDefinitionPath, [{document, true}]),
+
+    % Extract <NChecks> content
+    #xmlElement{content=XNChecks_Content} =
+        lists:keyfind('NChecks', 2, XDocument_Content),
+
+    % Extract <Check> content
+    #xmlElement{content=XCheck_Content,attributes=XCheck_Attrib} =
+        lists:keyfind('Check', 2, XNChecks_Content),
+
+    % handle special case flags
+    case lists:keyfind('Type', 2, XCheck_Attrib) of
+        #xmlAttribute{value="snmp"} ->
+            % must add all the snmp flags +
+            % the targetId for the check to work corectly
+            Adds = [
+                {"target_id", TargetName},
+                {_,_} = lists:keyfind("snmp_port",1,TargetSysProp),
+                {_,_} = lists:keyfind("snmp_version",1,TargetSysProp),
+                {_,_} = lists:keyfind("snmp_seclevel",1,TargetSysProp),
+                {_,_} = lists:keyfind("snmp_community",1,TargetSysProp),
+                {_,_} = lists:keyfind("snmp_usm_user",1,TargetSysProp),
+                {_,_} = lists:keyfind("snmp_authkey",1,TargetSysProp),
+                {_,_} = lists:keyfind("snmp_authproto",1,TargetSysProp),
+                {_,_} = lists:keyfind("snmp_privkey",1,TargetSysProp),
+                {_,_} = lists:keyfind("snmp_privproto",1,TargetSysProp),
+                {_,_} = lists:keyfind("snmp_timeout",1,TargetSysProp),
+                {_,_} = lists:keyfind("snmp_retries",1,TargetSysProp)
+            ],
+            SortedAdds = lists:sort(Adds),
+            SortedArgs2 = lists:sort(Args2),
+            Args3 = lists:merge(SortedAdds, SortedArgs2);
+        _ ->
+            Args3 = Args2
+    end,
+
+    #probe{name=ProbeName,step=Step} = Probe,
+    RrdState = rrd4j_init(ProbeName, Step, Args3, TargetDir, XCheck_Content),
+
+    {{Class, Args3}, RrdState}.
 
 
 exec_nchecks(Class, Args, Opaque) ->
@@ -391,37 +434,16 @@ exec_nchecks(Class, Args, Opaque) ->
 %%----------------------------------------------------------------------------
 
 
-rrd4j_init(#probe{name=Name,step=Step,belong_to=TargetName,module_config=NCheck}) ->
-
-    % Extract check config
-    #nchecks_probe_conf{class=Class,args=Args} = NCheck,
-
-    % Get the target directory TargetDir
-    [Target]    = monitor_data_master:get(target, TargetName),
-    TargetDir   = proplists:get_value(var_directory, Target#target.sys_properties),
+rrd4j_init(ProbeName, Step, Args, TargetDir, XCheck_Content) ->
 
     % Generate check path dir and maybe create
-    ProbeDir = filename:join([TargetDir, Name]),
+    ProbeDir = filename:join([TargetDir, ProbeName]),
     case filelib:is_dir(ProbeDir) of
         false -> file:make_dir(ProbeDir);
         true -> ok
     end,
 
-    % Generate XML Class definition file path
-    ClassDefinitionFile = string:concat(Class, ".xml"),
-    ClassDefinitionPath = filename:join(["cfg", "nchecks", ClassDefinitionFile]),
-    
-    % Load XML file content
-    {#xmlDocument{content=XDocument_Content}, _} =
-        xmerl_scan:file(ClassDefinitionPath, [{document, true}]),
 
-    % Extract <NChecks> content
-    #xmlElement{content=XNChecks_Content} =
-        lists:keyfind('NChecks', 2, XDocument_Content),
-
-    % Extract <Check> content
-    #xmlElement{content=XCheck_Content} =
-        lists:keyfind('Check', 2, XNChecks_Content),
 
     % Extract <Performances> content and attributes. This is where we
     % have all our relevant informations.
@@ -526,61 +548,3 @@ build_DS_Def(XPerformances_Content, Step) ->
         {DsId, DsType, Step *2, 'Nan', 'Nan'}
     end, XDataSourceTable_Elements),
     DSDefinitions.
-
-% rrd4j_init2(#probe{name=Name,step=Step,belong_to=TargetName,module_config=NCheck}) ->
-% 
-%     % get the target directory TargetDir
-%     [Target]    = monitor_data_master:get(target, TargetName),
-%     TargetDir   = proplists:get_value(var_directory, Target#target.sys_properties),
-% 
-%     % generate rrd file path
-%     ProbeFile       = string:concat(Name, ".rrd"),
-%     ProbeFilePath   = filename:join([TargetDir, ProbeFile]),
-% 
-%     % does the rrd file allready exists?
-%     case filelib:is_regular(ProbeFilePath) of
-%         true ->
-%             % only return the processed filepath
-%             ProbeFilePath;
-%         false ->
-%             % we will create the rrd defined in the nchecks class xml file
-%             Class           = NCheck#nchecks_probe_conf.class,
-%             ClassFile       = string:concat(Class, ".xml"),
-%             ClassFilePath   = filename:join(["cfg", "nchecks", ClassFile]),
-% 
-%             % extract XML file content
-%             {#xmlDocument{content=Document_Content}, _} = xmerl_scan:file(ClassFilePath, [{document, true}]),
-%             % extract <NChecks>
-%             #xmlElement{content=NChecks_Content} = lists:keyfind('NChecks', 2, Document_Content),
-%             % extract <Check>
-%             #xmlElement{content=Check_Content} = lists:keyfind('Check', 2, NChecks_Content),
-%             % extract <Performances> content
-%             #xmlElement{
-%                 content=Performances_Content,
-%                 attributes=Performances_Attrib
-%             } = lists:keyfind('Performances', 2, Check_Content),
-%             % <Performances Type="simple" | "table">
-%             #xmlAttribute{value=_Type} = lists:keyfind('Type', 2, Performances_Attrib),
-%             % TODO if Type = "table" chech attr TableFlag -> module_config -> Args -> Flag
-%             #xmlElement{
-%                 content=DataSourceTable_Content
-%             } = lists:keyfind('DataSourceTable', 2, Performances_Content),
-%             
-%             % only keep xmlElements
-%             DataSourceTableElements = lists:filter(fun(E) ->
-%                 is_record(E, xmlElement)
-%             end, DataSourceTable_Content),
-% 
-%             % build DS definition tuples
-%             DataSourceDefinitions = lists:map(fun(#xmlElement{attributes=Attrib}) ->
-%                 #xmlAttribute{value=DsId}    = lists:keyfind('Id', 2, Attrib),
-%                 #xmlAttribute{value=DsType}  = lists:keyfind('Type', 2, Attrib),
-%                 {DsId, DsType, Step *2, 'Nan', 'Nan'}
-%             end, DataSourceTableElements),
-% 
-%             % create rrd file
-%             ok = errd4j:create(ProbeFilePath, Step, DataSourceDefinitions, "default"),
-% 
-%             % return the processed filepath
-%             ProbeFilePath
-%     end.
