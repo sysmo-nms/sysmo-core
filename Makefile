@@ -122,8 +122,8 @@ ERL_UNTAR   = '\
 # WINDOWS RELEASES BEGIN #
 ##########################
 windows-local-release: compile $(REL_NAME).script jars
-	cp lib/nchecks/priv/defs/en/* var/docroot/nchecks/
-	cp lib/nchecks/priv/defs/en/* cfg/nchecks/
+	cp lib/nchecks/priv/defs/* var/docroot/nchecks/
+	cp lib/nchecks/priv/defs/* cfg/nchecks/
 	cp lib/pping/pping.exe .
 	cp release_tools/sys.config.base ./sys.config
 	chmod -w sys.config
@@ -137,7 +137,7 @@ windows-release: var-clean rel-clean compile jars
 	rm -f   $(REL_NAME).tar.gz
 	$(ERL) -noinput -eval $(ERL_UNTAR)
 	cp -R var $(TMP_DIR)
-	cp lib/nchecks/priv/defs/en/* $(TMP_DIR)/var/docroot/nchecks/
+	cp lib/nchecks/priv/defs/* $(TMP_DIR)/var/docroot/nchecks/
 	mkdir $(TMP_DIR)/nt-tools
 	cp release_tools/win32/nt-*         $(TMP_DIR)/nt-tools/
 	cp release_tools/win32/erl.ini.src  $(TMP_DIR)/erts-$(ERTS_VER)/bin/erl.ini.src
@@ -157,7 +157,7 @@ windows-release: var-clean rel-clean compile jars
 # UNIX RELEASES BEGIN #
 #######################
 unix-local-release: compile $(REL_NAME).script
-	cp lib/nchecks/priv/defs/en/* var/docroot/nchecks/
+	cp lib/nchecks/priv/defs/* var/docroot/nchecks/
 	cp release_tools/local/sys.config.dev.unix sys.config
 	chmod -w sys.config
 
