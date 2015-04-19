@@ -45,7 +45,16 @@
                 Hint="If indexes list"
                 Helper="SelectIfFromTable" />
         </FlagTable>
-        <Performances Type="table" FromFlag="if_selection">
+        <Performances
+            Type="table"
+            FromFlag="if_selection"
+            FilePrefix="ifIndex"
+            FileSuffix=".rrd"
+            PropertyPrefix="ifIndex"
+            PropertySuffix=""  >
+            <!-- PropertyPrefix PropertySuffix
+            if present, the client will take the
+            ${prefix="ifIndex"}${"if_selection[x]"}${suffix=""} from the target -->
             <DataSourceTable>
                 <DataSource Id="IfInOctets"       Type="COUNTER" />
                 <DataSource Id="IfInUcastPkts"    Type="COUNTER" />

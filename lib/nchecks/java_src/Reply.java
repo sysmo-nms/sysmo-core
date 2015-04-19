@@ -36,7 +36,7 @@ public class Reply
     private String status;
     private byte[] opaque;
     private long   timestamp;
-    private Map<String,Long> perfValues;
+    private Map<String,PerformanceGroup> perfValues;
 
 
     public Reply() {
@@ -44,7 +44,7 @@ public class Reply
         errorMsg = "";
         status   = "DOWN";
         timestamp = System.currentTimeMillis() / 1000;
-        perfValues = new HashMap<String,Long>();
+        perfValues = new HashMap<String,PerformanceGroup>();
         opaque = new byte[0];
     }
 
@@ -89,21 +89,55 @@ public class Reply
     /**
     * Store a performance value. These performances values will be interpreted
     * by rrd as defined in your module xml definition file.
+    * Same as putPerformance("simple", key, value)
     */
-    public void putPerformance(String key, long value) {
-        perfValues.put(key, new Long(value));
+    public void putPerformance(String key, long value)
+    {
+        putPerformance("simple", key, value);
     }
 
+    /**
+    * Store a performance value. These performances values will be interpreted
+    * by rrd as defined in your module xml definition file.
+    */
+    public void putPerformance(String group, String key, long value)
+    {
+        PerformanceGroup groupObj = getPerformanceGroup(group);
+        groupObj.putPerformance(key, value);
+    }
+
+    /*
+    * Return the PerformanceGroup for key groupKey. Create it if it does not
+    * exist.
+    */
+    private PerformanceGroup getPerformanceGroup(String groupKey)
+    {
+        PerformanceGroup group = perfValues.get(groupKey);
+        if (group == null)
+        {
+            group = new PerformanceGroup();
+            perfValues.put(groupKey, group);
+            return group;
+        }
+        else
+        {
+            return group;
+        }
+    } 
+
+    /*
+    * Return the erlang representation of the Reply.
+    */
     public OtpErlangTuple asTuple() {
         OtpErlangObject[] perfValuesObj = new OtpErlangObject[perfValues.size()];
         int i = 0;
-        for (Map.Entry<String, Long> entry: perfValues.entrySet())
+        for (Map.Entry<String, PerformanceGroup> entry: perfValues.entrySet())
         {
-            String key      = entry.getKey();
-            Long value      = entry.getValue();
+            String key  = entry.getKey();
+            OtpErlangList value = entry.getValue().asList();
             OtpErlangObject[] objEntry = new OtpErlangObject[2];
             objEntry[0] = new OtpErlangString(entry.getKey());
-            objEntry[1] = new OtpErlangLong(entry.getValue().longValue());
+            objEntry[1] = value;
             perfValuesObj[i] = new OtpErlangTuple(objEntry);
             i++;
         }
@@ -119,5 +153,37 @@ public class Reply
 
         OtpErlangTuple replyTuple = new OtpErlangTuple(replyRecord);
         return replyTuple;
+    }
+}
+
+class PerformanceGroup
+{
+    private Map<String,Long> perfValues;
+
+    public PerformanceGroup()
+    {
+        perfValues = new HashMap<String, Long>();
+    }
+
+    public void putPerformance(String key, long value)
+    {
+        perfValues.put(key, new Long(value));
+    }
+
+    public OtpErlangList asList() {
+        OtpErlangObject[] perfValuesObj = new OtpErlangObject[perfValues.size()];
+        int i = 0;
+        for (Map.Entry<String, Long> entry: perfValues.entrySet())
+        {
+            String key      = entry.getKey();
+            Long value      = entry.getValue();
+            OtpErlangObject[] objEntry = new OtpErlangObject[2];
+            objEntry[0] = new OtpErlangString(entry.getKey());
+            objEntry[1] = new OtpErlangLong(entry.getValue().longValue());
+            perfValuesObj[i] = new OtpErlangTuple(objEntry);
+            i++;
+        }
+        OtpErlangList perfValueList = new OtpErlangList(perfValuesObj);
+        return perfValueList;
     }
 }

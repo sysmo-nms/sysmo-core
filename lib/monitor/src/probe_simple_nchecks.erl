@@ -56,7 +56,8 @@
 start_link(#probe{name=Name} = Probe) ->
     gen_server:start_link({via, supercast_registrar, {?MODULE, Name}}, ?MODULE, Probe, []).
 
-do_init(Probe, Ref) ->
+do_init(Probe) ->
+    Ref = make_ref(),
     random:seed(erlang:now()),
     {ok, DumpDir}   = application:get_env(supercast, http_sync_dir),
     {Class, Args}   = init_nchecks(Probe),
@@ -90,7 +91,7 @@ do_init(Probe, Ref) ->
         MilliRem
     ),
     supercast_channel:emit(?MASTER_CHANNEL, {ES#ets_state.permissions, Pdu}),
-    ok.
+    Ref.
 
 
 
@@ -199,7 +200,7 @@ do_handle_probe_return(PR, #state{ref=Ref} = S) ->
 
     % errd4j update
     RrdFile = ES#ets_state.local_state#nchecks_state.rrd_file_path,
-    Perfs   = PR#probe_return.perfs,
+    [{_,Perfs}] = PR#probe_return.perfs,
     ok = errd4j:update(RrdFile, Perfs, PR#probe_return.timestamp),
 
     % SEND MESSAGE to subscribers of self() to update their rrds
@@ -255,8 +256,7 @@ init(Probe) ->
 
 
 handle_cast(do_init, #probe{name=PName} = Probe) ->
-    Ref = make_ref(),
-    do_init(Probe, Ref),
+    Ref = do_init(Probe),
     {noreply, #state{name=PName,ref=Ref}};
 
 handle_cast({sync_request, CState}, S) ->

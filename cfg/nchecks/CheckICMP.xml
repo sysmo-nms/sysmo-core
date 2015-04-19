@@ -95,7 +95,7 @@
                 Hint=""
                 Role="mandatory" />
         </FlagTable>
-        <Performances Type="simple">
+        <Performances Type="simple" FileName="CheckICMP.rrd">
             <DataSourceTable>
                 <DataSource Id="MinRoundTrip"       Type="GAUGE" />
                 <DataSource Id="MaxRoundTrip"       Type="GAUGE" />

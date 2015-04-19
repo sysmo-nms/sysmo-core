@@ -64,7 +64,7 @@
                 </FlagChoice>
             </Flag>
         </FlagTable>
-        <Performances Type="simple">
+        <Performances Type="simple" FileName="CheckTCP.rrd">
             <DataSourceTable>
                 <DataSource Id="ReplyDuration" Type="GAUGE" />
             </DataSourceTable>
