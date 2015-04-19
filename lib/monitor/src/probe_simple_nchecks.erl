@@ -45,7 +45,7 @@
     class,
     args,
     dump_dir,
-    rrd_file_path,
+    rrd_config,
     opaque = <<>>
 }).
 
@@ -61,13 +61,13 @@ do_init(Probe) ->
     random:seed(erlang:now()),
     {ok, DumpDir}   = application:get_env(supercast, http_sync_dir),
     {Class, Args}   = init_nchecks(Probe),
-    RrdFile         = rrd4j_init(Probe),
+    RrdConfig       = rrd4j_init(Probe),
     TRef            = monitor:send_after_rand(Probe#probe.step, {take_of, Ref}),
     NS = #nchecks_state{
         class = Class,
         args = Args,
         dump_dir = DumpDir,
-        rrd_file_path = RrdFile
+        rrd_config = RrdConfig
     },
     ES = #ets_state{
         name             = Probe#probe.name,
@@ -110,23 +110,32 @@ sync_request(PidName, CState) ->
 do_sync_request(CState, S) ->
     ES       = monitor_data_master:get_probe_state(S#state.name),
     % the rrd file
-    RrdFile  = ES#ets_state.local_state#nchecks_state.rrd_file_path,
-    RrdFileBase = filename:basename(RrdFile),
+    {Type, RrdCfg}  = ES#ets_state.local_state#nchecks_state.rrd_config,
+    case Type of
+        simple ->
+            RrdFile = RrdCfg,
+            RrdFileBase = filename:basename(RrdFile),
 
-    % generate tmp dir in dump dir
-    DumpDir  = ES#ets_state.local_state#nchecks_state.dump_dir,
-    TmpDir   = monitor:generate_temp_dir(),
-    TmpPath  = filename:join(DumpDir, TmpDir),
-    file:make_dir(TmpPath),
+            % generate tmp dir in dump dir
+            DumpDir  = ES#ets_state.local_state#nchecks_state.dump_dir,
+            TmpDir   = monitor:generate_temp_dir(),
+            TmpPath  = filename:join(DumpDir, TmpDir),
+            file:make_dir(TmpPath),
 
-    % copy rrdfile to tmpdir
-    DumpFile = filename:join(TmpPath,RrdFileBase),
-    file:copy(RrdFile, DumpFile),
+            % copy rrdfile to tmpdir
+            DumpFile = filename:join(TmpPath,RrdFileBase),
+            file:copy(RrdFile, DumpFile),
 
-    % build the PDU
-    Pdu = monitor_pdu:nchecksDumpMessage(S#state.name, TmpDir, RrdFileBase),
-    supercast_channel:subscribe(ES#ets_state.name, CState),
-    supercast_channel:unicast(CState, [Pdu]).
+            % build the PDU
+            Pdu = monitor_pdu:nchecksSimpleDumpMessage(S#state.name, TmpDir, RrdFileBase),
+            supercast_channel:subscribe(ES#ets_state.name, CState),
+            supercast_channel:unicast(CState, [Pdu]);
+        table ->
+            % TODO
+            ok;
+        _ ->
+            ok
+    end.
 %%----------------------------------------------------------------------------
 %% supercast channel behaviour API END
 %%----------------------------------------------------------------------------
@@ -199,13 +208,22 @@ do_handle_probe_return(PR, #state{ref=Ref} = S) ->
     end,
 
     % errd4j update
-    RrdFile = ES#ets_state.local_state#nchecks_state.rrd_file_path,
-    [{_,Perfs}] = PR#probe_return.perfs,
-    ok = errd4j:update(RrdFile, Perfs, PR#probe_return.timestamp),
+    {Type, RrdCfg} = ES#ets_state.local_state#nchecks_state.rrd_config,
+    case Type of
+        simple ->
+            RrdFile = RrdCfg,
+            [{_,Perfs}] = PR#probe_return.perfs,
+            ok = errd4j:update(RrdFile, Perfs, PR#probe_return.timestamp),
 
-    % SEND MESSAGE to subscribers of self() to update their rrds
-    Pdu2 = monitor_pdu:nchecksUpdateMessage(S#state.name,PR#probe_return.timestamp,Perfs),
-    supercast_channel:emit(S#state.name, {ES#ets_state.permissions, Pdu2}),
+            % SEND MESSAGE to subscribers of self() to update their rrds
+            Pdu2 = monitor_pdu:nchecksSimpleUpdateMessage(S#state.name,PR#probe_return.timestamp,Perfs),
+            supercast_channel:emit(S#state.name, {ES#ets_state.permissions, Pdu2});
+        table ->
+            % TODO
+            ok;
+        _ ->
+            crap
+    end,
 
     % initiate LAUNCH
     TRef        = monitor:send_after(Probe#probe.step, {take_of,Ref}),
@@ -365,60 +383,154 @@ exec_nchecks(Class, Args, Opaque) ->
 %%----------------------------------------------------------------------------
 %% errd4j functions
 %%----------------------------------------------------------------------------
+
+
 rrd4j_init(#probe{name=Name,step=Step,belong_to=TargetName,module_config=NCheck}) ->
 
-    % get the target directory TargetDir
+    % Get the target directory TargetDir
     [Target]    = monitor_data_master:get(target, TargetName),
     TargetDir   = proplists:get_value(var_directory, Target#target.sys_properties),
 
-    % generate rrd file path
-    ProbeFile       = string:concat(Name, ".rrd"),
-    ProbeFilePath   = filename:join([TargetDir, ProbeFile]),
+    % Generate check path dir and maybe create
+    ProbeDir = filename:join([TargetDir, Name]),
+    case filelib:is_dir(ProbeDir) of
+        false -> file:make_dir(ProbeDir);
+        true -> ok
+    end,
 
-    % does the rrd file allready exists?
-    case filelib:is_regular(ProbeFilePath) of
-        true ->
-            % only return the processed filepath
-            ProbeFilePath;
-        false ->
-            % we will create the rrd defined in the nchecks class xml file
-            Class           = NCheck#nchecks_probe_conf.class,
-            ClassFile       = string:concat(Class, ".xml"),
-            ClassFilePath   = filename:join(["cfg", "nchecks", ClassFile]),
+    % Generate XML Class definition file path
+    Class = NCheck#nchecks_probe_conf.class,
+    ClassDefinitionFile = string:concat(Class, ".xml"),
+    ClassDefinitionPath = filename:join(["cfg", "nchecks", ClassDefinitionFile]),
+    
+    % Load XML file content
+    {#xmlDocument{content=XDocument_Content}, _} =
+        xmerl_scan:file(ClassDefinitionPath, [{document, true}]),
 
-            % extract XML file content
-            {#xmlDocument{content=Document_Content}, _} = xmerl_scan:file(ClassFilePath, [{document, true}]),
-            % extract <NChecks>
-            #xmlElement{content=NChecks_Content} = lists:keyfind('NChecks', 2, Document_Content),
-            % extract <Check>
-            #xmlElement{content=Check_Content} = lists:keyfind('Check', 2, NChecks_Content),
-            % extract <Performances> content
-            #xmlElement{
-                content=Performances_Content,
-                attributes=Performances_Attrib
-            } = lists:keyfind('Performances', 2, Check_Content),
-            % <Performances Type="simple" | "table">
-            #xmlAttribute{value=_Type} = lists:keyfind('Type', 2, Performances_Attrib),
-            % TODO if Type = "table" chech attr TableFlag -> module_config -> Args -> Flag
-            #xmlElement{
-                content=DataSourceTable_Content
-            } = lists:keyfind('DataSourceTable', 2, Performances_Content),
+    % Extract <NChecks> content
+    #xmlElement{content=XNChecks_Content} =
+        lists:keyfind('NChecks', 2, XDocument_Content),
+
+    % Extract <Check> content
+    #xmlElement{content=XCheck_Content} =
+        lists:keyfind('Check', 2, XNChecks_Content),
+
+    % Extract <Performances> content and attributes. This is where we
+    % have all our relevant informations.
+    #xmlElement{
+        content=XPerformances_Content,
+        attributes=XPerformances_Attrib
+    } = lists:keyfind('Performances', 2, XCheck_Content),
+
+    % Extract <Performances Type="?"> attributes and switch
+    #xmlAttribute{value=XPerformances_Attr_Type} =
+        lists:keyfind('Type', 2, XPerformances_Attrib),
+
+    case XPerformances_Attr_Type of
+        "table" ->
+            % "table" Performance type mean one rrd file definition
+            % for x files. For monitoring lists of things that return
+            % values. For example, interfaces staticstics.
+            % TODO
+            {table, []};
+        "simple" ->
+            % "simple" Performance type mean only one rrd file (but off course
+            % possibly multiple datasources)
+
+            % Get the FileName
+            #xmlAttribute{value=XPerformances_Attr_FileName} =
+                lists:keyfind('FileName', 2, XPerformances_Attrib),
+
+            % Generate rrd file path
+            RrdFilePath = filename:join([ProbeDir, XPerformances_Attr_FileName]),
+
+            case filelib:is_regular(RrdFilePath) of
+                true ->
+                    % Allready done
+                    {simple, RrdFilePath};
+                false ->
+
+                    % Get the list of RRD datasources
+                    #xmlElement{content=XDataSourceTable_Content} =
+                        lists:keyfind('DataSourceTable', 2, XPerformances_Content),
             
-            % only keep xmlElements
-            DataSourceTableElements = lists:filter(fun(E) ->
-                is_record(E, xmlElement)
-            end, DataSourceTable_Content),
+                    % Filter and only keep xmlElements
+                    XDataSourceTable_Elements = lists:filter(fun(E) ->
+                        is_record(E, xmlElement)
+                    end, XDataSourceTable_Content),
 
-            % build DS definition tuples
-            DataSourceDefinitions = lists:map(fun(#xmlElement{attributes=Attrib}) ->
-                #xmlAttribute{value=DsId}    = lists:keyfind('Id', 2, Attrib),
-                #xmlAttribute{value=DsType}  = lists:keyfind('Type', 2, Attrib),
-                {DsId, DsType, Step *2, 'Nan', 'Nan'}
-            end, DataSourceTableElements),
+                    % Build DS definition tuples for errd4j
+                    DSDefinitions = lists:map(fun(#xmlElement{attributes=XAttrib}) ->
+                        #xmlAttribute{value=DsId}    = lists:keyfind('Id', 2, XAttrib),
+                        #xmlAttribute{value=DsType}  = lists:keyfind('Type', 2, XAttrib),
+                        {DsId, DsType, Step *2, 'Nan', 'Nan'}
+                    end, XDataSourceTable_Elements),
 
-            % create rrd file
-            ok = errd4j:create(ProbeFilePath, Step, DataSourceDefinitions, "default"),
+                    % Create rrd file.
+                    ok = errd4j:create(RrdFilePath, Step, DSDefinitions, "default"),
 
-            % return the processed filepath
-            ProbeFilePath
+                    % Return rrd file path
+                    {simple, RrdFilePath}
+            end;
+        _ ->
+            error
     end.
+
+
+% rrd4j_init2(#probe{name=Name,step=Step,belong_to=TargetName,module_config=NCheck}) ->
+% 
+%     % get the target directory TargetDir
+%     [Target]    = monitor_data_master:get(target, TargetName),
+%     TargetDir   = proplists:get_value(var_directory, Target#target.sys_properties),
+% 
+%     % generate rrd file path
+%     ProbeFile       = string:concat(Name, ".rrd"),
+%     ProbeFilePath   = filename:join([TargetDir, ProbeFile]),
+% 
+%     % does the rrd file allready exists?
+%     case filelib:is_regular(ProbeFilePath) of
+%         true ->
+%             % only return the processed filepath
+%             ProbeFilePath;
+%         false ->
+%             % we will create the rrd defined in the nchecks class xml file
+%             Class           = NCheck#nchecks_probe_conf.class,
+%             ClassFile       = string:concat(Class, ".xml"),
+%             ClassFilePath   = filename:join(["cfg", "nchecks", ClassFile]),
+% 
+%             % extract XML file content
+%             {#xmlDocument{content=Document_Content}, _} = xmerl_scan:file(ClassFilePath, [{document, true}]),
+%             % extract <NChecks>
+%             #xmlElement{content=NChecks_Content} = lists:keyfind('NChecks', 2, Document_Content),
+%             % extract <Check>
+%             #xmlElement{content=Check_Content} = lists:keyfind('Check', 2, NChecks_Content),
+%             % extract <Performances> content
+%             #xmlElement{
+%                 content=Performances_Content,
+%                 attributes=Performances_Attrib
+%             } = lists:keyfind('Performances', 2, Check_Content),
+%             % <Performances Type="simple" | "table">
+%             #xmlAttribute{value=_Type} = lists:keyfind('Type', 2, Performances_Attrib),
+%             % TODO if Type = "table" chech attr TableFlag -> module_config -> Args -> Flag
+%             #xmlElement{
+%                 content=DataSourceTable_Content
+%             } = lists:keyfind('DataSourceTable', 2, Performances_Content),
+%             
+%             % only keep xmlElements
+%             DataSourceTableElements = lists:filter(fun(E) ->
+%                 is_record(E, xmlElement)
+%             end, DataSourceTable_Content),
+% 
+%             % build DS definition tuples
+%             DataSourceDefinitions = lists:map(fun(#xmlElement{attributes=Attrib}) ->
+%                 #xmlAttribute{value=DsId}    = lists:keyfind('Id', 2, Attrib),
+%                 #xmlAttribute{value=DsType}  = lists:keyfind('Type', 2, Attrib),
+%                 {DsId, DsType, Step *2, 'Nan', 'Nan'}
+%             end, DataSourceTableElements),
+% 
+%             % create rrd file
+%             ok = errd4j:create(ProbeFilePath, Step, DataSourceDefinitions, "default"),
+% 
+%             % return the processed filepath
+%             ProbeFilePath
+%     end.

@@ -33,8 +33,8 @@
     elementInterfaceReply/4,
     simpleReply/4,
 
-    nchecksUpdateMessage/3,
-    nchecksDumpMessage/3,
+    nchecksSimpleUpdateMessage/3,
+    nchecksSimpleDumpMessage/3,
     loggerRrdEvent/3,
     loggerRrdDump/5
 ]).
@@ -73,12 +73,12 @@ loggerRrdEvent(Target, Probe, ClientUp) ->
         ]
     }.
 
-nchecksUpdateMessage(Probe, Ts, Updates) ->
+nchecksSimpleUpdateMessage(Probe, Ts, Updates) ->
     Up = [{list_to_binary(K), V} || {K,V} <- Updates],
     {struct,
         [
             {<<"from">>, <<"monitor">>},
-            {<<"type">>, <<"nchecksUpdateMessage">>},
+            {<<"type">>, <<"nchecksSimpleUpdateMessage">>},
             {<<"value">>, 
                 {struct, [
                     {<<"name">>,        list_to_binary(Probe)},
@@ -89,11 +89,11 @@ nchecksUpdateMessage(Probe, Ts, Updates) ->
         ]
     }.
 
-nchecksDumpMessage(Probe, DumpDir, RrdFile) ->
+nchecksSimpleDumpMessage(Probe, DumpDir, RrdFile) ->
      {struct,
         [
             {<<"from">>, <<"monitor">>},
-            {<<"type">>, <<"nchecksDumpMessage">>},
+            {<<"type">>, <<"nchecksSimpleDumpMessage">>},
             {<<"value">>, 
                 {struct, [
                     {<<"name">>,        list_to_binary(Probe)},
