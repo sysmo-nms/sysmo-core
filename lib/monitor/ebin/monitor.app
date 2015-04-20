@@ -35,8 +35,6 @@
             monitor_utils,
             probe_simple_nchecks,
             probe_simple_nchecks_sup,
-            probe_snmp_nchecks,
-            probe_snmp_nchecks_sup,
             snmp_ifPerf,
             snmp_ifPerf_sup
         ]},

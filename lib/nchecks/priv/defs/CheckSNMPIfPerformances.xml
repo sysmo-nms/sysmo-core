@@ -8,6 +8,7 @@
         <HelperTable>
             <Helper
                 Id="SelectIfFromTable"
+                Type="snmp"
                 Return="table"
                 Description="Offer a list view of the device interfaces"
                 AutoStart="true"
@@ -52,7 +53,7 @@
             FilePrefix="ifIndex"
             FileSuffix=".rrd"
             PropertyPrefix="ifIndex"
-            PropertySuffix=""  >
+            PropertySuffix="-ifName"  >
             <!-- PropertyPrefix PropertySuffix
             if present, the client will take the
             ${prefix="ifIndex"}${"if_selection[x]"}${suffix=""} from the target -->
@@ -75,7 +76,7 @@
                     Maximum="undefined"
                     Rigid="false"
                     Base="1000"
-                    Units="octets"
+                    Unit=""
                     UnitExponent="0" >
                     <Draw
                         Type="line"
@@ -99,7 +100,7 @@
                     Maximum="undefined"
                     Rigid="false"
                     Base="1000"
-                    Units="packets"
+                    Unit=""
                     UnitExponent="0" >
                     <Draw
                         Type="line"
@@ -136,7 +137,7 @@
                     Maximum="undefined"
                     Rigid="false"
                     Base="1000"
-                    Units="errors"
+                    Unit=""
                     UnitExponent="0" >
                     <Draw
                         Type="line"

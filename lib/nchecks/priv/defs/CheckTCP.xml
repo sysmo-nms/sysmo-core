@@ -17,8 +17,8 @@
             <Flag
                 Id="port"
                 Usage="TCP port number to query"
-                Min="1"
-                Max="65535"
+                Minimum="1"
+                Maximum="65535"
                 Default="8080"
                 Role="mandatory"
                 Type="integer"
@@ -26,8 +26,8 @@
             <Flag
                 Id="ms_warning"
                 Usage="If connection time exceed the value, set the return status to WARNING."
-                Min="0"
-                Max="60000"
+                Minimum="0"
+                Maximum="60000"
                 Default="500"
                 Role="mandatory"
                 Type="integer"
@@ -36,16 +36,16 @@
                 Id="ms_critical"
                 Usage="If connection time exceed the value, set the return status to CRITICAL."
                 Role="mandatory"
-                Min="0"
-                Max="60000"
+                Minimum="0"
+                Maximum="60000"
                 Default="2500"
                 Type="integer"
                 Hint="Milliseconds" />
             <Flag
                 Id="ms_timeout"
                 Usage="Abort connection if it exceed the value."
-                Min="0"
-                Max="60000"
+                Minimum="0"
+                Maximum="60000"
                 Default="5000"
                 Role="mandatory"
                 Type="integer"
@@ -73,8 +73,8 @@
                     Id="TCPLatency"
                     Title="TCP Performances"
                     VerticalLabel="Milliseconds"
-                    Min="0"
-                    Max="undefined"
+                    Minimum="0"
+                    Maximum="undefined"
                     Rigid="false"
                     Base="1000"
                     Unit="ms"
@@ -82,7 +82,7 @@
                     <Draw
                         Type="line"
                         DataSource="ReplyDuration"
-                        Legend="Max reply latency"
+                        Legend="Maximum reply latency"
                         Consolidation="MAX"
                         Color="#729FCFFF" />
                     <Draw
@@ -94,7 +94,7 @@
                     <Draw
                         Type="line"
                         DataSource="ReplyDuration"
-                        Legend="Min reply latency"
+                        Legend="Minimum reply latency"
                         Consolidation="MAX"
                         Color="#3665A4FF" />
                 </Graph>

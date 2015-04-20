@@ -232,20 +232,26 @@ do_handle_probe_return(PR, #state{ref=Ref} = S) ->
     case ES#ets_state.local_state#nchecks_state.rrd_config of
         {simple, RrdFile} ->
             case Pfs of
-                [] -> ok;
+                [] ->
+                    UpdatePdu = monitor_pdu:nchecksSimpleUpdateMessage(
+                        S#state.name,PR#probe_return.timestamp, []);
                 [{"simple",Perfs}] ->
                     ok   = errd4j:update(RrdFile, Perfs, Ts),
-                    Pdu2 = monitor_pdu:nchecksSimpleUpdateMessage(
-                        S#state.name,PR#probe_return.timestamp,Perfs),
-                    supercast_channel:emit(S#state.name, {ES#ets_state.permissions, Pdu2})
+                    UpdatePdu = monitor_pdu:nchecksSimpleUpdateMessage(
+                        S#state.name,PR#probe_return.timestamp,Perfs)
             end;
         {table, Record} ->
             #rrd_table{base=BasePrefix,suffix=Suffix} = Record,
             RrdMultiUpdates = [
                 {lists:flatten([BasePrefix, XE, Suffix]), XP, Ts}
                     || {XE,XP} <- Pfs],
-            errd4j:multi_update(RrdMultiUpdates)
+            ok = errd4j:multi_update(RrdMultiUpdates),
+            UpdatePdu = monitor_pdu:nchecksTableUpdateMessage(
+                S#state.name,PR#probe_return.timestamp,Pfs)
     end,
+
+    % send update pdu for subscribers
+    supercast_channel:emit(S#state.name, {ES#ets_state.permissions, UpdatePdu}),
 
     % initiate LAUNCH
     TRef        = monitor:send_after(Probe#probe.step, {take_of,Ref}),

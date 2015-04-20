@@ -35,6 +35,7 @@
 
     nchecksSimpleUpdateMessage/3,
     nchecksSimpleDumpMessage/3,
+    nchecksTableUpdateMessage/3,
     nchecksTableDumpMessage/3,
     loggerRrdEvent/3,
     loggerRrdDump/5
@@ -104,6 +105,30 @@ nchecksSimpleDumpMessage(Probe, DumpDir, RrdFile) ->
             }
         ]
     }.
+
+nchecksTableUpdateMessage(Probe, Ts, Updates) ->
+    Up = lists:map(fun({Idx, PropList}) ->
+        {
+            list_to_binary(Idx),
+            {struct,
+                [{list_to_binary(K), V} || {K,V} <- PropList]
+            }
+        }
+    end, Updates),
+    {struct,
+        [
+            {<<"from">>, <<"monitor">>},
+            {<<"type">>, <<"nchecksTableUpdateMessage">>},
+            {<<"value">>, 
+                {struct, [
+                    {<<"name">>,        list_to_binary(Probe)},
+                    {<<"timestamp">>,   Ts},
+                    {<<"rrdupdates">>,  {struct, Up}}
+                ]}
+            }
+        ]
+    }.
+
 
 nchecksTableDumpMessage(Probe, DumpDir, ElemToFile) ->
     ElToFile = [{list_to_binary(A), list_to_binary(B)} || {A,B} <- ElemToFile],
