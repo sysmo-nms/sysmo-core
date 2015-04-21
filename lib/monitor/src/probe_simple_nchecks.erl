@@ -19,6 +19,8 @@
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 % @doc
+% This is the main and most complex module of sysmo. To work correctly,
+% Nchecks definitions xml file must be accessible and valid.
 % @end
 -module(probe_simple_nchecks).
 -behaviour(gen_server).
@@ -60,14 +62,15 @@
 
 
 start_link(#probe{name=Name} = Probe) ->
-    gen_server:start_link({via, supercast_registrar, {?MODULE, Name}}, ?MODULE, Probe, []).
+    gen_server:start_link({via, supercast_registrar, 
+                                    {?MODULE, Name}}, ?MODULE, Probe, []).
 
 do_init(Probe) ->
     Ref = make_ref(),
     random:seed(erlang:now()),
     {ok, DumpDir}   = application:get_env(supercast, http_sync_dir),
     {{Class, Args}, RrdConfig} = init_nchecks(Probe),
-    TRef            = monitor:send_after_rand(Probe#probe.step, {take_of, Ref}),
+    TRef = monitor:send_after_rand(Probe#probe.step, {take_of, Ref}),
     NS = #nchecks_state{
         class = Class,
         args = Args,
@@ -106,11 +109,13 @@ do_init(Probe) ->
 %% supercast channel behaviour API
 %%----------------------------------------------------------------------------
 get_perms(PidName) ->
-    #ets_state{permissions=Perm} = monitor_data_master:get_probe_state(PidName),
+    #ets_state{permissions=Perm} =
+            monitor_data_master:get_probe_state(PidName),
     Perm.
 
 sync_request(PidName, CState) ->
-    gen_server:cast({via, supercast_registrar, PidName}, {sync_request, CState}).
+    gen_server:cast({via, supercast_registrar, PidName},
+                                    {sync_request, CState}).
 
 do_sync_request(CState, S) ->
     ES       = monitor_data_master:get_probe_state(S#state.name),
@@ -140,7 +145,9 @@ do_sync_request(CState, S) ->
             supercast_channel:unicast(CState, [Pdu]);
         table ->
             file:make_dir(DumpPath),
-            #rrd_table{elements=Elements,suffix=Suffix,base=Base,prefix=Prefix} = RrdCfg,
+            #rrd_table{elements=Elements,suffix=Suffix,
+                                            base=Base,prefix=Prefix} = RrdCfg,
+
             ElementToFile = lists:map(fun(X) ->
                 FileName   = lists:flatten([Prefix,X,Suffix]),
                 RrdDstPath = filename:join(DumpPath,FileName),
@@ -148,8 +155,9 @@ do_sync_request(CState, S) ->
                 file:copy(RrdSrcPath,RrdDstPath),
                 {X,FileName}
             end, Elements),
+
             Pdu = monitor_pdu:nchecksTableDumpMessage(
-                        S#state.name, TmpDir, ElementToFile),
+                                        S#state.name, TmpDir, ElementToFile),
             supercast_channel:subscribe(ES#ets_state.name, CState),
             supercast_channel:unicast(CState, [Pdu]);
         _ ->
@@ -196,7 +204,8 @@ do_force(#state{ref=Ref} = S) ->
                 ES#ets_state.name,
                 500
             ),
-            supercast_channel:emit(?MASTER_CHANNEL, {ES#ets_state.permissions, Pdu})
+            supercast_channel:emit(?MASTER_CHANNEL,
+                                            {ES#ets_state.permissions, Pdu})
     end.
 %%----------------------------------------------------------------------------
 %% monitor API END
@@ -236,7 +245,7 @@ do_handle_probe_return(PR, #state{ref=Ref} = S) ->
                     UpdatePdu = monitor_pdu:nchecksSimpleUpdateMessage(
                         S#state.name,PR#probe_return.timestamp, []);
                 [{"simple",Perfs}] ->
-                    ok   = errd4j:update(RrdFile, Perfs, Ts),
+                    (catch  errd4j:update(RrdFile, Perfs, Ts)),
                     UpdatePdu = monitor_pdu:nchecksSimpleUpdateMessage(
                         S#state.name,PR#probe_return.timestamp,Perfs)
             end;
@@ -245,13 +254,14 @@ do_handle_probe_return(PR, #state{ref=Ref} = S) ->
             RrdMultiUpdates = [
                 {lists:flatten([BasePrefix, XE, Suffix]), XP, Ts}
                     || {XE,XP} <- Pfs],
-            ok = errd4j:multi_update(RrdMultiUpdates),
+            (catch errd4j:multi_update(RrdMultiUpdates)),
             UpdatePdu = monitor_pdu:nchecksTableUpdateMessage(
                 S#state.name,PR#probe_return.timestamp,Pfs)
     end,
 
     % send update pdu for subscribers
-    supercast_channel:emit(S#state.name, {ES#ets_state.permissions, UpdatePdu}),
+    supercast_channel:emit(S#state.name,
+                                    {ES#ets_state.permissions, UpdatePdu}),
 
     % initiate LAUNCH
     TRef        = monitor:send_after(Probe#probe.step, {take_of,Ref}),
@@ -281,7 +291,7 @@ do_take_of(#state{ref=Ref,name=PName}) ->
     Opaque  = ES#ets_state.local_state#nchecks_state.opaque,
     ToPid   = self(),
     erlang:spawn(fun() ->
-        {ok, Return}  = ?MODULE:exec_nchecks(Class, Args, Opaque),
+        {ok, Return} = ?MODULE:exec_nchecks(Class, Args, Opaque),
         erlang:send(ToPid, {probe_return, Ref, Return})
     end).
 %%----------------------------------------------------------------------------
@@ -328,7 +338,6 @@ handle_call(shut_it_down, _F, #state{name=Name} = S) ->
 handle_call(_Call, _From, S) ->
     {noreply, S}.
 
-
 handle_info({probe_return, Ref, PR}, #state{ref=Ref} = S) ->
     do_handle_probe_return(PR, S),
     {noreply, S};
@@ -355,8 +364,9 @@ code_change(_OldVsn, S, _Extra) ->
 init_nchecks(#probe{belong_to=TargetName,module_config=NCheck} = Probe) ->
 
     % Get the target directory TargetDir
-    [Target]    = monitor_data_master:get(target, TargetName),
-    TargetDir   = proplists:get_value(var_directory, Target#target.sys_properties),
+    [Target]  = monitor_data_master:get(target, TargetName),
+    TargetDir = proplists:get_value(var_directory,
+                                            Target#target.sys_properties),
 
     TargetProp      = Target#target.properties,
     TargetSysProp   = Target#target.sys_properties,
@@ -375,7 +385,8 @@ init_nchecks(#probe{belong_to=TargetName,module_config=NCheck} = Probe) ->
 
     % Generate XML Class definition file path
     ClassDefinitionFile = string:concat(Class, ".xml"),
-    ClassDefinitionPath = filename:join(["cfg", "nchecks", ClassDefinitionFile]),
+    ClassDefinitionPath = filename:join(
+                                    ["cfg", "nchecks", ClassDefinitionFile]),
     
     % Load XML file content
     {#xmlDocument{content=XDocument_Content}, _} =
@@ -422,7 +433,13 @@ init_nchecks(#probe{belong_to=TargetName,module_config=NCheck} = Probe) ->
 
 
 exec_nchecks(Class, Args, Opaque) ->
-    case nchecks:check(Class,Args,Opaque) of
+    case (catch(nchecks:check(Class,Args,Opaque))) of
+        {'EXIT', Error} ->
+            ProbeReturn = #probe_return{
+                status          = "ERROR",
+                reply_string    = Error,
+                opaque          = Opaque
+            };
         {ok, Reply} ->
             #nchecks_reply{
                status=Status,
@@ -438,15 +455,12 @@ exec_nchecks(Class, Args, Opaque) ->
                 perfs           = Perfs,
                 opaque          = Opaque
             };
-        %{error, busy} ->       TODO (status UNKNOWN)
-        %{error, no_worker} ->  TODO (status UNKNOWN)
         {error, Error} ->
             ProbeReturn = #probe_return{
                 status          = "ERROR",
                 reply_string    = Error,
                 opaque          = Opaque
             }
-
     end,
     {ok, ProbeReturn}.
 
@@ -503,10 +517,12 @@ rrd4j_init(ProbeName, Step, Args, TargetDir, XCheck_Content) ->
 
             % With FlagSeparator and Args[Flag] content, generate a list
             % of elements
-            RRDList = string:tokens(FlagValue, XPerformances_Attr_FlagSeparator),
+            RRDList = string:tokens(FlagValue,
+                                            XPerformances_Attr_FlagSeparator),
             
             % Generate the path prefix/suffix
-            BasePrefix = filename:join([ProbeDir, XPerformances_Attr_FilePrefix]),
+            BasePrefix = filename:join([ProbeDir,
+                                            XPerformances_Attr_FilePrefix]),
             Suffix = XPerformances_Attr_FileSuffix,
             Prefix = XPerformances_Attr_FilePrefix,
 
@@ -519,12 +535,14 @@ rrd4j_init(ProbeName, Step, Args, TargetDir, XCheck_Content) ->
                 case filelib:is_regular(FilePath) of
                     true -> ok;
                     false ->
-                        ok = errd4j:create(FilePath, Step, DSDefinitions, "default")
+                        ok = errd4j:create(FilePath, Step, 
+                                                    DSDefinitions, "default")
                 end
             end, RRDList),
 
             ?LOG({RRDList, BasePrefix, Suffix}),
-            {table, #rrd_table{elements=RRDList, base=BasePrefix, suffix=Suffix, prefix=Prefix}};
+            {table, #rrd_table{elements=RRDList,base=BasePrefix,
+                                            suffix=Suffix,prefix=Prefix}};
         "simple" ->
             % "simple" Performance type mean only one rrd file (but off course
             % possibly multiple datasources)
@@ -534,7 +552,8 @@ rrd4j_init(ProbeName, Step, Args, TargetDir, XCheck_Content) ->
                 lists:keyfind('FileName', 2, XPerformances_Attrib),
 
             % Generate rrd file path
-            RrdFilePath = filename:join([ProbeDir, XPerformances_Attr_FileName]),
+            RrdFilePath = filename:join([ProbeDir,
+                                            XPerformances_Attr_FileName]),
 
             case filelib:is_regular(RrdFilePath) of
                 true ->
@@ -544,7 +563,8 @@ rrd4j_init(ProbeName, Step, Args, TargetDir, XCheck_Content) ->
                     % Create ds definitions
                     DSDefinitions = build_DS_Def(XPerformances_Content, Step),
                     % Create rrd file.
-                    ok = errd4j:create(RrdFilePath, Step, DSDefinitions, "default"),
+                    ok = errd4j:create(RrdFilePath,Step,
+                                                DSDefinitions,"default"),
                     % Return rrd file path
                     {simple, RrdFilePath}
             end;

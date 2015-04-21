@@ -50,9 +50,11 @@
 }).
 
 -define(ASSERT_TIMEOUT, 60000).
+-define(CHECK_TIMEOUT, 15000).
 
 check(Class, ArgList, Opaque) ->
-    gen_server:call(?MODULE, {call_nchecks, {check, {Class, ArgList, Opaque}}}, infinity).
+    gen_server:call(?MODULE, {call_nchecks, 
+                {check, {Class, ArgList, Opaque}}}, ?CHECK_TIMEOUT).
 
 % @private
 % @doc
