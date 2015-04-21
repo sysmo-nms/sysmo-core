@@ -22,7 +22,7 @@
 % This is the main and most complex module of sysmo. To work correctly,
 % Nchecks definitions xml file must be accessible and valid.
 % @end
--module(probe_simple_nchecks).
+-module(nchecks_probe).
 -behaviour(gen_server).
 -behaviour(supercast_channel).
 -include("include/monitor.hrl").

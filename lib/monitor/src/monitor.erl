@@ -99,11 +99,11 @@ fire_job(JobId) ->
 dependency_new(Probe, Depend) ->
     monitor_data_master:new(dependency, #dependency{a_probe=Probe,his_parent=Depend}).
 
-new_probe({probe_simple_nchecks, JavaClass, Args}, Target) ->
+new_probe({nchecks_probe, JavaClass, Args}, Target) ->
     Probe = #probe{
         belong_to   = Target,
         description = lists:concat(["NCHECKS: ", JavaClass]),
-        module = probe_simple_nchecks,
+        module = nchecks_probe,
         module_config = #nchecks_probe_conf{
             class       = JavaClass,
             args        = Args

@@ -78,7 +78,7 @@ handle_cast({{"createNchecksQuery", Contents}, CState}, S) ->
     Name    = binary_to_list(proplists:get_value(<<"name">>, Contents2)),
     Target  = binary_to_list(proplists:get_value(<<"target">>, Contents2)),
     QueryId = proplists:get_value(<<"queryId">>, Contents2),
-    ProbeId = monitor:new_probe({probe_simple_nchecks, Name, Prop2}, Target),
+    ProbeId = monitor:new_probe({nchecks_probe, Name, Prop2}, Target),
     ReplyPDU = monitor_pdu:simpleReply(QueryId, true, true, ProbeId),
     supercast_channel:unicast(CState, [ReplyPDU]),
     {noreply, S};

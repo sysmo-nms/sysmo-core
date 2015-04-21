@@ -33,8 +33,8 @@
             monitor_pdu,
             monitor_sup,
             monitor_utils,
-            probe_simple_nchecks,
-            probe_simple_nchecks_sup,
+            nchecks_probe,
+            nchecks_probe_sup,
             snmp_ifPerf,
             snmp_ifPerf_sup
         ]},
