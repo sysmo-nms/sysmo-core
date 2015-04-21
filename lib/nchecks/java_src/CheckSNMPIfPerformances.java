@@ -25,6 +25,9 @@ import io.sysmo.nchecks.NChecksInterface;
 import io.sysmo.nchecks.Argument;
 import io.sysmo.nchecks.Reply;
 import io.sysmo.nchecks.Const;
+import io.sysmo.nchecks.NChecksSNMP;
+
+import org.snmp4j.*;
 
 import java.util.Map;
 import java.time.Instant;
@@ -38,18 +41,7 @@ public class CheckSNMPIfPerformances implements NChecksInterface
 {
     private String  ifSelection;
 
-    private Integer snmpPort;
-    private String  elementName;
-    private String  snmpVersion;
-    private String  snmpSeclevel;
-    private String  snmpCommunity;
-    private String  snmpUsmUser;
-    private String  snmpAuthKey;
-    private String  snmpAuthProto;
-    private String  snmpPrivKey;
-    private String  snmpPrivProto;
-    private Integer snmpTimeout;
-    private Integer snmpRetries;
+    private Map<String,Argument> allConfig;
 
     public CheckSNMPIfPerformances()
     {
@@ -77,23 +69,19 @@ public class CheckSNMPIfPerformances implements NChecksInterface
 
     public void setConfig(Map<String,Argument> config)
     {
-        this.ifSelection    = config.get("if_selection").getStr();
-        this.elementName    = config.get("target_id").getStr();
-        this.snmpPort       = config.get("snmp_port").getInt();
-        this.snmpVersion    = config.get("snmp_version").getStr();
-        this.snmpSeclevel   = config.get("snmp_seclevel").getStr();
-        this.snmpCommunity  = config.get("snmp_community").getStr();
-        this.snmpUsmUser    = config.get("snmp_usm_user").getStr();
-        this.snmpAuthKey    = config.get("snmp_authkey").getStr();
-        this.snmpAuthProto  = config.get("snmp_authproto").getStr();
-        this.snmpPrivKey    = config.get("snmp_privkey").getStr();
-        this.snmpPrivProto  = config.get("snmp_privproto").getStr();
-        this.snmpTimeout    = config.get("snmp_timeout").getInt();
-        this.snmpRetries    = config.get("snmp_retries").getInt();
+        ifSelection = config.get("if_selection").getStr();
+        /*
+        because it is defined as a "snmp" type Check (xml), config contain
+        all elements needed to register the agent to query.
+        */
+        allConfig = config;
+        System.out.println("setcnofig??");
     }
 
     public Reply execute()
     {
+        System.out.println("execute??");
+        Snmp session = NChecksSNMP.getSnmpSession();
         Reply reply = new Reply();
         String[] indexes = ifSelection.split(",");
         for (String i: indexes)

@@ -24,6 +24,7 @@ import io.sysmo.nchecks.NChecksInterface;
 import io.sysmo.nchecks.Argument;
 import io.sysmo.nchecks.Reply;
 import io.sysmo.nchecks.modules.*;
+import io.sysmo.nchecks.NChecksSNMP;
 
 import com.ericsson.otp.erlang.*;
 
@@ -75,8 +76,14 @@ public class NChecks
     private static  int threadCorePoolSize;
     private static  int threadQueueCapacity;
 
+    // snmp4j
+    private static NChecksSNMP snmp;
+
     public static void main(String[] args)
     {
+        // if -test
+        if (args[0].equals("--test")) {testSpace(); return;}
+        
         // read config
         try
         {
@@ -87,9 +94,15 @@ public class NChecks
             foreignNodeName  = prop.getProperty("foreign_node");
             foreignPidName   = prop.getProperty("foreign_pid");
             pingCommand      = prop.getProperty("ping_command");
-            threadMaxPoolSize   = Integer.parseInt(prop.getProperty("thread_pool_max_size"));
-            threadCorePoolSize  = Integer.parseInt(prop.getProperty("thread_pool_core_size"));
-            threadQueueCapacity = Integer.parseInt(prop.getProperty("thread_queue_capacity"));
+            threadMaxPoolSize = 
+                        Integer.parseInt(
+                                    prop.getProperty("thread_pool_max_size"));
+            threadCorePoolSize = 
+                        Integer.parseInt(
+                                    prop.getProperty("thread_pool_core_size"));
+            threadQueueCapacity =
+                        Integer.parseInt(
+                                    prop.getProperty("thread_queue_capacity"));
         }
         catch(IOException e)
         {
@@ -99,7 +112,8 @@ public class NChecks
 
         try
         {
-            erlangCookie = new Scanner(new File("cfg/sysmo.cookie")).useDelimiter("\\Z").next();
+            erlangCookie = new Scanner(
+                new File("cfg/sysmo.cookie") ).useDelimiter("\\Z").next();
         }
         catch(IOException e)
         {
@@ -107,6 +121,8 @@ public class NChecks
             return;
         }
 
+        // init snmp4j
+        NChecksSNMP.initialize();
 
         // init thread pool
         threadPool = new ThreadPoolExecutor(
@@ -265,6 +281,57 @@ public class NChecks
             sendReply(caller, reply);
         }
     }
+    private static void testSpace()
+    {
+        // init snmp4j
+        NChecksSNMP.initialize();
+
+        Map<String,Argument> testArguments = new HashMap<String,Argument>();
+        Argument a = new Argument();
+        a.setInt(162);
+        testArguments.put("snmp_port", a);
+        a = new Argument();
+        a.setStr("2c");
+        testArguments.put("snmp_version", a);
+        a = new Argument();
+        a.setStr("noAuthNoPriv");
+        testArguments.put("snmp_seclevel", a);
+        a = new Argument();
+        a.setStr("public");
+        testArguments.put("snmp_community", a);
+        a = new Argument();
+        a.setStr("undefined");
+        testArguments.put("snmp_usm_user", a);
+        a = new Argument();
+        a.setStr("undefined");
+        testArguments.put("snmp_authkey", a);
+        a = new Argument();
+        a.setStr("MD5");
+        testArguments.put("snmp_authproto", a);
+        a = new Argument();
+        a.setStr("undefined");
+        testArguments.put("snmp_privkey", a);
+        a = new Argument();
+        a.setStr("DES");
+        testArguments.put("snmp_privproto", a);
+        a = new Argument();
+        a.setInt(2500);
+        testArguments.put("snmp_timeout", a);
+        a = new Argument();
+        a.setInt(1);
+        testArguments.put("snmp_retries", a);
+
+        a = new Argument();
+        a.setStr("1,2,3");
+        testArguments.put("if_selection", a);
+
+        NChecksInterface module = new CheckSNMPIfPerformances();
+        module.setConfig(testArguments);
+        Reply ret = module.execute();
+        System.out.println(ret);
+        return;
+    } 
+
 }
 
 class NChecksPoolReject implements RejectedExecutionHandler
@@ -305,9 +372,9 @@ class NChecksRunnable implements Runnable
     {
         check.setConfig(decodeArgs(args));
         check.setOpaqueData(opaqueData.binaryValue());
-        Reply checkReply = check.execute();
-        OtpErlangObject reply = NChecks.buildOkReply(checkReply.asTuple());
-        NChecks.sendReply(caller, reply);
+        Reply reply = check.execute();
+        OtpErlangObject replyMsg = NChecks.buildOkReply(reply.asTuple());
+        NChecks.sendReply(caller, replyMsg);
     }
 
     public OtpErlangObject getCaller()

@@ -20,6 +20,7 @@
  */
 
 package io.sysmo.nchecks;
+import io.sysmo.nchecks.Argument;
 
 import java.io.*;
 import java.util.*;
@@ -34,38 +35,33 @@ import org.snmp4j.security.*;
 import org.snmp4j.smi.*;
 import org.snmp4j.transport.*;
 import org.snmp4j.util.*;
+
 // AES192_3DES AES256_3DES
 import org.snmp4j.security.nonstandard.*;
 
 public class NChecksSNMP
 {
-
-    private Snmp snmp4jSession   = null;
-    private DefaultUdpTransportMapping transport = null;
-    private Map<String, SnmpmanElement> snmpmanElements = new HashMap<String, SnmpmanElement>();
-
     private static NChecksSNMP singleton;
 
-    public static synchronized NChecksSNMP getInstance()
-    {
-        if (singleton == null)
-        {
-            singleton = new NChecksSNMP();
-            return singleton;
-        }
-        else {return singleton;}
+    private Snmp                     snmp4jSession;
+    private Map<String, SNMPElement> snmpElements; 
+
+    public static synchronized void initialize() {
+        if (singleton == null) new NChecksSNMP();
     }
 
     public NChecksSNMP()
     {
         try
         {
-            byte[] engineId = getEngineId("cfg/engine.id");
-            transport       = new DefaultUdpTransportMapping();
+            byte[] engineId = SNMPUtils.getEngineId("cfg/worker_engine.id");
+            UdpTransportMapping transport = new DefaultUdpTransportMapping();
             snmp4jSession   = new Snmp(transport);
-            USM usm         = new USM(SecurityProtocols.getInstance(), new OctetString(engineId), 0);
+            USM usm         = new USM(SecurityProtocols.getInstance(),
+                                                new OctetString(engineId), 0);
             SecurityModels.getInstance().addSecurityModel(usm);
             transport.listen();
+            singleton = this;
         }
         catch (Exception e)
         {
@@ -73,29 +69,11 @@ public class NChecksSNMP
         }
     }
 
-    private static byte[] getEngineId(String stringPath) throws Exception, Error
-    {
-        Path path = Paths.get(stringPath);
-        if (Files.isRegularFile(path) == true)
-        {
-            byte[] engineIdDump = Files.readAllBytes(path);
-            String engineIdHex = new String(engineIdDump);
-            byte[] engineId = SnmpmanUtils.hexStringToBytes(engineIdHex);
-            return engineId;
-        }
-        else
-        {
-            byte[] engineId     = MPv3.createLocalEngineID();
-            String engineIdHex  = SnmpmanUtils.bytesToHexString(engineId);
-            byte[] engineIdDump = engineIdHex.getBytes();
-            Files.write(path, engineIdDump);
-            return engineId;
-        }
-    }
+    public static Snmp getSnmpSession() {return singleton.snmp4jSession;}
 }
 
 
-class SnmpmanElement
+class SNMPElement
 {
     private AbstractTarget   target         = null;
     private OctetString      securityName   = null;
@@ -130,10 +108,35 @@ class SnmpmanElement
     }
 }
 
-class SnmpmanUtils
+
+
+
+class SNMPUtils
 {
     private static char[] hexArray = "0123456789ABCDEF".toCharArray();
-    public static byte[] hexStringToBytes(String s)
+
+    public static byte[] getEngineId(String stringPath)
+                                                    throws Exception, Error
+    {
+        Path path = Paths.get(stringPath);
+        if (Files.isRegularFile(path) == true)
+        {
+            byte[] engineIdDump = Files.readAllBytes(path);
+            String engineIdHex = new String(engineIdDump);
+            byte[] engineId = SNMPUtils.hexStringToBytes(engineIdHex);
+            return engineId;
+        }
+        else
+        {
+            byte[] engineId     = MPv3.createLocalEngineID();
+            String engineIdHex  = SNMPUtils.bytesToHexString(engineId);
+            byte[] engineIdDump = engineIdHex.getBytes();
+            Files.write(path, engineIdDump);
+            return engineId;
+        }
+    }
+
+    private static byte[] hexStringToBytes(String s)
     {
         int len = s.length();
         byte[] data = new byte[len / 2];
@@ -144,7 +147,7 @@ class SnmpmanUtils
         return data;
     }
 
-    public static String bytesToHexString(byte[] bytes)
+    private static String bytesToHexString(byte[] bytes)
     {
         char[] hexChars = new char[bytes.length * 2];
         for (int j=0; j<bytes.length; j++)

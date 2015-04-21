@@ -3,17 +3,14 @@
 JAVA		?= java
 JAVAC		?= javac
 
-ERL 		?= erl
-ERLC		?= erlc
-
-APP			= nchecks
+APP			= sysmo-worker
 
 # DEBUG
 #ERL     = /cygdrive/c/Program\ Files/erl6.3/bin/erl -smp
 #ERLC    = /cygdrive/c/Program\ Files/erl6.3/bin/erlc -Werror
-#JAVA	= /cygdrive/c/Program\ Files/Java/jdk1.8.0_31/bin/java.exe
-#JAVAC   = /cygdrive/c/Program\ Files/Java/jdk1.8.0_31/bin/javac.exe
-#JAVAJAR = /cygdrive/c/Program\ Files/Java/jdk1.8.0_31/bin/jar.exe
+JAVA	= /cygdrive/c/Program\ Files/Java/jdk1.8.0_31/bin/java.exe
+JAVAC   = /cygdrive/c/Program\ Files/Java/jdk1.8.0_31/bin/javac.exe
+JAVAJAR = /cygdrive/c/Program\ Files/Java/jdk1.8.0_31/bin/jar.exe
 # DEBUG END
 
 # define erl targets
@@ -25,40 +22,41 @@ JLIB		= java_lib
 JBIN		= java_bin
 JSRC		= java_src
 NCHECKS_PKG = io/sysmo/nchecks
-
 NCHECKS_MOD_DIR = $(JBIN)/io/sysmo/nchecks/modules
 NCHECKS_SRC = $(wildcard $(JSRC)/Check*.java)
 NCHECKS_TARGETS = $(patsubst $(JSRC)/%.java, $(NCHECKS_MOD_DIR)/%.class, $(NCHECKS_SRC))
-
-HELPERS_DIR = $(JBIN)/io/sysmo/nchecks/helpers
-HELPERS_SRC = $(wildcard $(JSRC)/Helper*.java)
-HELPERS_TARGETS = $(patsubst $(JSRC)/%.java, $(HELPERS_DIR)/%.class, $(HELPERS_SRC))
-
 
 NCHECKS_DIR = $(JBIN)/io/sysmo/nchecks
 
 NCHECKS_MAIN_SRC = $(JSRC)/NChecks.java
 NCHECKS_MAIN_TARGET = $(patsubst $(JSRC)/%.java, $(NCHECKS_DIR)/%.class, $(NCHECKS_MAIN_SRC))
 
+NCHECKS_IF	= $(NCHECK_DIR)/NChecksInterface.class
 NCHECKS_IF_SRC = $(JSRC)/NChecksInterface.java
 NCHECKS_IF_TARGET = $(patsubst $(JSRC)/%.java, $(NCHECKS_DIR)/%.class, $(NCHECKS_IF_SRC))
 
+NCHECKS_CONST = $(NCHECK_DIR)/Const.class
 NCHECKS_CONST_SRC = $(JSRC)/Const.java
 NCHECKS_CONST_TARGET = $(patsubst $(JSRC)/%.java, $(NCHECKS_DIR)/%.class, $(NCHECKS_CONST_SRC))
 
+NCHECKS_ARG	= $(NCHECK_DIR)/Argument.class
 NCHECKS_ARG_SRC = $(JSRC)/Argument.java
 NCHECKS_ARG_TARGET = $(patsubst $(JSRC)/%.java, $(NCHECKS_DIR)/%.class, $(NCHECKS_ARG_SRC))
 
+NCHECKS_RPL	= $(NCHECK_DIR)/Reply.class
 NCHECKS_RPL_SRC = $(JSRC)/Reply.java
 NCHECKS_RPL_TARGET = $(patsubst $(JSRC)/%.java, $(NCHECKS_DIR)/%.class, $(NCHECKS_RPL_SRC))
 
-HELPERS_IF_SRC = $(JSRC)/NHelpersInterface.java
-HELPERS_IF_TARGET = $(patsubst $(JSRC)/%.java, $(NCHECKS_DIR)/%.class, $(HELPERS_IF_SRC))
+NCHECKS_SNMP		= $(NCHECK_DIR)/NChecksSNMP.class
+NCHECKS_SNMP_SRC	= $(JSRC)/NChecksSNMP.java
+NCHECKS_SNMP_TARGET = $(patsubst $(JSRC)/%.java, $(NCHECKS_DIR)/%.class, $(NCHECKS_SNMP_SRC))
 
 # define java libs
 JINTERFACE		= OtpErlang.jar
 JINTERFACE_DEP	= $(JLIB)/$(JINTERFACE)
-JCLASSPATH_TMP	= $(JBIN):$(JINTERFACE_DEP)
+SNMP4J			= snmp4j-2.3.1.jar
+SNMP4J_DEP    	= $(JLIB)/$(SNMP4J)
+JCLASSPATH_TMP	= $(JBIN):$(JINTERFACE_DEP):$(SNMP4J_DEP)
 
 ifeq ($(CYGW), CYGWIN)
 	JCLASSPATH = '$(shell cygpath -awp $(JCLASSPATH_TMP))'
@@ -67,41 +65,26 @@ else
 endif
 
 #DEBUG BEDGIN
-#JCLASSPATH = '$(shell cygpath -awp $(JCLASSPATH_TMP))'
+JCLASSPATH = '$(shell cygpath -awp $(JCLASSPATH_TMP))'
 #DEBUG END
+
 
 compile: $(ERL_TARGETS) java_lib/NChecks.jar
 
 java_lib/NChecks.jar: $(NCHECKS_MAIN_TARGET)
 	$(JAVAJAR) cf java_lib/NChecks.jar -C java_bin io
 
-clean: clean-doc
+clean: 
 	rm -rf java_bin/io
 	rm -f java_lib/NChecks.jar
-	rm -f ebin/*.beam
-	rm -f erl_crash.dump
 	rm -f nchecks.log
 
-clean-doc:
-	rm -f doc/erlang.png
-	rm -f doc/*html
-	rm -f doc/edoc-info
-	rm -f doc/stylesheet.css
-
-# erlang targets
-ebin/%.beam: src/%.erl
-	$(ERLC) $(EPATH) -o ebin/ src/$*.erl
-
-# java targets:
-
-$(NCHECKS_DIR)/NChecks.class: $(JSRC)/NChecks.java $(JINTERFACE_DEP) $(NCHECKS_TARGETS) $(HELPERS_TARGETS)
+# nchecks targets:
+$(NCHECKS_DIR)/NChecks.class: $(JSRC)/NChecks.java $(JINTERFACE_DEP) $(NCHECKS_TARGETS) $(NCHECKS_SNMP_TARGET)
 	$(JAVAC) -d $(JBIN) -classpath $(JCLASSPATH) $(JSRC)/NChecks.java
 
 $(NCHECKS_IF_TARGET): $(JSRC)/NChecksInterface.java $(NCHECKS_ARG_TARGET) $(NCHECKS_RPL_TARGET) $(NCHECKS_CONST_TARGET)
 	$(JAVAC) -d $(JBIN) -classpath $(JBIN) $(JSRC)/NChecksInterface.java
-
-$(HELPERS_IF_TARGET): $(JSRC)/NHelpersInterface.java $(NCHECKS_ARG_TARGET) $(NCHECKS_CONST_TARGET)
-	$(JAVAC) -d $(JBIN) -classpath $(JBIN) $(JSRC)/NHelpersInterface.java
 
 $(NCHECKS_ARG_TARGET): $(JSRC)/Argument.java
 	$(JAVAC) -d $(JBIN) -classpath $(JBIN) $(JSRC)/Argument.java
@@ -112,24 +95,17 @@ $(NCHECKS_RPL_TARGET): $(JSRC)/Reply.java
 $(NCHECKS_CONST_TARGET): $(JSRC)/Const.java
 	$(JAVAC) -d $(JBIN) -classpath $(JCLASSPATH) $(JSRC)/Const.java
 
-$(NCHECKS_MOD_DIR)/%.class: java_src/%.java $(NCHECKS_IF_TARGET)
-	$(JAVAC) -d $(JBIN) -classpath $(JBIN) $(JSRC)/$*.java
+$(NCHECKS_SNMP_TARGET): $(JSRC)/NChecksSNMP.java
+	$(JAVAC) -d $(JBIN) -classpath $(JCLASSPATH) $(JSRC)/NChecksSNMP.java
 
-$(HELPERS_DIR)/%.class: java_src/%.java $(HELPERS_IF_TARGET)
-	echo $(HELPERS_DIR)/$*.class
-	$(JAVAC) -d $(JBIN) -classpath $(JBIN) $(JSRC)/$*.java
+$(NCHECKS_MOD_DIR)/%.class: java_src/%.java $(NCHECKS_IF_TARGET) $(NCHECKS_SNMP_TARGET)
+	$(JAVAC) -d $(JBIN) -classpath $(JCLASSPATH) $(JSRC)/$*.java
 
 # java dependency libs
 $(JINTERFACE_DEP):
 	$(error You need $(JINTERFACE) to build NChecks.class. Find it and put int in the ./$(JLIB) directory. Only use the version given by your erlang installation. It should be here: $ERLANG_INSTALL_DIR/lib/jinterface-X.X.X/priv/OtpErlang.jar)
 
-# utils
+ALLCLASSPATH = '$(shell cygpath -awp $(JCLASSPATH_TMP):java_lib/NChecks.jar)'
+
 start: compile
-	$(ERL) -pa ebin -sname master -config ./sys -eval 'application:start($(APP))'
-
-# doc
-doc: doc/index.html
-
-doc/index.html: doc/overview.edoc $(ERL_SRC)
-	$(ERL) -noinput -pa ebin -eval 'edoc:application($(APP), ".", [{subpackages, true}, {packages, false}]), init:stop()'
-
+	$(JAVA) -cp $(ALLCLASSPATH) io.sysmo.nchecks.NChecks --test
