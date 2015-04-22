@@ -34,16 +34,13 @@
             monitor_sup,
             monitor_utils,
             nchecks_probe,
-            nchecks_probe_sup,
-            snmp_ifPerf,
-            snmp_ifPerf_sup
+            nchecks_probe_sup
         ]},
         {registered, [
                 monitor_commander,
                 monitor_data_master,
                 monitor_events,
                 monitor_sup,
-                snmp_ifPerf_sup,
                 probe_nchecks_sup
             ]},
         {applications, 

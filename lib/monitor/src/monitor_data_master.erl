@@ -379,9 +379,7 @@ init_jobs() ->
     end).
 
 launch_probe(#probe{module=nchecks_probe} = Probe) ->
-    nchecks_probe_sup:launch(Probe);
-launch_probe(#probe{module=snmp_ifPerf} = Probe) ->
-    snmp_ifPerf_sup:launch(Probe).
+    nchecks_probe_sup:launch(Probe).
 
 %%----------------------------------------------------------------------------
 %% UTILS    

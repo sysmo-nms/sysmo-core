@@ -269,6 +269,9 @@ public class NChecks
                 case "init":
                     handleInit(payload);
                     break;
+                case "cleanup":
+                    NChecksSNMP.cleanup();
+                    break;
                 default:
                     OtpErlangObject reply = buildErrorReply(command);
                     sendReply(caller, reply);
@@ -290,7 +293,7 @@ public class NChecks
 
         Map<String,Argument> testArguments = new HashMap<String,Argument>();
         Argument a = new Argument();
-        a.setInt(162);
+        a.setInt(161);
         testArguments.put("snmp_port", a);
         a = new Argument();
         a.setStr("2c");
@@ -322,10 +325,17 @@ public class NChecks
         a = new Argument();
         a.setInt(1);
         testArguments.put("snmp_retries", a);
-
         a = new Argument();
         a.setStr("1,2,3");
         testArguments.put("if_selection", a);
+        a = new Argument();
+        a.setStr("192.168.0.5");
+        testArguments.put("host", a);
+        a = new Argument();
+        a.setStr("target-234345");
+        testArguments.put("target_id", a);
+
+
 
         NChecksInterface module = new CheckNetworkInterfaces();
         module.setConfig(testArguments);

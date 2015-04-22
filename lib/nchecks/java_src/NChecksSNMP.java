@@ -43,8 +43,8 @@ public class NChecksSNMP
 {
     private static NChecksSNMP singleton;
 
-    private Snmp                     snmp4jSession;
-    private Map<String, SNMPElement> snmpElements; 
+    private Snmp snmp4jSession;
+    private Map<String, AbstractTarget> agents;
 
     public static synchronized void initialize() {
         if (singleton == null) new NChecksSNMP();
@@ -60,6 +60,7 @@ public class NChecksSNMP
             USM usm         = new USM(SecurityProtocols.getInstance(),
                                                 new OctetString(engineId), 0);
             SecurityModels.getInstance().addSecurityModel(usm);
+            agents          = new HashMap<String, AbstractTarget>();
             transport.listen();
             singleton = this;
         }
@@ -70,45 +71,122 @@ public class NChecksSNMP
     }
 
     public static Snmp getSnmpSession() {return singleton.snmp4jSession;}
+
+    public static void cleanup()
+    {
+        singleton.snmp4jSession.getUSM().removeAllUsers();
+        singleton.agents = new HashMap<String, AbstractTarget>();
+    }
+
+    public static AbstractTarget getTarget(Map<String,Argument> conf)
+                                                throws Exception
+    {
+        return singleton.getSnmpTarget(conf);
+    }
+
+    public AbstractTarget getSnmpTarget(Map<String,Argument> conf)
+                                                throws Exception
+    {
+        String targetid = conf.get("target_id").getStr();
+        AbstractTarget target = agents.get(targetid);
+        if (target != null) { return target; }
+
+        target = generateTarget(conf);
+        if (target.getSecurityModel() != SecurityModel.SECURITY_MODEL_USM)
+        {
+            agents.put(targetid, target);
+            return target;
+        } else {
+            UsmUser     user     = generateUser(conf);
+            OctetString username = user.getSecurityName();
+            UsmUserEntry oldUser =
+                    snmp4jSession.getUSM().getUserTable().getUser(username);
+            if (oldUser == null)
+            {
+                snmp4jSession.getUSM().addUser(user);
+                agents.put(targetid, target);
+                return target;
+            }
+            else
+            {
+                if (SNMPUtils.usmUsersEquals(oldUser.getUsmUser(),user) == true)
+                {
+                    // same users conf, ok
+                    agents.put(targetid, target);
+                    return target;   
+                }
+            }
+        }
+        throw new Exception("user do not match a predefined usm user");
+    }
+
+    public static AbstractTarget
+                        generateTarget(Map<String,Argument> conf)
+                                                    throws Exception, Error
+    {
+        String  host        = conf.get("host").getStr();
+        int     port        = conf.get("snmp_port").getInt();
+        String  seclevel    = conf.get("snmp_seclevel").getStr();
+        String  version     = conf.get("snmp_version").getStr();
+        int     retries     = conf.get("snmp_retries").getInt();
+        int     timeout     = conf.get("snmp_timeout").getInt();
+        
+        Address address = GenericAddress.parse("udp:" + host + "/" + port);
+
+        int seclevelConst = SNMPUtils.getSecLevel(seclevel);
+
+        switch (version)
+        {
+            case "3":
+                String  secname = conf.get("snmp_usm_user").getStr();
+                UserTarget targetV3 = new UserTarget();
+                targetV3.setAddress(address);
+                targetV3.setRetries(retries);
+                targetV3.setTimeout(timeout);
+                targetV3.setVersion(SnmpConstants.version3);
+                targetV3.setSecurityLevel(seclevelConst);
+                targetV3.setSecurityName(new OctetString(secname));
+                return targetV3;
+
+            default:
+                String  community = conf.get("snmp_community").getStr();
+                CommunityTarget target = new CommunityTarget();
+                target.setCommunity(new OctetString(community));
+                target.setAddress(address);
+                target.setRetries(retries);
+                target.setTimeout(timeout);
+                if (version.equals("2c")) {
+                    target.setVersion(SnmpConstants.version2c);
+                } else {
+                    target.setVersion(SnmpConstants.version1);
+                }
+                return target;
+        }
+    }
+
+    private static UsmUser 
+                    generateUser(Map<String,Argument> conf)
+                                                        throws Exception, Error
+    {
+
+        OID authProtoOid =
+                    SNMPUtils.getAuthProto(conf.get("snmp_authproto").getStr());
+        OID privProtoOid =
+                    SNMPUtils.getPrivProto(conf.get("snmp_privproto").getStr());
+        SecurityProtocols secProtocols = SecurityProtocols.getInstance();
+
+        OctetString uName =
+                        new OctetString(conf.get("snmp_usm_user").getStr());
+        OctetString authkey = 
+                        new OctetString(conf.get("snmp_authkey").getStr());
+        OctetString privkey = 
+                        new OctetString(conf.get("snmp_privkey").getStr());
+        UsmUser usmuser = new UsmUser(
+                                        uName,authProtoOid,authkey,
+                                                        privProtoOid,privkey);
+        return usmuser;
+    }
 }
-
-
-class SNMPElement
-{
-    private AbstractTarget   target         = null;
-    private OctetString      securityName   = null;
-    private String           targetName     = null;
-
-    // target get and set
-    public void setTarget(AbstractTarget aTarget)
-    {
-        this.target = aTarget;
-        this.securityName = this.target.getSecurityName();
-    }
-
-    public AbstractTarget getTarget()
-    {
-        return this.target;
-    }
-
-    public OctetString getSecurityName()
-    {
-        return this.securityName;
-    }
-
-    // targetName get and set
-    public void setName(String name)
-    {
-        this.targetName = name;
-    }
-
-    public String getName()
-    {
-        return this.targetName;
-    }
-}
-
-
 
 
 class SNMPUtils
@@ -157,5 +235,65 @@ class SNMPUtils
             hexChars[j * 2 + 1] = hexArray[v & 0x0F];
         }
         return new String(hexChars);
+    }
+    
+    public static int getSecLevel(String constString) throws Exception
+    {
+        
+        int seclevel;
+        switch (constString)
+        {
+            case "authPriv":
+                seclevel = SecurityLevel.AUTH_PRIV; break;
+            case "authNoPriv":
+                seclevel = SecurityLevel.AUTH_NOPRIV; break;
+            case "noAuthNoPriv":
+                seclevel = SecurityLevel.NOAUTH_NOPRIV; break;
+            default:
+                throw new Exception("No such seclevel!");
+        }
+        return seclevel;
+    }
+    
+    public static OID getAuthProto(String constString)
+    {
+
+        OID authProtoOid = null;
+        switch (constString)
+        {
+            case "SHA": authProtoOid = AuthSHA.ID; break;
+            case "MD5": authProtoOid = AuthMD5.ID; break;
+        }
+        return authProtoOid;
+    }
+
+    public static OID getPrivProto(String constString)
+    {
+        OID privProtoOid = null;
+        switch (constString)
+        {
+            case "AES":         privProtoOid = PrivAES128.ID; break;
+            case "AES192":      privProtoOid = PrivAES192.ID; break;
+            case "AES256":      privProtoOid = PrivAES256.ID; break;
+            case "DES":         privProtoOid = PrivDES.ID;    break;
+            case "3DES":        privProtoOid = Priv3DES.ID;   break;
+            case "AES192_3DES": privProtoOid = PrivAES192With3DESKeyExtension.ID; break;
+            case "AES256_3DES": privProtoOid = PrivAES256With3DESKeyExtension.ID; break;
+        }
+
+        return privProtoOid;
+    }
+    
+
+    public static boolean usmUsersEquals(UsmUser a, UsmUser b)
+    {
+        if (a.toString().equals(b.toString()))
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
     }
 }

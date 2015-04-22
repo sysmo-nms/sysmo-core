@@ -30,50 +30,13 @@
     deleteProbe/1,
     infoTargetCreate/1,
     infoTargetUpdate/1,
-    elementInterfaceReply/4,
     simpleReply/4,
 
     nchecksSimpleUpdateMessage/3,
     nchecksSimpleDumpMessage/3,
     nchecksTableUpdateMessage/3,
-    nchecksTableDumpMessage/3,
-    loggerRrdEvent/3,
-    loggerRrdDump/5
+    nchecksTableDumpMessage/3
 ]).
-
-loggerRrdDump(Target, Probe, Module, FilePaths, Dir) ->
-    Indexes = [{I, list_to_binary(F)} || {I,F} <- FilePaths],
-    {struct,
-        [
-            {<<"from">>, <<"monitor">>},
-            {<<"type">>, <<"loggerRrdDump">>},
-            {<<"value">>, {struct, [
-                {<<"target">>,  list_to_binary(Target)},
-                {<<"name">>,    list_to_binary(Probe)},
-                {<<"logger">>,  atom_to_binary(Module, utf8)},
-                {<<"path">>,    list_to_binary(Dir)},
-                {<<"data">>,    false},
-                {<<"indexes">>, {struct, Indexes}}]}
-            }
-        ]
-    }.
-                
-
-
-loggerRrdEvent(Target, Probe, ClientUp) ->
-    Updates = [{Index, list_to_binary(Up)} || {Index, Up} <- ClientUp],
-    
-    {struct,
-        [
-            {<<"from">>, <<"monitor">>},
-            {<<"type">>, <<"loggerRrdEvent">>},
-            {<<"value">>, {struct, [
-                {<<"target">>, list_to_binary(Target)},
-                {<<"name">>,  list_to_binary(Probe)},
-                {<<"updates">>, {struct, Updates}}]}
-            }
-        ]
-    }.
 
 nchecksSimpleUpdateMessage(Probe, Ts, Updates) ->
     Up = [{list_to_binary(K), V} || {K,V} <- Updates],
@@ -146,41 +109,6 @@ nchecksTableDumpMessage(Probe, DumpDir, ElemToFile) ->
         ]
     }.
 
-
-
-elementInterfaceReply(QueryId, Status, Last, Info) ->
-    {table, TableRows} = Info,
-    IfTable = build_ifTable(TableRows, []),
-    {struct,
-        [
-            {<<"from">>, <<"monitorUser">>},
-            {<<"type">>, <<"elementInterfaceReply">>},
-            {<<"value">>, {struct, [
-                {<<"queryId">>, QueryId},
-                {<<"status">>,  Status},
-                {<<"last">>,    Last},
-                {<<"ifInfo">>,  IfTable}]}}
-        ]
-    }.
-
-build_ifTable([], Acc) -> {array, lists:reverse(Acc)};
-build_ifTable([H|T], Acc) ->
-    {table_row, IfIndex, IfDescr, IfType, IfMtu, IfSpeed, IfPhysAddress,
-        IfAdminStatus, IfOperStatus, IfLastChange} = H,
-    Elem = {struct, [
-        {<<"ifIndex">>,         IfIndex},
-        {<<"ifDescr">>,         list_to_binary(IfDescr)},
-        {<<"ifType">>,          IfType},
-        {<<"ifMTU">>,           IfMtu},
-        {<<"ifSpeed">>,         IfSpeed},
-        {<<"ifPhysAddress">>,   list_to_binary(IfPhysAddress)},
-        {<<"ifAdminStatus">>,   IfAdminStatus},
-        {<<"ifOperStatus">>,    IfOperStatus},
-        {<<"ifLastChange">>,    list_to_binary(IfLastChange)}
-    ]},
-    build_ifTable(T, [Elem|Acc]).
-
-    
 simpleReply(QueryId, Status, Last, Msg) ->
     {struct,
         [
@@ -193,7 +121,6 @@ simpleReply(QueryId, Status, Last, Msg) ->
                 {<<"reply">>,   list_to_binary(Msg)}]}}
         ]
     }.
-
 
 deleteTarget(TargetName) ->
     {struct,

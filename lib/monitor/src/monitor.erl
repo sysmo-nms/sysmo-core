@@ -21,7 +21,6 @@
 % @private
 -module(monitor).
 -include("include/monitor.hrl").
--include("include/monitor_snmp.hrl").
 -include("../equartz/include/equartz.hrl").
 -export([
     % public
@@ -108,17 +107,6 @@ new_probe({nchecks_probe, JavaClass, Args}, Target) ->
             class       = JavaClass,
             args        = Args
         }
-    },
-    monitor_data_master:new(probe, Probe);
-
-new_probe({snmp_ifPerf, Indexes}, Target) ->
-    %IndexesFiles = [{Index,lists:concat(["index",Index,".rrd"])} || Index <- Indexes],
-    %io:format("indexes: ~p~n",[IndexesFiles]),
-    Probe = #probe{
-        belong_to   = Target,
-        description = "SNMP:Interfaces performances",
-        module = snmp_ifPerf,
-        module_config = Indexes
     },
     monitor_data_master:new(probe, Probe).
 
@@ -235,7 +223,7 @@ fill_test(N,Parent) ->
 
     K = new_target(SysProp, Prop),
     Ping = new_probe({nchecks, "CheckICMP", []}, K),
-    Snmp = new_probe({snmp, if_perfs, [1,2,3]}, K),
+    Snmp = new_probe({nchecks, "CheckNetworkInterfaces", [1,2,3]}, K),
     dependency_new(Ping, Parent),
     dependency_new(Snmp, Parent),
     new_job({internal, update_snmp_system_info}, K),

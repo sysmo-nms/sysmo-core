@@ -83,16 +83,6 @@ handle_cast({{"createNchecksQuery", Contents}, CState}, S) ->
     supercast_channel:unicast(CState, [ReplyPDU]),
     {noreply, S};
 
-handle_cast({{"createIfPerfQuery", Contents}, CState}, S) ->
-    {struct, Contents2} = proplists:get_value(<<"value">>, Contents),
-    Target      = binary_to_list(proplists:get_value(<<"target">>, Contents2)),
-    IfSelection = proplists:get_value(<<"ifSelection">>, Contents2),
-    QueryId     = proplists:get_value(<<"queryId">>, Contents2),
-    ProbeId     = monitor:new_probe({snmp_ifPerf, IfSelection}, Target),
-    ReplyPDU    = monitor_pdu:simpleReply(QueryId, true, true, ProbeId),
-    supercast_channel:unicast(CState, [ReplyPDU]),
-    {noreply, S};
-
 handle_cast({{"deleteProbeQuery", Contents}, CState}, S) ->
     % TODO check permissions
     {struct, Contents2} = proplists:get_value(<<"value">>, Contents),
@@ -121,30 +111,6 @@ handle_cast({{"forceProbeQuery", Contents}, CState}, S) ->
     monitor:force_probe(Probe),
     ReplyPDU = monitor_pdu:simpleReply(QueryId, true, true, Probe),
     supercast_channel:unicast(CState, [ReplyPDU]),
-    {noreply, S};
-
-handle_cast({{"snmpElementInterfaceQuery", Contents}, CState}, S) ->
-    % TODO check permissions
-    {struct, Contents2} = proplists:get_value(<<"value">>, Contents),
-    {struct, Prop}  = proplists:get_value(<<"properties">>, Contents2),
-    {struct, SProp} = proplists:get_value(<<"sysProperties">>, Contents2),
-    QueryId  = proplists:get_value(<<"queryId">>, Contents2),
-    NProp    = [{binary_to_list(Key), maybe_str(Val)} || {Key,Val} <- Prop],
-    NSysProp = [{binary_to_list(Key), maybe_str(Val)} || {Key,Val} <- SProp],
- 
-    case monitor_utils:walk_ifTable(NProp, NSysProp) of
-        {ok, Val} ->
-            ReplyPDU = monitor_pdu:elementInterfaceReply(QueryId, true, true, Val),
-            supercast_channel:unicast(CState, [ReplyPDU]);
-        {error, timeout} ->
-            ReplyPDU = monitor_pdu:simpleReply(
-                QueryId, false, true, "timeout"),
-            supercast_channel:unicast(CState, [ReplyPDU]);
-        {error, Reason} ->
-            ReplyPDU = monitor_pdu:simpleReply(
-                QueryId, false, true, Reason),
-            supercast_channel:unicast(CState, [ReplyPDU])
-    end,
     {noreply, S};
 
 handle_cast(R, S) ->
