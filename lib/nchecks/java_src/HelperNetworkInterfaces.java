@@ -27,9 +27,9 @@ import io.sysmo.nchecks.Argument;
 import java.util.Map;
 
 
-public class HelperSNMPIfPerformances implements NHelpersInterface
+public class HelperNetworkInterfaces implements NHelpersInterface
 {
-    public HelperSNMPIfPerformances()
+    public HelperNetworkInterfaces()
     {
         System.out.println("init CheckIfPerformances");
     }

@@ -37,13 +37,13 @@ import java.net.InetSocketAddress;
 import java.net.InetAddress;
 
 
-public class CheckSNMPIfPerformances implements NChecksInterface
+public class CheckNetworkInterfaces implements NChecksInterface
 {
     private String  ifSelection;
 
     private Map<String,Argument> allConfig;
 
-    public CheckSNMPIfPerformances()
+    public CheckNetworkInterfaces()
     {
         System.out.println("init CheckIfPerformances");
     }

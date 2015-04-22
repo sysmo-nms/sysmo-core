@@ -1,10 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <NChecks xmlns="http://schemas.sysmo.io/2015/NChecks">
     <Check
-        Id="CheckSNMPIfPerformances"
+        Id="CheckNetworkInterfaces"
+        AttribUrl="www.sysmo.io"
+        UpdatesUrl="www.sysmo.io/nchecks/updates/CheckNetworkInterfaces/"
+        Author="Sebastien Serre <ssbx@sysmo.io>"
         Type="snmp"
         Descr="Monitor and log interfaces performances values"
-        Class="io.sysmo.nchecks.CheckSNMPIfPerformances" >
+        Class="io.sysmo.nchecks.CheckNetworkInterfaces" >
         <HelperTable>
             <Helper
                 Id="SelectIfFromTable"
@@ -12,9 +15,9 @@
                 Return="table"
                 Description="Offer a list view of the device interfaces"
                 AutoStart="true"
-                Class="io.sysmo.nchecks.HelperSNMPIfPerformances" >
+                Class="io.sysmo.nchecks.HelperNetworkInterfaces" >
                 <!--
-                "io.sysmo.nchecks.CheckSNMPIfPerformancesHelper" should return a json object like:
+                "io.sysmo.nchecks.CheckNetworkInterfaces" should return a json object like:
                 {
                     "name": "SelectIfFromTable",
                     "rows": [

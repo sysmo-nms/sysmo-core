@@ -2,6 +2,9 @@
 <NChecks xmlns="http://schemas.sysmo.io/2015/NChecks">
     <Check
         Id="CheckTCP"
+        AttribUrl="www.sysmo.io"
+        UpdatesUrl="www.sysmo.io/nchecks/updates/CheckTCP/"
+        Author="Sebastien Serre <ssbx@sysmo.io>"
         Type="simple"
         Descr="Check TCP service availability on the specified host"
         Class="io.sysmo.nchecks.CheckTCP" >

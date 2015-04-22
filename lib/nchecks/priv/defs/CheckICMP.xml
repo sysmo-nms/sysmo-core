@@ -2,6 +2,9 @@
 <NChecks xmlns="http://schemas.sysmo.io/2015/NChecks">
     <Check
         Id="CheckICMP"
+        AttribUrl="www.sysmo.io"
+        UpdatesUrl="www.sysmo.io/nchecks/updates/CheckICMP/"
+        Author="Sebastien Serre <ssbx@sysmo.io>"
         Type="simple"
         Descr="Check host presence using ICMP echo request"
         Class="io.sysmo.nchecks.CheckICMP" >

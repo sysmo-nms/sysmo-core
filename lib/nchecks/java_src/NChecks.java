@@ -82,7 +82,9 @@ public class NChecks
     public static void main(String[] args)
     {
         // if -test
-        if (args[0].equals("--test")) {testSpace(); return;}
+        if (args.length != 0)
+            if (args[0].equals("--test"))
+                {testSpace(); return;}
         
         // read config
         try
@@ -325,7 +327,7 @@ public class NChecks
         a.setStr("1,2,3");
         testArguments.put("if_selection", a);
 
-        NChecksInterface module = new CheckSNMPIfPerformances();
+        NChecksInterface module = new CheckNetworkInterfaces();
         module.setConfig(testArguments);
         Reply ret = module.execute();
         System.out.println(ret);

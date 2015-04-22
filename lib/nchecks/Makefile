@@ -107,5 +107,5 @@ $(JINTERFACE_DEP):
 
 ALLCLASSPATH = '$(shell cygpath -awp $(JCLASSPATH_TMP):java_lib/NChecks.jar)'
 
-start: compile
+test: compile
 	$(JAVA) -cp $(ALLCLASSPATH) io.sysmo.nchecks.NChecks --test
