@@ -4,10 +4,10 @@
         Id="CheckNetworkInterfaces"
         AttribUrl="www.sysmo.io"
         UpdatesUrl="www.sysmo.io/nchecks/updates/CheckNetworkInterfaces/"
-        Author="Sebastien Serre <ssbx@sysmo.io>"
         Type="snmp"
         Descr="Monitor and log interfaces performances values"
         Class="io.sysmo.nchecks.CheckNetworkInterfaces" >
+        <Author><![CDATA[Sebastien Serre <ssbx@sysmo.io>]]></Author>
         <HelperTable>
             <Helper
                 Id="SelectIfFromTable"
@@ -42,12 +42,13 @@
         <FlagTable>
             <Flag
                 Id="if_selection"
-                Usage="Comma separated list of integers representing snmp interface indexes"
                 Role="mandatory"
                 Default=""
                 Type="string"
                 Hint="If indexes list"
-                Helper="SelectIfFromTable" />
+                Helper="SelectIfFromTable" >
+                Comma separated list of integers representing snmp interface indexes
+            </Flag>
         </FlagTable>
         <Performances
             Type="table"

@@ -4,99 +4,109 @@
         Id="CheckICMP"
         AttribUrl="www.sysmo.io"
         UpdatesUrl="www.sysmo.io/nchecks/updates/CheckICMP/"
-        Author="Sebastien Serre <ssbx@sysmo.io>"
         Type="simple"
         Descr="Check host presence using ICMP echo request"
         Class="io.sysmo.nchecks.CheckICMP" >
+        <Author><![CDATA[Sebastien Serre <ssbx@sysmo.io>]]></Author>
         <FlagTable>
             <Flag
                 Id="host"
-                Usage="Host target as ip version 4/6 or hostname"
                 AutoFill="host"
                 Editable="true"
                 Default=""
                 Role="mandatory"
                 Type="string"
-                Hint="Host or IP" />
+                Hint="Host or IP">
+                Host target as ip version 4/6 or hostname
+            </Flag>
             <Flag
                 Id="pkts_number"
-                Usage="Number of packets to send"
                 Minimum="1"
                 Maximum="50"
                 Default="5"
                 Role="mandatory"
                 Type="integer"
-                Hint="packets number" />
+                Hint="packets number" >
+                Number of packets to send
+            </Flag>
             <Flag
                 Id="pkts_size"
-                Usage="Size of the ICMP body in octets"
                 Minimum="56"
                 Maximum="512"
                 Default="56"
                 Role="mandatory"
                 Type="integer"
-                Hint="Octets" />
+                Hint="Octets" >
+                Size of the ICMP body in octets
+            </Flag>
             <Flag
                 Id="pl_warning"
-                Usage="Packet lost CRITICAL threshold in percent. Will return a status WARNING when packet lost exceed the value"
                 Minimum="0"
                 Maximum="99"
                 Default="50"
                 Role="mandatory"
                 Type="integer"
-                Hint="Milliseconds" />
+                Hint="Milliseconds" >
+                Packet lost CRITICAL threshold in percent. Will return a status WARNING when packet lost exceed the value
+            </Flag>
             <Flag
                 Id="pl_critical"
-                Usage="Packet lost CRITICAL threshold in percent. Will return a status CRITICAL when packet lost exceed the value"
                 Minimum="0"
                 Maximum="99"
                 Default="99"
                 Role="mandatory"
                 Type="integer"
-                Hint="Milliseconds" />
+                Hint="Milliseconds" >
+                Packet lost CRITICAL threshold in percent. Will return a status CRITICAL when packet lost exceed the value
+            </Flag>
             <Flag
                 Id="ms_warning"
-                Usage="Echo/Reply latency WARNING threshold. Will return a status WARNING if average reply time exceed the value"
                 Minimum="0"
                 Maximum="60000"
                 Default="200"
                 Role="mandatory"
                 Type="integer"
-                Hint="Milliseconds" />
+                Hint="Milliseconds" >
+                Echo/Reply latency WARNING threshold. Will return a status WARNING if average reply time exceed the value
+            </Flag>
             <Flag
                 Id="ms_critical"
-                Usage="Echo/Reply latency CRITICAL threshold. Will return a status CRITICAL if average reply time exceed the value"
                 Minimum="0"
                 Maximum="60000"
                 Default="200"
                 Role="mandatory"
                 Type="integer"
-                Hint="Milliseconds" />
+                Hint="Milliseconds" >
+                Echo/Reply latency CRITICAL threshold. Will return a status CRITICAL if average reply time exceed the value
+            </Flag>
             <Flag
                 Id="ms_timeout"
-                Usage="Stop waiting reply or refuse reply when it exceed the value"
                 Minimum="0"
                 Maximum="20000"
                 Default="5000"
                 Role="mandatory"
                 Type="integer"
-                Hint="Milliseconds" />
+                Hint="Milliseconds" >
+                Stop waiting reply or refuse reply when it exceed the value
+            </Flag>
             <Flag
                 Id="ms_interval"
-                Usage="Interval in milliseconds between request packets"
                 Minimum="1"
                 Maximum="500"
                 Default="100"
                 Role="mandatory"
                 Type="integer"
-                Hint="Milliseconds" />
+                Hint="Milliseconds" >
+                Interval in milliseconds between request packets
+            </Flag>
             <Flag
                 Id="use_ipv6"
-                Usage="Force use of the v6 address. Usefull if host arg is an hostname"
                 Default="false"
                 Type="boolean"
                 Hint=""
-                Role="mandatory" />
+                Role="mandatory" >
+                Force use of the v6 address. Usefull if host arg is an hostname
+            </Flag>
         </FlagTable>
         <Performances Type="simple" FileName="CheckICMP.rrd">
             <DataSourceTable>

@@ -2,66 +2,69 @@
 <NChecks xmlns="http://schemas.sysmo.io/2015/NChecks">
     <Check
         Id="CheckTCP"
+        AttribUrl="www.sysmo.io"
+        UpdatesUrl="www.sysmo.io/nchecks/updates/CheckTCP/"
         Type="simple"
         Descr="Check TCP service availability on the specified host"
         Class="io.sysmo.nchecks.CheckTCP" >
+        <Author><![CDATA[Sebastien Serre <ssbx@sysmo.io>]]></Author>
         <FlagTable>
             <Flag
                 Id="host"
-                Usage="Host target as ip version 4/6 or hostname"
                 AutoFill="host"
                 Default=""
                 Role="mandatory"
                 Type="string"
-                Hint="Hostname or IP" />
+                Hint="Hostname or IP" >
+                Host target as ip version 4/6 or hostname
+            </Flag>
             <Flag
                 Id="port"
-                Usage="TCP port number to query"
                 Minimum="1"
                 Maximum="65535"
                 Default="8080"
                 Role="mandatory"
                 Type="integer"
-                Hint="IP protocol port" />
+                Hint="IP protocol port" >
+                TCP port number to query
+            </Flag>
             <Flag
                 Id="ms_warning"
-                Usage="If connection time exceed the value, set the return status to WARNING."
                 Minimum="0"
                 Maximum="60000"
                 Default="500"
                 Role="mandatory"
                 Type="integer"
-                Hint="Milliseconds" />
+                Hint="Milliseconds" >
+                If connection time exceed the value, set the return status to WARNING.
+            </Flag>
             <Flag
                 Id="ms_critical"
-                Usage="If connection time exceed the value, set the return status to CRITICAL."
                 Role="mandatory"
                 Minimum="0"
                 Maximum="60000"
                 Default="2500"
                 Type="integer"
-                Hint="Milliseconds" />
+                Hint="Milliseconds" >
+                If connection time exceed the value, set the return status to CRITICAL.
+            </Flag>
             <Flag
                 Id="ms_timeout"
-                Usage="Abort connection if it exceed the value."
                 Minimum="0"
                 Maximum="60000"
                 Default="5000"
                 Role="mandatory"
                 Type="integer"
-                Hint="Milliseconds" />
+                Hint="Milliseconds" >
+                Abort connection if it exceed the value.
+            </Flag>
             <Flag
                 Id="accept"
-                Usage="If the connexion succeed, set the return status to one of CRITICAL|WARNING|OK. OK is the default behaviour. If set to something other than OK, ms_warning and ms_critical are ignored. Usefull if we want the service monitored to be down, and to be alerted when it comes up."
                 Default="OK"
                 Role="mandatory"
                 Type="string"
                 Hint="CRITICAL | WARNING | OK" >
-                <FlagChoice>
-                    <Choice Id="Status CRITICAL"   Value="CRITICAL" />
-                    <Choice Id="Status WARNING"    Value="WARNING" />
-                    <Choice Id="Status OK"         Value="OK" />
-                </FlagChoice>
+                If the connexion succeed, set the return status to one of CRITICAL|WARNING|OK. OK is the default behaviour. If set to something other than OK, ms_warning and ms_critical are ignored. Usefull if we want the service monitored to be down, and to be alerted when it comes up.
             </Flag>
         </FlagTable>
         <Performances Type="simple" FileName="CheckTCP.rrd">
