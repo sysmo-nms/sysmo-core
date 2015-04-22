@@ -5,110 +5,111 @@
         AttribUrl="www.sysmo.io"
         UpdatesUrl="www.sysmo.io/nchecks/updates/CheckICMP/"
         Type="simple"
-        Descr="Check host presence using ICMP echo request"
         Class="io.sysmo.nchecks.CheckICMP" >
         <Author><![CDATA[Sebastien Serre <ssbx@sysmo.io>]]></Author>
+        <Description>Check host presence using ICMP echo request</Description>
         <FlagTable>
             <Flag
                 Id="host"
                 AutoFill="host"
                 Editable="true"
-                Default=""
                 Role="mandatory"
-                Type="string"
-                Hint="Host or IP">
-                Host target as ip version 4/6 or hostname
+                Type="string" >
+                <Default></Default>
+                <Hint>Host or IP</Hint>
+                <Usage>Host target as ip version 4/6 or hostname</Usage>
             </Flag>
             <Flag
                 Id="pkts_number"
                 Minimum="1"
                 Maximum="50"
-                Default="5"
                 Role="mandatory"
-                Type="integer"
-                Hint="packets number" >
-                Number of packets to send
+                Type="integer" >
+                <Default>5</Default>
+                <Hint>packets number</Hint>
+                <Usage>Number of packets to send</Usage>
             </Flag>
             <Flag
                 Id="pkts_size"
                 Minimum="56"
                 Maximum="512"
-                Default="56"
                 Role="mandatory"
-                Type="integer"
-                Hint="Octets" >
-                Size of the ICMP body in octets
+                Type="integer" >
+                <Default>56</Default>
+                <Hint>Octets</Hint>
+                <Usage>Size of the ICMP body in octets</Usage>
             </Flag>
             <Flag
                 Id="pl_warning"
                 Minimum="0"
                 Maximum="99"
-                Default="50"
                 Role="mandatory"
-                Type="integer"
-                Hint="Milliseconds" >
-                Packet lost CRITICAL threshold in percent. Will return a status WARNING when packet lost exceed the value
+                Type="integer" >
+                <Default>50</Default>
+                <Hint>Milliseconds</Hint>
+                <Usage>Packet lost CRITICAL threshold in percent. Will return a status WARNING when packet lost exceed the value</Usage>
             </Flag>
             <Flag
                 Id="pl_critical"
                 Minimum="0"
                 Maximum="99"
-                Default="99"
                 Role="mandatory"
-                Type="integer"
-                Hint="Milliseconds" >
-                Packet lost CRITICAL threshold in percent. Will return a status CRITICAL when packet lost exceed the value
+                Type="integer" >
+                <Default>99</Default>
+                <Hint>Milliseconds</Hint>
+                <Usage>Packet lost CRITICAL threshold in percent. Will return a status CRITICAL when packet lost exceed the value</Usage>
             </Flag>
             <Flag
                 Id="ms_warning"
                 Minimum="0"
                 Maximum="60000"
-                Default="200"
                 Role="mandatory"
-                Type="integer"
-                Hint="Milliseconds" >
-                Echo/Reply latency WARNING threshold. Will return a status WARNING if average reply time exceed the value
+                Type="integer" >
+                <Default>200</Default>
+                <Hint>Milliseconds</Hint>
+                <Usage>Echo/Reply latency WARNING threshold. Will return a status WARNING if average reply time exceed the value</Usage>
             </Flag>
             <Flag
                 Id="ms_critical"
                 Minimum="0"
                 Maximum="60000"
-                Default="200"
                 Role="mandatory"
-                Type="integer"
-                Hint="Milliseconds" >
-                Echo/Reply latency CRITICAL threshold. Will return a status CRITICAL if average reply time exceed the value
+                Type="integer" >
+                <Default>200</Default>
+                <Hint>Milliseconds</Hint>
+                <Usage>Echo/Reply latency CRITICAL threshold. Will return a status CRITICAL if average reply time exceed the value</Usage>
             </Flag>
             <Flag
                 Id="ms_timeout"
                 Minimum="0"
                 Maximum="20000"
-                Default="5000"
                 Role="mandatory"
-                Type="integer"
-                Hint="Milliseconds" >
-                Stop waiting reply or refuse reply when it exceed the value
+                Type="integer" >
+                <Default>5000</Default>
+                <Hint>Milliseconds</Hint>
+                <Usage>Stop waiting reply or refuse reply when it exceed the value</Usage>
             </Flag>
             <Flag
                 Id="ms_interval"
                 Minimum="1"
                 Maximum="500"
-                Default="100"
                 Role="mandatory"
-                Type="integer"
-                Hint="Milliseconds" >
-                Interval in milliseconds between request packets
+                Type="integer" >
+                <Default>100</Default>
+                <Hint>Milliseconds</Hint>
+                <Usage>Interval in milliseconds between request packets</Usage>
             </Flag>
             <Flag
                 Id="use_ipv6"
-                Default="false"
                 Type="boolean"
-                Hint=""
                 Role="mandatory" >
-                Force use of the v6 address. Usefull if host arg is an hostname
+                <Default>false</Default>
+                <Hint></Hint>
+                <Usage>Force use of the v6 address. Usefull if host arg is an hostname</Usage>
             </Flag>
         </FlagTable>
-        <Performances Type="simple" FileName="CheckICMP.rrd">
+        <Performances Type="simple" >
+            <FileName>CheckICMP.rrd</FileName>
             <DataSourceTable>
                 <DataSource Id="MinRoundTrip"       Type="GAUGE" />
                 <DataSource Id="MaxRoundTrip"       Type="GAUGE" />
@@ -118,56 +119,61 @@
             <GraphTable>
                 <Graph
                     Id="ICMPPerfs"
-                    Title="ICMP Performances"
-                    VerticalLabel="Milliseconds"
                     Minimum="0"
                     Maximum="undefined"
                     Rigid="false"
                     Base="1000"
                     Unit="ms"
                     UnitExponent="0" >
+                    <Title>ICMP Performances</Title>
+                    <VerticalLabel>Milliseconds</VerticalLabel>
                     <Draw
                         Type="area"
                         DataSource="MaxRoundTrip"
-                        Legend="Maximum round trip"
                         Consolidation="MAX"
-                        Color="#204A87AA" />
+                        Color="#204A87AA" >
+                        Maximum round trip
+                    </Draw>
                     <Draw
                         Type="area"
                         DataSource="MinRoundTrip"
-                        Legend="Minimum round trip"
                         Consolidation="MAX"
-                        Color="#20ff87AA" />
+                        Color="#20ff87AA" >
+                        Minimum round trip
+                    </Draw>
                     <Draw
                         Type="area"
                         DataSource="AverageRoundTrip"
-                        Legend="Average round trip"
                         Consolidation="MAX"
-                        Color="#ff4A87AA" />
+                        Color="#ff4A87AA" >
+                        Average round trip
+                    </Draw>
                 </Graph>
                 <Graph
                     Id="ICMPPercentsLost"
-                    Title="ICMP replies lost"
-                    VerticalLabel="Percent"
                     Minimum="0"
                     Maximum="100"
                     Rigid="true"
                     Base="1000"
                     Unit="%"
                     UnitExponent="0" >
+                    <Title>ICMP replies lost</Title>
+                    <VerticalLabel>Percent</VerticalLabel>
                     <Draw
                         Type="area"
                         DataSource="PercentLost"
-                        Legend="Maximum Percent packets lost"
                         Consolidation="MAX"
-                        Color="#AD7FA8FF" />
+                        Color="#AD7FA8FF" >
+                        Maximum Percent packets lost
+                    </Draw>
                     
                     <Draw
                         Type="area"
                         DataSource="PercentLost"
-                        Legend="Average Percent Packets Lost"
                         Consolidation="AVERAGE"
-                        Color="#5C3566FF" />
+                        Color="#5C3566FF" >
+                        Average Percent Packets Lost
+                    </Draw>
                 </Graph>
             </GraphTable>
         </Performances>

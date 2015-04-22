@@ -498,33 +498,33 @@ rrd4j_init(ProbeName, Step, Args, TargetDir, XCheck_Content) ->
             % values. For example, interfaces staticstics.
 
             % Get the prefix used to build file names
-            #xmlAttribute{value=XPerformances_Attr_FilePrefix} =
-                lists:keyfind('FilePrefix', 2, XPerformances_Attrib),
+            XFilePrefix_Content = x_get_content_text(
+                                        XPerformances_Content, 'FilePrefix'),
+
             % Get the suffix used to build file names
-            #xmlAttribute{value=XPerformances_Attr_FileSuffix} =
-                lists:keyfind('FileSuffix', 2, XPerformances_Attrib),
+            XFileSuffix_Content = x_get_content_text(
+                                        XPerformances_Content, 'FileSuffix'),
 
             % Get the flag from where we will create rrds
-            #xmlAttribute{value=XPerformances_Attr_Flag} =
-                lists:keyfind('Flag', 2, XPerformances_Attrib),
+            XFlagSource_Content = x_get_attr_val(
+                                        XPerformances_Content, 'FlagSource', 'Name'),
+
             % Get the flag conf himself. It should exist because it must be
             % a mandatory flag.
-            {_Key,FlagValue} = lists:keyfind(XPerformances_Attr_Flag, 1, Args),
+            {_Key,FlagValue} = lists:keyfind(XFlagSource_Content, 1, Args),
             
             % Get the flag from where we will create rrds
-            #xmlAttribute{value=XPerformances_Attr_FlagSeparator} =
-                lists:keyfind('FlagSeparator', 2, XPerformances_Attrib),
+            XFlagSeparator_Content = x_get_content_text(
+                                        XPerformances_Content,'FlagSeparator'),
 
             % With FlagSeparator and Args[Flag] content, generate a list
             % of elements
-            RRDList = string:tokens(FlagValue,
-                                            XPerformances_Attr_FlagSeparator),
+            RRDList = string:tokens(FlagValue, XFlagSeparator_Content),
             
             % Generate the path prefix/suffix
-            BasePrefix = filename:join([ProbeDir,
-                                            XPerformances_Attr_FilePrefix]),
-            Suffix = XPerformances_Attr_FileSuffix,
-            Prefix = XPerformances_Attr_FilePrefix,
+            Suffix = XFileSuffix_Content,
+            Prefix = XFilePrefix_Content,
+            BasePrefix = filename:join([ProbeDir, Prefix]),
 
             % Create ds definitions
             DSDefinitions = build_DS_Def(XPerformances_Content, Step),
@@ -547,13 +547,12 @@ rrd4j_init(ProbeName, Step, Args, TargetDir, XCheck_Content) ->
             % "simple" Performance type mean only one rrd file (but off course
             % possibly multiple datasources)
 
-            % Get the FileName
-            #xmlAttribute{value=XPerformances_Attr_FileName} =
-                lists:keyfind('FileName', 2, XPerformances_Attrib),
+            % Get the FileName 
+            XFileName_Content = x_get_content_text(
+                                            XPerformances_Content, 'FileName'),
 
             % Generate rrd file path
-            RrdFilePath = filename:join([ProbeDir,
-                                            XPerformances_Attr_FileName]),
+            RrdFilePath = filename:join([ProbeDir, XFileName_Content]),
 
             case filelib:is_regular(RrdFilePath) of
                 true ->
@@ -572,6 +571,15 @@ rrd4j_init(ProbeName, Step, Args, TargetDir, XCheck_Content) ->
             error
     end.
 
+x_get_content_text(Content, Key) ->
+    #xmlElement{content=C1} = lists:keyfind(Key, 2, Content),
+    #xmlText{value=V} = lists:keyfind(xmlText, 1, C1),
+    V.
+    
+x_get_attr_val(Content, Key, Attr) ->
+    #xmlElement{attributes=A1} = lists:keyfind(Key, 2, Content),
+    #xmlAttribute{value=V} = lists:keyfind(Attr, 2, A1),
+    V.
 
 build_DS_Def(XPerformances_Content, Step) ->
     % Get DataSourceTable

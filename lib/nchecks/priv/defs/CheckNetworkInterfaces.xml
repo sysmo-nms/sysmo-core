@@ -5,15 +5,14 @@
         AttribUrl="www.sysmo.io"
         UpdatesUrl="www.sysmo.io/nchecks/updates/CheckNetworkInterfaces/"
         Type="snmp"
-        Descr="Monitor and log interfaces performances values"
         Class="io.sysmo.nchecks.CheckNetworkInterfaces" >
         <Author><![CDATA[Sebastien Serre <ssbx@sysmo.io>]]></Author>
+        <Description>Monitor and log interfaces performances values</Description>
         <HelperTable>
             <Helper
                 Id="SelectIfFromTable"
                 Type="snmp"
                 Return="table"
-                Description="Offer a list view of the device interfaces"
                 AutoStart="true"
                 Class="io.sysmo.nchecks.HelperNetworkInterfaces" >
                 <!--
@@ -25,13 +24,14 @@
                     ]
                 }
                 -->
+                <Description>Offer a list view of the device interfaces</Description>
                 <HelperTableReturn
                     TreeRoot="ifType"
-                    Usage="Please select interfaces you want to monitor from the list."
                     Select="ifIndex"
                     SelectionType="multiple"
                     Sort="ifIndex"
                     Fill="if_selection">
+                    <Usage>Please select interfaces you want to monitor from the list.</Usage>
                     <Column Id="ifType"  Position="0" Type="string"  />
                     <Column Id="ifDescr" Position="1" Type="string"  />
                     <Column Id="ifIndex" Position="2" Type="integer" />
@@ -43,21 +43,23 @@
             <Flag
                 Id="if_selection"
                 Role="mandatory"
-                Default=""
                 Type="string"
-                Hint="If indexes list"
                 Helper="SelectIfFromTable" >
-                Comma separated list of integers representing snmp interface indexes
+                <Default></Default>
+                <Hint>If indexes list</Hint>
+                <Usage>Comma separated list of integers representing snmp interface indexes</Usage>
             </Flag>
         </FlagTable>
-        <Performances
-            Type="table"
-            Flag="if_selection"
-            FlagSeparator=","
-            FilePrefix="ifIndex"
-            FileSuffix=".rrd"
-            PropertyPrefix="ifIndex"
-            PropertySuffix="-ifName"  >
+        <Performances Type="table">
+            <FlagSource Name="if_selection"/>
+            <FlagSeparator>,</FlagSeparator>
+
+            <FilePrefix>ifIndex</FilePrefix>
+            <FileSuffix>.rrd</FileSuffix>
+
+            <PropertyPrefix>ifIndex</PropertyPrefix>
+            <PropertySuffix>-ifName</PropertySuffix>
+
             <!-- PropertyPrefix PropertySuffix
             if present, the client will take the
             ${prefix="ifIndex"}${"if_selection[x]"}${suffix=""} from the target -->
@@ -74,88 +76,96 @@
             <GraphTable>
                 <Graph
                     Id="OctetsInOut"
-                    Title="Octets In/Out"
-                    VerticalLabel="octets"
                     Minimum="0"
                     Maximum="undefined"
                     Rigid="false"
                     Base="1000"
                     Unit=""
                     UnitExponent="0" >
+                    <Title>Octets In/Out</Title>
+                    <VerticalLabel>octets</VerticalLabel>
                     <Draw
                         Type="line"
                         DataSource="IfInOctets"
-                        Legend="Octets in"
                         Consolidation="MAX"
-                        Color="#FFFFFFFF" />
+                        Color="#FFFFFFFF" >
+                        Octets in
+                    </Draw>
     
                      <Draw
                         Type="line"
                         DataSource="IfOutOctets"
-                        Legend="Octets out"
                         Consolidation="MAX"
-                        Color="#FFFF00FF" />
+                        Color="#FFFF00FF" >
+                        Octets out
+                    </Draw>
                 </Graph>
                 <Graph
                     Id="UnicastNonUnicast"
-                    Title="Unicast/Non Unicast Packets In/Out"
-                    VerticalLabel="packets"
                     Minimum="0"
                     Maximum="undefined"
                     Rigid="false"
                     Base="1000"
                     Unit=""
                     UnitExponent="0" >
+                    <Title>Unicast/Non Unicast Packets In/Out</Title>
+                    <VerticalLabel>packets</VerticalLabel>
                     <Draw
                         Type="line"
                         DataSource="IfInUcastPkts"
-                        Legend="Unicast packets In"
                         Consolidation="MAX"
-                        Color="#FFFFFFFF" />
+                        Color="#FFFFFFFF" >
+                        Unicast packets In
+                    </Draw>
     
                     <Draw
                         Type="line"
                         DataSource="IfOutUcastPkts"
-                        Legend="Unicast packets Out"
                         Consolidation="MAX"
-                        Color="#FFFF00FF" />
+                        Color="#FFFF00FF" >
+                        Unicast packets Out
+                    </Draw>
                     <Draw
                         Type="line"
                         DataSource="IfInNucastPkts"
-                        Legend="Non Unicast Packets In"
                         Consolidation="MAX"
-                        Color="#FFFFFFFF" />
+                        Color="#FFFFFFFF" >
+                        Non Unicast Packets In
+                    </Draw>
     
                     <Draw
                         Type="line"
                         DataSource="IfOutNucastPkts"
-                        Legend="Non Unicast packets Out"
                         Consolidation="MAX"
-                        Color="#FFFF00FF" />
+                        Color="#FFFF00FF" >
+                        Non Unicast packets Out
+                    </Draw>
                 </Graph>
                 <Graph
                     Id="ErrorsInOut"
-                    Title="Errors In/Out"
-                    VerticalLabel="Errors"
                     Minimum="0"
                     Maximum="undefined"
                     Rigid="false"
                     Base="1000"
                     Unit=""
                     UnitExponent="0" >
+                    <Title>Errors In/Out</Title>
+                    <VerticalLabel>Errors</VerticalLabel>
                     <Draw
                         Type="line"
                         DataSource="IfInErrors"
-                        Legend="Octets in"
                         Consolidation="MAX"
-                        Color="#FFFFFFFF" />
+                        Color="#FFFFFFFF" >
+                        Octets in
+                    </Draw>
     
                      <Draw
                         Type="line"
                         DataSource="IfOutErrors"
-                        Legend="Octets out"
                         Consolidation="MAX"
-                        Color="#FFFF00FF" />
+                        Color="#FFFF00FF" >
+                        Octets out
+                    </Draw>
                 </Graph>
             </GraphTable>
         </Performances>
