@@ -25,5 +25,5 @@ import io.sysmo.nchecks.Argument;
 public interface NHelperInterface
 {
     public void setConfig(Map<String,Argument> config);
-    public void execute();
+    public char[] execute();
 }

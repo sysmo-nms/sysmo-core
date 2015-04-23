@@ -25,20 +25,54 @@ import io.sysmo.nchecks.NHelperInterface;
 import io.sysmo.nchecks.Argument;
 
 import java.util.Map;
+import java.io.CharArrayWriter;
+import javax.json.Json;
+import javax.json.JsonWriter;
+import javax.json.JsonArray;
+import javax.json.JsonArrayBuilder;
+import javax.json.JsonBuilderFactory;
+import javax.json.JsonObject;
+import javax.json.JsonObjectBuilder;
 
 
 public class HelperNetworkInterfaces implements NHelperInterface
 {
+
+    Map<String,Argument> conf;
+
     public HelperNetworkInterfaces()
     {
-        System.out.println("init CheckIfPerformances");
+        System.out.println("init helper");
     }
 
     public void setConfig(Map<String,Argument> config)
     {
+        conf = config;
     }
 
-    public void execute()
+    public char[] execute()
     {
+        CharArrayWriter     buff            = new CharArrayWriter();
+        JsonWriter          jsonWriter      = Json.createWriter(buff);
+
+        JsonBuilderFactory  factory         = Json.createBuilderFactory(null);
+        JsonObjectBuilder   objectbuilder   = factory.createObjectBuilder();
+        JsonArrayBuilder    arraybuilder    = factory.createArrayBuilder();
+        
+        arraybuilder
+                .add(factory.createObjectBuilder()
+                    .add("iftype", "k")
+                    .add("jojo", "lolo"));
+        arraybuilder
+                .add(factory.createObjectBuilder()
+                    .add("iftype", "l")
+                    .add("jojo", "lojo"));
+
+        objectbuilder.add("id", "SelectNetworkInterfaces");
+        objectbuilder.add("rows", arraybuilder);
+        
+        jsonWriter.writeObject(objectbuilder.build());
+
+        return buff.toCharArray();
     }
 }

@@ -72,7 +72,6 @@ public class CheckNetworkInterfaces implements NChecksInterface
 
     public CheckNetworkInterfaces()
     {
-        System.out.println("init CheckIfPerformances");
     }
 
     public void setOpaqueData(byte[] opaqueData)

@@ -63,7 +63,11 @@ JINTERFACE		= OtpErlang.jar
 JINTERFACE_DEP	= $(JLIB)/$(JINTERFACE)
 SNMP4J			= snmp4j-2.3.1.jar
 SNMP4J_DEP    	= $(JLIB)/$(SNMP4J)
-JCLASSPATH_TMP	= $(JBIN):$(JINTERFACE_DEP):$(SNMP4J_DEP)
+
+XJSON			= javax.json-1.0.2.jar
+XJSON_DEP		= $(JLIB)/$(XJSON)
+
+JCLASSPATH_TMP	= $(JBIN):$(JINTERFACE_DEP):$(SNMP4J_DEP):$(XJSON_DEP)
 
 ifeq ($(CYGW), CYGWIN)
 	JCLASSPATH = '$(shell cygpath -awp $(JCLASSPATH_TMP))'
@@ -121,6 +125,7 @@ $(NCHECKS_MOD_DIR)/%.class: java_src/%.java $(NCHECKS_IF_TARGET) $(NCHECKS_SNMP_
 	$(JAVAC) -d $(JBIN) -classpath $(JCLASSPATH) $(JSRC)/$*.java
 
 $(NHELPER_MOD_DIR)/%.class: java_src/%.java $(NHELPER_IF_TARGET) $(NCHECKS_SNMP_TARGET)
+	echo $(JCLASSPATH)
 	$(JAVAC) -d $(JBIN) -classpath $(JCLASSPATH) $(JSRC)/$*.java
 
 ALLCLASSPATH = '$(shell cygpath -awp $(JCLASSPATH_TMP):java_lib/NChecks.jar)'

@@ -119,7 +119,9 @@ handle_cast({{"ncheckHelperQuery", Contents}, CState}, S) ->
     Class   = binary_to_list(proplists:get_value(<<"class">>,   Contents2)),
     QueryId = proplists:get_value(<<"queryId">>, Contents2),
     case (catch nchecks:helper(Class, [])) of
-        {ok, Reply} -> io:format("reply is ~p~n", [Reply]);
+        {ok, Reply} ->
+            ReplyPDU = monitor_pdu:nchecksHelperReply(QueryId, Class, Reply),
+            supercast_channel:unicast(CState, [ReplyPDU]);
         {_, Error}  ->
             ErrorStr = io_lib:format("~p", [Error]),
             ReplyPDU = monitor_pdu:simpleReply(QueryId, false, true, ErrorStr),

@@ -63,6 +63,7 @@ public class NChecks
 
     public static OtpErlangAtom atomReply       = new OtpErlangAtom("reply");
     public static OtpErlangAtom atomOk          = new OtpErlangAtom("ok");
+    public static OtpErlangAtom atomQueueFull   = new OtpErlangAtom("queue_full");
     public static OtpErlangAtom atomTimeout     = new OtpErlangAtom("timeout");
     public static OtpErlangAtom atomError       = new OtpErlangAtom("error");
 
@@ -222,6 +223,15 @@ public class NChecks
     {
         OtpErlangObject[] valObj   = new OtpErlangObject[2];
         valObj[0] = atomError;
+        valObj[1] = msg;
+        OtpErlangTuple valTuple = new OtpErlangTuple(valObj);
+        return valTuple;
+    }
+
+    public static OtpErlangTuple buildQueueFullReply(OtpErlangObject msg)
+    {
+        OtpErlangObject[] valObj   = new OtpErlangObject[2];
+        valObj[0] = atomQueueFull;
         valObj[1] = msg;
         OtpErlangTuple valTuple = new OtpErlangTuple(valObj);
         return valTuple;
@@ -393,10 +403,9 @@ public class NChecks
 
 
 
-        NChecksInterface module = new CheckNetworkInterfaces();
+        NHelperInterface module = new HelperNetworkInterfaces();
         module.setConfig(testArguments);
-        Reply ret = module.execute();
-        System.out.println(ret);
+        module.execute();
         return;
     } 
 
@@ -404,14 +413,13 @@ public class NChecks
 
 class NChecksPoolReject implements RejectedExecutionHandler
 {
-    private static OtpErlangString errMsg = new OtpErlangString("NChecks thread queue full!");
+    private static OtpErlangString errMsg = new OtpErlangString("The job was rejected because the NChecks thread queue is full. I am overloaded!");
 
     public void rejectedExecution(Runnable r, ThreadPoolExecutor executor)
     {
-        System.out.println("Job rejected, thread queue full");
         NChecksRunnable ncheckRun = (NChecksRunnable) r;
         OtpErlangObject caller = ncheckRun.getCaller();
-        OtpErlangObject reply = NChecks.buildErrorReply(errMsg);
+        OtpErlangObject reply = NChecks.buildQueueFullReply(errMsg);
         NChecks.sendReply(caller, reply);
     }
 }
@@ -468,11 +476,22 @@ class NHelperRunnable implements Runnable
     public void run()
     {
         helper.setConfig(NChecks.decodeArgs(args));
-        helper.execute();
-        OtpErlangObject replyMsg = NChecks.buildOkReply(NChecks.atomError);
+        char[] jsonChars = helper.execute();
+        OtpErlangList   jsonCharList = buildErlangCharList(jsonChars);
+        OtpErlangObject replyMsg     = NChecks.buildOkReply(jsonCharList);
         NChecks.sendReply(caller, replyMsg);
-        System.out.println("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
     }
 
     public OtpErlangObject getCaller() {return this.caller;}
+
+    private static OtpErlangList buildErlangCharList(char[] charList)
+    {
+        OtpErlangObject[] objList = new OtpErlangObject[charList.length];
+        for (int i = 0; i < charList.length; i++)
+        {
+            objList[i] = new OtpErlangChar(charList[i]);
+        }
+        OtpErlangList erlangList = new OtpErlangList(objList);
+        return erlangList;
+    }
 }

@@ -31,6 +31,7 @@
     infoTargetCreate/1,
     infoTargetUpdate/1,
     simpleReply/4,
+    nchecksHelperReply/3,
 
     nchecksSimpleUpdateMessage/3,
     nchecksSimpleDumpMessage/3,
@@ -121,6 +122,19 @@ simpleReply(QueryId, Status, Last, Msg) ->
                 {<<"reply">>,   list_to_binary(Msg)}]}}
         ]
     }.
+
+nchecksHelperReply(QueryId, Class, Reply) ->
+    {struct,
+        [
+            {<<"from">>, <<"monitorUser">>},
+            {<<"type">>, <<"reply">>},
+            {<<"value">>, {struct, [
+                {<<"queryId">>, QueryId},   
+                {<<"class">>,   list_to_binary(Class)},
+                {<<"reply">>,   {json, Reply}}]}}
+        ]
+    }.
+
 
 deleteTarget(TargetName) ->
     {struct,

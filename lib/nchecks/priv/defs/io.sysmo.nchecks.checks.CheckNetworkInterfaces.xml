@@ -18,7 +18,7 @@
                 <!--
                 "io.sysmo.nchecks.CheckNetworkInterfaces" should return a json object like:
                 {
-                    "name": "SelectIfFromTable",
+                    "name": "SelectNetworkInterfaces",
                     "rows": [
                         {"ifType": "9", "ifDescr": "fa0/0", "ifIndex": "0", "ifPhysAddress": "aa"}
                     ]

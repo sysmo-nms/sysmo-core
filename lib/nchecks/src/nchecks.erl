@@ -54,7 +54,6 @@
 -define(CHECK_TIMEOUT, 15000).
 
 helper(Class, ArgList) ->
-    io:format("class is ~p ~n", [Class]),
     gen_server:call(?MODULE, {call_nchecks, 
                 {helper, {Class, ArgList}}}, ?CHECK_TIMEOUT).
 
@@ -94,7 +93,6 @@ handle_call(assert_init, _F, S) ->
 handle_call({call_nchecks, {Command, Payload}}, From, 
         #state{nchecks_pid = NChecks, replies_waiting = RWait} = S) ->
     NChecks ! {Command, From, Payload},
-    io:format("send command ~p ~n", [Command]),
     {noreply, S#state{replies_waiting = [From|RWait]}}.
 
 
