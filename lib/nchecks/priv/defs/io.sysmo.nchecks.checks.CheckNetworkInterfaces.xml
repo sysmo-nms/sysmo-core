@@ -35,7 +35,7 @@
                     <Usage>Please select interfaces you want to monitor from the list.</Usage>
                     <Column Id="ifType"         Position="0" Type="string" />
                     <Column Id="ifDescr"        Position="1" Type="string" />
-                    <Column Id="ifIndex"        Position="2" Type="integer" />
+                    <Column Id="ifIndex"        Position="2" Type="string" />
                     <Column Id="ifPhysAddress"  Position="3" Type="string" />
                 </HelperTableReturn>
             </Helper>

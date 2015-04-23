@@ -24,7 +24,24 @@ package io.sysmo.nchecks.helpers;
 import io.sysmo.nchecks.NHelperInterface;
 import io.sysmo.nchecks.Argument;
 
+import io.sysmo.nchecks.NChecksSNMP;
+import org.snmp4j.Snmp;
+import org.snmp4j.AbstractTarget;
+import org.snmp4j.util.TableUtils;
+import org.snmp4j.util.TableEvent;
+import org.snmp4j.util.DefaultPDUFactory;
+import org.snmp4j.smi.OID;
+import org.snmp4j.smi.VariableBinding;
+import org.snmp4j.PDU;
+
 import java.util.Map;
+import java.util.HashMap;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Iterator;
+
+
+
 import java.io.CharArrayWriter;
 import javax.json.Json;
 import javax.json.JsonWriter;
@@ -38,11 +55,67 @@ import javax.json.JsonObjectBuilder;
 public class HelperNetworkInterfaces implements NHelperInterface
 {
 
-    Map<String,Argument> conf;
+    private static String IF_INDEX = "1.3.6.1.2.1.2.2.1.1";
+    private static String IF_DESCR = "1.3.6.1.2.1.2.2.1.2";
+    private static String IF_TYPE  = "1.3.6.1.2.1.2.2.1.3";
+    private static String IF_PHYSADDRESS = "1.3.6.1.2.1.2.2.1.6";
+
+    private static final OID[] columns = new OID[]{
+            new OID(IF_INDEX),
+            new OID(IF_DESCR),
+            new OID(IF_TYPE),
+            new OID(IF_PHYSADDRESS)
+    };
+
+    private static final Map<String, String> iftype;
+    static
+    {
+        iftype = new HashMap<String,String>();
+        iftype.put("1", "other");
+        iftype.put("2", "regular1822");
+        iftype.put("3", "hdh1822");
+        iftype.put("4", "ddn-x25");
+        iftype.put("5", "rfc877-x25");
+        iftype.put("6", "ethernet-csmacd");
+        iftype.put("7", "iso88023-csmacd");
+        iftype.put("8", "iso88024-tokenBus");
+        iftype.put("9", "iso88025-tokenRing");
+        iftype.put("10", "iso88026-man");
+        iftype.put("11", "starLan");
+        iftype.put("12", "proteon-10Mbit");
+        iftype.put("13", "proteon-80Mbit");
+        iftype.put("14", "hyperchannel");
+        iftype.put("15", "fddi");
+        iftype.put("16", "lapb");
+        iftype.put("17", "sdlc");
+        iftype.put("18", "ds1");
+        iftype.put("19", "e1");
+        iftype.put("20", "basicISDN");
+        iftype.put("21", "primaryISDN");
+        iftype.put("22", "propPointToPointSerial");
+        iftype.put("23", "ppp");
+        iftype.put("24", "softwareLoopback");
+        iftype.put("25", "eon");
+        iftype.put("26", "ethernet-3Mbit");
+        iftype.put("27", "nsip");
+        iftype.put("28", "slip");
+        iftype.put("29", "ultra");
+        iftype.put("30", "ds3");
+        iftype.put("31", "sip");
+        iftype.put("32", "frame-relay");
+    }
+
+    private Map<String,Argument> conf;
 
     public HelperNetworkInterfaces()
     {
-        System.out.println("init helper");
+    }
+
+    private static String getType(String type)
+    {
+        String val = iftype.get(type);
+        if (val == null) return "unknown(" + type + ")";
+        return val;
     }
 
     public void setConfig(Map<String,Argument> config)
@@ -52,27 +125,61 @@ public class HelperNetworkInterfaces implements NHelperInterface
 
     public char[] execute()
     {
-        CharArrayWriter     buff            = new CharArrayWriter();
-        JsonWriter          jsonWriter      = Json.createWriter(buff);
+        
+        // prepare json message begin
+        CharArrayWriter     buffer          = new CharArrayWriter();
+        JsonWriter          jsonWriter      = Json.createWriter(buffer);
 
         JsonBuilderFactory  factory         = Json.createBuilderFactory(null);
         JsonObjectBuilder   objectbuilder   = factory.createObjectBuilder();
         JsonArrayBuilder    arraybuilder    = factory.createArrayBuilder();
-        
-        arraybuilder
-                .add(factory.createObjectBuilder()
-                    .add("iftype", "k")
-                    .add("jojo", "lolo"));
-        arraybuilder
-                .add(factory.createObjectBuilder()
-                    .add("iftype", "l")
-                    .add("jojo", "lojo"));
+        // end
+
+
+        try {
+            AbstractTarget target = NChecksSNMP.getTarget(conf);
+
+            Snmp session = NChecksSNMP.getSnmpSession();
+            TableUtils tablewalker =
+                new TableUtils(
+                        session,
+                        new DefaultPDUFactory(PDU.GETNEXT));
+
+            List<TableEvent> snmpReply = tablewalker.getTable(
+                    target,
+                    columns,
+                    null,
+                    null);
+
+            Iterator<TableEvent> it = snmpReply.iterator();
+            TableEvent evt;
+            while (it.hasNext()) {
+                evt = it.next();
+                VariableBinding[] vbs = evt.getColumns();
+                arraybuilder
+                    .add(factory.createObjectBuilder()
+                        .add("ifIndex", vbs[0].getVariable().toString())
+                        .add("ifDescr", vbs[1].getVariable().toString())
+                        .add("ifType",  getType(vbs[2].getVariable().toString()))
+                        .add("ifPhysAddress", vbs[3].getVariable().toString()));
+
+            }
+        } catch (Exception|Error e) {
+            e.printStackTrace();
+            objectbuilder.add("id", "SelectNetworkInterfaces");
+            objectbuilder.add("status", "failure");
+            objectbuilder.add("reason", e.toString());
+            jsonWriter.writeObject(objectbuilder.build());
+            return buffer.toCharArray();
+        }
 
         objectbuilder.add("id", "SelectNetworkInterfaces");
+        objectbuilder.add("status", "success");
         objectbuilder.add("rows", arraybuilder);
         
         jsonWriter.writeObject(objectbuilder.build());
+        System.out.println(buffer.toString());
 
-        return buff.toCharArray();
+        return buffer.toCharArray();
     }
 }
