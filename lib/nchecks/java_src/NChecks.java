@@ -275,7 +275,7 @@ public class NChecks
                         opaque);
                 threadPool.execute(worker);
             }
-            else if (cmdstr.equals("help"))
+            else if (cmdstr.equals("helper"))
             {
                 OtpErlangString erlangClassName = 
                     (OtpErlangString)
@@ -288,7 +288,6 @@ public class NChecks
                         caller,
                         args);
                 threadPool.execute(worker);
-
             } 
             else if (cmdstr.equals("init"))     handleInit(payload);
             else if (cmdstr.equals("cleanup"))  NChecksSNMP.cleanup();
@@ -470,8 +469,9 @@ class NHelperRunnable implements Runnable
     {
         helper.setConfig(NChecks.decodeArgs(args));
         helper.execute();
-        OtpErlangObject replyMsg = NChecks.buildOkReply(NChecks.atomOk);
+        OtpErlangObject replyMsg = NChecks.buildOkReply(NChecks.atomError);
         NChecks.sendReply(caller, replyMsg);
+        System.out.println("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
     }
 
     public OtpErlangObject getCaller() {return this.caller;}

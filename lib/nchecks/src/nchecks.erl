@@ -94,6 +94,7 @@ handle_call(assert_init, _F, S) ->
 handle_call({call_nchecks, {Command, Payload}}, From, 
         #state{nchecks_pid = NChecks, replies_waiting = RWait} = S) ->
     NChecks ! {Command, From, Payload},
+    io:format("send command ~p ~n", [Command]),
     {noreply, S#state{replies_waiting = [From|RWait]}}.
 
 

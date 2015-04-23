@@ -117,14 +117,15 @@ handle_cast({{"ncheckHelperQuery", Contents}, CState}, S) ->
     {struct, Contents2} = proplists:get_value(<<"value">>,  Contents),
     _Target  = binary_to_list(proplists:get_value(<<"target">>,  Contents2)),
     Class   = binary_to_list(proplists:get_value(<<"class">>,   Contents2)),
-    _QueryId = proplists:get_value(<<"queryId">>, Contents2),
-    _CState = CState,
+    QueryId = proplists:get_value(<<"queryId">>, Contents2),
     case (catch nchecks:helper(Class, [])) of
         {ok, Reply} -> io:format("reply is ~p~n", [Reply]);
-        {_, Error} -> io:format("error is ~p~n", [Error])
+        {_, Error}  ->
+            ErrorStr = io_lib:format("~p", [Error]),
+            ReplyPDU = monitor_pdu:simpleReply(QueryId, false, true, ErrorStr),
+            supercast_channel:unicast(CState, [ReplyPDU])
     end,
     {noreply, S};
-    %supercast_channel:unicast(CState, [ReplyPDU]),
 
 handle_cast(R, S) ->
     error_logger:info_msg("unknown cast for command ~p ~p ~p~n", [?MODULE, ?LINE, R]),

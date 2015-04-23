@@ -42,14 +42,6 @@ init([]) ->
                     [monitor_events]
                 },
                 {
-                    snmp_ifPerf_sup,
-                    {snmp_ifPerf_sup, start_link, []},
-                    permanent,
-                    infinity,
-                    supervisor,
-                    [snmp_ifPerf_sup]
-                },
-                {
                     nchecks_probe_sup,
                     {nchecks_probe_sup, start_link, []},
                     permanent,

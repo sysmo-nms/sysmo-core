@@ -14,7 +14,7 @@
                 Type="snmp"
                 Return="table"
                 AutoStart="true"
-                Class="io.sysmo.nchecks.HelperNetworkInterfaces" >
+                Class="io.sysmo.nchecks.helpers.HelperNetworkInterfaces" >
                 <!--
                 "io.sysmo.nchecks.CheckNetworkInterfaces" should return a json object like:
                 {
