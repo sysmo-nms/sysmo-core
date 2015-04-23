@@ -22,7 +22,7 @@ package io.sysmo.nchecks;
 import java.util.Map;
 import io.sysmo.nchecks.Argument;
 
-public interface NHelpersInterface
+public interface NHelperInterface
 {
     public void setConfig(Map<String,Argument> config);
     public void execute();

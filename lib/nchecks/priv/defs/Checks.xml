@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<NChecks xmlns="http://schemas.sysmo.io/2015/NChecks">
+    <CheckAccessTable>
+        <CheckUrl Value="io.sysmo.nchecks.checks.CheckICMP.xml" />
+        <CheckUrl Value="io.sysmo.nchecks.checks.CheckTCP.xml" />
+        <CheckUrl Value="io.sysmo.nchecks.checks.CheckNetworkInterfaces.xml" />
+    </CheckAccessTable>
+</NChecks>

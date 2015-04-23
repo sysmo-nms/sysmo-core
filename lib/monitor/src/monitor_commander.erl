@@ -119,7 +119,7 @@ handle_cast({{"ncheckHelperQuery", Contents}, CState}, S) ->
     Class   = binary_to_list(proplists:get_value(<<"class">>,   Contents2)),
     _QueryId = proplists:get_value(<<"queryId">>, Contents2),
     _CState = CState,
-    case (catch nchecks:helper(Class)) of
+    case (catch nchecks:helper(Class, [])) of
         {ok, Reply} -> io:format("reply is ~p~n", [Reply]);
         {_, Error} -> io:format("error is ~p~n", [Error])
     end,

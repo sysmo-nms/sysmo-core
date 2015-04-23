@@ -23,7 +23,8 @@ package io.sysmo.nchecks;
 import io.sysmo.nchecks.NChecksInterface;
 import io.sysmo.nchecks.Argument;
 import io.sysmo.nchecks.Reply;
-import io.sysmo.nchecks.modules.*;
+import io.sysmo.nchecks.checks.*;
+import io.sysmo.nchecks.helpers.*;
 import io.sysmo.nchecks.NChecksSNMP;
 
 import com.ericsson.otp.erlang.*;
@@ -252,40 +253,96 @@ public class NChecks
 
         try
         {
-            NChecksRunnable worker;
-            Map     modArgs;
-            switch (command.toString())
+            String cmdstr = command.toString();
+            if (cmdstr.equals("check"))
             {
-                case "check":
-                    OtpErlangString erlangClassName = (OtpErlangString) (payload.elementAt(0));
-                    String className = "io.sysmo.nchecks.modules." + erlangClassName.stringValue();
-                    OtpErlangList   args      = (OtpErlangList)   (payload.elementAt(1));
-                    OtpErlangBinary opaque    = (OtpErlangBinary) (payload.elementAt(2));
-                    System.out.println("hello" + className + args + opaque);
-                    worker = new NChecksRunnable(Class.forName(className).newInstance(), caller, args, opaque);
-                    threadPool.execute(worker);
-                    System.out.println("hello");
-                    break;
-                case "init":
-                    handleInit(payload);
-                    break;
-                case "cleanup":
-                    NChecksSNMP.cleanup();
-                    break;
-                default:
-                    OtpErlangObject reply = buildErrorReply(command);
-                    sendReply(caller, reply);
+                OtpErlangString erlangClassName = (OtpErlangString)
+                    (payload.elementAt(0));
+
+                // TODO full class name as argument
+                String className = erlangClassName.stringValue();
+
+                OtpErlangList checkArgs = (OtpErlangList)
+                    (payload.elementAt(1));
+
+                OtpErlangBinary opaque = (OtpErlangBinary)
+                    (payload.elementAt(2));
+
+                Runnable worker = new NChecksRunnable(
+                        Class.forName(className).newInstance(),
+                        caller,
+                        checkArgs,
+                        opaque);
+                threadPool.execute(worker);
+            }
+            else if (cmdstr.equals("help"))
+            {
+                OtpErlangString erlangClassName = 
+                    (OtpErlangString)
+                    (payload.elementAt(0));
+                String className = erlangClassName.stringValue();
+                OtpErlangList args = (OtpErlangList)
+                    (payload.elementAt(1));
+                Runnable worker = new NHelperRunnable(
+                        Class.forName(className).newInstance(),
+                        caller,
+                        args);
+                threadPool.execute(worker);
+
+            } 
+            else if (cmdstr.equals("init"))     handleInit(payload);
+            else if (cmdstr.equals("cleanup"))  NChecksSNMP.cleanup();
+            else
+            {
+                OtpErlangObject reply = buildErrorReply(command);
+                sendReply(caller, reply);
             }
         }
         catch (Exception|Error e)
         {
             OtpErlangTuple reply = buildErrorReply(
-                new OtpErlangString("nchecks error: " + e
+                new OtpErlangString("NChecks error: " + e
                     + " " + command.toString() + " -> " + e.getMessage())
             );
             sendReply(caller, reply);
         }
     }
+
+    public static Map<String,Argument> decodeArgs(OtpErlangList argList)
+    {
+        Map<String,Argument> result = new HashMap<String,Argument>();
+        Iterator<OtpErlangObject> itr = argList.iterator();
+        OtpErlangTuple element;
+        while (itr.hasNext())
+        {
+            element             = (OtpErlangTuple) (itr.next());
+            OtpErlangString key = (OtpErlangString) (element.elementAt(0));
+            OtpErlangObject val = element.elementAt(1);
+            if (val.getClass() == OtpErlangString.class)
+            {
+                OtpErlangString valStr = (OtpErlangString) (element.elementAt(1));
+                Argument a = new Argument();
+                a.setStr(valStr.stringValue());
+                result.put(key.stringValue(), a);
+            }
+            else if (val.getClass() == OtpErlangLong.class)
+            {
+                OtpErlangLong valLong = (OtpErlangLong) (element.elementAt(1));
+                Argument a = new Argument();
+                int uInt;
+                try {
+                    uInt = valLong.uIntValue();
+                } catch (OtpErlangRangeException e) {
+                    e.printStackTrace();
+                    uInt = 0; 
+                }
+                a.setInt(uInt);
+                result.put(key.stringValue(), a);
+            }
+        }
+        return result;
+    }
+
     private static void testSpace()
     {
         // init snmp4j
@@ -382,50 +439,40 @@ class NChecksRunnable implements Runnable
     @Override
     public void run()
     {
-        check.setConfig(decodeArgs(args));
+        check.setConfig(NChecks.decodeArgs(args));
         check.setOpaqueData(opaqueData.binaryValue());
         Reply reply = check.execute();
         OtpErlangObject replyMsg = NChecks.buildOkReply(reply.asTuple());
         NChecks.sendReply(caller, replyMsg);
     }
 
-    public OtpErlangObject getCaller()
+    public OtpErlangObject getCaller() {return this.caller;}
+}
+
+class NHelperRunnable implements Runnable
+{
+    private NHelperInterface helper;
+    private OtpErlangObject  caller;
+    private OtpErlangList    args;
+
+    public NHelperRunnable(
+            Object          helpObj,
+            OtpErlangObject callerObj,
+            OtpErlangList   argsList)
     {
-        return this.caller;
+        helper  = (NHelperInterface) helpObj;
+        caller  = callerObj;
+        args    = argsList;
     }
 
-    private static Map<String,Argument> decodeArgs(OtpErlangList argList)
+    @Override
+    public void run()
     {
-        Map<String,Argument> result = new HashMap<String,Argument>();
-        Iterator<OtpErlangObject> itr = argList.iterator();
-        OtpErlangTuple element;
-        while (itr.hasNext())
-        {
-            element             = (OtpErlangTuple) (itr.next());
-            OtpErlangString key = (OtpErlangString) (element.elementAt(0));
-            OtpErlangObject val = element.elementAt(1);
-            if (val.getClass() == OtpErlangString.class)
-            {
-                OtpErlangString valStr = (OtpErlangString) (element.elementAt(1));
-                Argument a = new Argument();
-                a.setStr(valStr.stringValue());
-                result.put(key.stringValue(), a);
-            }
-            else if (val.getClass() == OtpErlangLong.class)
-            {
-                OtpErlangLong valLong = (OtpErlangLong) (element.elementAt(1));
-                Argument a = new Argument();
-                int uInt;
-                try {
-                    uInt = valLong.uIntValue();
-                } catch (OtpErlangRangeException e) {
-                    e.printStackTrace();
-                    uInt = 0; 
-                }
-                a.setInt(uInt);
-                result.put(key.stringValue(), a);
-            }
-        }
-        return result;
+        helper.setConfig(NChecks.decodeArgs(args));
+        helper.execute();
+        OtpErlangObject replyMsg = NChecks.buildOkReply(NChecks.atomOk);
+        NChecks.sendReply(caller, replyMsg);
     }
+
+    public OtpErlangObject getCaller() {return this.caller;}
 }

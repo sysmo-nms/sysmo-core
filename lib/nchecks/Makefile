@@ -1,7 +1,5 @@
 # Makefile
 
-JAVA		?= java
-JAVAC		?= javac
 
 APP			= sysmo-worker
 
@@ -22,11 +20,20 @@ JLIB		= java_lib
 JBIN		= java_bin
 JSRC		= java_src
 NCHECKS_PKG = io/sysmo/nchecks
-NCHECKS_MOD_DIR = $(JBIN)/io/sysmo/nchecks/modules
+
+NCHECKS_MOD_DIR = $(JBIN)/io/sysmo/nchecks/checks
 NCHECKS_SRC = $(wildcard $(JSRC)/Check*.java)
 NCHECKS_TARGETS = $(patsubst $(JSRC)/%.java, $(NCHECKS_MOD_DIR)/%.class, $(NCHECKS_SRC))
 
+NHELPER_MOD_DIR = $(JBIN)/io/sysmo/nchecks/helpers
+NHELPER_SRC = $(wildcard $(JSRC)/Helper*.java)
+NHELPER_TARGETS = $(patsubst $(JSRC)/%.java, $(NHELPER_MOD_DIR)/%.class, $(NHELPER_SRC))
+
 NCHECKS_DIR = $(JBIN)/io/sysmo/nchecks
+
+NHELPER_IF	= $(NCHECK_DIR)/NHelperInterface.class
+NHELPER_IF_SRC = $(JSRC)/NHelperInterface.java
+NHELPER_IF_TARGET = $(patsubst $(JSRC)/%.java, $(NCHECKS_DIR)/%.class, $(NHELPER_IF_SRC))
 
 NCHECKS_MAIN_SRC = $(JSRC)/NChecks.java
 NCHECKS_MAIN_TARGET = $(patsubst $(JSRC)/%.java, $(NCHECKS_DIR)/%.class, $(NCHECKS_MAIN_SRC))
@@ -89,8 +96,11 @@ clean:
 	rm -f nchecks.log
 
 # nchecks targets:
-$(NCHECKS_DIR)/NChecks.class: $(JSRC)/NChecks.java $(JINTERFACE_DEP) $(NCHECKS_TARGETS) $(NCHECKS_SNMP_TARGET)
+$(NCHECKS_DIR)/NChecks.class: $(JSRC)/NChecks.java $(NHELPER_TARGETS) $(NCHECKS_TARGETS) $(NCHECKS_SNMP_TARGET)
 	$(JAVAC) -d $(JBIN) -classpath $(JCLASSPATH) $(JSRC)/NChecks.java
+
+$(NHELPER_IF_TARGET): $(JSRC)/NHelperInterface.java $(NCHECKS_ARG_TARGET)
+	$(JAVAC) -d $(JBIN) -classpath $(JBIN) $(JSRC)/NHelperInterface.java
 
 $(NCHECKS_IF_TARGET): $(JSRC)/NChecksInterface.java $(NCHECKS_ARG_TARGET) $(NCHECKS_RPL_TARGET) $(NCHECKS_CONST_TARGET)
 	$(JAVAC) -d $(JBIN) -classpath $(JBIN) $(JSRC)/NChecksInterface.java
@@ -110,9 +120,8 @@ $(NCHECKS_SNMP_TARGET): $(JSRC)/NChecksSNMP.java
 $(NCHECKS_MOD_DIR)/%.class: java_src/%.java $(NCHECKS_IF_TARGET) $(NCHECKS_SNMP_TARGET)
 	$(JAVAC) -d $(JBIN) -classpath $(JCLASSPATH) $(JSRC)/$*.java
 
-# java dependency libs
-$(JINTERFACE_DEP):
-	$(error You need $(JINTERFACE) to build NChecks.class. Find it and put int in the ./$(JLIB) directory. Only use the version given by your erlang installation. It should be here: $ERLANG_INSTALL_DIR/lib/jinterface-X.X.X/priv/OtpErlang.jar)
+$(NHELPER_MOD_DIR)/%.class: java_src/%.java $(NHELPER_IF_TARGET) $(NCHECKS_SNMP_TARGET)
+	$(JAVAC) -d $(JBIN) -classpath $(JCLASSPATH) $(JSRC)/$*.java
 
 ALLCLASSPATH = '$(shell cygpath -awp $(JCLASSPATH_TMP):java_lib/NChecks.jar)'
 

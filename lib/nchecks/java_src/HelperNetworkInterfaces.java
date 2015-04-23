@@ -21,13 +21,13 @@
 
 package io.sysmo.nchecks.helpers;
 
-import io.sysmo.nchecks.NHelpersInterface;
+import io.sysmo.nchecks.NHelperInterface;
 import io.sysmo.nchecks.Argument;
 
 import java.util.Map;
 
 
-public class HelperNetworkInterfaces implements NHelpersInterface
+public class HelperNetworkInterfaces implements NHelperInterface
 {
     public HelperNetworkInterfaces()
     {
