@@ -113,6 +113,19 @@ handle_cast({{"forceProbeQuery", Contents}, CState}, S) ->
     supercast_channel:unicast(CState, [ReplyPDU]),
     {noreply, S};
 
+handle_cast({{"ncheckHelperQuery", Contents}, CState}, S) ->
+    {struct, Contents2} = proplists:get_value(<<"value">>,  Contents),
+    _Target  = binary_to_list(proplists:get_value(<<"target">>,  Contents2)),
+    Class   = binary_to_list(proplists:get_value(<<"class">>,   Contents2)),
+    _QueryId = proplists:get_value(<<"queryId">>, Contents2),
+    _CState = CState,
+    case (catch nchecks:helper(Class)) of
+        {ok, Reply} -> io:format("reply is ~p~n", [Reply]);
+        {_, Error} -> io:format("error is ~p~n", [Error])
+    end,
+    {noreply, S};
+    %supercast_channel:unicast(CState, [ReplyPDU]),
+
 handle_cast(R, S) ->
     error_logger:info_msg("unknown cast for command ~p ~p ~p~n", [?MODULE, ?LINE, R]),
     {noreply, S}.

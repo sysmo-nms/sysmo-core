@@ -39,7 +39,8 @@
 
 % API
 -export([
-    check/3
+    check/3,
+    helper/1
 ]).
 
 -record(state, {
@@ -51,6 +52,10 @@
 
 -define(ASSERT_TIMEOUT, 60000).
 -define(CHECK_TIMEOUT, 15000).
+
+helper(Class) ->
+    io:format("class is ~p ~n", [Class]),
+    {ok, <<"hello">>}.
 
 check(Class, ArgList, Opaque) ->
     gen_server:call(?MODULE, {call_nchecks, 

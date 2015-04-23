@@ -10,7 +10,7 @@
         <Description>Monitor and log interfaces performances values</Description>
         <HelperTable>
             <Helper
-                Id="SelectIfFromTable"
+                Id="SelectNetworkInterfaces"
                 Type="snmp"
                 Return="table"
                 AutoStart="true"
@@ -24,18 +24,19 @@
                     ]
                 }
                 -->
-                <Description>Offer a list view of the device interfaces</Description>
+                <Description>This helper offer a list view of the target device interfaces</Description>
                 <HelperTableReturn
                     TreeRoot="ifType"
                     Select="ifIndex"
+                    Sort="ifDescr"
                     SelectionType="multiple"
-                    Sort="ifIndex"
-                    Fill="if_selection">
+                    FillFlag="if_selection">
+                    <ListSeparator>,</ListSeparator>
                     <Usage>Please select interfaces you want to monitor from the list.</Usage>
-                    <Column Id="ifType"  Position="0" Type="string"  />
-                    <Column Id="ifDescr" Position="1" Type="string"  />
-                    <Column Id="ifIndex" Position="2" Type="integer" />
-                    <Column Id="ifPhysAddress" Position="3" Type="string" />
+                    <Column Id="ifType"         Position="0" Type="string" />
+                    <Column Id="ifDescr"        Position="1" Type="string" />
+                    <Column Id="ifIndex"        Position="2" Type="integer" />
+                    <Column Id="ifPhysAddress"  Position="3" Type="string" />
                 </HelperTableReturn>
             </Helper>
         </HelperTable>
@@ -44,7 +45,7 @@
                 Id="if_selection"
                 Role="mandatory"
                 Type="string"
-                Helper="SelectIfFromTable" >
+                HelperButton="SelectNetworkInterfaces" >
                 <Default></Default>
                 <Hint>If indexes list</Hint>
                 <Usage>Comma separated list of integers representing snmp interface indexes</Usage>
@@ -85,10 +86,10 @@
                     <Title>Octets In/Out</Title>
                     <VerticalLabel>octets</VerticalLabel>
                     <Draw
-                        Type="line"
+                        Type="area"
                         DataSource="IfInOctets"
                         Consolidation="MAX"
-                        Color="#FFFFFFFF" >
+                        Color="#726fcfff" >
                         Octets in
                     </Draw>
     
@@ -96,7 +97,7 @@
                         Type="line"
                         DataSource="IfOutOctets"
                         Consolidation="MAX"
-                        Color="#FFFF00FF" >
+                        Color="#73d216ff" >
                         Octets out
                     </Draw>
                 </Graph>
@@ -111,33 +112,31 @@
                     <Title>Unicast/Non Unicast Packets In/Out</Title>
                     <VerticalLabel>packets</VerticalLabel>
                     <Draw
-                        Type="line"
+                        Type="area"
                         DataSource="IfInUcastPkts"
                         Consolidation="MAX"
-                        Color="#FFFFFFFF" >
+                        Color="#3465a4ff" >
                         Unicast packets In
                     </Draw>
-    
+                    <Draw
+                        Type="area"
+                        DataSource="IfInNucastPkts"
+                        Consolidation="MAX"
+                        Color="#4e9a06ff" >
+                        Non Unicast Packets In
+                    </Draw>
                     <Draw
                         Type="line"
                         DataSource="IfOutUcastPkts"
                         Consolidation="MAX"
-                        Color="#FFFF00FF" >
+                        Color="#c17d11ff" >
                         Unicast packets Out
                     </Draw>
                     <Draw
                         Type="line"
-                        DataSource="IfInNucastPkts"
-                        Consolidation="MAX"
-                        Color="#FFFFFFFF" >
-                        Non Unicast Packets In
-                    </Draw>
-    
-                    <Draw
-                        Type="line"
                         DataSource="IfOutNucastPkts"
                         Consolidation="MAX"
-                        Color="#FFFF00FF" >
+                        Color="#e9b96eff" >
                         Non Unicast packets Out
                     </Draw>
                 </Graph>
@@ -155,7 +154,7 @@
                         Type="line"
                         DataSource="IfInErrors"
                         Consolidation="MAX"
-                        Color="#FFFFFFFF" >
+                        Color="#cc0000ff" >
                         Octets in
                     </Draw>
     
@@ -163,7 +162,7 @@
                         Type="line"
                         DataSource="IfOutErrors"
                         Consolidation="MAX"
-                        Color="#FFFF00FF" >
+                        Color="#fce94fff" >
                         Octets out
                     </Draw>
                 </Graph>

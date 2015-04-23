@@ -37,22 +37,33 @@ import org.snmp4j.smi.VariableBinding;
 import org.snmp4j.PDU;
 
 import java.util.Map;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Iterator;
 
 
 public class CheckNetworkInterfaces implements NChecksInterface
 {
-    private static OID[] oids = new OID[]{
-        new OID("1.3.6.1.2.1.2.2.1.1"),
-        new OID("1.3.6.1.2.1.2.2.1.10"),
-        new OID("1.3.6.1.2.1.2.2.1.11"),
-        new OID("1.3.6.1.2.1.2.2.1.12"),
-        new OID("1.3.6.1.2.1.2.2.1.14"),
-        new OID("1.3.6.1.2.1.2.2.1.16"),
-        new OID("1.3.6.1.2.1.2.2.1.17"),
-        new OID("1.3.6.1.2.1.2.2.1.18"),
-        new OID("1.3.6.1.2.1.2.2.1.20")
+    private static String IF_INDEX = "1.3.6.1.2.1.2.2.1.1";
+    private static String IF_IN_OCTETS = "1.3.6.1.2.1.2.2.1.10";
+    private static String IF_IN_UCASTPKTS = "1.3.6.1.2.1.2.2.1.11";
+    private static String IF_IN_NUCASTPKTS = "1.3.6.1.2.1.2.2.1.12";
+    private static String IF_IN_ERRORS = "1.3.6.1.2.1.2.2.1.14";
+    private static String IF_OUT_OCTETS = "1.3.6.1.2.1.2.2.1.16";
+    private static String IF_OUT_UCASTPKTS = "1.3.6.1.2.1.2.2.1.17";
+    private static String IF_OUT_NUCASTPKTS = "1.3.6.1.2.1.2.2.1.18";
+    private static String IF_OUT_ERRORS = "1.3.6.1.2.1.2.2.1.20";
+
+    private static OID[] columns = new OID[]{
+        new OID(IF_INDEX),
+            new OID(IF_IN_OCTETS),
+            new OID(IF_IN_UCASTPKTS),
+            new OID(IF_IN_NUCASTPKTS),
+            new OID(IF_IN_ERRORS),
+            new OID(IF_OUT_OCTETS),
+            new OID(IF_OUT_UCASTPKTS),
+            new OID(IF_OUT_NUCASTPKTS),
+            new OID(IF_OUT_ERRORS)
     };
 
     private String  ifSelection;
@@ -67,101 +78,103 @@ public class CheckNetworkInterfaces implements NChecksInterface
     public void setOpaqueData(byte[] opaqueData)
     {
         /* DESERIALIZATION EXAMPLE
-        ByteArrayInputStream b = new ByteArrayInputStream(opaqueData);
-        ObjectInputStream o = new ObjectInputStream(b);
+           ByteArrayInputStream b = new ByteArrayInputStream(opaqueData);
+           ObjectInputStream o = new ObjectInputStream(b);
 
-        Object myObject = o.readObject();
-            or beter
-        MyObjectClass = (MyObjectClass) o.readObject();
-        */
+           Object myObject = o.readObject();
+           or beter
+           MyObjectClass = (MyObjectClass) o.readObject();
+         */
 
         /* SERICALIZATION EXAMPLE
-        ByteArrayOutputStream b = new ByteArrayOutputStream();
-        ObjectOutputStream o = new ObjectOutputStream(b);
-        o.writeObject(myObject);
-        opaqueData = b.toByteArray();
-        */
+           ByteArrayOutputStream b = new ByteArrayOutputStream();
+           ObjectOutputStream o = new ObjectOutputStream(b);
+           o.writeObject(myObject);
+           opaqueData = b.toByteArray();
+         */
     }
 
     public void setConfig(Map<String,Argument> config)
     {
         ifSelection = config.get("if_selection").getStr();
         /*
-        because it is defined as a "snmp" type Check (xml), config contain
-        all elements needed to register the agent to query.
-        */
+           because it is defined as a "snmp" type Check (xml), config contain
+           all elements needed to register the agent to query.
+         */
         conf = config;
-        System.out.println("setconfig??");
     }
 
     public Reply execute()
     {
-        System.out.println("execute??");
+        Reply  reply = new Reply();
+        String error = "undefined";
 
-        AbstractTarget target;
         try {
-            target = NChecksSNMP.getTarget(conf);
+            AbstractTarget target = NChecksSNMP.getTarget(conf);
             System.out.println("snmptarget? " + target);
-        } catch (Exception e) {
-            e.printStackTrace();
-            Reply rep = new Reply();
-            rep.setStatus(Const.STATUS_ERROR);
-            rep.setReply("Error: " + e);
-            return rep;
-        }
 
-        Snmp session = NChecksSNMP.getSnmpSession();
-        System.out.println("snmpsession? " + session);
+            Snmp session = NChecksSNMP.getSnmpSession();
+            System.out.println("snmpsession? " + session);
 
 
-        // !!! PDU.GETNEXT to degrade....
-        TableUtils tablewalker = new TableUtils(session,
-                                                //new DefaultPDUFactory(PDU.GETBULK));
-                                                new DefaultPDUFactory(PDU.GETNEXT));
+            // TODO try PDU.GETBULK then PDU.GETNEXT to degrade....
+            // TODO keep degrade state in reply.setOpaqueData(v)
+            TableUtils tablewalker = 
+                new TableUtils(
+                        session,
+                        new DefaultPDUFactory(PDU.GETNEXT));
 
-        System.out.println("tableutils?" + tablewalker);
+            System.out.println("tableutils?" + tablewalker);
 
-        OID ifIndex = new OID("1.3.6.1.2.1.2.2.1.1");
-        OID ifDescr = new OID("1.3.6.1.2.1.2.2.1.2");
-        OID[] columns = new OID[]{ifIndex, ifDescr};
-        System.out.println("columns?" + columns);
+            // TODO set lower and upper bound indexes
+            List<TableEvent> snmpReply = tablewalker.getTable(
+                    target,
+                    columns,
+                    null,
+                    null);
 
-        List<TableEvent> snmpReply =
-                   tablewalker.getTable(target, oids, null, null);
-        System.out.println("snmpReply?" + snmpReply);
+            // TODO degrade to PDU.GETNEXT if some vb(s) == null
+            // TODO check if reply is valid. Whereis is the error status?
 
-        Iterator<TableEvent> it = snmpReply.iterator();
+            String[]     indexesArray = ifSelection.split(",");
+            List<String> indexesList  = Arrays.asList(indexesArray);
 
-        // degrade to PDU.GETNEXT if some vb(s) == null
-        // TODO whereis is the error status?
-        while (it.hasNext()) {
-            TableEvent evt = it.next();
-            System.out.println("event: is error?" + evt.isError());
-            System.out.println("event: get error" + evt.getErrorMessage());
-            System.out.println("event: get except" + evt.getException());
-            System.out.println("event: get status" + evt.getStatus());
-            VariableBinding[] vbs = evt.getColumns();
-            for(VariableBinding vb: vbs) {
-                System.out.println("vb: " + vb + " ");
+            Iterator<TableEvent> it = snmpReply.iterator();
+            TableEvent evt;
+            while (it.hasNext()) {
+                evt = it.next();
+                error = evt.getErrorMessage();
+                VariableBinding[]   vbs = evt.getColumns();
+                String ifIndex = vbs[0].getVariable().toString();
+                if (indexesList.contains(ifIndex) == false) continue;
+                reply.putPerformance(ifIndex,"IfInOctets",
+                        vbs[1].getVariable().toLong());
+                reply.putPerformance(ifIndex,"IfInUcastPkts",
+                        vbs[2].getVariable().toLong());
+                reply.putPerformance(ifIndex,"IfInNucastPkts",
+                        vbs[3].getVariable().toLong());
+                reply.putPerformance(ifIndex,"IfInErrors",
+                        vbs[4].getVariable().toLong());
+
+                reply.putPerformance(ifIndex,"IfOutOctets",
+                        vbs[5].getVariable().toLong());
+                reply.putPerformance(ifIndex,"IfOutUcastPkts",
+                        vbs[6].getVariable().toLong());
+                reply.putPerformance(ifIndex,"IfOutNucastPkts",
+                        vbs[7].getVariable().toLong());
+                reply.putPerformance(ifIndex,"IfOutErrors",
+                        vbs[8].getVariable().toLong());
             }
-        }
 
-        Reply reply = new Reply();
-        String[] indexes = ifSelection.split(",");
-        for (String i: indexes)
-        {
-            reply.putPerformance(i, "IfInOctets",       500);
-            reply.putPerformance(i, "IfInUcastPkts",    500);
-            reply.putPerformance(i, "IfInNucastPkts",   500);
-            reply.putPerformance(i, "IfInErrors",       500);
 
-            reply.putPerformance(i, "IfOutOctets",      500);
-            reply.putPerformance(i, "IfOutUcastPkts",   500);
-            reply.putPerformance(i, "IfOutNucastPkts",  500);
-            reply.putPerformance(i, "IfOutErrors",      500);
+            reply.setStatus(Const.STATUS_OK);
+            reply.setReply("IfPerTableTest success fetch for: " + ifSelection);
+            return reply;
+        } catch (Exception|Error e) {
+            e.printStackTrace();
+            reply.setStatus(Const.STATUS_ERROR);
+            reply.setReply("Error: " + error);
+            return reply;
         }
-        reply.setStatus(Const.STATUS_OK);
-        reply.setReply("IfPerTableTest success fetch for: " + ifSelection);
-        return reply;
     }
 }

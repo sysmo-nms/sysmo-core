@@ -63,10 +63,9 @@ public class Reply
     }
 
     /**
-    * Set an opaque object in the reply. This data will be serialized, stored
+    * Set an opaque object in the reply. This data will stored
     * and returned on the next call of the check. This mechanism is actualy used
     * to store and compare COUNTER type values, but can be used as your wish.
-    * @param value A serializable java object
     */
     public void setOpaque(byte[] value) {
         opaque = value;
@@ -88,8 +87,8 @@ public class Reply
 
     /**
     * Store a performance value. These performances values will be interpreted
-    * by rrd as defined in your module xml definition file.
-    * Same as putPerformance("simple", key, value)
+    * by rrd as defined in your module xml definition file. Assume there is
+    * only one rrd file to update.
     */
     public void putPerformance(String key, long value)
     {
@@ -99,6 +98,8 @@ public class Reply
     /**
     * Store a performance value. These performances values will be interpreted
     * by rrd as defined in your module xml definition file.
+    * The "group" String is used to identify one of the rrd files to update.
+    * Assume a setup with multiple rrd files.
     */
     public void putPerformance(String group, String key, long value)
     {

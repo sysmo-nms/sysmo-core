@@ -84,7 +84,7 @@ public class NChecksSNMP
         return singleton.getSnmpTarget(conf);
     }
 
-    public AbstractTarget getSnmpTarget(Map<String,Argument> conf)
+    public synchronized AbstractTarget getSnmpTarget(Map<String,Argument> conf)
                                                 throws Exception
     {
         String targetid = conf.get("target_id").getStr();
@@ -117,7 +117,7 @@ public class NChecksSNMP
                 }
             }
         }
-        throw new Exception("user do not match a predefined usm user");
+        throw new Exception("User name exists with differents credencials");
     }
 
     public static AbstractTarget
