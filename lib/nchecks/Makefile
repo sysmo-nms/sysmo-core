@@ -6,11 +6,11 @@ JAVAC		?= javac
 APP			= sysmo-worker
 
 # DEBUG
-#ERL     = /cygdrive/c/Program\ Files/erl6.3/bin/erl -smp
-#ERLC    = /cygdrive/c/Program\ Files/erl6.3/bin/erlc -Werror
-JAVA	= /cygdrive/c/Program\ Files/Java/jdk1.8.0_31/bin/java.exe
-JAVAC   = /cygdrive/c/Program\ Files/Java/jdk1.8.0_31/bin/javac.exe
-JAVAJAR = /cygdrive/c/Program\ Files/Java/jdk1.8.0_31/bin/jar.exe
+ERL     ?= /cygdrive/c/Program\ Files/erl6.3/bin/erl -smp
+ERLC    ?= /cygdrive/c/Program\ Files/erl6.3/bin/erlc -Werror
+JAVA	?= /cygdrive/c/Program\ Files/Java/jdk1.8.0_31/bin/java.exe
+JAVAC   ?= /cygdrive/c/Program\ Files/Java/jdk1.8.0_31/bin/javac.exe
+JAVAJAR ?= /cygdrive/c/Program\ Files/Java/jdk1.8.0_31/bin/jar.exe
 # DEBUG END
 
 # define erl targets
@@ -71,10 +71,19 @@ JCLASSPATH = '$(shell cygpath -awp $(JCLASSPATH_TMP))'
 
 compile: $(ERL_TARGETS) java_lib/NChecks.jar
 
+ebin/%.beam: src/%.erl $(INCLUDE)
+	$(ERLC) $(EPATH) -o ebin/ src/$*.erl
+
 java_lib/NChecks.jar: $(NCHECKS_MAIN_TARGET)
 	$(JAVAJAR) cf java_lib/NChecks.jar -C java_bin io
 
 clean: 
+	rm -f ebin/*.beam
+	rm -f *.dump
+	rm -f doc/*.html
+	rm -f doc/*.png
+	rm -f doc/*.css
+	rm -f doc/edoc-info
 	rm -rf java_bin/io
 	rm -f java_lib/NChecks.jar
 	rm -f nchecks.log
