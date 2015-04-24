@@ -40,25 +40,27 @@
     handle_command/2
 ]).
 
-% TODO handle_command might be spawned when no log is required.
-% Actual lock is required for walk_ifTable (because of the temporary
-% agent)
+% TODO handle_command might be spawned when no lock is required.
+% catch every client entry. I do not want this gen_server to crash.
+% It should be a kind of guard.
+% TODO remove handle_cast for most of the commands, and if crash, crash the
+% client gen_tcp to.
 
 handle_command(Command, CState) ->
     % TODO check permissions here?
     gen_server:cast(?MODULE, {Command, CState}).
 
 handle_cast({{"createTargetQuery", Contents}, CState}, S) ->
-    % TODO check permissions
+    % TODO check permissions and spawn and catch
     {struct, Contents2} = proplists:get_value(<<"value">>, Contents),
     {struct, Prop}  = proplists:get_value(<<"properties">>, Contents2),
     {struct, SProp} = proplists:get_value(<<"sysProperties">>, Contents2),
     QueryId  = proplists:get_value(<<"queryId">>, Contents2),
     NProp    = [{binary_to_list(Key), maybe_str(Val)} || {Key,Val} <- Prop],
     NSysProp = [{binary_to_list(Key), maybe_str(Val)} || {Key,Val} <- SProp],
-    NSysProp2 = sysprop_guard(NSysProp),
-    TargetId = monitor:new_target(NSysProp2, NProp),
-    case snmp_enabled(NSysProp2) of
+    {NProp2, NSysProp2} = sysprop_guard(NProp,NSysProp),
+    TargetId = monitor:new_target(NSysProp2, NProp2),
+    case snmp_enabled(NProp2) of
         true ->
             SInfoJob  = monitor:new_job({internal, update_snmp_system_info}, TargetId),
             IfInfoJob = monitor:new_job({internal, update_snmp_if_aliases},  TargetId),
@@ -71,7 +73,7 @@ handle_cast({{"createTargetQuery", Contents}, CState}, S) ->
     {noreply, S};
 
 handle_cast({{"createNchecksQuery", Contents}, CState}, S) ->
-    % TODO check permissions
+    % TODO check permissions and spawn and catch
     {struct, Contents2} = proplists:get_value(<<"value">>, Contents),
     {struct, Prop}  = proplists:get_value(<<"properties">>, Contents2),
     Prop2 = [{binary_to_list(Key), maybe_str(Val)} || {Key, Val} <- Prop],
@@ -84,7 +86,7 @@ handle_cast({{"createNchecksQuery", Contents}, CState}, S) ->
     {noreply, S};
 
 handle_cast({{"deleteProbeQuery", Contents}, CState}, S) ->
-    % TODO check permissions
+    % TODO check permissions and spawn and catch
     {struct, Contents2} = proplists:get_value(<<"value">>, Contents),
     Probe   = binary_to_list(proplists:get_value(<<"name">>,  Contents2)),
     QueryId = proplists:get_value(<<"queryId">>,  Contents2),
@@ -94,7 +96,7 @@ handle_cast({{"deleteProbeQuery", Contents}, CState}, S) ->
     {noreply, S};
 
 handle_cast({{"deleteTargetQuery", Contents}, CState}, S) ->
-    % TODO check permissions
+    % TODO check permissions and spawn and catch
     {struct, Contents2}  = proplists:get_value(<<"value">>, Contents),
     Target  = binary_to_list(proplists:get_value(<<"name">>, Contents2)),
     QueryId = proplists:get_value(<<"queryId">>, Contents2),
@@ -104,7 +106,7 @@ handle_cast({{"deleteTargetQuery", Contents}, CState}, S) ->
     {noreply, S};
 
 handle_cast({{"forceProbeQuery", Contents}, CState}, S) ->
-    % TODO check permissions
+    % TODO check permissions and spawn and catch
     {struct, Contents2}  = proplists:get_value(<<"value">>, Contents),
     Probe   = binary_to_list(proplists:get_value(<<"name">>, Contents2)),
     QueryId = proplists:get_value(<<"queryId">>, Contents2),
@@ -114,11 +116,17 @@ handle_cast({{"forceProbeQuery", Contents}, CState}, S) ->
     {noreply, S};
 
 handle_cast({{"ncheckHelperQuery", Contents}, CState}, S) ->
+    % TODO check permissions and spawn and catch
     {struct, Contents2} = proplists:get_value(<<"value">>,  Contents),
-    _Target  = binary_to_list(proplists:get_value(<<"target">>,  Contents2)),
+    Target  = binary_to_list(proplists:get_value(<<"target">>, Contents2)),
     Class   = binary_to_list(proplists:get_value(<<"class">>,   Contents2)),
+    Type    = binary_to_list(proplists:get_value(<<"type">>,    Contents2)),
     QueryId = proplists:get_value(<<"queryId">>, Contents2),
-    case (catch nchecks:helper(Class, [])) of
+    case Type of
+        "snmp"  -> Args = get_snmp_args(Target);
+        _       -> Args = []
+    end,
+    case (catch nchecks:helper(Class, Args)) of
         {ok, Reply} ->
             ReplyPDU = monitor_pdu:nchecksHelperReply(QueryId, Class, Reply),
             supercast_channel:unicast(CState, [ReplyPDU]);
@@ -143,14 +151,34 @@ code_change(_O, S, _E)  -> {ok, S}.
 %%----------------------------------------------------------------------------
 
 
+get_snmp_args(TargetName) ->
+    [Target]        = monitor_data_master:get(target, TargetName),
+    TargetSysProp   = Target#target.sys_properties,
+    TargetProp      = Target#target.properties,
+    [
+        {"target_id", TargetName},
+        {_,_} = lists:keyfind("host", 1, TargetProp),
+        {_,_} = lists:keyfind("snmp_port",1,TargetSysProp),
+        {_,_} = lists:keyfind("snmp_version",1,TargetSysProp),
+        {_,_} = lists:keyfind("snmp_seclevel",1,TargetSysProp),
+        {_,_} = lists:keyfind("snmp_community",1,TargetSysProp),
+        {_,_} = lists:keyfind("snmp_usm_user",1,TargetSysProp),
+        {_,_} = lists:keyfind("snmp_authkey",1,TargetSysProp),
+        {_,_} = lists:keyfind("snmp_authproto",1,TargetSysProp),
+        {_,_} = lists:keyfind("snmp_privkey",1,TargetSysProp),
+        {_,_} = lists:keyfind("snmp_privproto",1,TargetSysProp),
+        {_,_} = lists:keyfind("snmp_timeout",1,TargetSysProp),
+        {_,_} = lists:keyfind("snmp_retries",1,TargetSysProp)
+    ].
 
 
-sysprop_guard(NSysProp) ->
+
+sysprop_guard(NProp, NSysProp) ->
     case proplists:get_value("snmp_version", NSysProp) of
         undefined ->
-            NSysProp;
+            {NProp, NSysProp};
         _ ->
-            build_snmpConf(NSysProp)
+            {[{"isSnmpAware", "true"} | NProp], build_snmpConf(NSysProp)}
     end.
 
 build_snmpConf(NSysProp) ->
@@ -169,8 +197,8 @@ build_snmpConf([{Key,Val}|R], Default) ->
     NDefault = lists:keystore(Key, 1, Default, {Key, Val}),
     build_snmpConf(R, NDefault).
 
-snmp_enabled(SProps) ->
-    case proplists:get_value("snmp_version", SProps) of
+snmp_enabled(Props) ->
+    case proplists:get_value("isSnmpAware", Props) of
         undefined   -> false;
         _           -> true
     end.
