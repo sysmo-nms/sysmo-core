@@ -6,10 +6,6 @@ APP			= sysmo-worker
 # DEBUG
 ERL     ?= /cygdrive/c/Program\ Files/erl6.3/bin/erl -smp
 ERLC    ?= /cygdrive/c/Program\ Files/erl6.3/bin/erlc -Werror
-JAVA	?= /cygdrive/c/Program\ Files/Java/jdk1.8.0_31/bin/java.exe
-JAVAC   ?= /cygdrive/c/Program\ Files/Java/jdk1.8.0_31/bin/javac.exe
-JAVAJAR ?= /cygdrive/c/Program\ Files/Java/jdk1.8.0_31/bin/jar.exe
-JAVADOC ?= /cygdrive/c/Program\ Files/Java/jdk1.8.0_31/bin/javadoc.exe
 # DEBUG END
 
 # define erl targets
@@ -29,10 +25,10 @@ ebin/%.beam: src/%.erl $(INCLUDE)
 	$(ERLC) $(EPATH) -o ebin/ src/$*.erl
 
 java_lib/NChecks.jar: build/jar/NChecks.jar
-	cp build/jar/NChecks.jar java_lib
+	cp build/jar/NChecks.jar java_lib/
 
 build/jar/NChecks.jar:
-	ant compile jar
+	ant jar
 
 clean: 
 	ant clean
