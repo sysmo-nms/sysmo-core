@@ -1,0 +1,32 @@
+<project>
+
+    <target name="clean">
+        <delete dir="build"/>
+    </target>
+
+    <path id="classpath">
+        <fileset dir="java_lib" includes="*.jar" />
+    </path>
+
+    <target name="compile">
+        <mkdir dir="build/classes"/>
+        <javac
+            srcdir="java_src"
+            destdir="build/classes"
+            classpathref="classpath"/>
+    </target>
+
+    <target name="jar">
+        <mkdir dir="build/jar"/>
+        <jar destfile="build/jar/NChecks.jar" basedir="build/classes">
+            <manifest>
+                <attribute name="Main-Class" value="oata.HelloWorld"/>
+            </manifest>
+        </jar>
+    </target>
+
+    <target name="run">
+        <java jar="build/jar/NChecks.jar" fork="true"/>
+    </target>
+
+</project>
