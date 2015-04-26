@@ -46,10 +46,22 @@ NCHECKS_CONST = $(NCHECK_DIR)/Const.class
 NCHECKS_CONST_SRC = $(JSRC)/Const.java
 NCHECKS_CONST_TARGET = $(patsubst $(JSRC)/%.java, $(NCHECKS_DIR)/%.class, $(NCHECKS_CONST_SRC))
 
-
 NCHECKS_QUERY = $(NCHECK_DIR)/Query.class
 NCHECKS_QUERY_SRC = $(JSRC)/Query.java
 NCHECKS_QUERY_TARGET = $(patsubst $(JSRC)/%.java, $(NCHECKS_DIR)/%.class, $(NCHECKS_QUERY_SRC))
+
+
+NHELPER_REPLY_IF = $(NCHECK_DIR)/HelperReply.class
+NHELPER_REPLY_IF_SRC = $(JSRC)/HelperReply.java
+NHELPER_REPLY_IF_TARGET = $(patsubst $(JSRC)/%.java, $(NCHECKS_DIR)/%.class, $(NHELPER_REPLY_IF_SRC))
+
+NHELPER_REPLY_SIMPLE = $(NCHECK_DIR)/HelperSimpleReply.class
+NHELPER_REPLY_SIMPLE_SRC = $(JSRC)/HelperSimpleReply.java
+NHELPER_REPLY_SIMPLE_TARGET = $(patsubst $(JSRC)/%.java, $(NCHECKS_DIR)/%.class, $(NHELPER_REPLY_SIMPLE_SRC))
+
+NHELPER_REPLY_TABLE = $(NCHECK_DIR)/HelperTableReply.class
+NHELPER_REPLY_TABLE_SRC = $(JSRC)/HelperTableReply.java
+NHELPER_REPLY_TABLE_TARGET = $(patsubst $(JSRC)/%.java, $(NCHECKS_DIR)/%.class, $(NHELPER_REPLY_TABLE_SRC))
 
 
 NCHECKS_ARG	= $(NCHECK_DIR)/Argument.class
@@ -106,10 +118,10 @@ clean:
 	rm -f nchecks.log
 
 # nchecks targets:
-$(NCHECKS_DIR)/NChecks.class: $(JSRC)/NChecks.java $(NHELPER_TARGETS) $(NCHECKS_TARGETS) $(NCHECKS_SNMP_TARGET) $(NCHECKS_QUERY_TARGET)
+$(NCHECKS_DIR)/NChecks.class: $(JSRC)/NChecks.java $(NHELPER_TARGETS) $(NCHECKS_TARGETS) $(NCHECKS_SNMP_TARGET) $(NCHECKS_QUERY_TARGET) $(NHELPER_REPLY_IF_TARGET)
 	$(JAVAC) -d $(JBIN) -classpath $(JCLASSPATH) $(JSRC)/NChecks.java
 
-$(NHELPER_IF_TARGET): $(JSRC)/NHelperInterface.java $(NCHECKS_ARG_TARGET) $(NCHECKS_QUERY_TARGET)
+$(NHELPER_IF_TARGET): $(JSRC)/NHelperInterface.java $(NCHECKS_ARG_TARGET) $(NCHECKS_QUERY_TARGET) $(NHELPER_REPLY_IF_TARGET)
 	$(JAVAC) -d $(JBIN) -classpath $(JBIN) $(JSRC)/NHelperInterface.java
 
 $(NCHECKS_IF_TARGET): $(JSRC)/NChecksInterface.java $(NCHECKS_ARG_TARGET) $(NCHECKS_RPL_TARGET) $(NCHECKS_CONST_TARGET) $(NCHECKS_QUERY_TARGET)
@@ -120,6 +132,15 @@ $(NCHECKS_ARG_TARGET): $(JSRC)/Argument.java
 
 $(NCHECKS_RPL_TARGET): $(JSRC)/Reply.java
 	$(JAVAC) -d $(JBIN) -classpath $(JCLASSPATH) $(JSRC)/Reply.java
+
+$(NHELPER_REPLY_IF_TARGET): $(JSRC)/HelperReply.java
+	$(JAVAC) -d $(JBIN) -classpath $(JCLASSPATH) $(JSRC)/HelperReply.java
+
+$(NHELPER_REPLY_TABLE_TARGET): $(JSRC)/HelperTableReply.java $(NHELPER_REPLY_IF_TARGET)
+	$(JAVAC) -d $(JBIN) -classpath $(JCLASSPATH) $(JSRC)/HelperTableReply.java
+
+$(NHELPER_REPLY_SIMPLE_TARGET): $(JSRC)/HelperSimpleReply.java $(NHELPER_REPLY_IF_TARGET)
+	$(JAVAC) -d $(JBIN) -classpath $(JCLASSPATH) $(JSRC)/HelperSimpleReply.java
 
 $(NCHECKS_CONST_TARGET): $(JSRC)/Const.java
 	$(JAVAC) -d $(JBIN) -classpath $(JCLASSPATH) $(JSRC)/Const.java
@@ -133,7 +154,7 @@ $(NCHECKS_SNMP_TARGET): $(JSRC)/NChecksSNMP.java $(NCHECKS_QUERY_TARGET)
 $(NCHECKS_MOD_DIR)/%.class: java_src/%.java $(NCHECKS_IF_TARGET) $(NCHECKS_SNMP_TARGET) $(NCHECKS_QUERY_TARGET)
 	$(JAVAC) -d $(JBIN) -classpath $(JCLASSPATH) $(JSRC)/$*.java
 
-$(NHELPER_MOD_DIR)/%.class: java_src/%.java $(NHELPER_IF_TARGET) $(NCHECKS_SNMP_TARGET) $(NCHECKS_QUERY_TARGET)
+$(NHELPER_MOD_DIR)/%.class: java_src/%.java $(NHELPER_IF_TARGET) $(NCHECKS_SNMP_TARGET) $(NCHECKS_QUERY_TARGET) $(NHELPER_REPLY_TABLE_TARGET) $(NHELPER_REPLY_SIMPLE_TARGET)
 	echo $(JCLASSPATH)
 	$(JAVAC) -d $(JBIN) -classpath $(JCLASSPATH) $(JSRC)/$*.java
 

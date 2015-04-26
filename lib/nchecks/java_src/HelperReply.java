@@ -19,12 +19,8 @@
  * THE SOFTWARE.
  */
 package io.sysmo.nchecks;
-import io.sysmo.nchecks.Query;
-import java.util.Map;
-import io.sysmo.nchecks.Argument;
 
-public interface NHelperInterface
+public interface HelperReply
 {
-    // TODO use a HelperReply not a char[]
-    public char[] execute(Query query);
+    public char[] toCharArray();
 }
