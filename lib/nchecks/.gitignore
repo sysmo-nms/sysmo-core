@@ -13,3 +13,5 @@ bin
 doc/edoc-info
 erl_crash.dump
 nchecks.log
+build
+java_doc
