@@ -46,6 +46,12 @@ NCHECKS_CONST = $(NCHECK_DIR)/Const.class
 NCHECKS_CONST_SRC = $(JSRC)/Const.java
 NCHECKS_CONST_TARGET = $(patsubst $(JSRC)/%.java, $(NCHECKS_DIR)/%.class, $(NCHECKS_CONST_SRC))
 
+
+NCHECKS_QUERY = $(NCHECK_DIR)/Query.class
+NCHECKS_QUERY_SRC = $(JSRC)/Query.java
+NCHECKS_QUERY_TARGET = $(patsubst $(JSRC)/%.java, $(NCHECKS_DIR)/%.class, $(NCHECKS_QUERY_SRC))
+
+
 NCHECKS_ARG	= $(NCHECK_DIR)/Argument.class
 NCHECKS_ARG_SRC = $(JSRC)/Argument.java
 NCHECKS_ARG_TARGET = $(patsubst $(JSRC)/%.java, $(NCHECKS_DIR)/%.class, $(NCHECKS_ARG_SRC))
@@ -100,13 +106,13 @@ clean:
 	rm -f nchecks.log
 
 # nchecks targets:
-$(NCHECKS_DIR)/NChecks.class: $(JSRC)/NChecks.java $(NHELPER_TARGETS) $(NCHECKS_TARGETS) $(NCHECKS_SNMP_TARGET)
+$(NCHECKS_DIR)/NChecks.class: $(JSRC)/NChecks.java $(NHELPER_TARGETS) $(NCHECKS_TARGETS) $(NCHECKS_SNMP_TARGET) $(NCHECKS_QUERY_TARGET)
 	$(JAVAC) -d $(JBIN) -classpath $(JCLASSPATH) $(JSRC)/NChecks.java
 
-$(NHELPER_IF_TARGET): $(JSRC)/NHelperInterface.java $(NCHECKS_ARG_TARGET)
+$(NHELPER_IF_TARGET): $(JSRC)/NHelperInterface.java $(NCHECKS_ARG_TARGET) $(NCHECKS_QUERY_TARGET)
 	$(JAVAC) -d $(JBIN) -classpath $(JBIN) $(JSRC)/NHelperInterface.java
 
-$(NCHECKS_IF_TARGET): $(JSRC)/NChecksInterface.java $(NCHECKS_ARG_TARGET) $(NCHECKS_RPL_TARGET) $(NCHECKS_CONST_TARGET)
+$(NCHECKS_IF_TARGET): $(JSRC)/NChecksInterface.java $(NCHECKS_ARG_TARGET) $(NCHECKS_RPL_TARGET) $(NCHECKS_CONST_TARGET) $(NCHECKS_QUERY_TARGET)
 	$(JAVAC) -d $(JBIN) -classpath $(JBIN) $(JSRC)/NChecksInterface.java
 
 $(NCHECKS_ARG_TARGET): $(JSRC)/Argument.java
@@ -118,13 +124,16 @@ $(NCHECKS_RPL_TARGET): $(JSRC)/Reply.java
 $(NCHECKS_CONST_TARGET): $(JSRC)/Const.java
 	$(JAVAC) -d $(JBIN) -classpath $(JCLASSPATH) $(JSRC)/Const.java
 
-$(NCHECKS_SNMP_TARGET): $(JSRC)/NChecksSNMP.java
+$(NCHECKS_QUERY_TARGET): $(JSRC)/Query.java
+	$(JAVAC) -d $(JBIN) -classpath $(JCLASSPATH) $(JSRC)/Query.java
+
+$(NCHECKS_SNMP_TARGET): $(JSRC)/NChecksSNMP.java $(NCHECKS_QUERY_TARGET)
 	$(JAVAC) -d $(JBIN) -classpath $(JCLASSPATH) $(JSRC)/NChecksSNMP.java
 
-$(NCHECKS_MOD_DIR)/%.class: java_src/%.java $(NCHECKS_IF_TARGET) $(NCHECKS_SNMP_TARGET)
+$(NCHECKS_MOD_DIR)/%.class: java_src/%.java $(NCHECKS_IF_TARGET) $(NCHECKS_SNMP_TARGET) $(NCHECKS_QUERY_TARGET)
 	$(JAVAC) -d $(JBIN) -classpath $(JCLASSPATH) $(JSRC)/$*.java
 
-$(NHELPER_MOD_DIR)/%.class: java_src/%.java $(NHELPER_IF_TARGET) $(NCHECKS_SNMP_TARGET)
+$(NHELPER_MOD_DIR)/%.class: java_src/%.java $(NHELPER_IF_TARGET) $(NCHECKS_SNMP_TARGET) $(NCHECKS_QUERY_TARGET)
 	echo $(JCLASSPATH)
 	$(JAVAC) -d $(JBIN) -classpath $(JCLASSPATH) $(JSRC)/$*.java
 

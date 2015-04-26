@@ -19,11 +19,49 @@
  * THE SOFTWARE.
  */
 package io.sysmo.nchecks;
-import io.sysmo.nchecks.Query;
 import java.util.Map;
+import java.util.HashMap;
+import java.io.Serializable;
+import com.ericsson.otp.erlang.*;
 import io.sysmo.nchecks.Argument;
 
-public interface NHelperInterface
+/**
+* The Reply class contain all the values and informations related to the execution of 
+* a module implementing NCheckInterface (a check module).
+*/
+public class Query
 {
-    public char[] execute(Query query);
+    private Map<String,Argument> arguments;
+    private byte[]               state;
+
+    public Query(Map<String,Argument> args, byte[] state)
+    {
+        this.state = state;
+        this.arguments = args;
+    }
+
+    public Query(Map<String,Argument> args)
+    {
+        this.arguments = args;
+    }
+
+
+    /*
+    * Retrieve the state set by the previous check call.
+    * (see Reply.setState)
+    * Deserializtaion example:
+    * DESERIALIZATION EXAMPLE
+    *       ByteArrayInputStream b = new ByteArrayInputStream(opaqueData);
+    *       ObjectInputStream o = new ObjectInputStream(b);
+    *       Object myObject = o.readObject();
+    *       or beter
+    *       MyObjectClass = (MyObjectClass) o.readObject();
+    */
+    public byte[] getState() {return this.state;}
+
+    /*
+    * Return the argument corresponding to the key.
+    */
+    public Argument get(String key) {return this.arguments.get(key);}
+
 }

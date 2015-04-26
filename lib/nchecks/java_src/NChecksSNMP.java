@@ -21,6 +21,7 @@
 
 package io.sysmo.nchecks;
 import io.sysmo.nchecks.Argument;
+import io.sysmo.nchecks.Query;
 
 import java.io.*;
 import java.util.*;
@@ -78,26 +79,26 @@ public class NChecksSNMP
         singleton.agents = new HashMap<String, AbstractTarget>();
     }
 
-    public static AbstractTarget getTarget(Map<String,Argument> conf)
+    public static AbstractTarget getTarget(Query query)
                                                 throws Exception
     {
-        return singleton.getSnmpTarget(conf);
+        return singleton.getSnmpTarget(query);
     }
 
-    public synchronized AbstractTarget getSnmpTarget(Map<String,Argument> conf)
+    public synchronized AbstractTarget getSnmpTarget(Query query)
                                                 throws Exception
     {
-        String targetid = conf.get("target_id").getStr();
+        String targetid = query.get("target_id").asString();
         AbstractTarget target = agents.get(targetid);
         if (target != null) { return target; }
 
-        target = generateTarget(conf);
+        target = generateTarget(query);
         if (target.getSecurityModel() != SecurityModel.SECURITY_MODEL_USM)
         {
             agents.put(targetid, target);
             return target;
         } else {
-            UsmUser     user     = generateUser(conf);
+            UsmUser     user     = generateUser(query);
             OctetString username = user.getSecurityName();
             UsmUserEntry oldUser =
                     snmp4jSession.getUSM().getUserTable().getUser(username);
@@ -121,15 +122,15 @@ public class NChecksSNMP
     }
 
     public static AbstractTarget
-                        generateTarget(Map<String,Argument> conf)
+                        generateTarget(Query query)
                                                     throws Exception, Error
     {
-        String  host        = conf.get("host").getStr();
-        int     port        = conf.get("snmp_port").getInt();
-        String  seclevel    = conf.get("snmp_seclevel").getStr();
-        String  version     = conf.get("snmp_version").getStr();
-        int     retries     = conf.get("snmp_retries").getInt();
-        int     timeout     = conf.get("snmp_timeout").getInt();
+        String  host        = query.get("host").asString();
+        int     port        = query.get("snmp_port").asInteger();
+        String  seclevel    = query.get("snmp_seclevel").asString();
+        String  version     = query.get("snmp_version").asString();
+        int     retries     = query.get("snmp_retries").asInteger();
+        int     timeout     = query.get("snmp_timeout").asInteger();
         
         Address address = GenericAddress.parse("udp:" + host + "/" + port);
 
@@ -138,7 +139,7 @@ public class NChecksSNMP
         switch (version)
         {
             case "3":
-                String  secname = conf.get("snmp_usm_user").getStr();
+                String  secname = query.get("snmp_usm_user").asString();
                 UserTarget targetV3 = new UserTarget();
                 targetV3.setAddress(address);
                 targetV3.setRetries(retries);
@@ -149,7 +150,7 @@ public class NChecksSNMP
                 return targetV3;
 
             default:
-                String  community = conf.get("snmp_community").getStr();
+                String  community = query.get("snmp_community").asString();
                 CommunityTarget target = new CommunityTarget();
                 target.setCommunity(new OctetString(community));
                 target.setAddress(address);
@@ -165,22 +166,22 @@ public class NChecksSNMP
     }
 
     private static UsmUser 
-                    generateUser(Map<String,Argument> conf)
+                    generateUser(Query query)
                                                         throws Exception, Error
     {
 
         OID authProtoOid =
-                    SNMPUtils.getAuthProto(conf.get("snmp_authproto").getStr());
+                    SNMPUtils.getAuthProto(query.get("snmp_authproto").asString());
         OID privProtoOid =
-                    SNMPUtils.getPrivProto(conf.get("snmp_privproto").getStr());
+                    SNMPUtils.getPrivProto(query.get("snmp_privproto").asString());
         SecurityProtocols secProtocols = SecurityProtocols.getInstance();
 
         OctetString uName =
-                        new OctetString(conf.get("snmp_usm_user").getStr());
+                        new OctetString(query.get("snmp_usm_user").asString());
         OctetString authkey = 
-                        new OctetString(conf.get("snmp_authkey").getStr());
+                        new OctetString(query.get("snmp_authkey").asString());
         OctetString privkey = 
-                        new OctetString(conf.get("snmp_privkey").getStr());
+                        new OctetString(query.get("snmp_privkey").asString());
         UsmUser usmuser = new UsmUser(
                                         uName,authProtoOid,authkey,
                                                         privProtoOid,privkey);

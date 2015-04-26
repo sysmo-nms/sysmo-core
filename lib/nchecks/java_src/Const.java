@@ -22,9 +22,9 @@ package io.sysmo.nchecks;
 
 public class Const
 {
-    public static String STATUS_OK       = "OK";
-    public static String STATUS_WARNING  = "WARNING";
-    public static String STATUS_CRITICAL = "CRITICAL";
-    public static String STATUS_DOWN     = "DOWN";
-    public static String STATUS_ERROR    = "ERROR";
+    public static final String STATUS_OK       = "OK";
+    public static final String STATUS_WARNING  = "WARNING";
+    public static final String STATUS_CRITICAL = "CRITICAL";
+    public static final String STATUS_DOWN     = "DOWN";
+    public static final String STATUS_ERROR    = "ERROR";
 }

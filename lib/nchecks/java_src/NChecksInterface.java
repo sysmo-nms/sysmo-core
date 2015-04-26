@@ -19,13 +19,10 @@
  * THE SOFTWARE.
  */
 package io.sysmo.nchecks;
-import java.util.Map;
-import io.sysmo.nchecks.Argument;
 import io.sysmo.nchecks.Reply;
+import io.sysmo.nchecks.Query;
 
 public interface NChecksInterface
 {
-    public Reply execute();
-    public void  setConfig(Map<String,Argument> config);
-    public void  setOpaqueData(byte[] opaqueData);
+    public Reply execute(Query query);
 }

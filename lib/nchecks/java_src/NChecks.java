@@ -23,6 +23,7 @@ package io.sysmo.nchecks;
 import io.sysmo.nchecks.NChecksInterface;
 import io.sysmo.nchecks.Argument;
 import io.sysmo.nchecks.Reply;
+import io.sysmo.nchecks.Query;
 import io.sysmo.nchecks.checks.*;
 import io.sysmo.nchecks.helpers.*;
 import io.sysmo.nchecks.NChecksSNMP;
@@ -331,7 +332,7 @@ public class NChecks
             {
                 OtpErlangString valStr = (OtpErlangString) (element.elementAt(1));
                 Argument a = new Argument();
-                a.setStr(valStr.stringValue());
+                a.set(valStr.stringValue());
                 result.put(key.stringValue(), a);
             }
             else if (val.getClass() == OtpErlangLong.class)
@@ -345,7 +346,7 @@ public class NChecks
                     e.printStackTrace();
                     uInt = 0; 
                 }
-                a.setInt(uInt);
+                a.set(uInt);
                 result.put(key.stringValue(), a);
             }
         }
@@ -359,53 +360,53 @@ public class NChecks
 
         Map<String,Argument> testArguments = new HashMap<String,Argument>();
         Argument a = new Argument();
-        a.setInt(161);
+        a.set(161);
         testArguments.put("snmp_port", a);
         a = new Argument();
-        a.setStr("3");
+        a.set("3");
         testArguments.put("snmp_version", a);
         a = new Argument();
-        a.setStr("authPriv");
+        a.set("authPriv");
         testArguments.put("snmp_seclevel", a);
         a = new Argument();
-        a.setStr("public");
+        a.set("public");
         testArguments.put("snmp_community", a);
         a = new Argument();
-        a.setStr("jojo");
+        a.set("jojo");
         testArguments.put("snmp_usm_user", a);
         a = new Argument();
-        a.setStr("password123");
+        a.set("password123");
         testArguments.put("snmp_authkey", a);
         a = new Argument();
-        a.setStr("MD5");
+        a.set("MD5");
         testArguments.put("snmp_authproto", a);
         a = new Argument();
-        a.setStr("enckey123");
+        a.set("enckey123");
         testArguments.put("snmp_privkey", a);
         a = new Argument();
-        a.setStr("DES");
+        a.set("DES");
         testArguments.put("snmp_privproto", a);
         a = new Argument();
-        a.setInt(2500);
+        a.set(2500);
         testArguments.put("snmp_timeout", a);
         a = new Argument();
-        a.setInt(1);
+        a.set(1);
         testArguments.put("snmp_retries", a);
         a = new Argument();
-        a.setStr("1,2,3");
+        a.set("1,2,3");
         testArguments.put("if_selection", a);
         a = new Argument();
-        a.setStr("192.168.0.5");
+        a.set("192.168.0.5");
         testArguments.put("host", a);
         a = new Argument();
-        a.setStr("target-234345");
+        a.set("target-234345");
         testArguments.put("target_id", a);
 
 
 
         NHelperInterface module = new HelperNetworkInterfaces();
-        module.setConfig(testArguments);
-        module.execute();
+        Query query = new Query(testArguments);
+        module.execute(query);
         return;
     } 
 
@@ -446,9 +447,8 @@ class NChecksRunnable implements Runnable
     @Override
     public void run()
     {
-        check.setConfig(NChecks.decodeArgs(args));
-        check.setOpaqueData(opaqueData.binaryValue());
-        Reply reply = check.execute();
+        Query query = new Query(NChecks.decodeArgs(args), opaqueData.binaryValue());
+        Reply reply = check.execute(query);
         OtpErlangObject replyMsg = NChecks.buildOkReply(reply.asTuple());
         NChecks.sendReply(caller, replyMsg);
     }
@@ -475,8 +475,8 @@ class NHelperRunnable implements Runnable
     @Override
     public void run()
     {
-        helper.setConfig(NChecks.decodeArgs(args));
-        char[] jsonChars = helper.execute();
+        Query query      = new Query(NChecks.decodeArgs(args));
+        char[] jsonChars = helper.execute(query);
         OtpErlangList   jsonCharList = buildErlangCharList(jsonChars);
         OtpErlangObject replyMsg     = NChecks.buildOkReply(jsonCharList);
         NChecks.sendReply(caller, replyMsg);

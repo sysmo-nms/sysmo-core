@@ -23,6 +23,7 @@ package io.sysmo.nchecks.helpers;
 
 import io.sysmo.nchecks.NHelperInterface;
 import io.sysmo.nchecks.Argument;
+import io.sysmo.nchecks.Query;
 
 import io.sysmo.nchecks.NChecksSNMP;
 import org.snmp4j.Snmp;
@@ -55,10 +56,10 @@ import javax.json.JsonObjectBuilder;
 public class HelperNetworkInterfaces implements NHelperInterface
 {
 
-    private static String IF_INDEX = "1.3.6.1.2.1.2.2.1.1";
-    private static String IF_DESCR = "1.3.6.1.2.1.2.2.1.2";
-    private static String IF_TYPE  = "1.3.6.1.2.1.2.2.1.3";
-    private static String IF_PHYSADDRESS = "1.3.6.1.2.1.2.2.1.6";
+    private static final String IF_INDEX = "1.3.6.1.2.1.2.2.1.1";
+    private static final String IF_DESCR = "1.3.6.1.2.1.2.2.1.2";
+    private static final String IF_TYPE  = "1.3.6.1.2.1.2.2.1.3";
+    private static final String IF_PHYSADDRESS = "1.3.6.1.2.1.2.2.1.6";
 
     private static final OID[] columns = new OID[]{
             new OID(IF_INDEX),
@@ -105,25 +106,9 @@ public class HelperNetworkInterfaces implements NHelperInterface
         iftype.put("32", "frame-relay");
     }
 
-    private Map<String,Argument> conf;
+    public HelperNetworkInterfaces() {}
 
-    public HelperNetworkInterfaces()
-    {
-    }
-
-    private static String getType(String type)
-    {
-        String val = iftype.get(type);
-        if (val == null) return "unknown(" + type + ")";
-        return val;
-    }
-
-    public void setConfig(Map<String,Argument> config)
-    {
-        conf = config;
-    }
-
-    public char[] execute()
+    public char[] execute(Query query)
     {
         
         // prepare json message begin
@@ -137,7 +122,7 @@ public class HelperNetworkInterfaces implements NHelperInterface
 
 
         try {
-            AbstractTarget target = NChecksSNMP.getTarget(conf);
+            AbstractTarget target = NChecksSNMP.getTarget(query);
 
             Snmp session = NChecksSNMP.getSnmpSession();
             TableUtils tablewalker =
@@ -182,4 +167,12 @@ public class HelperNetworkInterfaces implements NHelperInterface
 
         return buffer.toCharArray();
     }
+
+    private static String getType(String type)
+    {
+        String val = iftype.get(type);
+        if (val == null) return "unknown(" + type + ")";
+        return val;
+    }
+
 }

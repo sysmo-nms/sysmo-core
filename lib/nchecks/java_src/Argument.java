@@ -22,23 +22,40 @@ package io.sysmo.nchecks;
 
 public class Argument
 {
-    public static int STRING_VALUE  = 1;
-    public static int INT_VALUE     = 2;
+    public static final int STRING_VALUE  = 1;
+    public static final int INT_VALUE     = 2;
 
-    public String   stringValue = "";
-    public int      intValue    = -1;
-    public int      type;
+    private String   argumentString;
+    private int      argumentInteger;
+    private int      type;
 
-    public void setInt(int val) {
-        intValue = val;
-        type = INT_VALUE;
+
+    public int getType() { return this.type; }
+
+    public void set(int val) {
+        this.type = INT_VALUE;
+        this.argumentInteger = val;
     }
 
-    public int getInt() { return intValue; }
-
-    public void     setStr(String val) {
-        stringValue = val;
-        type = STRING_VALUE;
+    public void set(String val) {
+        this.type = STRING_VALUE;
+        this.argumentString = val;
     }
-    public String getStr() { return stringValue; }
+
+    public int asInteger() throws Exception,Error {
+        if (type == this.STRING_VALUE) {
+            return Integer.parseInt(this.argumentString);
+        } else {
+            return this.argumentInteger;
+        }
+    }
+
+    public String asString() throws Exception, Error {
+        if (type == this.INT_VALUE)
+        {
+            return Integer.toString(this.argumentInteger);
+        } else {
+            return this.argumentString;
+        }
+    }
 }

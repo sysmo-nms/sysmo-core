@@ -24,6 +24,7 @@ package io.sysmo.nchecks.checks;
 import io.sysmo.nchecks.NChecksInterface;
 import io.sysmo.nchecks.Argument;
 import io.sysmo.nchecks.Reply;
+import io.sysmo.nchecks.Query;
 import io.sysmo.nchecks.Const;
 import io.sysmo.nchecks.NChecksSNMP;
 
@@ -68,48 +69,24 @@ public class CheckNetworkInterfaces implements NChecksInterface
 
     private String  ifSelection;
 
-    private Map<String,Argument> conf;
+    public CheckNetworkInterfaces() {}
 
-    public CheckNetworkInterfaces()
-    {
-    }
-
-    public void setOpaqueData(byte[] opaqueData)
-    {
-        /* DESERIALIZATION EXAMPLE
-           ByteArrayInputStream b = new ByteArrayInputStream(opaqueData);
-           ObjectInputStream o = new ObjectInputStream(b);
-
-           Object myObject = o.readObject();
-           or beter
-           MyObjectClass = (MyObjectClass) o.readObject();
-         */
-
-        /* SERICALIZATION EXAMPLE
-           ByteArrayOutputStream b = new ByteArrayOutputStream();
-           ObjectOutputStream o = new ObjectOutputStream(b);
-           o.writeObject(myObject);
-           opaqueData = b.toByteArray();
-         */
-    }
-
-    public void setConfig(Map<String,Argument> config)
-    {
-        ifSelection = config.get("if_selection").getStr();
-        /*
-           because it is defined as a "snmp" type Check (xml), config contain
-           all elements needed to register the agent to query.
-         */
-        conf = config;
-    }
-
-    public Reply execute()
+    public Reply execute(Query query)
     {
         Reply  reply = new Reply();
         String error = "undefined";
 
         try {
-            AbstractTarget target = NChecksSNMP.getTarget(conf);
+            ifSelection = query.get("if_selection").asString();
+        } catch (Exception|Error e) {
+            e.printStackTrace();
+            reply.setStatus(Const.STATUS_ERROR);
+            reply.setReply("Missing or wrong argument: " + e);
+            return reply;
+        }
+
+        try {
+            AbstractTarget target = NChecksSNMP.getTarget(query);
             System.out.println("snmptarget? " + target);
 
             Snmp session = NChecksSNMP.getSnmpSession();

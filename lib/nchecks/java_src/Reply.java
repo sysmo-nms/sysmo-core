@@ -30,7 +30,7 @@ import com.ericsson.otp.erlang.*;
 */
 public class Reply
 {
-    private static OtpErlangAtom atomNchecksReply = new OtpErlangAtom("nchecks_reply");
+    private static final OtpErlangAtom atomNchecksReply = new OtpErlangAtom("nchecks_reply");
     private String replyMsg;
     private String errorMsg;
     private String status;
@@ -56,7 +56,7 @@ public class Reply
         replyMsg = str;
     }
     /**
-    * Get the reply string or null if unset.
+    * Get the reply string.
     */
     public String getReply() {
         return replyMsg;
@@ -66,8 +66,15 @@ public class Reply
     * Set an opaque object in the reply. This data will stored
     * and returned on the next call of the check. This mechanism is actualy used
     * to store and compare COUNTER type values, but can be used as your wish.
+    * Here is a serialization example:
+    *
+    *       ByteArrayOutputStream b = new ByteArrayOutputStream();
+    *       ObjectOutputStream    o = new ObjectOutputStream(b);
+    *       o.writeObject(myObject);
+    *       state = b.toByteArray();
+    *       myreply.setState(state);
     */
-    public void setOpaque(byte[] value) {
+    public void setState(byte[] value) {
         opaque = value;
     }
 

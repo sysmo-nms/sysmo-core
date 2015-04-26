@@ -24,6 +24,7 @@ package io.sysmo.nchecks.checks;
 import io.sysmo.nchecks.NChecksInterface;
 import io.sysmo.nchecks.Argument;
 import io.sysmo.nchecks.Reply;
+import io.sysmo.nchecks.Query;
 import io.sysmo.nchecks.Const;
 
 import java.util.Map;
@@ -44,53 +45,35 @@ public class CheckTCP implements NChecksInterface
     private String  refuseState = Const.STATUS_CRITICAL;
     private String  acceptState = Const.STATUS_OK;
 
-    public CheckTCP()
-    {
-        System.out.println("init runnable");
-    }
+    public CheckTCP() {}
 
-    public void setOpaqueData(byte[] opaqueData)
-    {
-        /* DESERIALIZATION EXAMPLE
-        ByteArrayInputStream b = new ByteArrayInputStream(opaqueData);
-        ObjectInputStream o = new ObjectInputStream(b);
-
-        Object myObject = o.readObject();
-            or beter
-        MyObjectClass = (MyObjectClass) o.readObject();
-        */
-
-        /* SERICALIZATION EXAMPLE
-        ByteArrayOutputStream b = new ByteArrayOutputStream();
-        ObjectOutputStream o = new ObjectOutputStream(b);
-        o.writeObject(myObject);
-        opaqueData = b.toByteArray();
-        */
-    }
-
-    public void setConfig(Map<String,Argument> config)
-    {
-        Argument hostArg        = config.get("host");
-        Argument portArg        = config.get("port");
-        Argument msWarningArg   = config.get("ms_warning");
-        Argument msCriticalArg  = config.get("ms_critical");
-        Argument msTimeoutArg   = config.get("ms_timeout");
-        Argument refuseStateArg = config.get("refuse");
-        Argument acceptStateArg = config.get("accept");
-
-        if (hostArg         != null) { host = hostArg.getStr(); }
-        if (portArg         != null) { port = portArg.getInt(); }
-        if (msWarningArg    != null) { msWarning = msWarningArg.getInt(); }
-        if (msCriticalArg   != null) { msCritical = msCriticalArg.getInt(); }
-        if (msTimeoutArg    != null) { msTimeout = msTimeoutArg.getInt(); }
-        if (refuseStateArg  != null) { refuseState = refuseStateArg.getStr(); }
-        if (acceptStateArg  != null) { acceptState = acceptStateArg.getStr(); }
-
-    }
-
-    public Reply execute()
+    public Reply execute(Query query)
     {
         Reply reply = new Reply();
+
+        Argument hostArg        = query.get("host");
+        Argument portArg        = query.get("port");
+        Argument msWarningArg   = query.get("ms_warning");
+        Argument msCriticalArg  = query.get("ms_critical");
+        Argument msTimeoutArg   = query.get("ms_timeout");
+        Argument refuseStateArg = query.get("refuse");
+        Argument acceptStateArg = query.get("accept");
+
+        try {
+            if (hostArg         != null) { host = hostArg.asString(); }
+            if (portArg         != null) { port = portArg.asInteger(); }
+            if (msWarningArg    != null) { msWarning = msWarningArg.asInteger(); }
+            if (msCriticalArg   != null) { msCritical = msCriticalArg.asInteger(); }
+            if (msTimeoutArg    != null) { msTimeout = msTimeoutArg.asInteger(); }
+            if (refuseStateArg  != null) { refuseState = refuseStateArg.asString(); }
+            if (acceptStateArg  != null) { acceptState = acceptStateArg.asString(); }
+        } catch (Exception|Error e) {
+            e.printStackTrace();
+            reply.setStatus(Const.STATUS_ERROR);
+            reply.setReply("Bad or wrong argumentis: " + e);
+            return reply;
+        }
+
 
         if (port == 0 || port > 65535) {
             reply.setStatus(Const.STATUS_ERROR);

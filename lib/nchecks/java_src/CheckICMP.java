@@ -24,6 +24,7 @@ package io.sysmo.nchecks.checks;
 import io.sysmo.nchecks.NChecksInterface;
 import io.sysmo.nchecks.Argument;
 import io.sysmo.nchecks.Reply;
+import io.sysmo.nchecks.Query;
 import io.sysmo.nchecks.Const;
 
 import java.io.IOException;
@@ -57,38 +58,7 @@ public class CheckICMP implements NChecksInterface
         pping = com;
     }
 
-    public CheckICMP()
-    {
-    }
-
-    public void setOpaqueData(byte[] opaqueData)
-    {
-    }
-
-    public void setConfig(Map<String,Argument> config)
-    {
-        Argument hostArg     = config.get("host");
-        Argument numberArg   = config.get("pkts_number");
-        Argument sizeArg     = config.get("pkts_size");
-        Argument plWarnArg   = config.get("pl_warning");
-        Argument plCritArg   = config.get("pl_critical");
-        Argument msWarnArg   = config.get("ms_warning");
-        Argument msCritArg   = config.get("ms_critical");
-        Argument timeoutArg  = config.get("ms_timeout");
-        Argument intervalArg = config.get("ms_interval");
-        Argument useV6Arg    = config.get("useIpv6");
-
-        if (hostArg     != null) { this.host        = hostArg.getStr(); }
-        if (numberArg   != null) { this.pktsNumber  = numberArg.getInt(); }
-        if (sizeArg     != null) { this.pktsSize    = sizeArg.getInt(); }
-        if (plWarnArg   != null) { this.plWarning   = plWarnArg.getInt(); }
-        if (plCritArg   != null) { this.plCritical  = plCritArg.getInt(); }
-        if (msWarnArg   != null) { this.msWarning   = msWarnArg.getInt(); }
-        if (msCritArg   != null) { this.msCritical  = msCritArg.getInt(); }
-        if (timeoutArg  != null) { this.msTimeout   = timeoutArg.getInt(); }
-        if (intervalArg != null) { this.msInterval  = intervalArg.getInt(); }
-        if (useV6Arg    != null) { this.useIpv6     = useV6Arg.getStr(); }
-    }
+    public CheckICMP() {}
 
     public void setReturnString(String returnString, String returnStream)
     {
@@ -102,10 +72,40 @@ public class CheckICMP implements NChecksInterface
         }
     }
 
-    public Reply execute()
+    public Reply execute(Query query)
     {
-
         Reply reply = new Reply();
+
+        Argument hostArg     = query.get("host");
+        Argument numberArg   = query.get("pkts_number");
+        Argument sizeArg     = query.get("pkts_size");
+        Argument plWarnArg   = query.get("pl_warning");
+        Argument plCritArg   = query.get("pl_critical");
+        Argument msWarnArg   = query.get("ms_warning");
+        Argument msCritArg   = query.get("ms_critical");
+        Argument timeoutArg  = query.get("ms_timeout");
+        Argument intervalArg = query.get("ms_interval");
+        Argument useV6Arg    = query.get("useIpv6");
+
+        try {
+            if (hostArg     != null) { this.host        = hostArg.asString(); }
+            if (numberArg   != null) { this.pktsNumber  = numberArg.asInteger(); }
+            if (sizeArg     != null) { this.pktsSize    = sizeArg.asInteger(); }
+            if (plWarnArg   != null) { this.plWarning   = plWarnArg.asInteger(); }
+            if (plCritArg   != null) { this.plCritical  = plCritArg.asInteger(); }
+            if (msWarnArg   != null) { this.msWarning   = msWarnArg.asInteger(); }
+            if (msCritArg   != null) { this.msCritical  = msCritArg.asInteger(); }
+            if (timeoutArg  != null) { this.msTimeout   = timeoutArg.asInteger(); }
+            if (intervalArg != null) { this.msInterval  = intervalArg.asInteger(); }
+            if (useV6Arg    != null) { this.useIpv6     = useV6Arg.asString(); }
+        } catch (Exception|Error e) {
+            reply.setStatus(Const.STATUS_ERROR);
+            reply.setReply("Missing argument or argument type is wrong: " + e);
+            return reply;
+        }
+
+
+
 
         if ("".equals(host)) {
             reply.setStatus(Const.STATUS_DOWN);
