@@ -20,14 +20,7 @@
  */
 package io.sysmo.nchecks;
 
-public class Const
+public interface NHelperReply
 {
-    public static final String STATUS_OK       = "OK";
-    public static final String STATUS_WARNING  = "WARNING";
-    public static final String STATUS_CRITICAL = "CRITICAL";
-    public static final String STATUS_DOWN     = "DOWN";
-    public static final String STATUS_ERROR    = "ERROR";
-
-    public static final String HELPER_SUCCESS    = "success";
-    public static final String HELPER_FAILURE    = "failure";
+    public char[] toCharArray();
 }

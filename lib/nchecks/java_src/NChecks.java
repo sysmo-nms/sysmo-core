@@ -27,6 +27,7 @@ import io.sysmo.nchecks.Query;
 import io.sysmo.nchecks.checks.*;
 import io.sysmo.nchecks.helpers.*;
 import io.sysmo.nchecks.NChecksSNMP;
+import io.sysmo.nchecks.NHelperReply;
 
 import com.ericsson.otp.erlang.*;
 
@@ -475,9 +476,9 @@ class NHelperRunnable implements Runnable
     @Override
     public void run()
     {
-        Query query      = new Query(NChecks.decodeArgs(args));
-        char[] jsonChars = helper.execute(query);
-        OtpErlangList   jsonCharList = buildErlangCharList(jsonChars);
+        Query           query        = new Query(NChecks.decodeArgs(args));
+        NHelperReply    helperReply  = helper.execute(query);
+        OtpErlangList   jsonCharList = buildErlangCharList(helperReply.toCharArray());
         OtpErlangObject replyMsg     = NChecks.buildOkReply(jsonCharList);
         NChecks.sendReply(caller, replyMsg);
     }

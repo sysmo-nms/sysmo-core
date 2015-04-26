@@ -18,16 +18,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.sysmo.nchecks;
 
-public class Const
+public class NHelperTableItem
 {
-    public static final String STATUS_OK       = "OK";
-    public static final String STATUS_WARNING  = "WARNING";
-    public static final String STATUS_CRITICAL = "CRITICAL";
-    public static final String STATUS_DOWN     = "DOWN";
-    public static final String STATUS_ERROR    = "ERROR";
+    public String key;
+    public String val;
+    public NHelperTableItem(String key, String val) {
+        this.key = key;
+        this.val = val;
+    }
 
-    public static final String HELPER_SUCCESS    = "success";
-    public static final String HELPER_FAILURE    = "failure";
+    public String getColumn() { return this.key; }
+    public String getValue() { return this.val; }
 }

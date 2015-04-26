@@ -24,6 +24,11 @@ package io.sysmo.nchecks.helpers;
 import io.sysmo.nchecks.NHelperInterface;
 import io.sysmo.nchecks.Argument;
 import io.sysmo.nchecks.Query;
+import io.sysmo.nchecks.Const;
+import io.sysmo.nchecks.NHelperReply;
+import io.sysmo.nchecks.NHelperSimpleReply;
+import io.sysmo.nchecks.NHelperTableReply;
+import io.sysmo.nchecks.NHelperTableRow;
 
 import io.sysmo.nchecks.NChecksSNMP;
 import org.snmp4j.Snmp;
@@ -108,19 +113,9 @@ public class HelperNetworkInterfaces implements NHelperInterface
 
     public HelperNetworkInterfaces() {}
 
-    public char[] execute(Query query)
+    public NHelperReply execute(Query query)
     {
-        
-        // prepare json message begin
-        CharArrayWriter     buffer          = new CharArrayWriter();
-        JsonWriter          jsonWriter      = Json.createWriter(buffer);
-
-        JsonBuilderFactory  factory         = Json.createBuilderFactory(null);
-        JsonObjectBuilder   objectbuilder   = factory.createObjectBuilder();
-        JsonArrayBuilder    arraybuilder    = factory.createArrayBuilder();
-        // end
-
-
+    
         try {
             AbstractTarget target = NChecksSNMP.getTarget(query);
 
@@ -138,34 +133,30 @@ public class HelperNetworkInterfaces implements NHelperInterface
 
             Iterator<TableEvent> it = snmpReply.iterator();
             TableEvent evt;
+
+            NHelperTableReply table = new NHelperTableReply();
             while (it.hasNext()) {
                 evt = it.next();
-                VariableBinding[] vbs = evt.getColumns();
-                arraybuilder
-                    .add(factory.createObjectBuilder()
-                        .add("ifIndex", vbs[0].getVariable().toString())
-                        .add("ifDescr", vbs[1].getVariable().toString())
-                        .add("ifType",  getType(vbs[2].getVariable().toString()))
-                        .add("ifPhysAddress", vbs[3].getVariable().toString()));
-
+                VariableBinding[]   vbs = evt.getColumns();
+                NHelperTableRow     row = new NHelperTableRow();
+                row.addItem("ifIndex", vbs[0].getVariable().toString());
+                row.addItem("ifDescr", vbs[1].getVariable().toString());
+                row.addItem("ifType", getType(vbs[2].getVariable().toString()));
+                row.addItem("ifPhysAddress", vbs[3].getVariable().toString());
+                table.addRow(row);
+                
             }
+            table.setId("SelectNetworkInterfaces");
+            table.setStatus(Const.HELPER_SUCCESS);
+            return table;
+
         } catch (Exception|Error e) {
-            e.printStackTrace();
-            objectbuilder.add("id", "SelectNetworkInterfaces");
-            objectbuilder.add("status", "failure");
-            objectbuilder.add("reason", e.toString());
-            jsonWriter.writeObject(objectbuilder.build());
-            return buffer.toCharArray();
+            NHelperSimpleReply simple = new NHelperSimpleReply();
+            simple.setId("SelectNetworkInterfaces");
+            simple.setStatus(Const.HELPER_FAILURE);
+            simple.setMessage(e.toString());
+            return simple;
         }
-
-        objectbuilder.add("id", "SelectNetworkInterfaces");
-        objectbuilder.add("status", "success");
-        objectbuilder.add("rows", arraybuilder);
-        
-        jsonWriter.writeObject(objectbuilder.build());
-        System.out.println(buffer.toString());
-
-        return buffer.toCharArray();
     }
 
     private static String getType(String type)

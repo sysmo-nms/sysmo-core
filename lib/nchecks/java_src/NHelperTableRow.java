@@ -18,9 +18,33 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.sysmo.nchecks;
 
-public interface HelperReply
+import io.sysmo.nchecks.NHelperTableItem;
+
+import java.util.List;
+import java.util.ArrayList;
+
+public class NHelperTableRow
 {
-    public char[] toCharArray();
+    private ArrayList<NHelperTableItem> items;
+
+    public NHelperTableRow() {
+        items = new ArrayList<NHelperTableItem>();
+    }
+
+    /*
+    * Add the string value "value" to the column "column".
+    */
+    public void addItem(String column, String value) {
+        items.add(new NHelperTableItem(column, value));
+    }
+
+    /*
+    * Return the list of NHelperTableItem for the row.
+    */
+    public List<NHelperTableItem> getItems() {
+        return items;
+    }
 }

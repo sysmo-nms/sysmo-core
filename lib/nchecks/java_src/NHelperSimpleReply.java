@@ -21,7 +21,8 @@
 
 package io.sysmo.nchecks;
 
-import io.sysmo.nchecks.HelperReply;
+import io.sysmo.nchecks.NHelperReply;
+import io.sysmo.nchecks.Const;
 
 import java.util.Map;
 import java.util.HashMap;
@@ -42,24 +43,37 @@ import javax.json.JsonObjectBuilder;
 * This class build a simple message for client view. It will pop up
 * with an icon corresponding to the status, and the message defined.
 * It will fill the flag as defined in the xml check definition file
-* to "value". See tutorials for more informations
+* to "value". See tutorials on Nchecks Helpers xml for more informations
 */
 
-public class HelperSimpleReply implements HelperReply
+public class NHelperSimpleReply implements NHelperReply
 {
 
-    public static final int SUCCESS = 0;
-    public static final int FAILURE = 1;
     private String  messageId   = "";
     private String  message = "";
     private String  value   = "";
-    private int     status  = SUCCESS;
+    private String  status  = Const.HELPER_SUCCESS;
 
-    public HelperSimpleReply() {}
+    public NHelperSimpleReply() {}
 
+    /*
+    * Set the identifier of the reply
+    */
     public void setId(String val)  { messageId = val; }
-    public void setStatus(int val) { status = val; }
+
+    /* set the status of the reply. Must be Const.HELPER_SUCCESS or
+    * Const.HELPER_FAILURE.
+    */
+    public void setStatus(String val) { status = val; }
+
+    /*
+    * Set the message string show to the user.
+    */
     public void setMessage(String val) { message = val; }
+
+    /*
+    * Set the value for the target flag.
+    */
     public void setValue(String val) { value = val; }
 
     public char[] toCharArray()
@@ -68,14 +82,9 @@ public class HelperSimpleReply implements HelperReply
         JsonWriter          jsonWriter      = Json.createWriter(buffer);
         JsonObjectBuilder   objectbuilder   = Json.createObjectBuilder();
 
-        if (status == SUCCESS) {
-            objectbuilder.add("status", "success");
-        } else {
-            objectbuilder.add("status", "failure");
-        }
+        objectbuilder.add("status", status);
         objectbuilder.add("id",     messageId);
-        objectbuilder.add("reason", message);
-        objectbuilder.add("value",  value);
+        objectbuilder.add("message",  value);
         
         jsonWriter.writeObject(objectbuilder.build());
         return buffer.toCharArray();

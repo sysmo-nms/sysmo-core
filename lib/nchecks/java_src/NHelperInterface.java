@@ -20,11 +20,12 @@
  */
 package io.sysmo.nchecks;
 import io.sysmo.nchecks.Query;
-import java.util.Map;
 import io.sysmo.nchecks.Argument;
+import io.sysmo.nchecks.NHelperReply;
+import java.util.Map;
 
 public interface NHelperInterface
 {
     // TODO use a HelperReply not a char[]
-    public char[] execute(Query query);
+    public NHelperReply execute(Query query);
 }

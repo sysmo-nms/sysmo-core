@@ -21,12 +21,16 @@
 
 package io.sysmo.nchecks;
 
-import io.sysmo.nchecks.HelperReply;
+import io.sysmo.nchecks.NHelperReply;
+import io.sysmo.nchecks.NHelperTableRow;
+import io.sysmo.nchecks.NHelperTableItem;
+import io.sysmo.nchecks.Const;
 
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Arrays;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.Iterator;
 
 import java.io.CharArrayWriter;
@@ -45,7 +49,7 @@ import javax.json.JsonObjectBuilder;
 * to "value". See tutorials for more informations
 */
 
-public class HelperTableReply implements HelperReply
+public class NHelperTableReply implements NHelperReply
 {
 
     public static final int SUCCESS = 0;
@@ -53,30 +57,60 @@ public class HelperTableReply implements HelperReply
     private String  messageId   = "";
     private String  message = "";
     private String  value   = "";
-    private int     status  = SUCCESS;
+    private String  status  = Const.HELPER_SUCCESS;
 
-    public HelperTableReply() {}
+    private ArrayList<NHelperTableRow> rows;
+    public NHelperTableReply() {
+        rows = new ArrayList<NHelperTableRow>();
+    }
 
+    /*
+    *  Set the reply id.
+    */
     public void setId(String val)  { messageId = val; }
-    public void setStatus(int val) { status = val; }
+    /*
+    *  Set the status (Const.HELPER_SUCCESS | Const.HELPER_FAILURE)
+    */
+    public void setStatus(String val) { status = val; }
+    /*
+    *  Set the message string shown on top of the table.
+    */
     public void setMessage(String val) { message = val; }
-    public void setValue(String val) { value = val; }
+
+    /*
+    *  Add a HelperTableRow to the table.
+    */
+    public void addRow(NHelperTableRow row) {
+        rows.add(row);
+    }
 
     public char[] toCharArray()
     {
         CharArrayWriter     buffer          = new CharArrayWriter();
+        JsonBuilderFactory  factory         = Json.createBuilderFactory(null);
         JsonWriter          jsonWriter      = Json.createWriter(buffer);
-        JsonObjectBuilder   objectbuilder   = Json.createObjectBuilder();
+        JsonObjectBuilder   objectbuilder   = factory.createObjectBuilder();
+        JsonArrayBuilder    arraybuilder    = factory.createArrayBuilder();
 
-        if (status == SUCCESS) {
-            objectbuilder.add("status", "success");
-        } else {
-            objectbuilder.add("status", "failure");
+        Iterator<NHelperTableRow> it = rows.iterator();
+
+        while (it.hasNext()) {
+            NHelperTableRow              row     = it.next();
+            JsonObjectBuilder           rowObj  = factory.createObjectBuilder();
+            List<NHelperTableItem>       items   = row.getItems();
+            Iterator<NHelperTableItem>   tit     = items.iterator();
+            while(tit.hasNext()) {
+                NHelperTableItem item = tit.next();
+                String key = item.getColumn();
+                String value = item.getValue();
+                rowObj.add(item.getColumn(), item.getValue());
+            }
+            arraybuilder.add(rowObj);
         }
-        objectbuilder.add("id",     messageId);
-        objectbuilder.add("reason", message);
-        objectbuilder.add("value",  value);
-        
+
+        objectbuilder.add("status", status);
+        objectbuilder.add("id",   messageId);
+        objectbuilder.add("rows", arraybuilder);
         jsonWriter.writeObject(objectbuilder.build());
         return buffer.toCharArray();
     }
