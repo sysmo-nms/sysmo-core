@@ -19,7 +19,7 @@
  * THE SOFTWARE.
  */
 
-package io.sysmo.nchecks.checks;
+package io.sysmo.nchecks.modules;
 
 import io.sysmo.nchecks.NChecksInterface;
 import io.sysmo.nchecks.Argument;

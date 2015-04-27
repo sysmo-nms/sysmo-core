@@ -5,7 +5,7 @@
         AttribUrl="www.sysmo.io"
         UpdatesUrl="www.sysmo.io/nchecks/updates/CheckNetworkInterfaces/"
         Type="snmp"
-        Class="io.sysmo.nchecks.checks.CheckNetworkInterfaces" >
+        Class="io.sysmo.nchecks.modules.CheckNetworkInterfaces" >
         <Author><![CDATA[Sebastien Serre <ssbx@sysmo.io>]]></Author>
         <Description>Monitor and log interfaces performances values</Description>
         <HelperTable>

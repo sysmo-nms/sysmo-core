@@ -5,7 +5,7 @@
         AttribUrl="www.sysmo.io"
         UpdatesUrl="www.sysmo.io/nchecks/updates/CheckTCP/"
         Type="simple"
-        Class="io.sysmo.nchecks.checks.CheckTCP" >
+        Class="io.sysmo.nchecks.modules.CheckTCP" >
         <Author><![CDATA[Sebastien Serre <ssbx@sysmo.io>]]></Author>
         <Description>Check TCP service availability on the specified host.</Description>
         <FlagTable>

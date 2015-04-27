@@ -1,4 +1,4 @@
-<project name="NChecks" basedir="." default="main">
+<project name="NChecks" basedir="." default="clean-build">
 
     <property name="src.dir"        value="java_src" />
     <property name="libs.dir"       value="java_lib" />
@@ -23,6 +23,7 @@
         <javac
             srcdir="${src.dir}"
             destdir="${classes.dir}"
+            includeAntRuntime="false"
             classpathref="classpath"/>
     </target>
 
@@ -56,5 +57,4 @@
     </target>
 
     <target name="clean-build"  depends="clean,jar" />
-    <target name="main"         depends="clean,run" />
 </project>

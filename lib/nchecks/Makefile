@@ -28,10 +28,10 @@ java_lib/NChecks.jar: build/jar/NChecks.jar
 	cp build/jar/NChecks.jar java_lib/
 
 build/jar/NChecks.jar:
-	ant jar
+	ant -silent
 
 clean: 
-	ant clean
+	ant -silent clean
 	rm -f ebin/*.beam
 	rm -f *.dump
 	rm -f doc/*.html

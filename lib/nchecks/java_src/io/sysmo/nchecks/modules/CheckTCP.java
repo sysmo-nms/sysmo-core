@@ -19,7 +19,7 @@
  * THE SOFTWARE.
  */
 
-package io.sysmo.nchecks.checks;
+package io.sysmo.nchecks.modules;
 
 import io.sysmo.nchecks.NChecksInterface;
 import io.sysmo.nchecks.Argument;
@@ -33,6 +33,8 @@ import java.time.temporal.ChronoUnit;
 import java.net.Socket;
 import java.net.InetSocketAddress;
 import java.net.InetAddress;
+import java.net.Inet4Address;
+import java.net.Inet6Address;
 
 
 public class CheckTCP implements NChecksInterface
@@ -58,6 +60,12 @@ public class CheckTCP implements NChecksInterface
         Argument msTimeoutArg   = query.get("ms_timeout");
         Argument refuseStateArg = query.get("refuse");
         Argument acceptStateArg = query.get("accept");
+        /* TODO
+        Argument useIpv6        = query.get("force_ipv6");
+        Argument escapeChars    = query.get("escape_chars");
+        Argument send_string    = query.get("send_string");
+        Argument expect_string  = query.get("expect_string");
+        */
 
         try {
             if (hostArg         != null) { host = hostArg.asString(); }
@@ -85,8 +93,8 @@ public class CheckTCP implements NChecksInterface
         try {
             addr = InetAddress.getByName(host);
         } catch (Exception e) {
-            reply.setStatus(Const.STATUS_DOWN);
-            reply.setReply("CheckTCP DOWN: Host lookup fail for: " + host);
+            reply.setStatus(Const.STATUS_ERROR);
+            reply.setReply("Host lookup fail for: " + host);
             return reply;
         }
 

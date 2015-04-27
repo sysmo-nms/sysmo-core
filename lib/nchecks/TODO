@@ -12,7 +12,7 @@ Checks
     . nntp
     . imap
     . telnet
- - ssl validity. To check TCP service using SSL, use checkTCP --with-ssl
+    . ssl
 
  - udp/perfs
     . dhcp
@@ -46,13 +46,6 @@ API
 ===
 - Native Java API (allow use of nchecks from other languages),
 - Erlang API as module,
-- Offer "opaque" state data to checks ,
-- Include snmpman,
-- Include an "helper" API. Will allow to run a function
-  to get (for example):
-    . ifIndexes to choose from,
-    . discover/autofill configuration flags (for example what alg for
-      monitoring CPU, RAM, ect wich is different for Cisco/hP/others/?).
 - Allow nograph xml def
 
 

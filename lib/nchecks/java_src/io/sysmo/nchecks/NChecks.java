@@ -24,7 +24,7 @@ import io.sysmo.nchecks.NChecksInterface;
 import io.sysmo.nchecks.Argument;
 import io.sysmo.nchecks.Reply;
 import io.sysmo.nchecks.Query;
-import io.sysmo.nchecks.checks.*;
+import io.sysmo.nchecks.modules.*;
 import io.sysmo.nchecks.helpers.*;
 import io.sysmo.nchecks.NChecksSNMP;
 import io.sysmo.nchecks.NHelperReply;
