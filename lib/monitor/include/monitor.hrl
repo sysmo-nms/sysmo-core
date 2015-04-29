@@ -46,7 +46,8 @@
     tref,
     current_status_from,
     current_status,
-    local_state
+    local_state,
+    last_return = ""
 }).
 
 -record(nchecks_probe_conf, {

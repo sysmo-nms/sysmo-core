@@ -48,7 +48,8 @@
     args,
     dump_dir,
     rrd_config,
-    opaque = <<>>
+    opaque = <<>>,
+    last_return = ""
 }).
 
 -record(rrd_table, {
@@ -84,13 +85,15 @@ do_init(Probe) ->
         tref             = TRef,
         current_status_from = erlang:now(),
         current_status   = Probe#probe.status,
-        local_state = NS
+        local_state      = NS
     },
 
     monitor_data_master:set_probe_state(ES),
 
     % partial return for clients allready connected
-    PartialReturn = #probe_return{status=ES#ets_state.current_status},
+    PartialReturn = #probe_return{
+        status=ES#ets_state.current_status,
+        reply_string=ES#ets_state.last_return},
     MilliRem = monitor:read_timer(ES#ets_state.tref),
     Pdu = monitor_pdu:probeReturn(
         PartialReturn,
@@ -177,7 +180,10 @@ do_sync_request(CState, S) ->
 do_trigger_return(CState, S) ->
     ES = monitor_data_master:get_probe_state(S#state.name),
 
-    PartialPR = #probe_return{status=ES#ets_state.current_status},
+    PartialPR = #probe_return{
+        status=ES#ets_state.current_status,
+        reply_string=ES#ets_state.last_return
+    },
 
     MilliRem = monitor:read_timer(ES#ets_state.tref),
     Pdu = monitor_pdu:probeReturn(
@@ -197,7 +203,10 @@ do_force(#state{ref=Ref} = S) ->
         _ ->
             TRef = monitor:send_after(0, {take_of, Ref}),
             monitor_data_master:set_probe_state(ES#ets_state{tref=TRef}),
-            PartialReturn = #probe_return{status=ES#ets_state.current_status},
+            PartialReturn = #probe_return{
+                status=ES#ets_state.current_status,
+                reply_string=ES#ets_state.last_return
+            },
             Pdu = monitor_pdu:probeReturn(
                 PartialReturn,
                 ES#ets_state.belong_to,
@@ -280,7 +289,8 @@ do_handle_probe_return(PR, #state{ref=Ref} = S) ->
         ES#ets_state{
             tref=TRef,
             current_status_from = erlang:now(),
-            current_status=PR#probe_return.status
+            current_status=PR#probe_return.status,
+            last_return=PR#probe_return.reply_string
         }
     ).
 
