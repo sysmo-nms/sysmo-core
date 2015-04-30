@@ -11,3 +11,7 @@
 4 monitor_data_master should not lock on client synchro. Fecth from another
 data source (SQL, other), and return immediately.
 5 a target and his probe can be abstract to be something else than a network host
+
+# random from monitor_utils gen_server
+
+# test snmp before configuring a snmp probe
