@@ -26,6 +26,7 @@ start: compile
 
 clean:
 	ant -silent clean
+	rm -f java_lib/Errd4j.jar
 	rm -f ebin/*.beam
 	rm -f erl_crash.dump
 	rm -f errd4j.log

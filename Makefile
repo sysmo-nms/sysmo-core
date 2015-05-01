@@ -5,7 +5,6 @@ export CYGW
 ERL_VER  = 6.3
 ERTS_VER = 6.3
 
-export JAVA_HOME = /home/seb/src/lib/jdk8/jdk1.8.0_45
 ifeq ($(CYGW), CYGWIN)
     RELEASE        = windows-release
     LOCAL_RELEASE  = windows-local-release
@@ -17,6 +16,7 @@ ifeq ($(CYGW), CYGWIN)
     export JAVAC   = /cygdrive/c/Program\ Files/Java/jdk1.8.0_31/bin/javac.exe
     export JAVAJAR = /cygdrive/c/Program\ Files/Java/jdk1.8.0_31/bin/jar.exe
 else
+	export JAVA_HOME = /home/seb/src/lib/jdk8/jdk1.8.0_45
     RELEASE        = unix-release
     LOCAL_RELEASE  = unix-local-release
     export ERL     = erl
