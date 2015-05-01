@@ -5,6 +5,7 @@ export CYGW
 ERL_VER  = 6.3
 ERTS_VER = 6.3
 
+export JAVA_HOME = /home/seb/src/lib/jdk8/jdk1.8.0_45
 ifeq ($(CYGW), CYGWIN)
     RELEASE        = windows-release
     LOCAL_RELEASE  = windows-local-release
@@ -18,13 +19,13 @@ ifeq ($(CYGW), CYGWIN)
 else
     RELEASE        = unix-release
     LOCAL_RELEASE  = unix-local-release
-    export ERL     = /opt/erlang_otp_17.4/bin/erl
-    export ERLC    = /opt/erlang_otp_17.4/bin/erlc -Werror
-    export ERLCY   = /opt/erlang_otp_17.4/bin/erlc
-    export ASNC    = /opt/erlang_otp_17.4/bin/erlc -Werror -bber
-    export JAVA    = /opt/jdk1.8.0_31/bin/java
-    export JAVAC   = /opt/jdk1.8.0_31/bin/javac
-    export JAVAJAR = /opt/jdk1.8.0_31/bin/jar
+    export ERL     = erl
+    export ERLC    = erlc -Werror
+    export ERLCY   = erlc
+    export ASNC    = erlc -Werror -bber
+    export JAVA    = java
+    export JAVAC   = javac
+    export JAVAJAR = jar
 endif
 
 export MAKE        = /usr/bin/make
