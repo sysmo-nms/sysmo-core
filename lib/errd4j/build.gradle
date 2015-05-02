@@ -1,4 +1,11 @@
 apply plugin: 'java'
+apply plugin: 'application'
+apply plugin: 'pmd'
+apply plugin: 'findbugs'
+apply plugin: 'jdepend'
+// TODO checkstyle
+
+mainClassName = "io.sysmo.errd4j.Errd4j"
 
 sourceSets {
     main {
@@ -32,4 +39,20 @@ repositories {
 dependencies {
     compile group: 'org.rrd4j',      name: 'rrd4j',      version: '2.3-SNAPSHOT'
     compile group: 'org.erlang.otp', name: 'jinterface', version: '1.5.6'
+}
+
+
+jdepend {
+    ignoreFailures = true
+    sourceSets = [sourceSets.main]
+}
+
+findbugs {
+    ignoreFailures = true
+    sourceSets = [sourceSets.main]
+}
+
+pmd {
+    ignoreFailures = false
+    sourceSets = [sourceSets.main]
 }

@@ -3,20 +3,26 @@
 ERL  ?= erl
 ERLC ?= erlc -Werror
 
-.PHONY: compile java-grad clean
+.PHONY: compile clean assemble check dist
 
 # define erl targets
 ERL_SRC		= $(wildcard src/*.erl)
 ERL_TARGETS	= $(patsubst src/%.erl, ebin/%.beam, $(ERL_SRC))
 
-compile: $(ERL_TARGETS) grad-assemble
+compile: $(ERL_TARGETS) assemble
 
 ebin/%.beam: src/%.erl $(INCLUDE)
 	$(ERLC) $(EPATH) -o ebin/ src/$*.erl
 
-grad-assemble:
+assemble:
 	gradle assemble
 	cp build/libs/nchecks.jar java_lib/
+
+check:
+	gradle check
+
+dist:
+	gradle installDist
 
 clean: 
 	gradle clean

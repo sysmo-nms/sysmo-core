@@ -1,4 +1,11 @@
 apply plugin: 'java'
+apply plugin: 'application'
+apply plugin: 'pmd'
+apply plugin: 'findbugs'
+apply plugin: 'jdepend'
+// TODO checkstyle
+
+mainClassName = "io.sysmo.equartz.EQuartz"
 
 sourceSets {
     main {
@@ -27,4 +34,19 @@ repositories {
 dependencies {
     compile group: 'org.quartz-scheduler', name: 'quartz', version: '2.2.1'
     compile group: 'org.erlang.otp', name: 'jinterface', version: '1.5.6'
+}
+
+jdepend {
+    ignoreFailures = false
+    sourceSets = [sourceSets.main]
+}
+
+findbugs {
+    ignoreFailures = true
+    sourceSets = [sourceSets.main]
+}
+
+pmd {
+    ignoreFailures = false
+    sourceSets = [sourceSets.main]
 }
