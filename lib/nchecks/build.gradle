@@ -5,7 +5,7 @@ apply plugin: 'findbugs'
 apply plugin: 'jdepend'
 // TODO checkstyle
 
-mainClassName = "io.sysmo.nchecks.NChecks"
+mainClassName = 'io.sysmo.nchecks.NChecks'
 
 sourceSets {
     main {
@@ -29,7 +29,7 @@ sourceSets {
 repositories {
     // get latest snmp4j from here
     maven {
-        url "https://oosnmp.net/dist/release"
+        url 'https://oosnmp.net/dist/release'
     }
 
     // all other dependencies from maven central (including jinterface)
@@ -55,4 +55,8 @@ findbugs {
 pmd {
     ignoreFailures = true
     sourceSets = [sourceSets.main]
+}
+
+applicationDistribution.from('java_src/dist') {
+    into ''
 }

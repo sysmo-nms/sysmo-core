@@ -5,7 +5,7 @@ apply plugin: 'findbugs'
 apply plugin: 'jdepend'
 // TODO checkstyle
 
-mainClassName = "io.sysmo.errd4j.Errd4j"
+mainClassName = 'io.sysmo.errd4j.Errd4j'
 
 sourceSets {
     main {
@@ -29,7 +29,7 @@ sourceSets {
 repositories {
     // get latest rrd4j from here
     maven {
-        url "https://oss.sonatype.org/content/repositories/snapshots"
+        url 'https://oss.sonatype.org/content/repositories/snapshots'
     }
 
     // all other dependencies from maven central (including jinterface)
@@ -55,4 +55,8 @@ findbugs {
 pmd {
     ignoreFailures = false
     sourceSets = [sourceSets.main]
+}
+
+applicationDistribution.from('java_src/dist') {
+    into ''
 }

@@ -5,7 +5,7 @@ apply plugin: 'findbugs'
 apply plugin: 'jdepend'
 // TODO checkstyle
 
-mainClassName = "io.sysmo.equartz.EQuartz"
+mainClassName = 'io.sysmo.equartz.EQuartz'
 
 sourceSets {
     main {
@@ -27,7 +27,7 @@ sourceSets {
 }
 
 repositories {
-    // all other dependencies from maven central (including jinterface)
+    // all dependencies from maven central (including jinterface)
     mavenCentral()
 }
 
@@ -49,4 +49,8 @@ findbugs {
 pmd {
     ignoreFailures = false
     sourceSets = [sourceSets.main]
+}
+
+applicationDistribution.from('java_src/dist') {
+    into ''
 }
