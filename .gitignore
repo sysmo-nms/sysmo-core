@@ -44,3 +44,6 @@ cfg/nchecks/*.xml
 lib/*/.gradle
 lib/*/build
 pping.exe
+
+lib/*/.rebar
+lib/sysmo/ebin/sysmo.app
