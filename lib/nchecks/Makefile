@@ -1,13 +1,15 @@
 # Makefile
 
-ERL  ?= erl
+ERL ?= erl
 ERLC ?= erlc -Werror
+
+GRADLE ?= gradle --daemon
 
 .PHONY: compile clean assemble check dist
 
 # define erl targets
-ERL_SRC		= $(wildcard src/*.erl)
-ERL_TARGETS	= $(patsubst src/%.erl, ebin/%.beam, $(ERL_SRC))
+ERL_SRC = $(wildcard src/*.erl)
+ERL_TARGETS = $(patsubst src/%.erl, ebin/%.beam, $(ERL_SRC))
 
 compile: $(ERL_TARGETS) assemble
 
@@ -15,17 +17,17 @@ ebin/%.beam: src/%.erl $(INCLUDE)
 	$(ERLC) $(EPATH) -o ebin/ src/$*.erl
 
 assemble:
-	gradle assemble
+	$(GRADLE) assemble
 	cp build/libs/nchecks.jar java_lib/
 
 check:
-	gradle check
+	$(GRADLE) check
 
 dist:
-	gradle installDist
+	$(GRADLE) installDist
 
 clean: 
-	gradle clean
+	$(GRADLE) clean
 	rm -f java_lib/nchecks.jar
 	rm -f ebin/*.beam
 	rm -f *.dump

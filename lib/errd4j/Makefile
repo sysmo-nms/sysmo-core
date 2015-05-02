@@ -1,13 +1,15 @@
 # Makefile
 
 ERLC ?= erlc -Werror
-ERL  ?= erl
+ERL ?= erl
+
+GRADLE ?= gradle --daemon
 
 .PHONY: compile clean doc start assemble check dist
 
 # define erl targets
-ERL_SRC		= $(wildcard src/*.erl)
-ERL_TARGETS	= $(patsubst src/%.erl, ebin/%.beam, $(ERL_SRC))
+ERL_SRC = $(wildcard src/*.erl)
+ERL_TARGETS = $(patsubst src/%.erl, ebin/%.beam, $(ERL_SRC))
 
 compile: $(ERL_TARGETS) assemble
 
@@ -17,14 +19,14 @@ ebin/%.beam: src/%.erl
 
 # java
 assemble:
-	gradle assemble
+	$(GRADLE) assemble
 	cp build/libs/errd4j.jar java_lib/
 
 check:
-	gradle check
+	$(GRADLE) check
 
 dist:
-	gradle installDist
+	$(GRADLE) installDist
 	
 
 # utils
@@ -32,7 +34,7 @@ start: compile
 	$(ERL) -setcookie AAAAAA -pa ebin -sname sysmo -config ./sys -eval 'application:start(errd4j)'
 
 clean:
-	gradle clean
+	$(GRADLE) clean
 	rm -f java_lib/errd4j.jar
 	rm -f ebin/*.beam
 	rm -f erl_crash.dump

@@ -1,13 +1,15 @@
 # Makefile
 
-ERL			?= erl
-ERLC		?= erlc -Werror
+ERL	?= erl
+ERLC ?= erlc -Werror
+
+GRADLE ?= gradle --daemon
 
 .PHONY: compile clean doc start assemble check dist
 
 # define erl targets
-ERL_SRC		= $(wildcard src/*.erl)
-ERL_TARGETS	= $(patsubst src/%.erl, ebin/%.beam, $(ERL_SRC))
+ERL_SRC = $(wildcard src/*.erl)
+ERL_TARGETS = $(patsubst src/%.erl, ebin/%.beam, $(ERL_SRC))
 
 compile: $(ERL_TARGETS) assemble
 
@@ -17,17 +19,17 @@ ebin/%.beam: src/%.erl
 
 # java
 assemble:
-	gradle assemble
+	$(GRADLE) assemble
 	cp build/libs/equartz.jar java_lib/
 
 check:
-	gradle check
+	$(GRADLE) check
 
 dist:
-	gradle installDist
+	$(GRADLE) installDist
 	
 clean:
-	gradle clean
+	$(GRADLE) clean
 	rm -f java_lib/equartz.jar
 	rm -rf java_bin/io
 	rm -f ebin/*.beam
