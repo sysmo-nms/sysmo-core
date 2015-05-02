@@ -5,23 +5,24 @@ apply plugin: 'findbugs'
 apply plugin: 'jdepend'
 // TODO checkstyle
 
+def customSrc = 'java_src'
 mainClassName = 'io.sysmo.equartz.EQuartz'
 
 sourceSets {
     main {
         java {
-            srcDir 'java_src/main/java'
+            srcDir customSrc + '/main/java'
         }
         resources {
-            srcDir 'java_src/main/ressources'
+            srcDir customSrc + '/main/ressources'
         }
     }
     test {
         java {
-            srcDir 'java_src/test/java'
+            srcDir customSrc + '/test/java'
         }
         resources {
-            srcDir 'java_src/test/ressources'
+            srcDir customSrc + '/test/ressources'
         }
     }
 }
@@ -51,6 +52,6 @@ pmd {
     sourceSets = [sourceSets.main]
 }
 
-applicationDistribution.from('java_src/dist') {
+applicationDistribution.from(customSrc + '/dist') {
     into ''
 }
