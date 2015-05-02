@@ -6,8 +6,9 @@ ERL_VER  = 6.3
 ERTS_VER = 6.3
 
 ifeq ($(CYGW), CYGWIN)
-    RELEASE        = windows-release
+    RELEASE = windows-release
     LOCAL_RELEASE  = windows-local-release
+    export REBAR = rebar.cmd
     export ERL     = /cygdrive/c/Program\ Files/erl6.3/bin/erl -smp
     export ERLC    = /cygdrive/c/Program\ Files/erl6.3/bin/erlc -Werror
     export ERLCY   = /cygdrive/c/Program\ Files/erl6.3/bin/erlc

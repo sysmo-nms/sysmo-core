@@ -1,7 +1,9 @@
+REBAR ?= rebar
+
 .PHONY: compile clean
 
 compile:
-	rebar compile
+	$(REBAR) compile
 
 clean:
-	rebar clean
+	$(REBAR) clean
