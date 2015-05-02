@@ -9,15 +9,15 @@ ERL  ?= erl
 ERL_SRC		= $(wildcard src/*.erl)
 ERL_TARGETS	= $(patsubst src/%.erl, ebin/%.beam, $(ERL_SRC))
 
-compile: $(ERL_TARGETS) java-grad
+compile: $(ERL_TARGETS) grad-assemble
 
 # erlang targets
 ebin/%.beam: src/%.erl
 	$(ERLC) $(EPATH) -o ebin/ src/$*.erl
 
 # java
-java-grad:
-	gradle build
+grad-assemble:
+	gradle assemble
 	cp build/libs/errd4j.jar java_lib/
 	
 

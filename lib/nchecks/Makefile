@@ -9,14 +9,14 @@ ERLC ?= erlc -Werror
 ERL_SRC		= $(wildcard src/*.erl)
 ERL_TARGETS	= $(patsubst src/%.erl, ebin/%.beam, $(ERL_SRC))
 
-compile: $(ERL_TARGETS) java-grad
+compile: $(ERL_TARGETS) grad-assemble
 
 ebin/%.beam: src/%.erl $(INCLUDE)
 	$(ERLC) $(EPATH) -o ebin/ src/$*.erl
 
-java-grad:
-	gradle build
-	cp build/jar/NChecks.jar java_lib/
+grad-assemble:
+	gradle assemble
+	cp build/libs/nchecks.jar java_lib/
 
 clean: 
 	gradle clean
