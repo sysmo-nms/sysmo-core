@@ -41,4 +41,6 @@ lib/fcgisrv/priv/sysmo-webif/
 lib/jars/*.jar
 cfg/sysmo.cookie
 cfg/nchecks/*.xml
+lib/*/.gradle
+lib/*/build
 pping.exe

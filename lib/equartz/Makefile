@@ -1,29 +1,28 @@
 # Makefile
 
-JAVA		?= java
-JAVAC		?= javac
-
 ERL			?= erl
 ERLC		?= erlc -Werror
+
+.PHONY: compile clean java-grad doc start
 
 # define erl targets
 ERL_SRC		= $(wildcard src/*.erl)
 ERL_TARGETS	= $(patsubst src/%.erl, ebin/%.beam, $(ERL_SRC))
 
-compile: $(ERL_TARGETS) java_lib/EQuartz.jar
+compile: $(ERL_TARGETS) java-grad
 
 # erlang targets
 ebin/%.beam: src/%.erl
 	$(ERLC) $(EPATH) -o ebin/ src/$*.erl
 
 # java
-java_lib/EQuartz.jar:
-	ant -silent
-	cp build/jar/EQuartz.jar java_lib/
+java-grad:
+	gradle build
+	cp build/libs/equartz.jar java_lib/
 	
 clean:
-	ant -silent clean
-	rm -f java_lib/EQuartz.jar
+	gradle clean
+	rm -f java_lib/equartz.jar
 	rm -rf java_bin/io
 	rm -f ebin/*.beam
 	rm -f erl_crash.dump
@@ -39,8 +38,6 @@ start: compile
 	$(ERL) -pa ebin -sname master -config ./sys -eval 'application:start(equartz)'
 
 # doc
-doc: doc/index.html
-
-doc/index.html: doc/overview.edoc $(ERL_SRC)
+doc:
 	$(ERL) -noinput -pa ebin -eval 'edoc:application($(APP), ".", [{subpackages, true}, {packages, false}]), init:stop()'
 

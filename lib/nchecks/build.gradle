@@ -1,0 +1,36 @@
+apply plugin: 'java'
+
+sourceSets {
+    main {
+        java {
+            srcDir 'java_src/main/java'
+        }
+        resources {
+            srcDir 'java_src/main/ressources'
+        }
+    }
+    test {
+        java {
+            srcDir 'java_src/test/java'
+        }
+        resources {
+            srcDir 'java_src/test/ressources'
+        }
+    }
+}
+
+repositories {
+    // get latest snmp4j from here
+    maven {
+        url "https://oosnmp.net/dist/release"
+    }
+
+    // all other dependencies from maven central (including jinterface)
+    mavenCentral()
+}
+
+dependencies {
+    compile group: 'org.snmp4j',     name: 'snmp4j',     version: '2.3.3'
+    compile group: 'org.glassfish',  name: 'javax.json', version: '1.0.4'
+    compile group: 'org.erlang.otp', name: 'jinterface', version: '1.5.6'
+}

@@ -1,32 +1,33 @@
 # Makefile
 
+ERLC ?= erlc -Werror
+ERL  ?= erl
+
+.PHONY: compile java-grad clean doc start
+
 # define erl targets
 ERL_SRC		= $(wildcard src/*.erl)
 ERL_TARGETS	= $(patsubst src/%.erl, ebin/%.beam, $(ERL_SRC))
 
-compile: $(ERL_TARGETS) java_lib/Errd4j.jar
+compile: $(ERL_TARGETS) java-grad
 
 # erlang targets
 ebin/%.beam: src/%.erl
 	$(ERLC) $(EPATH) -o ebin/ src/$*.erl
 
 # java
-java_lib/Errd4j.jar: 
-	ant -silent
-	cp build/jar/Errd4j.jar java_lib/
+java-grad:
+	gradle build
+	cp build/libs/errd4j.jar java_lib/
 	
-doc: doc/index.html
-
-doc/index.html: doc/overview.edoc $(ERL_SRC)
-	$(ERL) -noinput -pa ebin -eval 'edoc:application($(APP), ".", [{subpackages, true}, {packages, false}]), init:stop()'
 
 # utils
 start: compile
 	$(ERL) -setcookie AAAAAA -pa ebin -sname sysmo -config ./sys -eval 'application:start(errd4j)'
 
 clean:
-	ant -silent clean
-	rm -f java_lib/Errd4j.jar
+	gradle clean
+	rm -f java_lib/errd4j.jar
 	rm -f ebin/*.beam
 	rm -f erl_crash.dump
 	rm -f errd4j.log
@@ -36,3 +37,5 @@ clean:
 	rm -f doc/edoc-info
 	rm -f doc/stylesheet.css
 
+doc:
+	$(ERL) -noinput -pa ebin -eval 'edoc:application($(APP), ".", [{subpackages, true}, {packages, false}]), init:stop()'
