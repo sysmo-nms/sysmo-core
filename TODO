@@ -1,16 +1,10 @@
-#################
-# international #
-#################
-- move some asn elements from PrintableString to UTF8String
-
+- test
 #############
 # OPENSYSMO #
 #############
 - TODO:
     . TieJob (sauvegarde effectued sur un autre serveur)
-- server GNU ou CPAL
-- yaws.conf
-- json
+
 
 ############################
 # SYSMO ENTERPRISE EDITION #
