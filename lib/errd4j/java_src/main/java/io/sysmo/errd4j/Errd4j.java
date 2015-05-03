@@ -63,32 +63,27 @@ import java.awt.Color;
 
 public class Errd4j
 {
-    // my node name
-    private static String selfNodeName   = null;
 
-    // the foreign node name (-sname)
-    private static String foreignNodeName = null;
-    private static String erlangCookie = null;
+    public static final OtpErlangAtom atomReply       = new OtpErlangAtom("reply");
+    public static final OtpErlangAtom atomOk          = new OtpErlangAtom("ok");
+    public static final OtpErlangAtom atomError       = new OtpErlangAtom("error");
+    public static final OtpErlangAtom atomBusy        = new OtpErlangAtom("server_busy");
 
-    // the foreign errd4j.erl gen_server pid name
-    private static String foreignPidName  = null;
-
-    public static OtpErlangAtom atomReply       = new OtpErlangAtom("reply");
-    public static OtpErlangAtom atomOk          = new OtpErlangAtom("ok");
-    public static OtpErlangAtom atomError       = new OtpErlangAtom("error");
-    public static OtpErlangAtom atomBusy        = new OtpErlangAtom("server_busy");
-
-    // erlang server
-    private static  OtpNode self = null;
-    private static  OtpMbox mbox = null;
+    // otp
+    private static String selfNodeName;
+    private static String foreignNodeName;
+    private static String erlangCookie;
+    private static String foreignPidName;
+    private static  OtpNode self;
+    private static  OtpMbox mbox;
 
     // rra definitions
-    private static ArcDef[] rraDefault = null;
-    private static ArcDef[] rraPrecise = null;
+    private static ArcDef[] rraDefault;
+    private static ArcDef[] rraPrecise;
 
     // threads
-    public  static RrdDbPool rrdDbPool = null;
-    private static ThreadPoolExecutor threadPool = null;
+    private static RrdDbPool rrdDbPool;
+    private static ThreadPoolExecutor threadPool;
     private static int threadMaxPoolSize    = 20;
     private static int threadCorePoolSize   = 8;
     private static int threadQueueCapacity  = 2000;
@@ -115,7 +110,7 @@ public class Errd4j
 
         try
         {
-            erlangCookie = new Scanner(new File("cfg/sysmo.cookie")).useDelimiter("\\Z").next();
+            erlangCookie = new Scanner(new File("cfg/sysmo.cookie"), "UTF-8").useDelimiter("\\Z").next();
         }
         catch(IOException e)
         {
