@@ -10,6 +10,9 @@ test: $(MODS)
 doc: $(MODS)
 	@for i in $(MODS); do $(MAKE) -C $$i doc; done
 
+dist: $(MODS)
+	@for i in $(MODS); do $(MAKE) -C $$i dist; done
+
 clean: $(MODS)
 	@for i in $(MODS); do $(MAKE) -C $$i clean; done
 

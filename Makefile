@@ -1,5 +1,7 @@
 export MODS = supercast monitor errd4j snmpman nchecks equartz pping 
 
+.PHONY: rel
+
 compile:
 	rebar -r compile
 	$(MAKE) -C go
@@ -20,7 +22,10 @@ clean:
 	$(MAKE) -C go clean
 	$(MAKE) -C java clean
 
-rel: compile
+rel: 
+	rebar -r compile
+	$(MAKE) -C java dist
+	./helpers/getJavaDist.sh
 	cd rel; rebar generate
 
 EPATH = ebin \
