@@ -26,7 +26,7 @@ public class SampleTest {
 
     @Test
     public void testSomeBehavior() {
-        assertEquals("Empty list should have 0 elements", 1, emptyList.size());
+        assertEquals("Empty list should have 0 elements", 0, emptyList.size());
     }
 
     @Test(expected=IndexOutOfBoundsException.class)

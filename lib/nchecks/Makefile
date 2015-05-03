@@ -18,6 +18,9 @@ java-assemble:
 check:
 	$(GRADLE) check
 
+test:
+	$(GRADLE) test
+
 dist:
 	$(GRADLE) installDist
 	
