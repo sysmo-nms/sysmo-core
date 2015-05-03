@@ -1,32 +1,33 @@
-export MODS = supercast monitor errd4j snmpman nchecks equartz pping 
-
 .PHONY: rel
 
+export MAKE  ?= make
+export REBAR ?= rebar
+
 compile:
-	rebar -r compile
+	$(REBAR) -r compile
 	$(MAKE) -C go
 	$(MAKE) -C java
 	
 test:
-	rebar -r test
+	$(REBAR) -r test
 	$(MAKE) -C go test
 	$(MAKE) -C java test
 
 doc:
-	rebar -r doc
+	$(REBAR) -r doc
 	$(MAKE) -C go doc
 	$(MAKE) -C java doc
 
 clean:
-	rebar -r clean
+	$(REBAR) -r clean
 	$(MAKE) -C go clean
 	$(MAKE) -C java clean
 
 rel: 
-	rebar -r compile
+	$(REBAR) -r compile
 	$(MAKE) -C java dist
 	./helpers/getJavaDist.sh
-	cd rel; rebar generate
+	cd rel; $(REBAR) generate
 
 EPATH = ebin \
 lib/equartz/ebin \
