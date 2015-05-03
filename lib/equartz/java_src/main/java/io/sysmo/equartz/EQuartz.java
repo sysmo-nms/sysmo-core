@@ -319,6 +319,8 @@ class MessageHandler implements EQuartzMessageHandler {
             case "fire_now":
                 EQuartz.callFireNow(caller, payload);
                 break;
+            case "init":
+                break;
             default:
                 EQuartzNode.getInstance().sendReply(caller,
                     EQuartzNode.buildErrorReply(
