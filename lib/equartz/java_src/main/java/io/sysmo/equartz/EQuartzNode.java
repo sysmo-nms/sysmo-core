@@ -9,6 +9,7 @@ import com.ericsson.otp.erlang.*;
 
 public class EQuartzNode extends Thread {
 
+    // TODO singleton
     private static String selfNodeName;
 
     // the foreign node name (-sname)
@@ -19,14 +20,14 @@ public class EQuartzNode extends Thread {
     // the foreign equartz.erl gen_server pid name
     private static String foreignPidName;
 
-    public static OtpErlangAtom atomReply   = new OtpErlangAtom("reply");
-    public static OtpErlangAtom atomOk      = new OtpErlangAtom("ok");
-    public static OtpErlangAtom atomTrue    = new OtpErlangAtom("true");
-    public static OtpErlangAtom atomFalse   = new OtpErlangAtom("false");
-    public static OtpErlangAtom atomTimeout = new OtpErlangAtom("timeout");
-    public static OtpErlangAtom atomError   = new OtpErlangAtom("error");
-    public static OtpErlangAtom atomFire    = new OtpErlangAtom("fire");
-    public static OtpErlangAtom atomNotConnected = new OtpErlangAtom("not_connected");
+    public static final OtpErlangAtom atomReply   = new OtpErlangAtom("reply");
+    public static final OtpErlangAtom atomOk      = new OtpErlangAtom("ok");
+    public static final OtpErlangAtom atomTrue    = new OtpErlangAtom("true");
+    public static final OtpErlangAtom atomFalse   = new OtpErlangAtom("false");
+    public static final OtpErlangAtom atomTimeout = new OtpErlangAtom("timeout");
+    public static final OtpErlangAtom atomError   = new OtpErlangAtom("error");
+    public static final OtpErlangAtom atomFire    = new OtpErlangAtom("fire");
+    public static final OtpErlangAtom atomNotConnected = new OtpErlangAtom("not_connected");
 
     // erlang server
     private static  OtpNode self = null;
@@ -34,12 +35,29 @@ public class EQuartzNode extends Thread {
 
     private static EQuartzMessageHandler quartzHandler;
 
+    private static String getSelfNodeName() {return selfNodeName;}
+    private static String getForeignNodeName() {return foreignNodeName;}
+    private static String getForeignPidName() {return foreignPidName;}
+    private static String getErlangCookie() {return erlangCookie;}
+
+    private static void setSelfNodeName(String nodeName)
+                                                {selfNodeName = nodeName;}
+    private static void setForeignNodeName(String foreignName) 
+                                                {foreignNodeName = foreignName;}
+    private static void setForeignPidName(String foreignPid)
+                                                {foreignPidName = foreignPid;}
+    private static void setErlangCookie(String cookie)
+                                                {erlangCookie = cookie;}
+
+    private static void setMbox(OtpMbox box) { mbox = box; }
+    private static void setSelf(OtpNode node) { self = node; }
+
     public EQuartzNode(String selfName, String fNodeName, String fPidName, String cookie)
     {
-        selfNodeName    = selfName;
-        foreignNodeName = fNodeName;
-        foreignPidName  = fPidName;
-        erlangCookie    = cookie;
+        EQuartzNode.setSelfNodeName(selfName);
+        EQuartzNode.setForeignNodeName(fNodeName);
+        EQuartzNode.setForeignPidName(fPidName);
+        EQuartzNode.setErlangCookie(cookie);
     }
 
     @Override
@@ -49,9 +67,10 @@ public class EQuartzNode extends Thread {
         // Initialize otp
         try 
         {
-            self = new OtpNode(selfNodeName, erlangCookie);
-            mbox = self.createMbox();
-            if (!self.ping(foreignNodeName, 2000)) 
+            OtpNode me = new OtpNode(getSelfNodeName(), getErlangCookie());
+            setSelf(me);
+            setMbox(me.createMbox());
+            if (!me.ping(getForeignNodeName(), 2000)) 
             { 
                 System.out.println("Connection timed out");
                 return;

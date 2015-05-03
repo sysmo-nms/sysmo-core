@@ -27,10 +27,8 @@ import static org.quartz.SimpleScheduleBuilder.*;
 
 
 public class EQuartz {
-    private static Path         jobSystemPath;
-    private static Scheduler    scheduler;
-    private static MessageHandler msgHandler;
-    private static EQuartzNode        enode;
+    private static Scheduler        scheduler;
+    private static EQuartzNode      enode;
 
     public static void main(String[] args) {
 
@@ -71,7 +69,7 @@ public class EQuartz {
 
         try
         {
-            erlangCookie = new Scanner(new File("cfg/sysmo.cookie")).useDelimiter("\\Z").next();
+            erlangCookie = new Scanner(new File("cfg/sysmo.cookie"), "UTF-8").useDelimiter("\\Z").next();
             
         }
         catch(IOException e)
@@ -319,6 +317,13 @@ class MessageHandler implements EQuartzMessageHandler {
                 break;
             case "fire_now":
                 EQuartz.callFireNow(caller, payload);
+                break;
+            default:
+                EQuartzNode.sendReply(caller,
+                    EQuartzNode.buildErrorReply(
+                                new OtpErlangString(
+                                    "unknown command: " + command.toString()))
+                );
                 break;
         }
     }

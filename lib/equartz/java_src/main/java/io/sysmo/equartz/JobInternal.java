@@ -13,9 +13,9 @@ import static org.quartz.SimpleScheduleBuilder.*;
 @PersistJobDataAfterExecution
 @DisallowConcurrentExecution
 public class JobInternal implements Job {
-    public static String MOD = "MOD";
-    public static String FUN = "FUN";
-    public static String ARG = "ARG";
+    public static final String MOD = "MOD";
+    public static final String FUN = "FUN";
+    public static final String ARG = "ARG";
 
     public void execute(JobExecutionContext context)
         throws JobExecutionException 
