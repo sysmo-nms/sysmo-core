@@ -36,13 +36,13 @@ public class Query
 
     public Query(Map<String,Argument> args, byte[] state)
     {
-        this.state = state;
-        this.arguments = args;
+        this.state      = state.clone();
+        this.arguments  = new HashMap<String,Argument>(args);
     }
 
     public Query(Map<String,Argument> args)
     {
-        this.arguments = args;
+        this.arguments = new HashMap<String,Argument>(args);
     }
 
 
@@ -57,7 +57,7 @@ public class Query
     *       or beter
     *       MyObjectClass = (MyObjectClass) o.readObject();
     */
-    public byte[] getState() {return this.state;}
+    public byte[] getState() {return this.state.clone();}
 
     /*
     * Return the argument corresponding to the key.

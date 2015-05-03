@@ -53,42 +53,32 @@ import java.io.IOException;
 
 public class NChecks
 {
-    // my node name
-    private static String selfNodeName   = null;
+    public static final OtpErlangAtom atomReply       = new OtpErlangAtom("reply");
+    public static final OtpErlangAtom atomOk          = new OtpErlangAtom("ok");
+    public static final OtpErlangAtom atomQueueFull   = new OtpErlangAtom("queue_full");
+    public static final OtpErlangAtom atomTimeout     = new OtpErlangAtom("timeout");
+    public static final OtpErlangAtom atomError       = new OtpErlangAtom("error");
 
-    // the foreign node name (-sname)
-    private static String foreignNodeName = null;
-    private static String erlangCookie = null;
-
-    // the foreign nchecks.erl gen_server pid name
-    private static String foreignPidName  = null;
-
-    public static OtpErlangAtom atomReply       = new OtpErlangAtom("reply");
-    public static OtpErlangAtom atomOk          = new OtpErlangAtom("ok");
-    public static OtpErlangAtom atomQueueFull   = new OtpErlangAtom("queue_full");
-    public static OtpErlangAtom atomTimeout     = new OtpErlangAtom("timeout");
-    public static OtpErlangAtom atomError       = new OtpErlangAtom("error");
-
-    // erlang server
-    private static  OtpNode self = null;
-    private static  OtpMbox mbox = null;
+    // otp
+    private static String selfNodeName;
+    private static String foreignNodeName;
+    private static String erlangCookie;
+    private static String foreignPidName;
+    private static OtpNode self;
+    private static OtpMbox mbox;
 
     // nchecks vars
-    private static  String pingCommand = null;
-    private static  ThreadPoolExecutor threadPool = null;
+    private static  String pingCommand;
+    private static  ThreadPoolExecutor threadPool;
     private static  int threadMaxPoolSize;
     private static  int threadCorePoolSize;
     private static  int threadQueueCapacity;
 
-    // snmp4j
-    private static NChecksSNMP snmp;
-
     public static void main(String[] args)
     {
         // if -test
-        if (args.length != 0)
-            if (args[0].equals("--test"))
-                {testSpace(); return;}
+        if (args.length != 0 && args[0].equals("--test"))
+            {testSpace(); return;}
         
         // read config
         try
@@ -118,17 +108,16 @@ public class NChecks
 
         try
         {
-            erlangCookie = new Scanner(
-                new File("cfg/sysmo.cookie") ).useDelimiter("\\Z").next();
+            erlangCookie =
+                new Scanner(
+                    new File("cfg/sysmo.cookie"), "UTF-8")
+                        .useDelimiter("\\Z").next();
         }
         catch(IOException e)
         {
             e.printStackTrace();
             return;
         }
-
-        // init snmp4j
-        NChecksSNMP.initialize();
 
         // init thread pool
         threadPool = new ThreadPoolExecutor(
@@ -302,7 +291,7 @@ public class NChecks
                 threadPool.execute(worker);
             } 
             else if (cmdstr.equals("init"))     handleInit(payload);
-            else if (cmdstr.equals("cleanup"))  NChecksSNMP.cleanup();
+            else if (cmdstr.equals("cleanup"))  NChecksSNMP.getInstance().cleanup();
             else
             {
                 OtpErlangObject reply = buildErrorReply(command);
@@ -356,8 +345,6 @@ public class NChecks
 
     private static void testSpace()
     {
-        // init snmp4j
-        NChecksSNMP.initialize();
 
         Map<String,Argument> testArguments = new HashMap<String,Argument>();
         Argument a = new Argument();
@@ -408,7 +395,6 @@ public class NChecks
         NHelperInterface module = new HelperNetworkInterfaces();
         Query query = new Query(testArguments);
         module.execute(query);
-        return;
     } 
 
 }

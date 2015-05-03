@@ -62,11 +62,11 @@ public class CheckICMP implements NChecksInterface
 
     public void setReturnString(String returnString, String returnStream)
     {
-        if (returnStream == "stdout")
+        if ("stdout".equals(returnStream))
         {
             this.stdoutReturn = returnString;
         }
-        else if (returnStream == "stderr")
+        else if ("stderr".equals(returnStream))
         {
             this.stderrReturn = returnString;
         }
@@ -194,10 +194,10 @@ public class CheckICMP implements NChecksInterface
             return reply;
         } 
 
-        long percentLoss  = Long.valueOf(ppingReturn[1]).longValue();
-        long minReplyTime = Long.valueOf(ppingReturn[2]).longValue();
-        long avgReplyTime = Long.valueOf(ppingReturn[3]).longValue();
-        long maxReplyTime = Long.valueOf(ppingReturn[4]).longValue();
+        long percentLoss  = Long.parseLong(ppingReturn[1]);
+        long minReplyTime = Long.parseLong(ppingReturn[2]);
+        long avgReplyTime = Long.parseLong(ppingReturn[3]);
+        long maxReplyTime = Long.parseLong(ppingReturn[4]);
         reply.putPerformance("PercentLost",         percentLoss);
         reply.putPerformance("MinRoundTrip",        minReplyTime);
         reply.putPerformance("AverageRoundTrip",    avgReplyTime);
@@ -245,7 +245,7 @@ class StreamConsumer extends Thread {
     public void run() {
         BufferedReader buff = null;
         try {
-            buff = new BufferedReader(new InputStreamReader(is));
+            buff = new BufferedReader(new InputStreamReader(is, "UTF-8"));
             String line;
 
             while ((line = buff.readLine()) != null) {
@@ -256,7 +256,10 @@ class StreamConsumer extends Thread {
             e.printStackTrace();
         } finally {
             if(buff != null) {
-                try { buff.close(); } catch(Exception ignore) {}
+                try { buff.close(); }
+                catch(Exception ignore) {
+                    System.out.println("failed to close the buffer for ICMP");
+                }
             }
         }
     }

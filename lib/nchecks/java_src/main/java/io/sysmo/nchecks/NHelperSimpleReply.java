@@ -50,41 +50,45 @@ public class NHelperSimpleReply implements NHelperReply
 {
 
     private String  messageId   = "";
-    private String  message = "";
-    private String  value   = "";
-    private String  status  = Const.HELPER_SUCCESS;
+    private String  message     = "";
+    private String  value       = "";
+    private String  status      = Const.HELPER_SUCCESS;
 
     public NHelperSimpleReply() {}
 
     /*
     * Set the identifier of the reply
     */
-    public void setId(String val)  { messageId = val; }
+    public void setId(String val)  { this.messageId = val; }
 
     /* set the status of the reply. Must be Const.HELPER_SUCCESS or
     * Const.HELPER_FAILURE.
     */
-    public void setStatus(String val) { status = val; }
+    public void setStatus(String val) { this.status = val; }
 
     /*
     * Set the message string show to the user.
     */
-    public void setMessage(String val) { message = val; }
+    public void setMessage(String val) { this.message = val; }
 
     /*
     * Set the value for the target flag.
     */
-    public void setValue(String val) { value = val; }
+    public void setValue(String val) { this.value = val; }
 
+    /*
+     * Build a json representation of the message.
+     */
     public char[] toCharArray()
     {
         CharArrayWriter     buffer          = new CharArrayWriter();
         JsonWriter          jsonWriter      = Json.createWriter(buffer);
         JsonObjectBuilder   objectbuilder   = Json.createObjectBuilder();
 
-        objectbuilder.add("status", status);
-        objectbuilder.add("id",     messageId);
-        objectbuilder.add("message",  value);
+        objectbuilder.add("status",     this.status);
+        objectbuilder.add("id",         this.messageId);
+        objectbuilder.add("message",    this.message);
+        objectbuilder.add("value",      this.value);
         
         jsonWriter.writeObject(objectbuilder.build());
         return buffer.toCharArray();

@@ -42,16 +42,10 @@ import org.snmp4j.security.nonstandard.*;
 
 public class NChecksSNMP
 {
-    private static NChecksSNMP singleton;
-
-    private Snmp snmp4jSession;
+    public  Snmp snmp4jSession;
     private Map<String, AbstractTarget> agents;
 
-    public static synchronized void initialize() {
-        if (singleton == null) new NChecksSNMP();
-    }
-
-    public NChecksSNMP()
+    private NChecksSNMP()
     {
         try
         {
@@ -63,7 +57,6 @@ public class NChecksSNMP
             SecurityModels.getInstance().addSecurityModel(usm);
             agents          = new HashMap<String, AbstractTarget>();
             transport.listen();
-            singleton = this;
         }
         catch (Exception e)
         {
@@ -71,22 +64,23 @@ public class NChecksSNMP
         }
     }
 
-    public static Snmp getSnmpSession() {return singleton.snmp4jSession;}
+    private static NChecksSNMP INSTANCE = new NChecksSNMP();
+    public static NChecksSNMP getInstance() {return INSTANCE;}
 
-    public static void cleanup()
+    public Snmp getSnmpSession() {return snmp4jSession;}
+
+    public synchronized void cleanup()
     {
-        singleton.snmp4jSession.getUSM().removeAllUsers();
-        singleton.agents = new HashMap<String, AbstractTarget>();
+        snmp4jSession.getUSM().removeAllUsers();
+        agents = new HashMap<String, AbstractTarget>();
     }
 
-    public static AbstractTarget getTarget(Query query)
-                                                throws Exception
+    public synchronized AbstractTarget getTarget(Query query) throws Exception
     {
-        return singleton.getSnmpTarget(query);
+        return getSnmpTarget(query);
     }
 
-    public synchronized AbstractTarget getSnmpTarget(Query query)
-                                                throws Exception
+    private AbstractTarget getSnmpTarget(Query query) throws Exception
     {
         String targetid = query.get("target_id").asString();
         AbstractTarget target = agents.get(targetid);
@@ -121,9 +115,7 @@ public class NChecksSNMP
         throw new Exception("User name exists with differents credencials");
     }
 
-    public static AbstractTarget
-                        generateTarget(Query query)
-                                                    throws Exception, Error
+    private AbstractTarget generateTarget(Query query) throws Exception, Error
     {
         String  host        = query.get("host").asString();
         int     port        = query.get("snmp_port").asInteger();
@@ -165,16 +157,13 @@ public class NChecksSNMP
         }
     }
 
-    private static UsmUser 
-                    generateUser(Query query)
-                                                        throws Exception, Error
+    private UsmUser generateUser(Query query) throws Exception, Error
     {
 
         OID authProtoOid =
                     SNMPUtils.getAuthProto(query.get("snmp_authproto").asString());
         OID privProtoOid =
                     SNMPUtils.getPrivProto(query.get("snmp_privproto").asString());
-        SecurityProtocols secProtocols = SecurityProtocols.getInstance();
 
         OctetString uName =
                         new OctetString(query.get("snmp_usm_user").asString());
@@ -194,6 +183,7 @@ class SNMPUtils
 {
     private static char[] hexArray = "0123456789ABCDEF".toCharArray();
 
+    // TODO test utf8 to byte might not work now
     public static byte[] getEngineId(String stringPath)
                                                     throws Exception, Error
     {
@@ -201,7 +191,7 @@ class SNMPUtils
         if (Files.isRegularFile(path) == true)
         {
             byte[] engineIdDump = Files.readAllBytes(path);
-            String engineIdHex = new String(engineIdDump);
+            String engineIdHex = new String(engineIdDump, "UTF-8");
             byte[] engineId = SNMPUtils.hexStringToBytes(engineIdHex);
             return engineId;
         }
@@ -209,7 +199,7 @@ class SNMPUtils
         {
             byte[] engineId     = MPv3.createLocalEngineID();
             String engineIdHex  = SNMPUtils.bytesToHexString(engineId);
-            byte[] engineIdDump = engineIdHex.getBytes();
+            byte[] engineIdDump = engineIdHex.getBytes("UTF-8");
             Files.write(path, engineIdDump);
             return engineId;
         }
@@ -226,7 +216,7 @@ class SNMPUtils
         return data;
     }
 
-    private static String bytesToHexString(byte[] bytes)
+    private static String bytesToHexString(byte[] bytes) throws Exception,Error
     {
         char[] hexChars = new char[bytes.length * 2];
         for (int j=0; j<bytes.length; j++)
@@ -235,7 +225,10 @@ class SNMPUtils
             hexChars[j * 2] = hexArray[v >>> 4];
             hexChars[j * 2 + 1] = hexArray[v & 0x0F];
         }
-        return new String(hexChars);
+        String chars = 
+                new String(
+                        new String(hexChars).getBytes("UTF-8"), "UTF-8");
+        return chars;
     }
     
     public static int getSecLevel(String constString) throws Exception
@@ -256,7 +249,7 @@ class SNMPUtils
         return seclevel;
     }
     
-    public static OID getAuthProto(String constString)
+    public static OID getAuthProto(String constString) throws Exception
     {
 
         OID authProtoOid = null;
@@ -264,11 +257,13 @@ class SNMPUtils
         {
             case "SHA": authProtoOid = AuthSHA.ID; break;
             case "MD5": authProtoOid = AuthMD5.ID; break;
+            default:
+                throw new Exception("unknown authentication protocol");
         }
         return authProtoOid;
     }
 
-    public static OID getPrivProto(String constString)
+    public static OID getPrivProto(String constString) throws Exception
     {
         OID privProtoOid = null;
         switch (constString)
@@ -280,6 +275,8 @@ class SNMPUtils
             case "3DES":        privProtoOid = Priv3DES.ID;   break;
             case "AES192_3DES": privProtoOid = PrivAES192With3DESKeyExtension.ID; break;
             case "AES256_3DES": privProtoOid = PrivAES256With3DESKeyExtension.ID; break;
+            default:
+                throw new Exception("unknown private protocol");
         }
 
         return privProtoOid;

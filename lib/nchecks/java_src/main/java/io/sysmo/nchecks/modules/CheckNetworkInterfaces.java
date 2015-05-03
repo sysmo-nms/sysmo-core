@@ -86,10 +86,10 @@ public class CheckNetworkInterfaces implements NChecksInterface
         }
 
         try {
-            AbstractTarget target = NChecksSNMP.getTarget(query);
+            AbstractTarget target = NChecksSNMP.getInstance().getTarget(query);
             System.out.println("snmptarget? " + target);
 
-            Snmp session = NChecksSNMP.getSnmpSession();
+            Snmp session = NChecksSNMP.getInstance().getSnmpSession();
             System.out.println("snmpsession? " + session);
 
 

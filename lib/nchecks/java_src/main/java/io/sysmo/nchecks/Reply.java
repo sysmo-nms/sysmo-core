@@ -32,7 +32,6 @@ public class Reply
 {
     private static final OtpErlangAtom atomNchecksReply = new OtpErlangAtom("nchecks_reply");
     private String replyMsg;
-    private String errorMsg;
     private String status;
     private byte[] opaque;
     private long   timestamp;
@@ -41,7 +40,6 @@ public class Reply
 
     public Reply() {
         replyMsg = "";
-        errorMsg = "";
         status   = "DOWN";
         timestamp = System.currentTimeMillis() / 1000;
         perfValues = new HashMap<String,PerformanceGroup>();
@@ -75,7 +73,7 @@ public class Reply
     *       myreply.setState(state);
     */
     public void setState(byte[] value) {
-        opaque = value;
+        opaque = value.clone();
     }
 
     /**
@@ -141,11 +139,11 @@ public class Reply
         int i = 0;
         for (Map.Entry<String, PerformanceGroup> entry: perfValues.entrySet())
         {
-            String key  = entry.getKey();
-            OtpErlangList value = entry.getValue().asList();
-            OtpErlangObject[] objEntry = new OtpErlangObject[2];
-            objEntry[0] = new OtpErlangString(entry.getKey());
-            objEntry[1] = value;
+            String              key      = entry.getKey();
+            OtpErlangList       value    = entry.getValue().asList();
+            OtpErlangObject[]   objEntry = new OtpErlangObject[2];
+            objEntry[0]      = new OtpErlangString(entry.getKey());
+            objEntry[1]      = value;
             perfValuesObj[i] = new OtpErlangTuple(objEntry);
             i++;
         }
@@ -175,7 +173,7 @@ class PerformanceGroup
 
     public void putPerformance(String key, long value)
     {
-        perfValues.put(key, new Long(value));
+        perfValues.put(key, Long.valueOf(value));
     }
 
     public OtpErlangList asList() {

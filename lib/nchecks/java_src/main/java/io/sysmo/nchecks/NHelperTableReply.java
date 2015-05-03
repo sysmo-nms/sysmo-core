@@ -55,9 +55,8 @@ public class NHelperTableReply implements NHelperReply
     public static final int SUCCESS = 0;
     public static final int FAILURE = 1;
     private String  messageId   = "";
-    private String  message = "";
-    private String  value   = "";
-    private String  status  = Const.HELPER_SUCCESS;
+    private String  message     = "";
+    private String  status      = Const.HELPER_SUCCESS;
 
     private ArrayList<NHelperTableRow> rows;
     public NHelperTableReply() {
@@ -96,7 +95,7 @@ public class NHelperTableReply implements NHelperReply
 
         while (it.hasNext()) {
             NHelperTableRow              row     = it.next();
-            JsonObjectBuilder           rowObj  = factory.createObjectBuilder();
+            JsonObjectBuilder            rowObj  = factory.createObjectBuilder();
             List<NHelperTableItem>       items   = row.getItems();
             Iterator<NHelperTableItem>   tit     = items.iterator();
             while(tit.hasNext()) {
@@ -109,6 +108,7 @@ public class NHelperTableReply implements NHelperReply
         }
 
         objectbuilder.add("status", status);
+        objectbuilder.add("message", message);
         objectbuilder.add("id",   messageId);
         objectbuilder.add("rows", arraybuilder);
         jsonWriter.writeObject(objectbuilder.build());

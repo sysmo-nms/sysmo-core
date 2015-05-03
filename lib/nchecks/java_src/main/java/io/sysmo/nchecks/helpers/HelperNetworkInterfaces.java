@@ -117,9 +117,9 @@ public class HelperNetworkInterfaces implements NHelperInterface
     {
     
         try {
-            AbstractTarget target = NChecksSNMP.getTarget(query);
+            AbstractTarget target = NChecksSNMP.getInstance().getTarget(query);
 
-            Snmp session = NChecksSNMP.getSnmpSession();
+            Snmp session = NChecksSNMP.getInstance().getSnmpSession();
             TableUtils tablewalker =
                 new TableUtils(
                         session,
