@@ -16,3 +16,6 @@ dist:
 	
 clean:
 	$(GRADLE) clean
+
+run:
+	$(GRADLE) run
