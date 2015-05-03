@@ -63,20 +63,20 @@ public class Snmpman
     // the foreign snmpman.erl gen_server pid name
     private static String foreignPidName  = null;
 
-    public static OtpErlangAtom atomReply       = new OtpErlangAtom("reply");
-    public static OtpErlangAtom atomOk          = new OtpErlangAtom("ok");
-    public static OtpErlangAtom atomTimeout     = new OtpErlangAtom("timeout");
-    public static OtpErlangAtom atomError       = new OtpErlangAtom("error");
-    public static OtpErlangAtom atomEXIT        = new OtpErlangAtom("EXIT");
-    public static OtpErlangAtom atomVarbinds    = new OtpErlangAtom("varbinds");
-    public static OtpErlangAtom atomVarbind     = new OtpErlangAtom("varbind");
-    public static OtpErlangAtom atomUnknownTarget = new OtpErlangAtom("unknown_target");
-    public static OtpErlangAtom atomTargetExist   = new OtpErlangAtom("target_exist");
-    public static OtpErlangAtom atomTableRow    = new OtpErlangAtom("table_row");
-    public static OtpErlangAtom atomException   = new OtpErlangAtom("exception");
-    public static OtpErlangAtom atomWrongOrder  = new OtpErlangAtom("wrong_order");
-    public static OtpErlangAtom atomReport      = new OtpErlangAtom("report");
-    public static OtpErlangAtom atomTable       = new OtpErlangAtom("table");
+    public static final OtpErlangAtom atomReply       = new OtpErlangAtom("reply");
+    public static final OtpErlangAtom atomOk          = new OtpErlangAtom("ok");
+    public static final OtpErlangAtom atomTimeout     = new OtpErlangAtom("timeout");
+    public static final OtpErlangAtom atomError       = new OtpErlangAtom("error");
+    public static final OtpErlangAtom atomEXIT        = new OtpErlangAtom("EXIT");
+    public static final OtpErlangAtom atomVarbinds    = new OtpErlangAtom("varbinds");
+    public static final OtpErlangAtom atomVarbind     = new OtpErlangAtom("varbind");
+    public static final OtpErlangAtom atomUnknownTarget = new OtpErlangAtom("unknown_target");
+    public static final OtpErlangAtom atomTargetExist   = new OtpErlangAtom("target_exist");
+    public static final OtpErlangAtom atomTableRow    = new OtpErlangAtom("table_row");
+    public static final OtpErlangAtom atomException   = new OtpErlangAtom("exception");
+    public static final OtpErlangAtom atomWrongOrder  = new OtpErlangAtom("wrong_order");
+    public static final OtpErlangAtom atomReport      = new OtpErlangAtom("report");
+    public static final OtpErlangAtom atomTable       = new OtpErlangAtom("table");
     // erlang server
     private static  OtpNode self = null;
     private static  OtpMbox mbox = null;
@@ -109,7 +109,10 @@ public class Snmpman
 
         try
         {
-            erlangCookie = new Scanner(new File("cfg/sysmo.cookie")).useDelimiter("\\Z").next();
+            erlangCookie = 
+                new Scanner(
+                    new File("cfg/sysmo.cookie"), "UTF-8")
+                        .useDelimiter("\\Z").next();
         }
         catch(IOException e)
         {
@@ -120,7 +123,8 @@ public class Snmpman
         // may take a wile? /dev/random ?
         try
         {
-            byte[] engineId = getEngineId(args[0]);
+            Path engineIdPath = Paths.get(args[0]);
+            byte[] engineId = getEngineId(engineIdPath);
             transport       = new DefaultUdpTransportMapping();
             snmp4jSession   = new Snmp(transport);
             USM usm         = new USM(SecurityProtocols.getInstance(), new OctetString(engineId), 0);
@@ -173,13 +177,12 @@ public class Snmpman
         }
     }
 
-    private static byte[] getEngineId(String stringPath) throws Exception, Error
+    private static byte[] getEngineId(Path path) throws Exception, Error
     {
-        Path path = Paths.get(stringPath);
         if (Files.isRegularFile(path) == true)
         {
             byte[] engineIdDump = Files.readAllBytes(path);
-            String engineIdHex = new String(engineIdDump);
+            String engineIdHex = new String(engineIdDump, "UTF-8");
             byte[] engineId = hexStringToBytes(engineIdHex);
             return engineId;
         }
@@ -187,7 +190,7 @@ public class Snmpman
         {
             byte[] engineId     = MPv3.createLocalEngineID();
             String engineIdHex  = bytesToHexString(engineId);
-            byte[] engineIdDump = engineIdHex.getBytes();
+            byte[] engineIdDump = engineIdHex.getBytes("UTF-8");
             Files.write(path, engineIdDump);
             return engineId;
         }
@@ -280,6 +283,8 @@ public class Snmpman
                 case "which_usm_users":
                     handleWhichUSMUsers(caller);
                     break;
+                default:
+                    throw new Exception("Unknown command: " + command.toString());
             }
         }
         catch (Exception|Error e)
@@ -438,6 +443,8 @@ public class Snmpman
         {
             case "SHA": authProtoOid = AuthSHA.ID; break;
             case "MD5": authProtoOid = AuthMD5.ID; break;
+            default:
+                throw new Exception("Unknown authentication protocol");
         }
 
         OID privProtoOid = null;
@@ -450,6 +457,8 @@ public class Snmpman
             case "3DES":        privProtoOid = Priv3DES.ID;   break;
             case "AES192_3DES": privProtoOid = PrivAES192With3DESKeyExtension.ID; break;
             case "AES256_3DES": privProtoOid = PrivAES256With3DESKeyExtension.ID; break;
+            default:
+                throw new Exception("Unknown private protocol");
         }
 
         SecurityProtocols secProtocols = SecurityProtocols.getInstance();
@@ -517,6 +526,8 @@ public class Snmpman
                 securityLevelConst = SecurityLevel.AUTH_NOPRIV; break;
             case "noAuthNoPriv":
                 securityLevelConst = SecurityLevel.NOAUTH_NOPRIV; break;
+            default:
+                throw new Exception("Unknown security level");
         }
 
         switch (registerArgs.snmpVersion)
@@ -657,7 +668,6 @@ public class Snmpman
         int size = usmUsers.size();
         OtpErlangObject[] replyObj = new OtpErlangObject[size];
 
-        Iterator<UsmUserEntry> it = usmUsers.iterator();
         for (int i=0; i<usmUsers.size(); i++)
         {
             replyObj[i] = 
