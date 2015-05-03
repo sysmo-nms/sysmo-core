@@ -1,12 +1,3 @@
-*.beam
-*.class
-*.jar
-*.swp
-*.swo
-*.html
-*.css
-*.png
-engineID.conf
-doc/edoc-info
-erl_crash.dump
-snmpman4j.log
+ebin
+doc
+*.log

@@ -5,27 +5,7 @@ apply plugin: 'findbugs'
 apply plugin: 'jdepend'
 // TODO checkstyle
 
-def customSrc = 'java_src'
 mainClassName = 'io.sysmo.errd4j.Errd4j'
-
-sourceSets {
-    main {
-        java {
-            srcDir customSrc + '/main/java'
-        }
-        resources {
-            srcDir customSrc + '/main/ressources'
-        }
-    }
-    test {
-        java {
-            srcDir customSrc + '/test/java'
-        }
-        resources {
-            srcDir customSrc + '/test/ressources'
-        }
-    }
-}
 
 repositories {
     // get latest rrd4j from here
@@ -63,8 +43,4 @@ tasks.withType(FindBugs) {
 pmd {
     ignoreFailures = false
     sourceSets = [sourceSets.main]
-}
-
-applicationDistribution.from(customSrc + '/dist') {
-    into ''
 }

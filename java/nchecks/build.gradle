@@ -5,27 +5,8 @@ apply plugin: 'findbugs'
 apply plugin: 'jdepend'
 // TODO checkstyle
 
-def customSrc = 'java_src'
 mainClassName = 'io.sysmo.nchecks.NChecks'
 
-sourceSets {
-    main {
-        java {
-            srcDir customSrc + '/main/java'
-        }
-        resources {
-            srcDir customSrc + '/main/ressources'
-        }
-    }
-    test {
-        java {
-            srcDir customSrc + '/test/java'
-        }
-        resources {
-            srcDir customSrc + '/test/ressources'
-        }
-    }
-}
 
 repositories {
     // get latest snmp4j from here
@@ -66,6 +47,3 @@ pmd {
     sourceSets = [sourceSets.main]
 }
 
-applicationDistribution.from(customSrc + '/dist') {
-    into ''
-}

@@ -49,3 +49,4 @@ pping.exe
 lib/*/.rebar
 lib/*/ebin
 rel/sysmo
+.rebar
