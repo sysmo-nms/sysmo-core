@@ -81,7 +81,8 @@ public class EQuartz {
 
 
         // initialize erlang node
-        enode = new EQuartzNode(selfNodeName, foreignNodeName, foreignPidName, erlangCookie);
+        enode = EQuartzNode.getInstance();
+        enode.setNodeConfig(selfNodeName, foreignNodeName, foreignPidName, erlangCookie);
         enode.setMsgHandler(new MessageHandler());
         enode.start();
         
@@ -99,7 +100,7 @@ public class EQuartz {
         catch (SchedulerException e)
         {
             e.printStackTrace();
-            EQuartzNode.sendReply(caller,
+            enode.sendReply(caller,
                 EQuartzNode.buildErrorReply(new OtpErlangString(e.getMessage()))
             );
             return;
@@ -114,14 +115,14 @@ public class EQuartz {
         }
         OtpErlangList replyList = new OtpErlangList(replyObj);
 
-        EQuartzNode.sendReply(caller, EQuartzNode.buildOkReply(replyList));
+        enode.sendReply(caller, EQuartzNode.buildOkReply(replyList));
     }
 
     public static void callRegisterSystemJob(
             OtpErlangObject caller,
             OtpErlangTuple  payload)
     {
-        EQuartzNode.sendReply(caller, EQuartzNode.buildErrorReply(new OtpErlangString("not implemented")));
+        enode.sendReply(caller, EQuartzNode.buildErrorReply(new OtpErlangString("not implemented")));
     }
 
     public static void callRegisterInternalJob(
@@ -155,13 +156,13 @@ public class EQuartz {
         catch (SchedulerException e)
         {
             e.printStackTrace();
-            EQuartzNode.sendReply(caller,
+            enode.sendReply(caller,
                 EQuartzNode.buildErrorReply(new OtpErlangString(e.getMessage()))
             );
             return;
         }
 
-        EQuartzNode.sendReply(caller, EQuartzNode.atomOk);
+        enode.sendReply(caller, EQuartzNode.atomOk);
     }
 
     public static void callDeleteJob(
@@ -178,7 +179,7 @@ public class EQuartz {
         catch (SchedulerException e)
         {
             e.printStackTrace();
-            EQuartzNode.sendReply(caller,
+            enode.sendReply(caller,
                 EQuartzNode.buildErrorReply(new OtpErlangString(e.getMessage()))
             );
             return;
@@ -187,11 +188,11 @@ public class EQuartz {
         System.out.println("job deleted?: " + success);
         if (success == true)
         {
-            EQuartzNode.sendReply(caller, EQuartzNode.atomOk);
+            enode.sendReply(caller, EQuartzNode.atomOk);
         }
         else
         {
-            EQuartzNode.sendReply(caller,
+            enode.sendReply(caller,
                 EQuartzNode.buildErrorReply(
                     new OtpErlangString(
                         "Job does not exist: " + jobName.stringValue())));
@@ -211,7 +212,7 @@ public class EQuartz {
         catch (SchedulerException e)
         {
             e.printStackTrace();
-            EQuartzNode.sendReply(caller,
+            enode.sendReply(caller,
                 EQuartzNode.buildErrorReply(new OtpErlangString(e.getMessage()))
             );
             return;
@@ -219,11 +220,11 @@ public class EQuartz {
 
         if (success == true)
         {
-            EQuartzNode.sendReply(caller, EQuartzNode.atomTrue);
+            enode.sendReply(caller, EQuartzNode.atomTrue);
         }
         else
         {
-            EQuartzNode.sendReply(caller, EQuartzNode.atomFalse);
+            enode.sendReply(caller, EQuartzNode.atomFalse);
         }
     }
 
@@ -241,7 +242,7 @@ public class EQuartz {
         catch (SchedulerException e)
         {
             e.printStackTrace();
-            EQuartzNode.sendReply(caller,
+            enode.sendReply(caller,
                 EQuartzNode.buildErrorReply(new OtpErlangString(e.getMessage()))
             );
             return;
@@ -249,7 +250,7 @@ public class EQuartz {
 
         if (success != true)
         {
-            EQuartzNode.sendReply(caller,
+            enode.sendReply(caller,
                 EQuartzNode.buildErrorReply(
                     new OtpErlangString("Unknown job " + jobKey)
                 )
@@ -260,12 +261,12 @@ public class EQuartz {
         try
         {
             scheduler.triggerJob(jobKey);
-            EQuartzNode.sendReply(caller, EQuartzNode.atomOk);
+            enode.sendReply(caller, EQuartzNode.atomOk);
         }
         catch (SchedulerException e)
         {
             e.printStackTrace();
-            EQuartzNode.sendReply(caller,
+            enode.sendReply(caller,
                 EQuartzNode.buildErrorReply(new OtpErlangString(e.getMessage()))
             );
             return;
@@ -319,7 +320,7 @@ class MessageHandler implements EQuartzMessageHandler {
                 EQuartz.callFireNow(caller, payload);
                 break;
             default:
-                EQuartzNode.sendReply(caller,
+                EQuartzNode.getInstance().sendReply(caller,
                     EQuartzNode.buildErrorReply(
                                 new OtpErlangString(
                                     "unknown command: " + command.toString()))

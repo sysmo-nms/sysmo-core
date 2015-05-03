@@ -24,7 +24,7 @@ public class JobInternal implements Job {
         OtpErlangAtom   mod = new OtpErlangAtom(data.getString(MOD));
         OtpErlangAtom   fun = new OtpErlangAtom(data.getString(FUN));
         OtpErlangString arg = new OtpErlangString(data.getString(ARG));
-        EQuartzNode.fire(mod, fun, arg);
+        EQuartzNode.getInstance().fire(mod, fun, arg);
         // Should wait for function return insteed of sleeping.
         // Sleep to keep using equartz ressource because we will not
         // receive reply from the EQuartzNode.fire.
