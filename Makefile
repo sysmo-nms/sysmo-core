@@ -26,8 +26,8 @@ clean:
 rel: 
 	$(REBAR) -r compile
 	$(MAKE) -C java dist
-	./helpers/getJavaDist.sh
 	cd rel; $(REBAR) generate
+	./helpers/getJavaDist.sh
 
 EPATH = ebin \
 lib/equartz/ebin \
