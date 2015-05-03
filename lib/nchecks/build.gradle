@@ -53,6 +53,13 @@ findbugs {
     sourceSets = [sourceSets.main]
 }
 
+tasks.withType(FindBugs) {
+    reports {
+        xml.enabled = false
+        html.enabled = true
+    }
+}
+
 pmd {
     ignoreFailures = true
     sourceSets = [sourceSets.main]

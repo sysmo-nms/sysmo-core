@@ -43,7 +43,7 @@ jdepend {
 }
 
 findbugs {
-    ignoreFailures = true
+    ignoreFailures = false
     sourceSets = [sourceSets.main]
 }
 
