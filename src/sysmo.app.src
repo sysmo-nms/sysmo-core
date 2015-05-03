@@ -24,6 +24,7 @@
             [kernel, stdlib]
         },
         {start_phases, []},
-        {mod, {application_starter, [sysmo_app, []]}}
+        %{mod, {application_starter, [sysmo_app, []]}}
+        {mod, {sysmo_app, []}}
     ]
 }.
