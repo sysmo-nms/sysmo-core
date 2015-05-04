@@ -30,6 +30,7 @@ rel:
 	cd rel; $(REBAR) generate
 	./scripts/placeJavaDist.sh
 	./scripts/placeGoUtils.sh
+	./scripts/placeNchecksXml.sh
 
 rel-start:
 	./rel/sysmo/bin/sysmo start
