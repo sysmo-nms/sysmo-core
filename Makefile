@@ -2,7 +2,7 @@
 
 export MAKE  ?= make
 export REBAR ?= rebar
-export GRADLE ?= gradle
+export GRADLE ?= ./gradlew
 
 ERLANG_SRC = src/erlang/sysmo
 JAVA_SRC = src/java/sysmo_java
