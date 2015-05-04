@@ -11,13 +11,11 @@ GO_SRC = src/go
 compile:
 	cd $(ERLANG_SRC); $(REBAR) -r compile
 	cd $(JAVA_SRC); $(GRADLE) classes
-	$(MAKE) -C src/go
 	
 test:
 	cd $(ERLANG_SRC); $(REBAR) -r test
 	cd $(JAVA_SRC); $(GRADLE) test
 	$(REBAR) test
-	$(MAKE) -C src/go test
 
 check:
 	cd $(JAVA_SRC); $(GRADLE) check
@@ -26,18 +24,17 @@ doc:
 	cd $(ERLANG_SRC); $(REBAR) -r doc
 	cd $(JAVA_SRC); $(GRADLE) doc
 	$(REBAR) doc
-	$(MAKE) -C src/go doc
 
 clean:
+	$(MAKE) -C src/go clean
 	cd $(ERLANG_SRC); $(REBAR) -r clean
 	cd $(JAVA_SRC); $(GRADLE) clean
 	$(REBAR) clean
-	$(MAKE) -C src/go clean
 
 rel: 
+	$(MAKE) -C src/go
 	cd $(ERLANG_SRC); $(REBAR) -r compile
 	cd $(JAVA_SRC); $(GRADLE) installDist
-	$(MAKE) -C src/go
 	$(REBAR) generate
 	./scripts/placeReleaseFiles
 	@ echo "Release ready"
