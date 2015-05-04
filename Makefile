@@ -4,48 +4,53 @@ export MAKE  ?= make
 export REBAR ?= rebar
 
 compile:
-	$(REBAR) -r compile
-	$(MAKE) -C go
-	$(MAKE) -C java
+	cd src/erlang/sysmo; $(REBAR) -r compile
+	$(MAKE) -C src/go
+	$(MAKE) -C src/java
 	
 test:
+	cd src/erlang/sysmo; $(REBAR) -r test
 	$(REBAR) -r test
-	$(MAKE) -C go test
-	$(MAKE) -C java test
+	$(MAKE) -C src/go test
+	$(MAKE) -C src/java test
+
+check:
+	$(MAKE) -C src/java check
 
 doc:
+	cd src/erlang/sysmo; $(REBAR) -r doc
 	$(REBAR) -r doc
-	$(MAKE) -C go doc
-	$(MAKE) -C java doc
+	$(MAKE) -C src/go doc
+	$(MAKE) -C src/java doc
 
 clean:
-	$(REBAR) -r clean
-	$(MAKE) -C go clean
-	$(MAKE) -C java clean
+	$(REBAR) clean
+	cd src/erlang/sysmo; $(REBAR) -r clean
+	$(MAKE) -C src/go clean
+	$(MAKE) -C src/java clean
 
 rel: 
-	$(REBAR) -r compile
-	$(MAKE) -C go
-	$(MAKE) -C java dist
-	cd rel; $(REBAR) generate
-	./scripts/placeJavaDist.sh
-	./scripts/placeGoUtils.sh
-	./scripts/placeNchecksXml.sh
+	cd src/erlang/sysmo; $(REBAR) -r compile
+	$(MAKE) -C src/go
+	$(MAKE) -C src/java dist
+	$(REBAR) generate
+	./scripts/placeReleaseFiles
+	@ echo "Release ready"
 
 rel-start:
-	./rel/sysmo/bin/sysmo start
+	./sysmo/bin/sysmo start
 rel-attach:
-	./rel/sysmo/bin/sysmo attach
+	./sysmo/bin/sysmo attach
 rel-stop:
-	./rel/sysmo/bin/sysmo stop
+	./sysmo/bin/sysmo stop
 
 EPATH = ebin \
-lib/equartz/ebin \
-lib/errd4j/ebin \
-lib/monitor/ebin \
-lib/nchecks/ebin \
-lib/snmpman/ebin \
-lib/supercast/ebin 
+src/erlang/equartz/ebin \
+src/erlang/errd4j/ebin \
+src/erlang/monitor/ebin \
+src/erlang/nchecks/ebin \
+src/erlang/snmpman/ebin \
+src/erlang/supercast/ebin 
 
 CONFIG = ./sys
 

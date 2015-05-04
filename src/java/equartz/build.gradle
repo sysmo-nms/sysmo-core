@@ -1,0 +1,47 @@
+apply plugin: 'java'
+apply plugin: 'application'
+apply plugin: 'pmd'
+apply plugin: 'findbugs'
+apply plugin: 'jdepend'
+// TODO checkstyle
+
+mainClassName = 'io.sysmo.equartz.EQuartz'
+applicationDefaultJvmArgs = ['-server']
+
+
+repositories {
+    // local jinterface 1.5.12
+    flatDir {
+        dirs 'lib'
+    }
+
+    // all dependencies from maven central
+    mavenCentral()
+}
+
+dependencies {
+    compile group: 'org.quartz-scheduler', name: 'quartz', version: '2.2.1'
+    compile group: 'org.erlang.otp', name: 'jinterface', version: '1.5.12'
+}
+
+jdepend {
+    ignoreFailures = false
+    sourceSets = [sourceSets.main]
+}
+
+findbugs {
+    ignoreFailures = false
+    sourceSets = [sourceSets.main]
+}
+
+tasks.withType(FindBugs) {
+    reports {
+        xml.enabled = false
+        html.enabled = true
+    }
+}
+
+pmd {
+    ignoreFailures = false
+    sourceSets = [sourceSets.main]
+}

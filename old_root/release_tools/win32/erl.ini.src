@@ -1,4 +1,0 @@
-[erlang]
-Bindir=!INSTALL_DIR!\sysmo-server\erts-6.3\bin
-Progname=erl
-Rootdir=!INSTALL_DIR!\sysmo-server
