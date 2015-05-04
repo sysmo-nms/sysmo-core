@@ -1,6 +1,0 @@
-- include in nchecks
-- threads?
-- more info from reports (error messages)
-- make test
-- try v2/3 bulk and degrade only if "not in lexicographic order". Actually
-start in getNext(walk) mode.
