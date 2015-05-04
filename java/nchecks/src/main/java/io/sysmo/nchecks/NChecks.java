@@ -64,7 +64,7 @@ public class NChecks
     private static String foreignNodeName;
     private static String erlangCookie;
     private static String foreignPidName;
-    private static OtpNode self;
+    private static OtpNode node;
     private static OtpMbox mbox;
 
     // nchecks vars
@@ -80,15 +80,37 @@ public class NChecks
         if (args.length != 0 && args[0].equals("--test"))
             {testSpace(); return;}
         
+
+
+        //get property file path
+            File jarPath = new File(
+                    NChecks
+                    .class
+                    .getProtectionDomain()
+                    .getCodeSource()
+                    .getLocation()
+                    .getPath());
+        File libPath = jarPath.getParentFile();
+        // from jar equartz.properties is located at ../
+        File appPath = libPath.getParentFile();
+        String propFile = appPath.getAbsolutePath() + "/nchecks.properties";
+        /* from jar sysmo workdir is located at ../../../
+           String rootPath = appPath
+           .getParentFile()
+           .getParentFile()
+           .getAbsolutePath();
+        */
+
         // read config
         try
         {
             Properties   prop  = new Properties();
-            InputStream  input = new FileInputStream("cfg/nchecks.properties");
+            InputStream  input = new FileInputStream(propFile);
             prop.load(input);
             selfNodeName     = prop.getProperty("self_name");
             foreignNodeName  = prop.getProperty("foreign_node");
             foreignPidName   = prop.getProperty("foreign_pid");
+            erlangCookie     = prop.getProperty("cookie");
             pingCommand      = prop.getProperty("ping_command");
             threadMaxPoolSize = 
                         Integer.parseInt(
@@ -99,19 +121,6 @@ public class NChecks
             threadQueueCapacity =
                         Integer.parseInt(
                                     prop.getProperty("thread_queue_capacity"));
-        }
-        catch(IOException e)
-        {
-            e.printStackTrace();
-            return;
-        }
-
-        try
-        {
-            erlangCookie =
-                new Scanner(
-                    new File("cfg/sysmo.cookie"), "UTF-8")
-                        .useDelimiter("\\Z").next();
         }
         catch(IOException e)
         {
@@ -134,9 +143,9 @@ public class NChecks
         // Initialize otp
         try 
         {
-            self = new OtpNode(selfNodeName, erlangCookie);
-            mbox = self.createMbox();
-            if (!self.ping(foreignNodeName, 2000)) 
+            node = new OtpNode(selfNodeName, erlangCookie);
+            mbox = node.createMbox();
+            if (!node.ping(foreignNodeName, 2000)) 
             { 
                 System.out.println("Connection timed out");
                 return;

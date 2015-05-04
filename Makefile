@@ -25,9 +25,18 @@ clean:
 
 rel: 
 	$(REBAR) -r compile
+	$(MAKE) -C go
 	$(MAKE) -C java dist
 	cd rel; $(REBAR) generate
-	./helpers/getJavaDist.sh
+	./scripts/placeJavaDist.sh
+	./scripts/placeGoUtils.sh
+
+rel-start:
+	./rel/sysmo/bin/sysmo start
+rel-attach:
+	./rel/sysmo/bin/sysmo attach
+rel-stop:
+	./rel/sysmo/bin/sysmo stop
 
 EPATH = ebin \
 lib/equartz/ebin \

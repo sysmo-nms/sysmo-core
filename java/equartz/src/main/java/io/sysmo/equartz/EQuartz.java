@@ -47,6 +47,24 @@ public class EQuartz {
         }
 
 
+        // get property file path
+        File jarPath = new File(
+                EQuartz
+                    .class
+                    .getProtectionDomain()
+                    .getCodeSource()
+                    .getLocation()
+                    .getPath());
+        File libPath = jarPath.getParentFile();
+        // from jar equartz.properties is located at ../
+        File appPath = libPath.getParentFile();
+        String propFile = appPath.getAbsolutePath() + "/equartz.properties";
+        // from jar sysmo workdir is located at ../../../
+        String rootPath = appPath
+                            .getParentFile()
+                            .getParentFile()
+                            .getAbsolutePath();
+
         // get conf
         String selfNodeName;
         String foreignNodeName;
@@ -55,29 +73,18 @@ public class EQuartz {
         try
         {
             Properties   prop  = new Properties();
-            InputStream  input = new FileInputStream("cfg/equartz.properties");
+            InputStream  input = new FileInputStream(propFile);
             prop.load(input);
             selfNodeName     = prop.getProperty("self_name");
             foreignNodeName  = prop.getProperty("foreign_node");
             foreignPidName   = prop.getProperty("foreign_pid");
+            erlangCookie     = prop.getProperty("cookie");
         }
         catch(IOException e)
         {
             e.printStackTrace();
             return;
         }
-
-        try
-        {
-            erlangCookie = new Scanner(new File("cfg/sysmo.cookie"), "UTF-8").useDelimiter("\\Z").next();
-            
-        }
-        catch(IOException e)
-        {
-            e.printStackTrace();
-            return;
-        }
-
 
 
         // initialize erlang node

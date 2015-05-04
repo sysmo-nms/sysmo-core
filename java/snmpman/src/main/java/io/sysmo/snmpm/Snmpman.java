@@ -54,14 +54,14 @@ import org.snmp4j.security.nonstandard.*;
 public class Snmpman
 {
     // my node name
-    private static String selfNodeName   = null;
+    private static String selfNodeName;
 
     // the foreign node name (-sname)
-    private static String foreignNodeName = null;
-    private static String erlangCookie = null;
+    private static String foreignNodeName;
+    private static String erlangCookie;
 
     // the foreign snmpman.erl gen_server pid name
-    private static String foreignPidName  = null;
+    private static String foreignPidName;
 
     public static final OtpErlangAtom atomReply       = new OtpErlangAtom("reply");
     public static final OtpErlangAtom atomOk          = new OtpErlangAtom("ok");
@@ -78,7 +78,7 @@ public class Snmpman
     public static final OtpErlangAtom atomReport      = new OtpErlangAtom("report");
     public static final OtpErlangAtom atomTable       = new OtpErlangAtom("table");
     // erlang server
-    private static  OtpNode self = null;
+    private static  OtpNode node = null;
     private static  OtpMbox mbox = null;
 
     // snmp4j
@@ -91,14 +91,37 @@ public class Snmpman
 
     public static void main(String[] args)
     {
-        try
+
+
+        //get property file path
+        File jarPath = new File(
+                Snmpman
+                .class
+                .getProtectionDomain()
+                .getCodeSource()
+                .getLocation()
+                .getPath());
+        File libPath = jarPath.getParentFile();
+        // from jar equartz.properties is located at ../
+        File appPath = libPath.getParentFile();
+        String propFile = appPath.getAbsolutePath() + "/snmpman.properties";
+        String engineIdFile = appPath.getAbsolutePath() + "/engine.id";
+        /* from jar sysmo workdir is located at ../../../
+           String rootPath = appPath
+           .getParentFile()
+           .getParentFile()
+           .getAbsolutePath();
+           */
+
+           try
         {
             Properties   prop  = new Properties();
-            InputStream  input = new FileInputStream("cfg/snmpman.properties");
+            InputStream  input = new FileInputStream(propFile);
             prop.load(input);
             selfNodeName     = prop.getProperty("self_name");
             foreignNodeName  = prop.getProperty("foreign_node");
             foreignPidName   = prop.getProperty("foreign_pid");
+            erlangCookie     = prop.getProperty("cookie");
         }
         catch(IOException e)
         {
@@ -107,23 +130,11 @@ public class Snmpman
         }
         System.out.println("foreign node is " + foreignNodeName);
 
-        try
-        {
-            erlangCookie = 
-                new Scanner(
-                    new File("cfg/sysmo.cookie"), "UTF-8")
-                        .useDelimiter("\\Z").next();
-        }
-        catch(IOException e)
-        {
-            e.printStackTrace();
-            return;
-        }
-
         // may take a wile? /dev/random ?
+        System.out.println("build engine id " + foreignNodeName);
         try
         {
-            Path engineIdPath = Paths.get(args[0]);
+            Path engineIdPath = Paths.get(engineIdFile);
             byte[] engineId = getEngineId(engineIdPath);
             transport       = new DefaultUdpTransportMapping();
             snmp4jSession   = new Snmp(transport);
@@ -137,13 +148,16 @@ public class Snmpman
             return;
         }
 
+        System.out.println("build engine end " + foreignNodeName);
+
+        System.out.println("initialize otp " + foreignNodeName);
         // Initialize
         try 
         {
             System.out.println("Trying to connect to " + foreignNodeName);
-            self = new OtpNode(selfNodeName, erlangCookie);
-            mbox = self.createMbox();
-            if (!self.ping(foreignNodeName, 2000)) 
+            node = new OtpNode(selfNodeName, erlangCookie);
+            mbox = node.createMbox();
+            if (!node.ping(foreignNodeName, 2000)) 
             { 
                 System.out.println("Connection timed out");
                 return;
@@ -156,9 +170,11 @@ public class Snmpman
         }
 
         
+        System.out.println("aknownledge otp" + foreignNodeName);
         // when it is ok, inform the erl snmpman process
         acknowledgeOtpConnexion();
 
+        System.out.println("begin to loop" + foreignNodeName);
         // then begin to loop and wait for calls
         OtpErlangObject call = null;
         while (true) try 

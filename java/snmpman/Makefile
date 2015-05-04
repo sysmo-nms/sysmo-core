@@ -1,12 +1,12 @@
 # Makefile
 
-GRADLE ?= gradle --daemon
+GRADLE ?= gradle
 
 .PHONY: compile clean doc start check dist
 
 
 compile: 
-	$(GRADLE) assemble
+	$(GRADLE) classes
 
 check:
 	$(GRADLE) check
@@ -17,5 +17,5 @@ dist:
 clean:
 	$(GRADLE) clean
 
-run:
-	$(GRADLE) run
+run: dist
+	./build/install/snmpman/bin/snmpman

@@ -90,29 +90,32 @@ public class Errd4j
 
     public static void main(String[] args)
     {
+
+        //get property file path
+            File jarPath = new File(
+                    Errd4j
+                    .class
+                    .getProtectionDomain()
+                    .getCodeSource()
+                    .getLocation()
+                    .getPath());
+        File libPath = jarPath.getParentFile();
+        File appPath = libPath.getParentFile();
+        String propFile = appPath.getAbsolutePath() + "/errd4j.properties";
+
         try
         {
             Properties   prop  = new Properties();
-            InputStream  input = new FileInputStream("cfg/errd4j.properties");
+            InputStream  input = new FileInputStream(propFile);
             prop.load(input);
             selfNodeName     = prop.getProperty("self_name");
             foreignNodeName  = prop.getProperty("foreign_node");
             foreignPidName   = prop.getProperty("foreign_pid");
+            erlangCookie     = prop.getProperty("cookie");
             rraDefault       = decodeRRADef(prop.getProperty("rra_default"));
             rraPrecise       = decodeRRADef(prop.getProperty("rra_precise"));
         }
         catch(Exception|Error e)
-        {
-            e.printStackTrace();
-            return;
-        }
-        System.out.println("foreign node is " + foreignNodeName);
-
-        try
-        {
-            erlangCookie = new Scanner(new File("cfg/sysmo.cookie"), "UTF-8").useDelimiter("\\Z").next();
-        }
-        catch(IOException e)
         {
             e.printStackTrace();
             return;

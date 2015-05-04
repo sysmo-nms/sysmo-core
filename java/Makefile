@@ -1,4 +1,10 @@
 .PHONY: compile test doc clean
+
+export GRADLE_OPTS = \
+ -Dorg.gradle.daemon=true \
+ -Dorg.gradle.no-search-upwards=true \
+ -Dorg.gradle.configure-on-demand=true
+
 MODS = errd4j equartz snmpman nchecks
 
 compile: $(MODS)

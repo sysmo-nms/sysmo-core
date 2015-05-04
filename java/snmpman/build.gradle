@@ -8,18 +8,22 @@ apply plugin: 'jdepend'
 mainClassName = 'io.sysmo.snmpm.Snmpman'
 
 repositories {
+    // jinterface 1.5.12
+    flatDir {
+        dirs 'lib'
+    }
     // get latest snmp4j from here
     maven {
         url 'https://oosnmp.net/dist/release'
     }
 
-    // all other dependencies from maven central (including jinterface)
+    // all other dependencies from maven central
     mavenCentral()
 }
 
 dependencies {
     compile group: 'org.snmp4j',     name: 'snmp4j',     version: '2.3.3'
-    compile group: 'org.erlang.otp', name: 'jinterface', version: '1.5.6'
+    compile group: 'org.erlang.otp', name: 'jinterface', version: '1.5.12'
 }
 
 jdepend {

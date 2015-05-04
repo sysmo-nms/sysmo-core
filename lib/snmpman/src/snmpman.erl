@@ -62,7 +62,7 @@
     assert_init     = undefined
 }).
 
--define(ASSERT_TIMEOUT, 5000).
+-define(ASSERT_TIMEOUT, 60000).
 
 % @private
 start_link() ->
@@ -356,6 +356,8 @@ code_change(_,S,_) ->
 
 % PRIVATE
 boot(JavaCommand) ->
+    io:format("currentttttttttttdir ~p~n",[file:get_cwd()]),
+    io:format("boooooooooooot ~p ~n",[JavaCommand]),
     erlang:spawn(os,cmd,[JavaCommand]).
 
 build_conf(ElementName, ElementConf) ->
