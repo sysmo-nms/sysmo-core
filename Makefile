@@ -45,6 +45,10 @@ rel-attach:
 	./sysmo/bin/sysmo attach
 rel-stop:
 	./sysmo/bin/sysmo stop
+run: rel
+	./sysmo/bin/sysmo console
+	
+
 
 EPATH = ebin \
 src/erlang/equartz/ebin \
@@ -56,5 +60,3 @@ src/erlang/supercast/ebin
 
 CONFIG = ./sys
 
-start:
-	erl -sname master -config ./dev -pa $(EPATH)
