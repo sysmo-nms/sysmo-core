@@ -2,37 +2,42 @@
 
 export MAKE  ?= make
 export REBAR ?= rebar
+export GRADLE ?= gradle
+
+ERLANG_SRC = src/erlang/sysmo
+JAVA_SRC = src/java/sysmo_java
+GO_SRC = src/go
 
 compile:
-	cd src/erlang/sysmo; $(REBAR) -r compile
+	cd $(ERLANG_SRC); $(REBAR) -r compile
+	cd $(JAVA_SRC); $(GRADLE) classes
 	$(MAKE) -C src/go
-	$(MAKE) -C src/java
 	
 test:
-	cd src/erlang/sysmo; $(REBAR) -r test
-	$(REBAR) -r test
+	cd $(ERLANG_SRC); $(REBAR) -r test
+	cd $(JAVA_SRC); $(GRADLE) test
+	$(REBAR) test
 	$(MAKE) -C src/go test
-	$(MAKE) -C src/java test
 
 check:
-	$(MAKE) -C src/java check
+	cd $(JAVA_SRC); $(GRADLE) check
 
 doc:
-	cd src/erlang/sysmo; $(REBAR) -r doc
-	$(REBAR) -r doc
+	cd $(ERLANG_SRC); $(REBAR) -r doc
+	cd $(JAVA_SRC); $(GRADLE) doc
+	$(REBAR) doc
 	$(MAKE) -C src/go doc
-	$(MAKE) -C src/java doc
 
 clean:
+	cd $(ERLANG_SRC); $(REBAR) -r clean
+	cd $(JAVA_SRC); $(GRADLE) clean
 	$(REBAR) clean
-	cd src/erlang/sysmo; $(REBAR) -r clean
 	$(MAKE) -C src/go clean
-	$(MAKE) -C src/java clean
 
 rel: 
-	cd src/erlang/sysmo; $(REBAR) -r compile
+	cd $(ERLANG_SRC); $(REBAR) -r compile
+	cd $(JAVA_SRC); $(GRADLE) installDist
 	$(MAKE) -C src/go
-	$(MAKE) -C src/java dist
 	$(REBAR) generate
 	./scripts/placeReleaseFiles
 	@ echo "Release ready"

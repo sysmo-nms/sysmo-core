@@ -1,0 +1,33 @@
+// root project
+
+subprojects {
+    apply plugin: 'java'
+    apply plugin: 'application'
+    apply plugin: 'pmd'
+    apply plugin: 'findbugs'
+    apply plugin: 'jdepend'
+
+    applicationDefaultJvmArgs = ['-server']
+    repositories {
+        flatDir {
+            dirs '../lib'
+        }
+        mavenCentral()
+    }
+
+    dependencies {
+        compile group: 'org.erlang.otp', name: 'jinterface', version: '1.5.12'
+        testCompile 'junit:junit:4.2'
+    }
+
+    jdepend  { ignoreFailures = false }
+    findbugs { ignoreFailures = false }
+    pmd      { ignoreFailures = false }
+
+    tasks.withType(FindBugs) {
+        reports {
+            xml.enabled = false
+            html.enabled = true
+        }
+    }
+}

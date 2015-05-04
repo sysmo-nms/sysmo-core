@@ -11,7 +11,7 @@ cp src/go/pping sysmo/utils/
 rm -rf sysmo/java_apps
 mkdir  sysmo/java_apps
 for app in errd4j snmpman nchecks equartz; do
-    cp -R src/java/${app}/build/install/${app} sysmo/java_apps/
+    cp -R src/java/sysmo_java/${app}/build/install/${app} sysmo/java_apps/
 done
 
 # nchecks xml files in config dir

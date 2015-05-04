@@ -1,0 +1,12 @@
+mainClassName = 'io.sysmo.errd4j.Errd4j'
+
+repositories {
+    // get latest rrd4j from here
+    maven {
+        url 'https://oss.sonatype.org/content/repositories/snapshots'
+    }
+}
+
+dependencies {
+    compile group: 'org.rrd4j', name: 'rrd4j', version: '2.3-SNAPSHOT'
+}

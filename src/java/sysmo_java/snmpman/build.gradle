@@ -1,0 +1,14 @@
+mainClassName = 'io.sysmo.snmpm.Snmpman'
+
+repositories {
+    // get latest snmp4j from here
+    maven {
+        url 'https://oosnmp.net/dist/release'
+    }
+}
+
+dependencies {
+    compile group: 'org.snmp4j', name: 'snmp4j', version: '2.3.3'
+}
+
+findbugs { ignoreFailures = true }

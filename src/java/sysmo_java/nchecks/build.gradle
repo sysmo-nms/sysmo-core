@@ -1,0 +1,17 @@
+mainClassName = 'io.sysmo.nchecks.NChecks'
+
+repositories {
+    // get latest snmp4j from here
+    maven {
+        url 'https://oosnmp.net/dist/release'
+    }
+}
+
+dependencies {
+    compile group: 'org.snmp4j',     name: 'snmp4j',     version: '2.3.3'
+    compile group: 'org.glassfish',  name: 'javax.json', version: '1.0.4'
+}
+
+findbugs { ignoreFailures = true }
+pmd { ignoreFailures = true }
+
