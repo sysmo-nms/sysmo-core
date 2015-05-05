@@ -1,41 +1,44 @@
 .PHONY: rel
 
-export MAKE  ?= make
-export REBAR ?= rebar
-export GRADLE ?= ./gradlew
+MAKE  ?= make
+REBAR ?= rebar
+GRADLE ?= ./gradlew
 
-ERLANG_SRC = src/erlang/sysmo
+ERLANG_SRC = src/erlang
 JAVA_SRC = src/java
 GO_SRC = src/go
 
+# rebar realpath
+REBARR = $(realpath $(ERLANG_SRC)/$(REBAR))
+
 compile:
-	cd $(ERLANG_SRC); $(REBAR) -r compile
-	cd $(JAVA_SRC); $(GRADLE) classes
+	cd $(ERLANG_SRC)/sysmo; $(REBARR) -r compile
+	cd $(JAVA_SRC);         $(GRADLE) classes
 	
 test:
-	cd $(ERLANG_SRC); $(REBAR) -r test
-	cd $(JAVA_SRC); $(GRADLE) test
-	$(REBAR) test
+	cd $(ERLANG_SRC)/sysmo; $(REBARR) -r test
+	cd $(JAVA_SRC);         $(GRADLE) test
+	$(REBARR) test
 
 check:
 	cd $(JAVA_SRC); $(GRADLE) check
 
 doc:
-	cd $(ERLANG_SRC); $(REBAR) -r doc
-	cd $(JAVA_SRC); $(GRADLE) doc
-	$(REBAR) doc
+	cd $(ERLANG_SRC)/sysmo; $(REBARR) -r doc
+	cd $(JAVA_SRC);         $(GRADLE) doc
+	$(REBARR) doc
 
 clean:
 	$(MAKE) -C src/go clean
-	cd $(ERLANG_SRC); $(REBAR) -r clean
-	cd $(JAVA_SRC); $(GRADLE) clean
-	$(REBAR) clean
+	cd $(ERLANG_SRC)/sysmo; $(REBARR) -r clean
+	cd $(JAVA_SRC);         $(GRADLE) clean
+	$(REBARR) clean
 
 rel: 
 	$(MAKE) -C src/go
-	cd $(ERLANG_SRC); $(REBAR) -r compile
-	cd $(JAVA_SRC); $(GRADLE) installDist
-	$(REBAR) generate
+	cd $(ERLANG_SRC)/sysmo; $(REBARR) -r compile
+	cd $(JAVA_SRC);         $(GRADLE) installDist
+	$(REBARR) generate
 	./scripts/placeReleaseFiles
 	@ echo "Release ready"
 
