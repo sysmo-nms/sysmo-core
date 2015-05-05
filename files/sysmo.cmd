@@ -33,6 +33,7 @@
 @set epmd="%erts_bin%\epmd.exe"
 @set escript="%erts_bin%\escript.exe"
 @set werl="%erts_bin%\werl.exe"
+@set erl="%erts_bin%\erl.exe"
 @set nodetool="%erts_bin%\nodetool"
 
 @if "%1"=="usage" @goto usage
@@ -73,7 +74,7 @@
 @goto :EOF
 
 :console
-@start "%node_name% console" %werl% -boot "%node_boot_script%" -config "%sys_config%" -args_file "%vm_args%" -sname %node_name%
+@start "%node_name% console" %erl% -boot "%node_boot_script%" -config "%sys_config%" -args_file "%vm_args%" -sname %node_name%
 @goto :EOF
 
 :ping
