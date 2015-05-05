@@ -13,11 +13,11 @@ REBARR = $(realpath $(ERLANG_SRC)/$(REBAR))
 
 compile:
 	cd $(ERLANG_SRC)/sysmo; $(REBARR) -r compile
-	cd $(JAVA_SRC);         $(GRADLE) classes
+	cd $(JAVA_SRC); $(GRADLE) classes
 	
 test:
 	cd $(ERLANG_SRC)/sysmo; $(REBARR) -r test
-	cd $(JAVA_SRC);         $(GRADLE) test
+	cd $(JAVA_SRC); $(GRADLE) test
 	$(REBARR) test
 
 check:
@@ -25,19 +25,19 @@ check:
 
 doc:
 	cd $(ERLANG_SRC)/sysmo; $(REBARR) -r doc
-	cd $(JAVA_SRC);         $(GRADLE) doc
+	cd $(JAVA_SRC); $(GRADLE) doc
 	$(REBARR) doc
 
 clean:
 	$(MAKE) -C src/go clean
 	cd $(ERLANG_SRC)/sysmo; $(REBARR) -r clean
-	cd $(JAVA_SRC);         $(GRADLE) clean
+	cd $(JAVA_SRC); $(GRADLE) clean
 	$(REBARR) clean
 
 rel: 
 	$(MAKE) -C src/go
 	cd $(ERLANG_SRC)/sysmo; $(REBARR) -r compile
-	cd $(JAVA_SRC);         $(GRADLE) installDist
+	cd $(JAVA_SRC); $(GRADLE) installDist
 	$(REBARR) generate
 	./scripts/placeReleaseFiles
 	@ echo "Release ready"
