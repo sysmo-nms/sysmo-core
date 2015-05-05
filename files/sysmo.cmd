@@ -42,6 +42,7 @@
 @if "%1"=="start" @goto start
 @if "%1"=="stop" @goto stop
 @if "%1"=="restart" @call :stop && @goto start
+@if "%1"=="debug" @goto debug
 @if "%1"=="console" @goto console
 @if "%1"=="ping" @goto ping
 @if "%1"=="query" @goto query
@@ -71,6 +72,10 @@
 
 :stop
 @%erlsrv% stop %service_name%
+@goto :EOF
+
+:debug
+%erl% -boot "%node_boot_script%" -config "%sys_config%" -args_file "%vm_args%" -sname %node_name%
 @goto :EOF
 
 :console
