@@ -5,7 +5,7 @@ export REBAR ?= rebar
 export GRADLE ?= ./gradlew
 
 ERLANG_SRC = src/erlang/sysmo
-JAVA_SRC = src/java/sysmo_java
+JAVA_SRC = src/java
 GO_SRC = src/go
 
 compile:

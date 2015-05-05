@@ -1,8 +1,15 @@
+# vim
 *.swp
 *.swo
+
+# erlang crashs/builds
 *.dump
-.rebar
-.gradle
-ebin
-sysmo
-!src/erlang/sysmo
+.rebar/
+ebin/
+
+# gradle builds
+.gradle/
+build/
+
+# sysmo release
+/sysmo
