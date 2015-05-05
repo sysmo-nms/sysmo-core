@@ -2,7 +2,7 @@
     port = 8080
     listen = 0.0.0.0
     docroot = @sysmoDocRoot@
-    dir_listings = true
+    dir_listings = false
     deflate = true
     <deflate>
         min_compress_size = nolimit
