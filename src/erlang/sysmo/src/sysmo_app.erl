@@ -17,8 +17,8 @@ stop(_State) ->
 
 write_cookie() ->
     Cookie = erlang:atom_to_list(erlang:get_cookie()),
-    file:write_file("cfg/sysmo.cookie", Cookie).
+    file:write_file("etc/sysmo.cookie", Cookie).
 
 write_node() ->
     Node = erlang:node(),
-    file:write_file("cfg/sysmo.node", Node).
+    file:write_file("etc/sysmo.node", Node).

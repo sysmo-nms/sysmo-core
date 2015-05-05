@@ -49,7 +49,7 @@ public class NChecksSNMP
     {
         try
         {
-            byte[] engineId = SNMPUtils.getEngineId("cfg/worker_engine.id");
+            byte[] engineId = SNMPUtils.getEngineId("etc/worker_engine.id");
             UdpTransportMapping transport = new DefaultUdpTransportMapping();
             snmp4jSession   = new Snmp(transport);
             USM usm         = new USM(SecurityProtocols.getInstance(),

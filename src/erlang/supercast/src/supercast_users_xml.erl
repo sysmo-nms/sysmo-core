@@ -27,7 +27,7 @@
 
 -export([authenticate/2]).
 
--define(USERS_XML, "cfg/users.xml").
+-define(USERS_XML, "etc/users.xml").
 
 %% --------------------------------------------------------------
 %% USER API

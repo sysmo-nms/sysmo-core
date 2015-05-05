@@ -396,7 +396,7 @@ init_nchecks(#probe{belong_to=TargetName,module_config=NCheck} = Probe) ->
     % Generate XML Class definition file path
     ClassDefinitionFile = string:concat(Class, ".xml"),
     ClassDefinitionPath = filename:join(
-                                    ["cfg", "nchecks", ClassDefinitionFile]),
+                                    ["etc", "nchecks", ClassDefinitionFile]),
     
     % Load XML file content
     {#xmlDocument{content=XDocument_Content}, _} =

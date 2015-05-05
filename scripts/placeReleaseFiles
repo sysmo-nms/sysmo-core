@@ -15,9 +15,9 @@ for app in errd4j snmpman nchecks equartz; do
 done
 
 # nchecks xml files in config dir
-rm -rf sysmo/cfg/nchecks
-cp -R sysmo/java_apps/nchecks/defs sysmo/cfg/nchecks
+rm -rf sysmo/etc/nchecks
+cp -R sysmo/java_apps/nchecks/defs sysmo/etc/nchecks
 
 # nchecks xml files in docroot
-rm -rf sysmo/var/docroot/nchecks
-cp -R sysmo/java_apps/nchecks/defs sysmo/var/docroot/nchecks
+rm -rf sysmo/docroot/nchecks
+cp -R sysmo/java_apps/nchecks/defs sysmo/docroot/nchecks
