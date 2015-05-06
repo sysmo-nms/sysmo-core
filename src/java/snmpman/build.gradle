@@ -8,7 +8,7 @@ repositories {
 }
 
 dependencies {
-    compile group: 'org.snmp4j', name: 'snmp4j', version: '2.3.3'
+    compile 'org.snmp4j:snmp4j:2.3.3'
 }
 
 findbugs { ignoreFailures = true }

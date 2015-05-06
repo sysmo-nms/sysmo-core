@@ -15,7 +15,7 @@ subprojects {
     }
 
     dependencies {
-        compile group: 'org.erlang.otp', name: 'jinterface', version: '1.5.12'
+        compile     'org.erlang.otp:jinterface:1.5.12'
         testCompile 'junit:junit:4.2'
     }
 
