@@ -61,7 +61,7 @@
     assert_init     = undefined
 }).
 
--define(ASSERT_TIMEOUT, 60000).
+-define(ASSERT_TIMEOUT, 5000).
 
 % @private
 start_link() ->
