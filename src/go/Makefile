@@ -1,7 +1,8 @@
 GO_COMP ?= go
+PPING_OUT ?= pping
 
-pping: pping.go
-	$(GO_COMP) build -o pping pping.go
+$(PPING_OUT): pping.go
+	$(GO_COMP) build -o $(PPING_OUT) pping.go
 
 clean:
-	rm -f pping
+	rm -f $(PPING_OUT)
