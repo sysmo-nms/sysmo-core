@@ -133,7 +133,6 @@ public class Errd4j
             InputStream  input = new FileInputStream(propFile);
             prop.load(input);
             selfNodeName     = prop.getProperty("self_name");
-            foreignNodeName  = prop.getProperty("foreign_node");
             foreignPidName   = prop.getProperty("foreign_pid");
             erlangCookie     = prop.getProperty("cookie");
             rraDefault       = decodeRRADef(prop.getProperty("rra_default"));
@@ -142,6 +141,14 @@ public class Errd4j
         catch(Exception|Error e)
         {
             logger.severe("Fail to load property file: " + e.getMessage() + e);
+            return;
+        }
+        try 
+        {
+            foreignNodeName  = args[1];
+        } catch (Exception e) {
+            logger.severe("Fail to read node name (args[1]): "
+                                                        + e.getMessage() + e);
             return;
         }
 

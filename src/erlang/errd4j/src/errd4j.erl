@@ -209,13 +209,12 @@ terminate(_,_) ->
 code_change(_,S,_) ->
     {ok, S}.
 
-
 % PRIVATE
 boot() ->
-    Cmd = filename:join(
-            filename:absname(sysmo:get_java_dir()),
-            "errd4j/bin/errd4j"),
-    Log = filename:join(
-            filename:absname(sysmo:get_log_dir()),
-            "errd4j.log"),
-    erlang:open_port({spawn_executable, Cmd}, [{args, [Log]}, stderr_to_stdout]).
+    Prefix   = sysmo:get_java_bin_prefix(),
+    Relative = string:concat("errd4j/bin/errd4j", Prefix),
+    Cmd = filename:join(filename:absname(sysmo:get_java_dir()),Relative),
+    Log = filename:join(filename:absname(sysmo:get_log_dir()),"errd4j.log"),
+    Node = sysmo:get_node_name(),
+    erlang:open_port({spawn_executable, Cmd},
+                     [{args,[Log, Node]}, stderr_to_stdout]).

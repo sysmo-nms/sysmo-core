@@ -132,7 +132,6 @@ public class Snmpman
             InputStream  input = new FileInputStream(propFile);
             prop.load(input);
             selfNodeName     = prop.getProperty("self_name");
-            foreignNodeName  = prop.getProperty("foreign_node");
             foreignPidName   = prop.getProperty("foreign_pid");
             erlangCookie     = prop.getProperty("cookie");
         }
@@ -141,7 +140,15 @@ public class Snmpman
             logger.severe("Failed to laod proprety file: " + e.getMessage() + e);
             return;
         }
-        logger.info("foreign node is " + foreignNodeName);
+
+        try
+        {
+            foreignNodeName  = args[1];
+        } catch (Exception e) {
+            logger.severe("Failed to read node name (args[1]): "
+                                                        + e.getMessage() + e);
+            return;
+        }
 
         // may take a wile? /dev/random ?
         logger.info("build engine id " + foreignNodeName);
@@ -160,8 +167,6 @@ public class Snmpman
             logger.severe("Failed to build engine id: " + e.getMessage() + e);
             return;
         }
-
-        logger.info("build engine end " + foreignNodeName);
 
         logger.info("initialize otp " + foreignNodeName);
         // Initialize

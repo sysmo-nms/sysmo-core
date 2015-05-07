@@ -89,7 +89,8 @@ public class EQuartz {
             foreignNodeName = args[1];
         } catch (Exception e)
         {
-            logger.severe("Failed to read nodename (arg[1]) : " + e.getMessage() + e);
+            logger.severe("Failed to read nodename (args[1]) : "
+                                                        + e.getMessage() + e);
             return;
         }
 

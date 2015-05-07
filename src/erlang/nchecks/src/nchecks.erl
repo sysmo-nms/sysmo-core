@@ -159,10 +159,10 @@ code_change(_,S,_) ->
 
 % PRIVATE
 boot() ->
-    Cmd = filename:join(
-            filename:absname(sysmo:get_java_dir()),
-            "nchecks/bin/nchecks"),
-    Log = filename:join(
-            filename:absname(sysmo:get_log_dir()),
-            "nchecks.log"),
-    erlang:open_port({spawn_executable, Cmd}, [{args, [Log]}, stderr_to_stdout]).
+    Prefix   = sysmo:get_java_bin_prefix(),
+    Relative = string:concat("nchecks/bin/nchecks", Prefix),
+    Cmd = filename:join(filename:absname(sysmo:get_java_dir()),Relative),
+    Log = filename:join(filename:absname(sysmo:get_log_dir()),"nchecks.log"),
+    Node = sysmo:get_node_name(),
+    erlang:open_port({spawn_executable, Cmd},
+                     [{args,[Log, Node]}, stderr_to_stdout]).

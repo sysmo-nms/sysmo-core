@@ -115,7 +115,6 @@ public class NChecks
             InputStream  input = new FileInputStream(propFile);
             prop.load(input);
             selfNodeName     = prop.getProperty("self_name");
-            foreignNodeName  = prop.getProperty("foreign_node");
             foreignPidName   = prop.getProperty("foreign_pid");
             erlangCookie     = prop.getProperty("cookie");
             pingCommand      = prop.getProperty("ping_command");
@@ -132,6 +131,15 @@ public class NChecks
         catch(IOException e)
         {
             logger.severe("Fail to load property file: " + e.getMessage() + e);
+            return;
+        }
+
+        try
+        {
+            foreignNodeName  = args[1];
+        } catch (Exception e) {
+            logger.severe("Fail to read node name (args[1]): "
+                                                        + e.getMessage() + e);
             return;
         }
 
