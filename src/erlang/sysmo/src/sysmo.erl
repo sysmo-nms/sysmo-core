@@ -5,7 +5,9 @@
     get_data_dir/0,
     get_java_dir/0,
 
-    get_java_bin_prefix/0
+    get_java_bin_prefix/0,
+    get_node_name/0
+
 ]).
 
 get_log_dir() ->
@@ -29,3 +31,5 @@ get_java_bin_prefix() ->
         {win32,_} -> ".bat";
         {_,_} -> ""
     end.
+
+get_node_name() -> erlang:atom_to_list(erlang:node()).

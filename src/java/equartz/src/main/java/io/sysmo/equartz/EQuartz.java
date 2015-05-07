@@ -66,7 +66,6 @@ public class EQuartz {
 
         // get conf
         String selfNodeName;
-        String foreignNodeName;
         String foreignPidName;
         String erlangCookie;
         try
@@ -75,7 +74,6 @@ public class EQuartz {
             InputStream  input = new FileInputStream(propFile);
             prop.load(input);
             selfNodeName     = prop.getProperty("self_name");
-            foreignNodeName  = prop.getProperty("foreign_node");
             foreignPidName   = prop.getProperty("foreign_pid");
             erlangCookie     = prop.getProperty("cookie");
         }
@@ -85,6 +83,15 @@ public class EQuartz {
             return;
         }
 
+        String foreignNodeName;
+        try
+        {
+            foreignNodeName = args[1];
+        } catch (Exception e)
+        {
+            logger.severe("Failed to read nodename (arg[1]) : " + e.getMessage() + e);
+            return;
+        }
 
         // initialize erlang node
         enode = EQuartzNode.getInstance();

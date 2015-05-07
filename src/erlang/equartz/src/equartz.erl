@@ -219,10 +219,10 @@ code_change(_,S,_) ->
 % PRIVATE
 % @private
 boot() ->
-    Cmd = filename:join(
-            filename:absname(sysmo:get_java_dir()),
-            "equartz/bin/equartz"),
-    Log = filename:join(
-            filename:absname(sysmo:get_log_dir()),
-            "equartz.log"),
-    erlang:open_port({spawn_executable, Cmd}, [{args,[Log]}, stderr_to_stdout]).
+    Prefix   = sysmo:get_java_bin_prefix(),
+    Relative = string:concat("equartz/bin/equartz", Prefix),
+    Cmd = filename:join(filename:absname(sysmo:get_java_dir()),Relative),
+    Log = filename:join(filename:absname(sysmo:get_log_dir()),"equartz.log"),
+    Node = sysmo:get_node_name(),
+    erlang:open_port({spawn_executable, Cmd},
+                                       [{args,[Log, Node]}, stderr_to_stdout]).
