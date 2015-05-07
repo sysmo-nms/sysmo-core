@@ -2,6 +2,8 @@ package io.sysmo.equartz;
 import io.sysmo.equartz.JobInternal;
 import io.sysmo.equartz.EQuartzNode;
 import io.sysmo.equartz.EQuartzMessageHandler;
+import io.sysmo.equartz.EQuartzLogger;;
+
 
 import java.util.Date;
 import java.util.Set;
@@ -12,7 +14,7 @@ import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.File;
 import java.nio.file.Path;
-
+import java.util.logging.Logger;
 
 import com.ericsson.otp.erlang.*;
 
@@ -30,7 +32,9 @@ public class EQuartz {
     private static Scheduler        scheduler;
     private static EQuartzNode      enode;
 
+    private static Logger logger;
     public static void main(String[] args) {
+        logger = EQuartzLogger.start(args[0]);
 
         // Initialize quartz
         try {
@@ -43,7 +47,7 @@ public class EQuartz {
         }
         catch (SchedulerException e)
         {
-            e.printStackTrace();
+            logger.severe("Failed to load equarz: " + e.getMessage() + e);
         }
 
 
@@ -77,7 +81,7 @@ public class EQuartz {
         }
         catch(IOException e)
         {
-            e.printStackTrace();
+            logger.severe("Failed to load properties: " + e.getMessage() + e);
             return;
         }
 
@@ -101,7 +105,7 @@ public class EQuartz {
         }
         catch (SchedulerException e)
         {
-            e.printStackTrace();
+            logger.warning(e.getMessage() + e);
             enode.sendReply(caller,
                 EQuartzNode.buildErrorReply(new OtpErlangString(e.getMessage()))
             );
@@ -157,7 +161,7 @@ public class EQuartz {
         }
         catch (SchedulerException e)
         {
-            e.printStackTrace();
+            logger.warning(e.getMessage() + e);
             enode.sendReply(caller,
                 EQuartzNode.buildErrorReply(new OtpErlangString(e.getMessage()))
             );
@@ -180,14 +184,13 @@ public class EQuartz {
         }
         catch (SchedulerException e)
         {
-            e.printStackTrace();
+            logger.warning(e.getMessage() + e);
             enode.sendReply(caller,
                 EQuartzNode.buildErrorReply(new OtpErlangString(e.getMessage()))
             );
             return;
         }
 
-        System.out.println("job deleted?: " + success);
         if (success == true)
         {
             enode.sendReply(caller, EQuartzNode.atomOk);
@@ -213,7 +216,7 @@ public class EQuartz {
         }
         catch (SchedulerException e)
         {
-            e.printStackTrace();
+            logger.warning(e.getMessage() + e);
             enode.sendReply(caller,
                 EQuartzNode.buildErrorReply(new OtpErlangString(e.getMessage()))
             );
@@ -243,7 +246,7 @@ public class EQuartz {
         }
         catch (SchedulerException e)
         {
-            e.printStackTrace();
+            logger.warning(e.getMessage() + e);
             enode.sendReply(caller,
                 EQuartzNode.buildErrorReply(new OtpErlangString(e.getMessage()))
             );
@@ -267,7 +270,7 @@ public class EQuartz {
         }
         catch (SchedulerException e)
         {
-            e.printStackTrace();
+            logger.warning(e.getMessage() + e);
             enode.sendReply(caller,
                 EQuartzNode.buildErrorReply(new OtpErlangString(e.getMessage()))
             );
@@ -283,16 +286,10 @@ public class EQuartz {
         }
         catch (SchedulerException e)
         {
-            e.printStackTrace();
+            logger.warning(e.getMessage() + e);
         }
     }
-    private static void handleMsg(
-            OtpErlangAtom   command,
-            OtpErlangObject caller,
-            OtpErlangTuple  payload)
-    {
-        System.out.println("hello" + command);
-    }
+
 }
 
 class MessageHandler implements EQuartzMessageHandler {
@@ -321,9 +318,8 @@ class MessageHandler implements EQuartzMessageHandler {
             case "fire_now":
                 EQuartz.callFireNow(caller, payload);
                 break;
-            case "init":
-                break;
             default:
+                EQuartzLogger.getLogger().warning("Unknown command: " + command);
                 EQuartzNode.getInstance().sendReply(caller,
                     EQuartzNode.buildErrorReply(
                                 new OtpErlangString(
@@ -335,7 +331,7 @@ class MessageHandler implements EQuartzMessageHandler {
 
     public void handleTerminate()
     {
-        System.out.println("should handle termniate");
+        EQuartzLogger.getLogger().info("Terminate");
         EQuartz.callTerminate();
     }
 }

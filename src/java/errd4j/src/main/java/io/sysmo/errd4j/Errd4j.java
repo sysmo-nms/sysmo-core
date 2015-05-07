@@ -30,6 +30,11 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.RejectedExecutionHandler;
+import java.util.logging.LogManager;
+import java.util.logging.Logger;
+import java.util.logging.Level;
+import java.util.logging.FileHandler;
+import java.util.logging.SimpleFormatter;
 
 import com.ericsson.otp.erlang.OtpErlangString;
 import com.ericsson.otp.erlang.OtpErlangList;
@@ -88,17 +93,36 @@ public class Errd4j
     private static int threadCorePoolSize   = 8;
     private static int threadQueueCapacity  = 2000;
 
+    // logging
+    private static final int LOG_MAX_BYTES = 10000000; // 10MB
+    private static final int LOG_MAX_FILES = 5;        // 10MB + 5 max 50MB
+    private static final boolean LOG_APPEND = true;
+    public static Logger logger;
+    
     public static void main(String[] args)
     {
 
+        logger = Logger.getLogger(Errd4j.class.getName());
+        logger.setLevel(Level.INFO);
+        LogManager.getLogManager().reset();
+
+        FileHandler handler;
+        try {
+            handler = new FileHandler(args[0], LOG_MAX_BYTES, LOG_MAX_FILES, LOG_APPEND);
+            handler.setFormatter(new SimpleFormatter());
+            logger.addHandler(handler);
+        } catch (Exception e) {
+            System.out.println("Log to file will not work! " + e);
+        }
+
         //get property file path
-            File jarPath = new File(
-                    Errd4j
-                    .class
-                    .getProtectionDomain()
-                    .getCodeSource()
-                    .getLocation()
-                    .getPath());
+        File jarPath = new File(
+                Errd4j
+                .class
+                .getProtectionDomain()
+                .getCodeSource()
+                .getLocation()
+                .getPath());
         File libPath = jarPath.getParentFile();
         File appPath = libPath.getParentFile();
         String propFile = appPath.getAbsolutePath() + "/errd4j.properties";
@@ -117,25 +141,25 @@ public class Errd4j
         }
         catch(Exception|Error e)
         {
-            e.printStackTrace();
+            logger.severe("Fail to load property file: " + e.getMessage() + e);
             return;
         }
 
         // Initialize
         try 
         {
-            System.out.println("Trying to connect to " + foreignNodeName);
+            logger.info("Trying to connect to " + foreignNodeName);
             self = new OtpNode(selfNodeName, erlangCookie);
             mbox = self.createMbox();
             if (!self.ping(foreignNodeName, 2000)) 
             { 
-                System.out.println("Connection timed out");
+                logger.severe("Connection timed out");
                 return;
             }
         }
-        catch (IOException e1) 
+        catch (IOException e) 
         {
-            e1.printStackTrace();
+            logger.severe("Fail to connect foreign node: " + e.getMessage() + e);
             return;
         }
 
@@ -163,15 +187,14 @@ public class Errd4j
         } 
         catch (OtpErlangExit e) 
         {
-            e.printStackTrace();
+            
+            logger.severe("Connexion closed: " + e.getMessage() + e);
             threadPool.shutdown();
             break;
         }
         catch (OtpErlangDecodeException e)
         {
-            e.printStackTrace();
-            threadPool.shutdown();
-            break;
+            logger.warning("Decode Exception: " + e.getMessage() + e);
         }
         System.exit(0);
     }
@@ -264,7 +287,7 @@ public class Errd4j
             }
             sample.update();
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.warning("Fail to update rrd: " + e.getMessage() + e);
             rrdDbPool.release(rrdDb);
             throw e;  
         }
@@ -390,7 +413,7 @@ class RrdRunnable implements Runnable
         }
         catch (Exception|Error e)
         {
-            e.printStackTrace();
+            Errd4j.logger.warning("RrdRunnable fail to decode tuple: " + e.getMessage() + e);
             return;
         }
 
@@ -411,6 +434,7 @@ class RrdRunnable implements Runnable
                     Errd4j.handleRrdCreate(caller, payload);
                     break;
                 default:
+                    Errd4j.logger.warning("unknown command: " + command);
                     OtpErlangTuple dreply = Errd4j.buildErrorReply(new OtpErlangString("undefined"));
                     Errd4j.sendReply(caller, dreply);
             }
@@ -422,7 +446,7 @@ class RrdRunnable implements Runnable
                     + command.toString() + " -> " + e + " " + e.getMessage())
             );
 
-            e.printStackTrace();
+            Errd4j.logger.warning("RrdRunnable failure: " + e.getMessage() + e);
             Errd4j.sendReply(caller, reply);
         }
     }

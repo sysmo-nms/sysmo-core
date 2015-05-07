@@ -359,7 +359,7 @@ boot() ->
     Log = filename:join(
                     filename:absname(sysmo:get_log_dir()),
                     "snmpman.log"),
-    erlang:open_port({spawn_executable, Cmd}, [{args, [Log]}]).
+    erlang:open_port({spawn_executable, Cmd}, [{args, [Log]}, stderr_to_stdout]).
 
 build_conf(ElementName, ElementConf) ->
     PrivProto = proplists:get_value(priv_proto, ElementConf, "AES"),

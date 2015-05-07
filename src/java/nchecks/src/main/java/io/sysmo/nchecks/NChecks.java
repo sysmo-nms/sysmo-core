@@ -21,6 +21,7 @@
 
 package io.sysmo.nchecks;
 import io.sysmo.nchecks.NChecksInterface;
+import io.sysmo.nchecks.NChecksLogger;
 import io.sysmo.nchecks.Argument;
 import io.sysmo.nchecks.Reply;
 import io.sysmo.nchecks.Query;
@@ -48,6 +49,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.logging.Logger;
 
 import java.io.IOException;
 
@@ -74,8 +76,13 @@ public class NChecks
     private static  int threadCorePoolSize;
     private static  int threadQueueCapacity;
 
+    private static Logger logger;
+
     public static void main(String[] args)
     {
+        // init logger
+        logger = NChecksLogger.start(args[0]);
+
         // if -test
         if (args.length != 0 && args[0].equals("--test"))
             {testSpace(); return;}
@@ -124,7 +131,7 @@ public class NChecks
         }
         catch(IOException e)
         {
-            e.printStackTrace();
+            logger.severe("Fail to load property file: " + e.getMessage() + e);
             return;
         }
 
@@ -147,13 +154,13 @@ public class NChecks
             mbox = node.createMbox();
             if (!node.ping(foreignNodeName, 2000)) 
             { 
-                System.out.println("Connection timed out");
+                logger.severe("Connection timed out");
                 return;
             }
         }
-        catch (IOException e1) 
+        catch (IOException e) 
         {
-            e1.printStackTrace();
+            logger.severe("Otp Connection failure: " + e.getMessage() + e);
             return;
         }
 
@@ -169,13 +176,13 @@ public class NChecks
         } 
         catch (OtpErlangExit e) 
         {
+            logger.severe("Exit: " + e.getMessage() + e);
             threadPool.shutdownNow();
-            e.printStackTrace();
             return;
         }
         catch (OtpErlangDecodeException e)
         {
-            e.printStackTrace();
+            logger.severe("Decode Exception: " + e.getMessage() + e);
         }
     }
 
@@ -257,7 +264,7 @@ public class NChecks
         }
         catch (Exception|Error e)
         {
-            e.printStackTrace();
+            logger.warning("Fail to decode tuple: " + e.getMessage() + e);
             return;
         }
 
@@ -342,7 +349,6 @@ public class NChecks
                 try {
                     uInt = valLong.uIntValue();
                 } catch (OtpErlangRangeException e) {
-                    e.printStackTrace();
                     uInt = 0; 
                 }
                 a.set(uInt);

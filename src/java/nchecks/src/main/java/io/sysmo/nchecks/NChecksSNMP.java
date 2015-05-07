@@ -22,6 +22,7 @@
 package io.sysmo.nchecks;
 import io.sysmo.nchecks.Argument;
 import io.sysmo.nchecks.Query;
+import io.sysmo.nchecks.NChecksLogger;
 
 import java.io.*;
 import java.util.*;
@@ -60,7 +61,8 @@ public class NChecksSNMP
         }
         catch (Exception e)
         {
-            e.printStackTrace();
+            NChecksLogger.getLogger().severe("SNMP init fail: " +
+                                                    e.getMessage() + e);
         }
     }
 

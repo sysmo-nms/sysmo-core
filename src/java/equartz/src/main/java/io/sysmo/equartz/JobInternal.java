@@ -1,5 +1,6 @@
 package io.sysmo.equartz;
 import io.sysmo.equartz.EQuartzNode;
+import io.sysmo.equartz.EQuartzLogger;
 
 import com.ericsson.otp.erlang.*;
 import java.util.Date;
@@ -33,7 +34,7 @@ public class JobInternal implements Job {
         try {
             Thread.sleep(6000);
         } catch (Exception e) {
-            e.printStackTrace();
+            EQuartzLogger.getLogger().severe("JobInternal failure: " + e.getMessage() + e);
         }
     }
 }

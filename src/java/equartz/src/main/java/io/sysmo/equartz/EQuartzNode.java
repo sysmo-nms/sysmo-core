@@ -1,6 +1,8 @@
 package io.sysmo.equartz;
 import io.sysmo.equartz.EQuartzMessageHandler;
+import io.sysmo.equartz.EQuartzLogger;
 import java.util.Date;
+import java.util.logging.Logger;
 import java.io.IOException;
 import java.nio.file.Path;
 
@@ -34,9 +36,12 @@ public class EQuartzNode extends Thread {
 
     public static EQuartzNode getInstance() {return INSTANCE;}
 
+    private Logger logger;
     @Override
     public void run() 
     {
+
+        logger = EQuartzLogger.getLogger();
 
         // Initialize otp
         try 
@@ -45,13 +50,14 @@ public class EQuartzNode extends Thread {
             mbox = self.createMbox();
             if (!self.ping(foreignNodeName, 2000)) 
             { 
-                System.out.println("Connection timed out");
+
+                logger.severe("Connection to " + foreignNodeName + " timed out");
                 return;
             }
         }
-        catch (IOException e1) 
+        catch (IOException e) 
         {
-            e1.printStackTrace();
+            logger.severe(e.getMessage() + e);
             return;
         }
 
@@ -67,13 +73,13 @@ public class EQuartzNode extends Thread {
         catch (OtpErlangExit e) 
         {
             quartzHandler.handleTerminate();
-            e.printStackTrace();
+            logger.info("Erlang exit: " + e.getMessage() + e);
             break;
         }
         catch (OtpErlangDecodeException e)
         {
             quartzHandler.handleTerminate();
-            e.printStackTrace();
+            logger.warning("Decode fail: " + e.getMessage() + e);
         }
     }
 
@@ -106,7 +112,7 @@ public class EQuartzNode extends Thread {
         }
         catch (Exception|Error e)
         {
-            e.printStackTrace();
+            logger.warning("Failed to decode tuple: " + e.getMessage() + e);
             return;
         }
 
@@ -134,7 +140,7 @@ public class EQuartzNode extends Thread {
     private void handleInit(OtpErlangTuple initMsg)
     {
         OtpErlangString initElement = (OtpErlangString) (initMsg.elementAt(0));
-        System.out.println(initElement);
+        logger.info("Handle init");
     }
 
 

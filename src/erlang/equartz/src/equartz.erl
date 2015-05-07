@@ -51,8 +51,6 @@
 -record(state, {
     equartz_pid     = undefined,
     replies_waiting = [],
-    java_com        = "",
-    script_dir      = "jjojo",
     assert_init     = undefined
 }).
 
@@ -135,13 +133,8 @@ start_link() ->
 % @private
 init([]) ->
     process_flag(trap_exit, true),
-    {ok, JavaConf}  = application:get_env(equartz, java_node),
-    JavaCommand     = proplists:get_value(java_com, JavaConf),
     gen_server:cast(?MODULE, boot),
-    {ok, #state{
-        java_com = JavaCommand
-        }
-    }.
+    {ok, #state{}}.
 
 % CALL 
 % @private
@@ -158,8 +151,8 @@ handle_call({call_equartz, {Command, Payload}}, From,
 
 % CAST
 % @private
-handle_cast(boot, #state{java_com = JavaCommand} = S) ->
-    boot(JavaCommand),
+handle_cast(boot, S) ->
+    boot(),
     {noreply, S};
 
 handle_cast(_,S) ->
@@ -168,7 +161,7 @@ handle_cast(_,S) ->
 
 % INFO
 % @private
-handle_info({Pid, equartz_running}, #state{script_dir = StriptDir} = S) ->
+handle_info({Pid, equartz_running}, S) ->
     io:format("receive init~n"),
     case S#state.assert_init of
         undefined -> 
@@ -177,7 +170,6 @@ handle_info({Pid, equartz_running}, #state{script_dir = StriptDir} = S) ->
             gen_server:reply(F, ok)
     end,
     erlang:link(Pid),
-    Pid ! {init, {}, {StriptDir}},
     {noreply, 
         S#state{
             equartz_pid      = Pid,
@@ -225,5 +217,12 @@ code_change(_,S,_) ->
 
 
 % PRIVATE
-boot(JavaCommand) ->
-    erlang:spawn(os,cmd,[JavaCommand]).
+% @private
+boot() ->
+    Cmd = filename:join(
+            filename:absname(sysmo:get_java_dir()),
+            "equartz/bin/equartz"),
+    Log = filename:join(
+            filename:absname(sysmo:get_log_dir()),
+            "equartz.log"),
+    erlang:open_port({spawn_executable, Cmd}, [{args,[Log]}, stderr_to_stdout]).
