@@ -64,9 +64,16 @@ public class CheckICMP implements NChecksInterface
                     .toAbsolutePath()
                     .toString();
 
+        String ppingExe;
+        if (System.getProperty("os.name").contains("Windows")) {
+            ppingExe = "pping.exe";
+        } else {
+            ppingExe = "pping";
+        }
+
         pping = FileSystems
                     .getDefault()
-                    .getPath(utilsPath, "pping")
+                    .getPath(utilsPath, ppingExe)
                     .toString();
     }
 

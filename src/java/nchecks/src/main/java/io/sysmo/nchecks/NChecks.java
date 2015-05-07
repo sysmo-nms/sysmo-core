@@ -82,7 +82,8 @@ public class NChecks
     {
         // init logger
         logger = NChecksLogger.start(args[0]);
-        logger.info("Started. classpath is" + System.getProperty("java.class.path"));
+        logger.info("Started. Os arch is: " + System.getProperty("os.arch"));
+        logger.info("Started. Os name is: " + System.getProperty("os.name"));
 
         // if -test
         if (args.length != 0 && args[0].equals("--test"))
