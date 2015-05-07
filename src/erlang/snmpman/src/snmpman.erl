@@ -58,7 +58,6 @@
 -record(state, {
     snmp4j_pid      = undefined,
     replies_waiting = [],
-    java_com        = "",
     assert_init     = undefined
 }).
 
@@ -273,10 +272,8 @@ get(Target, Oids) ->
 % @private
 init([]) ->
     process_flag(trap_exit, true),
-    {ok, JavaConf}  = application:get_env(snmpman, java_node),
-    JavaCommand     = proplists:get_value(java_com, JavaConf),
     gen_server:cast(?MODULE, boot),
-    {ok, #state{java_com = JavaCommand}}.
+    {ok, #state{}}.
 
 % CALL 
 % @private
@@ -293,8 +290,8 @@ handle_call({call_snmp4j, {Command, Payload}}, From,
 
 % CAST
 % @private
-handle_cast(boot, #state{java_com = JavaCommand} = S) ->
-    boot(JavaCommand),
+handle_cast(boot, S) ->
+    boot(),
     {noreply, S};
 
 handle_cast(_,S) ->
@@ -355,10 +352,14 @@ code_change(_,S,_) ->
 
 
 % PRIVATE
-boot(JavaCommand) ->
-    io:format("currentttttttttttdir ~p~n",[file:get_cwd()]),
-    io:format("boooooooooooot ~p ~n",[JavaCommand]),
-    erlang:spawn(os,cmd,[JavaCommand]).
+boot() ->
+    Cmd = filename:join(
+                    filename:absname(sysmo:get_java_dir()),
+                    "snmpman/bin/snmpman"),
+    Log = filename:join(
+                    filename:absname(sysmo:get_log_dir()),
+                    "snmpman.log"),
+    erlang:open_port({spawn_executable, Cmd}, [{args, [Log]}]).
 
 build_conf(ElementName, ElementConf) ->
     PrivProto = proplists:get_value(priv_proto, ElementConf, "AES"),

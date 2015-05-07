@@ -24,6 +24,11 @@ package io.sysmo.snmpm;
 import java.io.*;
 import java.util.*;
 import java.nio.file.*;
+import java.util.logging.LogManager;
+import java.util.logging.Logger;
+import java.util.logging.Level;
+import java.util.logging.FileHandler;
+import java.util.logging.SimpleFormatter;
 
 import com.ericsson.otp.erlang.OtpErlangString;
 import com.ericsson.otp.erlang.OtpErlangList;
@@ -50,6 +55,7 @@ import org.snmp4j.transport.*;
 import org.snmp4j.util.*;
 // AES192_3DES AES256_3DES
 import org.snmp4j.security.nonstandard.*;
+
 
 public class Snmpman
 {
@@ -82,38 +88,45 @@ public class Snmpman
     private static  OtpMbox mbox = null;
 
     // snmp4j
-    //static          SnmpmanServer snmpserver;
     private static Snmp                snmp4jSession   = null;
     private static DefaultUdpTransportMapping transport = null;
     private static char[] hexArray = "0123456789ABCDEF".toCharArray();
     private static Map<String, SnmpmanElement> snmpmanElements = 
         new HashMap<String, SnmpmanElement>();
 
+    // logging
+    private static final int LOG_MAX_BYTES = 10000000; // 10MB
+    private static final int LOG_MAX_FILES = 5;        // 10MB + 5 max 50MB
+    private static final boolean LOG_APPEND = true;
+    public static Logger logger;
+
     public static void main(String[] args)
     {
+        // init logger
+        logger = Logger.getLogger(Snmpman.class.getName());
+        logger.setLevel(Level.INFO);
+        LogManager.getLogManager().reset();
 
+        FileHandler handler;
+        try {
+            handler = new FileHandler(args[0], LOG_MAX_BYTES, LOG_MAX_FILES, LOG_APPEND);
+            handler.setFormatter(new SimpleFormatter());
+            logger.addHandler(handler);
+        } catch (Exception e) {
+            System.out.println("Log to file will not work! " + e);
+        }
 
         //get property file path
-        File jarPath = new File(
-                Snmpman
-                .class
-                .getProtectionDomain()
-                .getCodeSource()
-                .getLocation()
-                .getPath());
+        File jarPath = new File(Snmpman.class.getProtectionDomain()
+                                    .getCodeSource().getLocation().getPath());
         File libPath = jarPath.getParentFile();
+
         // from jar equartz.properties is located at ../
         File appPath = libPath.getParentFile();
         String propFile = appPath.getAbsolutePath() + "/snmpman.properties";
         String engineIdFile = appPath.getAbsolutePath() + "/engine.id";
-        /* from jar sysmo workdir is located at ../../../
-           String rootPath = appPath
-           .getParentFile()
-           .getParentFile()
-           .getAbsolutePath();
-           */
 
-           try
+        try
         {
             Properties   prop  = new Properties();
             InputStream  input = new FileInputStream(propFile);
@@ -125,13 +138,13 @@ public class Snmpman
         }
         catch(IOException e)
         {
-            e.printStackTrace();
+            logger.severe("Failed to laod proprety file: " + e.getMessage() + e);
             return;
         }
-        System.out.println("foreign node is " + foreignNodeName);
+        logger.info("foreign node is " + foreignNodeName);
 
         // may take a wile? /dev/random ?
-        System.out.println("build engine id " + foreignNodeName);
+        logger.info("build engine id " + foreignNodeName);
         try
         {
             Path engineIdPath = Paths.get(engineIdFile);
@@ -142,39 +155,39 @@ public class Snmpman
             SecurityModels.getInstance().addSecurityModel(usm);
             transport.listen();
         }
-        catch (Exception|Error e2)
+        catch (Exception|Error e)
         {
-            e2.printStackTrace();
+            logger.severe("Failed to build engine id: " + e.getMessage() + e);
             return;
         }
 
-        System.out.println("build engine end " + foreignNodeName);
+        logger.info("build engine end " + foreignNodeName);
 
-        System.out.println("initialize otp " + foreignNodeName);
+        logger.info("initialize otp " + foreignNodeName);
         // Initialize
         try 
         {
-            System.out.println("Trying to connect to " + foreignNodeName);
+            logger.info("Trying to connect to " + foreignNodeName);
             node = new OtpNode(selfNodeName, erlangCookie);
             mbox = node.createMbox();
             if (!node.ping(foreignNodeName, 2000)) 
             { 
-                System.out.println("Connection timed out");
+                logger.info("Connection timed out");
                 return;
             }
         }
-        catch (IOException e1) 
+        catch (IOException e) 
         {
-            e1.printStackTrace();
+            logger.severe("otp initialization failure: " + e.getMessage() + e);
             return;
         }
 
         
-        System.out.println("aknownledge otp" + foreignNodeName);
+        logger.info("aknownledge otp" + foreignNodeName);
         // when it is ok, inform the erl snmpman process
         acknowledgeOtpConnexion();
 
-        System.out.println("begin to loop" + foreignNodeName);
+        logger.info("begin to loop" + foreignNodeName);
         // then begin to loop and wait for calls
         OtpErlangObject call = null;
         while (true) try 
@@ -184,12 +197,12 @@ public class Snmpman
         } 
         catch (OtpErlangExit e) 
         {
-            e.printStackTrace();
+            logger.info("Quit?" + e.getMessage() + e);
             break;
         }
         catch (OtpErlangDecodeException e)
         {
-            e.printStackTrace();
+            logger.warning("Decode exception: " + e.getMessage() + e);
         }
     }
 
@@ -260,7 +273,7 @@ public class Snmpman
         }
         catch (Exception|Error e)
         {
-            e.printStackTrace();
+            logger.warning("Failed to decode tuple: " + e.getMessage() + e);
             return;
         }
 
@@ -309,7 +322,8 @@ public class Snmpman
                 new OtpErlangString("Java CATCH: Failed to honour command "
                     + command.toString() + " -> " + e.getMessage())
             );
-            e.printStackTrace();
+            logger.warning("Failed to honour command: " + command.toString() +
+                                                           e.getMessage() + e);
             sendReply(caller, reply);
         }
     }
@@ -492,13 +506,11 @@ public class Snmpman
         UsmUserEntry existUsmUser = snmp4jSession.getUSM().getUserTable().getUser(uName);
         if (existUsmUser == null)
         {
-            System.out.println("user do not exist");
             snmp4jSession.getUSM().addUser(newUsmUser);
             return true;
         }
         else // usm user exist
         {
-            System.out.println("user exist");
             if (usmUsersEquals(existUsmUser.getUsmUser(), newUsmUser) == true)
             {
                 // same user, do nothing
@@ -507,7 +519,6 @@ public class Snmpman
             else
             {
                 // same user but different config, it is an error
-                System.out.println("are not equals");
                 return false;
             }
         }
@@ -515,8 +526,6 @@ public class Snmpman
 
     private static boolean usmUsersEquals(UsmUser a, UsmUser b)
     {
-        System.out.println("a tostring: " + a.toString());
-        System.out.println("b tostring: " + b.toString());
         if (a.toString().equals(b.toString()))
         {
             return true;
