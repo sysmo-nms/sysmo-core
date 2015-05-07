@@ -102,6 +102,24 @@ public class Snmpman
 
     public static void main(String[] args)
     {
+        // init paths
+
+        String logFile = FileSystems
+                        .getDefault()
+                        .getPath(args[0], "log", "snmpman.log")
+                        .toString();
+
+        String propFile = FileSystems
+                        .getDefault()
+                        .getPath(args[0], "etc", "snmpman.properties")
+                        .toString();
+
+        String engineIdFile = FileSystems
+                        .getDefault()
+                        .getPath(args[0], "etc", "engine.id")
+                        .toString();
+
+
         // init logger
         logger = Logger.getLogger(Snmpman.class.getName());
         logger.setLevel(Level.INFO);
@@ -109,22 +127,12 @@ public class Snmpman
 
         FileHandler handler;
         try {
-            handler = new FileHandler(args[0], LOG_MAX_BYTES, LOG_MAX_FILES, LOG_APPEND);
+            handler = new FileHandler(logFile, LOG_MAX_BYTES, LOG_MAX_FILES, LOG_APPEND);
             handler.setFormatter(new SimpleFormatter());
             logger.addHandler(handler);
         } catch (Exception e) {
             System.out.println("Log to file will not work! " + e);
         }
-
-        //get property file path
-        File jarPath = new File(Snmpman.class.getProtectionDomain()
-                                    .getCodeSource().getLocation().getPath());
-        File libPath = jarPath.getParentFile();
-
-        // from jar equartz.properties is located at ../
-        File appPath = libPath.getParentFile();
-        String propFile = appPath.getAbsolutePath() + "/snmpman.properties";
-        String engineIdFile = appPath.getAbsolutePath() + "/engine.id";
 
         try
         {

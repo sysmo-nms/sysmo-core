@@ -36,8 +36,7 @@ import com.ericsson.otp.erlang.*;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.File;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.nio.file.FileSystems;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
@@ -80,33 +79,22 @@ public class NChecks
 
     public static void main(String[] args)
     {
+        String logFile = FileSystems
+            .getDefault()
+            .getPath(args[0], "log", "nchecks.log")
+            .toString();
+
+        String propFile = FileSystems
+            .getDefault()
+            .getPath(args[0], "etc", "nchecks.properties")
+            .toString();
+
         // init logger
-        logger = NChecksLogger.start(args[0]);
-        logger.info("Started. Os arch is: " + System.getProperty("os.arch"));
-        logger.info("Started. Os name is: " + System.getProperty("os.name"));
+        logger = NChecksLogger.start(logFile);
 
         // if -test
         if (args.length != 0 && args[0].equals("--test"))
             {testSpace(); return;}
-
-        //get property file path
-            File jarPath = new File(
-                    NChecks
-                    .class
-                    .getProtectionDomain()
-                    .getCodeSource()
-                    .getLocation()
-                    .getPath());
-        File libPath = jarPath.getParentFile();
-        // from jar equartz.properties is located at ../
-        File appPath = libPath.getParentFile();
-        String propFile = appPath.getAbsolutePath() + "/nchecks.properties";
-        /* from jar sysmo workdir is located at ../../../
-           String rootPath = appPath
-           .getParentFile()
-           .getParentFile()
-           .getAbsolutePath();
-        */
 
         // read config
         try

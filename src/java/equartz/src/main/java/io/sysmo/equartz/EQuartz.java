@@ -14,6 +14,7 @@ import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.File;
 import java.nio.file.Path;
+import java.nio.file.FileSystems;
 import java.util.logging.Logger;
 
 import com.ericsson.otp.erlang.*;
@@ -34,7 +35,18 @@ public class EQuartz {
 
     private static Logger logger;
     public static void main(String[] args) {
-        logger = EQuartzLogger.start(args[0]);
+
+        String logFile = FileSystems
+            .getDefault()
+            .getPath(args[0], "log", "equartz.log")
+            .toString();
+
+        String propFile = FileSystems
+            .getDefault()
+            .getPath(args[0], "etc", "equartz.properties")
+            .toString();
+
+        logger = EQuartzLogger.start(logFile);
 
         // Initialize quartz
         try {
@@ -49,20 +61,6 @@ public class EQuartz {
         {
             logger.severe("Failed to load equarz: " + e.getMessage() + e);
         }
-
-
-        // get property file path
-        File jarPath = new File(
-                EQuartz
-                    .class
-                    .getProtectionDomain()
-                    .getCodeSource()
-                    .getLocation()
-                    .getPath());
-        File libPath = jarPath.getParentFile();
-        // from jar equartz.properties is located at ../
-        File appPath = libPath.getParentFile();
-        String propFile = appPath.getAbsolutePath() + "/equartz.properties";
 
         // get conf
         String selfNodeName;

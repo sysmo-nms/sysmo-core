@@ -101,31 +101,28 @@ public class Errd4j
     
     public static void main(String[] args)
     {
+        String logFile = FileSystems
+            .getDefault()
+            .getPath(args[0], "log", "errd4j.log")
+            .toString();
 
+        String propFile = FileSystems
+            .getDefault()
+            .getPath(args[0], "etc", "errd4j.properties")
+            .toString();
+        
         logger = Logger.getLogger(Errd4j.class.getName());
         logger.setLevel(Level.INFO);
         LogManager.getLogManager().reset();
 
         FileHandler handler;
         try {
-            handler = new FileHandler(args[0], LOG_MAX_BYTES, LOG_MAX_FILES, LOG_APPEND);
+            handler = new FileHandler(logFile, LOG_MAX_BYTES, LOG_MAX_FILES, LOG_APPEND);
             handler.setFormatter(new SimpleFormatter());
             logger.addHandler(handler);
         } catch (Exception e) {
             System.out.println("Log to file will not work! " + e);
         }
-
-        //get property file path
-        File jarPath = new File(
-                Errd4j
-                .class
-                .getProtectionDomain()
-                .getCodeSource()
-                .getLocation()
-                .getPath());
-        File libPath = jarPath.getParentFile();
-        File appPath = libPath.getParentFile();
-        String propFile = appPath.getAbsolutePath() + "/errd4j.properties";
 
         try
         {

@@ -162,7 +162,7 @@ boot() ->
     Prefix   = sysmo:get_java_bin_prefix(),
     Relative = string:concat("nchecks/bin/nchecks", Prefix),
     Cmd = filename:join(filename:absname(sysmo:get_java_dir()),Relative),
-    Log = filename:join(filename:absname(sysmo:get_log_dir()),"nchecks.log"),
+    WorkDir = filename:absname(""),
     Node = sysmo:get_node_name(),
     erlang:open_port({spawn_executable, Cmd},
-                     [{args,[Log, Node]}, stderr_to_stdout]).
+                     [{args,[WorkDir, Node]}, stderr_to_stdout]).

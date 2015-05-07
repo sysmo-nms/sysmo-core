@@ -214,7 +214,7 @@ boot() ->
     Prefix   = sysmo:get_java_bin_prefix(),
     Relative = string:concat("errd4j/bin/errd4j", Prefix),
     Cmd = filename:join(filename:absname(sysmo:get_java_dir()),Relative),
-    Log = filename:join(filename:absname(sysmo:get_log_dir()),"errd4j.log"),
+    WorkDir = filename:absname(""),
     Node = sysmo:get_node_name(),
     erlang:open_port({spawn_executable, Cmd},
-                     [{args,[Log, Node]}, stderr_to_stdout]).
+                     [{args,[WorkDir, Node]}, stderr_to_stdout]).
