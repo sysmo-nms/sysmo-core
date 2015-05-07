@@ -70,7 +70,7 @@ public class NChecks
     private static OtpMbox mbox;
 
     // nchecks vars
-    private static  String pingCommand;
+    private static  String utilsPath;
     private static  ThreadPoolExecutor threadPool;
     private static  int threadMaxPoolSize;
     private static  int threadCorePoolSize;
@@ -116,7 +116,7 @@ public class NChecks
             selfNodeName     = prop.getProperty("self_name");
             foreignPidName   = prop.getProperty("foreign_pid");
             erlangCookie     = prop.getProperty("cookie");
-            pingCommand      = prop.getProperty("ping_command");
+            utilsPath        = prop.getProperty("utils_path");
             threadMaxPoolSize = 
                         Integer.parseInt(
                                     prop.getProperty("thread_pool_max_size"));
@@ -151,7 +151,7 @@ public class NChecks
                 new ArrayBlockingQueue<Runnable>(threadQueueCapacity),
                 new NChecksPoolReject());
 
-        CheckICMP.setPping(pingCommand);
+        CheckICMP.setPping(utilsPath);
 
 
         // Initialize otp

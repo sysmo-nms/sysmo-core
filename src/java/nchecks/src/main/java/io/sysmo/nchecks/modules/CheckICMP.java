@@ -32,6 +32,7 @@ import java.io.InputStreamReader;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.nio.file.FileSystems;
+import java.nio.file.Path;
 
 import java.util.Map;
 import java.util.Arrays;
@@ -54,12 +55,18 @@ public class CheckICMP implements NChecksInterface
     private String  stderrReturn;
     private static  String  pping;
 
-    public static void setPping(String com)
+    public static void setPping(String utilsDir)
     {
+
+        String utilsPath = FileSystems
+                    .getDefault()
+                    .getPath(utilsDir)
+                    .toAbsolutePath()
+                    .toString();
+
         pping = FileSystems
                     .getDefault()
-                    .getPath(com)
-                    .toAbsolutePath()
+                    .getPath(utilsPath, "pping")
                     .toString();
     }
 
