@@ -82,12 +82,11 @@ public class NChecks
     {
         // init logger
         logger = NChecksLogger.start(args[0]);
+        logger.info("Started. classpath is" + System.getProperty("java.class.path"));
 
         // if -test
         if (args.length != 0 && args[0].equals("--test"))
             {testSpace(); return;}
-        
-
 
         //get property file path
             File jarPath = new File(
