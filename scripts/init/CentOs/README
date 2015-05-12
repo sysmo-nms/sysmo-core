@@ -1,0 +1,4 @@
+- Put "sysmo" in the /etc/rc.d/init.d/ directory,
+
+# chkconfig --add sysmo
+# service sysmo start

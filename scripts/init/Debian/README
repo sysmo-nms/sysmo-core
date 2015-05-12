@@ -1,0 +1,4 @@
+- Put "sysmo" in the /etc/init.d/ directory,
+
+# update-rc.d sysmo defaults
+# service sysmo start

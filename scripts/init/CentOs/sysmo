@@ -1,0 +1,58 @@
+#!/bin/bash
+#
+#   /etc/rc.d/init.d/sysmo
+#
+#   sysmo Sysmo Server 1.0
+#
+#   Build following the recommandations of Centos sysvinitfiles.txt
+#
+# chkconfig: 345 70 30
+# description: Sysmo Server management and monitoring service.
+# processname: sysmo
+
+# Source function library.
+. /etc/init.d/functions
+
+
+# If the sysmo startup script is not in the $PATH, set this variable
+# to an absolute value ( exemple: /release_location/bin/sysmo )
+SYSMO_SCRIPT="sysmo"
+
+start() {
+  echo -n "Starting sysmo: "
+  return `$SYSMO_SCRIPT start`
+}   
+
+stop() {
+  echo -n "Shutting down sysmo: "
+  return `$SYSMO_SCRIPT stop`
+}
+
+status() {
+  return `$SYSMO_SCRIPT eval`
+}
+
+restart_all() {
+  return `$SYSMO_SCRIPT reboot`
+}
+
+
+case "$1" in
+  start)
+    start
+    ;;
+  stop)
+    stop
+    ;;
+  restart|reload)
+    restart_all
+    ;;
+  status)
+    status
+    ;;
+  *)
+    echo "Usage: sysmo {start|stop|restart|status|reload}"
+    exit 1
+    ;;
+esac
+exit $?
