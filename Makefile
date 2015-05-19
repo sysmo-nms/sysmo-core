@@ -1,65 +1,55 @@
 .PHONY: rel
 
-MAKE  ?= make
-REBAR ?= rebar
-GRADLE ?= ./gradlew
+MAKE   ?= make
 
-ERLANG_SRC = src/erlang
-JAVA_SRC = src/java
-GO_SRC = src/go
+REBAR     ?= rebar
+REBAR_CMD  = $(realpath src/erlang/$(REBAR))
 
-# rebar realpath
-REBARR = $(realpath $(ERLANG_SRC)/$(REBAR))
+GRADLE    ?= gradlew
+GRADLE_CMD = $(realpath src/java/$(GRADLE))
 
-compile:
-	cd $(ERLANG_SRC)/sysmo; $(REBARR) -r compile
-	cd $(JAVA_SRC); $(GRADLE) classes
+GO        ?= go
+PPING_OUT ?= pping
+
+build:
+	cd src/go; $(GO) build -o $(PPING_OUT) pping.go
+	cd src/erlang/sysmo; $(REBAR_CMD) -r compile
+	cd src/java; $(GRADLE_CMD) installDist
 	
 test:
-	cd $(ERLANG_SRC)/sysmo; $(REBARR) -r test
-	cd $(JAVA_SRC); $(GRADLE) test
-	$(REBARR) test
+	cd src/erlang/sysmo; $(REBAR_CMD) -r test
+	cd src/java; $(GRADLE_CMD) test
+	$(REBAR_CMD) test
 
 check:
-	cd $(JAVA_SRC); $(GRADLE) check
+	cd src/java; $(GRADLE_CMD) check
 
 doc:
-	cd $(ERLANG_SRC)/sysmo; $(REBARR) -r doc
-	cd $(JAVA_SRC); $(GRADLE) doc
-	$(REBARR) doc
+	cd src/erlang/sysmo; $(REBAR_CMD) -r doc
+	cd src/java; $(GRADLE_CMD) doc
+	$(REBAR_CMD) doc
 
 clean:
-	$(MAKE) -C src/go clean
-	cd $(ERLANG_SRC)/sysmo; $(REBARR) -r clean
-	cd $(JAVA_SRC); $(GRADLE) clean
-	$(REBARR) clean
+	rm -f src/go/$(PPING_OUT)
+	cd src/erlang/sysmo; $(REBAR_CMD) -r clean
+	cd src/java; $(GRADLE_CMD) clean
+	$(REBAR_CMD) clean
 
-rel: 
-	$(MAKE) -C src/go
-	cd $(ERLANG_SRC)/sysmo; $(REBARR) -r compile
-	cd $(JAVA_SRC); $(GRADLE) installDist
-	$(REBARR) generate
+rel: build
+	$(REBAR_CMD) generate
 	./scripts/placeReleaseFiles
-	@ echo "Release ready"
+	@ echo "Release ready."
 
+
+# UTILS
 rel-start:
 	./sysmo/bin/sysmo start
+
 rel-attach:
 	./sysmo/bin/sysmo attach
+
 rel-stop:
 	./sysmo/bin/sysmo stop
+
 run: rel
 	./sysmo/bin/sysmo console
-	
-
-
-EPATH = ebin \
-src/erlang/equartz/ebin \
-src/erlang/errd4j/ebin \
-src/erlang/monitor/ebin \
-src/erlang/nchecks/ebin \
-src/erlang/snmpman/ebin \
-src/erlang/supercast/ebin 
-
-CONFIG = ./sys
-

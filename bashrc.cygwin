@@ -1,0 +1,4 @@
+export REBAR="rebar.cmd"
+export GRADLE="gradlew.bat"
+export GO="go.exe"
+export PPING_OUT="pping.exe"

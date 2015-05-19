@@ -11,6 +11,10 @@ ebin/
 .gradle/
 build/
 
+# go pping builds
+pping
+pping.exe
+
 # sysmo release
 /sysmo
 *TODO*
