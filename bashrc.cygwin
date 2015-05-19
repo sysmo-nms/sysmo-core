@@ -1,3 +1,4 @@
+# -*- mode: sh -*-
 export REBAR="rebar.cmd"
 export GRADLE="gradlew.bat"
 export GO="go.exe"
