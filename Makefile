@@ -40,7 +40,6 @@ rel: build
 	./scripts/placeReleaseFiles
 	@ echo "Release ready."
 
-
 # UTILS
 rel-start:
 	./sysmo/bin/sysmo start
@@ -53,3 +52,7 @@ rel-stop:
 
 run: rel
 	./sysmo/bin/sysmo console
+
+#setuid_pping:
+#	chown root:root sysmo/utils/$(PPING_OUT)
+#	chmod +s sysmo/utils/$(PPING_OUT)
