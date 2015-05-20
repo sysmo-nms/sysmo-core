@@ -1,6 +1,4 @@
-.PHONY: rel
-
-MAKE   ?= make
+# sysmo build
 
 REBAR     ?= rebar
 REBAR_CMD  = $(realpath src/erlang/$(REBAR))
@@ -41,18 +39,14 @@ rel: build
 	@ echo "Release ready."
 
 # UTILS
-rel-start:
-	./sysmo/bin/sysmo start
-
-rel-attach:
-	./sysmo/bin/sysmo attach
-
-rel-stop:
-	./sysmo/bin/sysmo stop
-
 run: rel
 	./sysmo/bin/sysmo console
-
+#rel-start:
+	#./sysmo/bin/sysmo start
+#rel-attach:
+	#./sysmo/bin/sysmo attach
+#rel-stop:
+	#./sysmo/bin/sysmo stop
 #setuid_pping:
 #	chown root:root sysmo/utils/$(PPING_OUT)
 #	chmod +s sysmo/utils/$(PPING_OUT)
