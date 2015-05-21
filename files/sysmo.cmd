@@ -27,7 +27,7 @@
 
 @set erts_bin=%node_root%\erts-%erts_version%\bin
 
-@set service_name=%node_name%_Core
+@set service_name="Sysmo Core"
 
 @set erlsrv="%erts_bin%\erlsrv.exe"
 @set epmd="%erts_bin%\epmd.exe"
@@ -55,7 +55,7 @@
 @goto :EOF
 
 :install
-@set description=Sysmo Core %node_name% in %node_root%
+@set description=Sysmo Core open source server
 @set start_erl=%node_root%\bin\start_erl.cmd
 @set args= ++ %node_name% ++ %node_root%
 @%erlsrv% add %service_name% -c "%description%" -sname %node_name% -w "%node_root%" -m "%start_erl%" -args "%args%" -onfail restart -stopaction "init:stop()."
