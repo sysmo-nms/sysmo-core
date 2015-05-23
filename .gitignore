@@ -2,6 +2,9 @@
 *.swp
 *.swo
 
+# emacs
+\#*\#
+
 # erlang crashs/builds
 *.dump
 .rebar/
@@ -17,4 +20,6 @@ pping.exe
 
 # sysmo release
 /sysmo
+
+# local TODO files
 *TODO*
