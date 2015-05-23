@@ -162,7 +162,7 @@ func main() {
     } else {
         averageDuration = totalDuration / int64(packetsArrived)
     }
-    
+
     if NumberFlag == packetsLost {
         percentPktsLost = 100
     } else {
@@ -385,7 +385,7 @@ func (msg *icmpMessage) Encode(conn net.Conn) ([]byte, error) {
         pseudoHeader = append(pseudoHeader, pdu...)
         // compute checksum
         s := computeComplementSum(pseudoHeader)
-   
+
         // Place checksum in pdu
         pdu[2] ^= byte(^s & 0xff)
         pdu[3] ^= byte(^s >> 8)
