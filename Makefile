@@ -1,52 +1,40 @@
 # sysmo build
 
-REBAR     ?= rebar
-REBAR_CMD  = $(realpath src/erlang/$(REBAR))
+REBAR_EXE  ?= rebar
+REBAR       = $(realpath src/erlang/$(REBAR_EXE))
 
-GRADLE    ?= gradlew
-GRADLE_CMD = $(realpath src/java/$(GRADLE))
+GRADLE_EXE ?= gradlew
+GRADLE      = $(realpath src/java/$(GRADLE_EXE))
 
-GO        ?= go
-PPING_OUT ?= pping
+GO         ?= go
+PPING_OUT  ?= pping
 
 build:
 	cd src/go; $(GO) build -o $(PPING_OUT) pping.go
-	cd src/erlang/sysmo; $(REBAR_CMD) -r compile
-	cd src/java; $(GRADLE_CMD) installDist
-	
+	cd src/erlang/sysmo; $(REBAR) -r compile
+	cd src/java; $(GRADLE) installDist
+
 test:
-	cd src/erlang/sysmo; $(REBAR_CMD) -r test
-	cd src/java; $(GRADLE_CMD) test
-	$(REBAR_CMD) test
+	cd src/erlang/sysmo; $(REBAR) -r test
+	cd src/java; $(GRADLE) test
 
 check:
-	cd src/java; $(GRADLE_CMD) check
+	cd src/java; $(GRADLE) check
 
 doc:
-	cd src/erlang/sysmo; $(REBAR_CMD) -r doc
-	cd src/java; $(GRADLE_CMD) doc
-	$(REBAR_CMD) doc
+	cd src/erlang/sysmo; $(REBAR) -r doc
+	cd src/java; $(GRADLE) doc
 
 clean:
 	rm -f src/go/$(PPING_OUT)
-	cd src/erlang/sysmo; $(REBAR_CMD) -r clean
-	cd src/java; $(GRADLE_CMD) clean
-	$(REBAR_CMD) clean
+	cd src/erlang/sysmo; $(REBAR) -r clean
+	cd src/java; $(GRADLE) clean
+	$(REBAR) clean
 
 rel: build
-	$(REBAR_CMD) generate
+	$(REBAR) generate
 	./scripts/placeReleaseFiles
 	@ echo "Release ready."
 
-# UTILS
 run: rel
 	./sysmo/bin/sysmo console
-#rel-start:
-	#./sysmo/bin/sysmo start
-#rel-attach:
-	#./sysmo/bin/sysmo attach
-#rel-stop:
-	#./sysmo/bin/sysmo stop
-#setuid_pping:
-#	chown root:root sysmo/utils/$(PPING_OUT)
-#	chmod +s sysmo/utils/$(PPING_OUT)
