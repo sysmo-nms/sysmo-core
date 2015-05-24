@@ -7,6 +7,8 @@ subprojects {
     apply plugin: 'findbugs'
     apply plugin: 'jdepend'
 
+    applicationDefaultJvmArgs = ["-Duser.language=en"]
+
     repositories {
         flatDir {
             dirs '../lib'
