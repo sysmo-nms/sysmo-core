@@ -26,16 +26,13 @@ end
 task :default => :rel
 
 task :build do
-  cd GO_DIR;     sh "go build -o #{PPING_OUT} pping.go"
+  cd GO_DIR;     sh "go build pping.go"
   cd ERLANG_DIR; sh "#{REBAR} -r compile"
   cd JAVA_DIR;   sh "#{GRADLE} installDist"
 end
 
 task :clean do
-  pping = File.join(GO_DIR, PPING_OUT)
-  puts "Cleaning #{pping}..."
-  File.delete(pping) if File.exist?(pping)
-
+  cd GO_DIR;     sh "go clean pping.go"
   cd ERLANG_DIR; sh "#{REBAR} -r clean"
   cd JAVA_DIR;   sh "#{GRADLE} clean"
   cd ROOT;       sh "#{REBAR} clean"
