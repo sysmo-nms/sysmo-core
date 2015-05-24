@@ -16,12 +16,11 @@ GO_DIR     = File.join(ROOT, "src", "go")
 if (/cygwin|mswin|mingw|bccwin|wince|emx/ =~ RUBY_PLATFORM) != nil
   REBAR     = File.join(REBAR_DIR, "rebar.cmd")
   GRADLE    = File.join(JAVA_DIR, "gradlew.bat")
-  PPING_OUT = "pping.exe"
 else
   REBAR     = File.join(REBAR_DIR, "rebar")
   GRADLE    = File.join(JAVA_DIR, "gradlew")
-  PPING_OUT = "pping"
 end
+
 
 task :default => :rel
 
@@ -64,9 +63,15 @@ end
 
 
 def install_pping_command()
-  dst = File.join(ROOT, "sysmo", "utils", PPING_OUT)
-  src = File.join(GO_DIR, PPING_OUT)
-  puts "Install #{dst}"
-  FileUtils.copy(src,dst)
-  # TODO maybe chown/chmod pping
+  dst      = File.join(ROOT, "sysmo", "utils")
+  win_src  = File.join(GO_DIR, "pping.exe")
+  unix_src = File.join(GO_DIR, "pping")
+  if File.exist?(win_src)
+    puts "Install #{win_src}"
+    FileUtils.copy(win_src,dst)
+  elsif File.exist?(unix_src)
+    puts "Install #{unix_src}"
+    FileUtils.copy(unix_src,dst)
+    # TODO maybe chown/chmod pping
+  end
 end
