@@ -4,6 +4,7 @@
 
 # emacs
 \#*\#
+*~
 
 # erlang crashs/builds
 *.dump
