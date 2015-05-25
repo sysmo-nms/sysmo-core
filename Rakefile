@@ -11,17 +11,15 @@ JAVA_DIR   = File.join(ROOT, "src", "java")
 GO_DIR     = File.join(ROOT, "src", "go")
 
 #
-# if os is windows (TODO test, maybe useless)
+# set wrappers
 #
-if (/cygwin|mswin|mingw|bccwin|wince|emx/ =~ RUBY_PLATFORM) != nil
-  REBAR     = File.join(REBAR_DIR, "rebar.cmd")
-  GRADLE    = File.join(JAVA_DIR, "gradlew.bat")
-else
-  REBAR     = File.join(REBAR_DIR, "rebar")
-  GRADLE    = File.join(JAVA_DIR, "gradlew")
-end
+REBAR     = File.join(REBAR_DIR, "rebar")
+GRADLE    = File.join(JAVA_DIR,  "gradlew")
 
 
+#
+# tasks
+#
 task :default => :rel
 
 task :build do
@@ -62,6 +60,9 @@ task :run => [:rel] do
 end
 
 
+#
+# pping special case
+#
 def install_pping_command()
   dst      = File.join(ROOT, "sysmo", "utils")
   win_src  = File.join(GO_DIR, "pping.exe")
@@ -72,6 +73,5 @@ def install_pping_command()
   elsif File.exist?(unix_src)
     puts "Install #{unix_src}"
     FileUtils.copy(unix_src,dst)
-    # TODO maybe chown/chmod pping
   end
 end
