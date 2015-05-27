@@ -22,12 +22,14 @@ GRADLE    = File.join(JAVA_DIR,  "gradlew")
 #
 task :default => :rel
 
+desc "Compile all"
 task :build do
   cd GO_DIR;     sh "go build pping.go"
   cd ERLANG_DIR; sh "#{REBAR} -r compile"
   cd JAVA_DIR;   sh "#{GRADLE} installDist"
 end
 
+desc "Clean all"
 task :clean do
   cd GO_DIR;     sh "go clean pping.go"
   cd ERLANG_DIR; sh "#{REBAR} -r clean"
@@ -35,26 +37,31 @@ task :clean do
   cd ROOT;       sh "#{REBAR} clean"
 end
 
+desc "Test erlang and java apps"
 task :test do
   cd ERLANG_DIR; sh "#{REBAR} -r test"
   cd JAVA_DIR;   sh "#{GRADLE} test"
 end
 
+desc "Check java apps"
 task :check do
   cd JAVA_DIR;   sh "#{GRADLE} check"
 end
 
+desc "Generate documentation for java and erlang apps"
 task :doc do
   cd ERLANG_DIR; sh "#{REBAR} -r doc"
   cd JAVA_DIR;   sh "#{GRADLE} doc"
 end
 
+desc "Generate a fresh release in directory ./sysmo"
 task :rel => [:build] do
   cd ROOT; sh "#{REBAR} generate"
   install_pping_command()
   puts "Release ready!"
 end
 
+desc "Run the release in foreground"
 task :run => [:rel] do
   cd ROOT; sh "./sysmo/bin/sysmo console"
 end
