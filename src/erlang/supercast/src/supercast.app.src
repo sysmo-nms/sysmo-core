@@ -14,7 +14,7 @@
                 tcp_client_sup,
                 tcp_listener
             ]},
-        {applications, 
+        {applications,
             [kernel, stdlib, crypto, public_key, ssl, xmerl]
         },
         {start_phases, []},
