@@ -23,9 +23,20 @@ GRADLE    = File.join(JAVA_DIR,  "gradlew")
 task :default => :rel
 
 desc "Compile all"
-task :build do
+task :build => [:pping, :erlang, :java]
+
+desc "Compile pping"
+task :pping do
   cd GO_DIR;     sh "go build pping.go"
+end
+
+desc "Compile erlang"
+task :erlang do
   cd ERLANG_DIR; sh "#{REBAR} -r compile"
+end
+
+desc "Compile java"
+task :java do
   cd JAVA_DIR;   sh "#{GRADLE} installDist"
 end
 
@@ -64,6 +75,7 @@ end
 desc "Run the release in foreground"
 task :run => [:rel] do
   cd ROOT; sh "./sysmo/bin/sysmo console"
+  sh "epmd -kill"
 end
 
 
