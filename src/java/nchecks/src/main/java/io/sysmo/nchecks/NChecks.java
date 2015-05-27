@@ -1,15 +1,15 @@
 /* Copyright (C) 2014, Sebastien Serre <sserre.bx@gmail.com>
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all
  * copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -106,10 +106,10 @@ public class NChecks
             foreignPidName   = prop.getProperty("foreign_pid");
             erlangCookie     = prop.getProperty("cookie");
             utilsPath        = prop.getProperty("utils_path");
-            threadMaxPoolSize = 
+            threadMaxPoolSize =
                         Integer.parseInt(
                                     prop.getProperty("thread_pool_max_size"));
-            threadCorePoolSize = 
+            threadCorePoolSize =
                         Integer.parseInt(
                                     prop.getProperty("thread_pool_core_size"));
             threadQueueCapacity =
@@ -148,13 +148,13 @@ public class NChecks
         {
             node = new OtpNode(selfNodeName, erlangCookie);
             mbox = node.createMbox();
-            if (!node.ping(foreignNodeName, 2000)) 
-            { 
+            if (!node.ping(foreignNodeName, 2000))
+            {
                 logger.severe("Connection timed out");
                 return;
             }
         }
-        catch (IOException e) 
+        catch (IOException e)
         {
             logger.severe("Otp Connection failure: " + e.getMessage() + e);
             return;
@@ -165,12 +165,12 @@ public class NChecks
 
         // then begin to loop and wait for calls
         OtpErlangObject call = null;
-        while (true) try 
+        while (true) try
         {
             call = mbox.receive();
             handleMsg(call);
-        } 
-        catch (OtpErlangExit e) 
+        }
+        catch (OtpErlangExit e)
         {
             logger.severe("Exit: " + e.getMessage() + e);
             threadPool.shutdownNow();
@@ -209,10 +209,7 @@ public class NChecks
             mbox.send(foreignPidName, foreignNodeName, tuple);
         }
     }
-    
-    // UTILS  UTILS  UTILS  UTILS  UTILS  UTILS  UTILS  UTILS  UTILS 
-    // UTILS  UTILS  UTILS  UTILS  UTILS  UTILS  UTILS  UTILS  UTILS 
-    // UTILS  UTILS  UTILS  UTILS  UTILS  UTILS  UTILS  UTILS  UTILS 
+
     public static OtpErlangTuple buildOkReply(OtpErlangObject msg)
     {
         OtpErlangObject[] valObj   = new OtpErlangObject[2];
@@ -290,7 +287,7 @@ public class NChecks
             }
             else if (cmdstr.equals("helper"))
             {
-                OtpErlangString erlangClassName = 
+                OtpErlangString erlangClassName =
                     (OtpErlangString)
                     (payload.elementAt(0));
                 String className = erlangClassName.stringValue();
@@ -301,7 +298,7 @@ public class NChecks
                         caller,
                         args);
                 threadPool.execute(worker);
-            } 
+            }
             else if (cmdstr.equals("init"))     handleInit(payload);
             else if (cmdstr.equals("cleanup"))  NChecksSNMP.getInstance().cleanup();
             else
@@ -345,7 +342,7 @@ public class NChecks
                 try {
                     uInt = valLong.uIntValue();
                 } catch (OtpErlangRangeException e) {
-                    uInt = 0; 
+                    uInt = 0;
                 }
                 a.set(uInt);
                 result.put(key.stringValue(), a);
@@ -406,7 +403,7 @@ public class NChecks
         NHelperInterface module = new HelperNetworkInterfaces();
         Query query = new Query(testArguments);
         module.execute(query);
-    } 
+    }
 
 }
 
