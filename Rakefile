@@ -23,7 +23,7 @@ GRADLE    = File.join(JAVA_DIR,  "gradlew")
 task :default => :rel
 
 desc "Compile all"
-task :build => [:pping, :erlang, :java]
+task :build => [:java, :erlang, :pping]
 
 desc "Compile pping"
 task :pping do
