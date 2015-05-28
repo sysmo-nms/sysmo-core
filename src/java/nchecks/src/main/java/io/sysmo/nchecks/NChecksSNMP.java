@@ -45,7 +45,9 @@ public class NChecksSNMP
 {
     public  Snmp snmp4jSession;
     private Map<String, AbstractTarget> agents;
+    private static NChecksSNMP INSTANCE;
 
+    public static void startSnmp() {new NChecksSNMP();}
     private NChecksSNMP()
     {
         try
@@ -64,9 +66,9 @@ public class NChecksSNMP
             NChecksLogger.getLogger().severe("SNMP init fail: " +
                                                     e.getMessage() + e);
         }
+        INSTANCE = this;
     }
 
-    private static NChecksSNMP INSTANCE = new NChecksSNMP();
     public static NChecksSNMP getInstance() {return INSTANCE;}
 
     public Snmp getSnmpSession() {return snmp4jSession;}
@@ -110,7 +112,7 @@ public class NChecksSNMP
                 {
                     // same users conf, ok
                     agents.put(targetid, target);
-                    return target;   
+                    return target;
                 }
             }
         }

@@ -26,16 +26,43 @@ import io.sysmo.nchecks.Argument;
 import io.sysmo.nchecks.Reply;
 import io.sysmo.nchecks.Query;
 import io.sysmo.nchecks.Const;
+import io.sysmo.nchecks.NChecksJRuby;
+import io.sysmo.nchecks.NChecksLogger;
+import org.jruby.embed.ScriptingContainer;
 
 import org.jruby.embed.ScriptingContainer;
 
-public class CheckJRuby implements NChecksInterface
+public class CheckViaJRuby implements NChecksInterface
 {
     public Reply execute(Query query)
     {
+        String rbScript;
+        String script;
+        try {
+            rbScript = query.get("ruby_script").asString();
+            script = NChecksJRuby.getInstance().getScript(rbScript);
+        } catch (Exception e) {
+            Reply err = handleError(e);
+            return err;
+        }
+
+        ScriptingContainer container = new ScriptingContainer();
+        Object receiver = container.runScriptlet(script);
+        Reply rep;
+        try {
+            rep = container.callMethod(receiver,"execute",query,Reply.class);
+        } catch(Exception e) {
+            Reply err = handleError(e);
+            return err;
+        }
+        return rep;
+    }
+
+    private static Reply handleError(Exception e) {
+        NChecksLogger.getLogger().severe(e.toString());
         Reply reply = new Reply();
         reply.setStatus(Const.STATUS_ERROR);
-        reply.setReply("CheckJRuby ERROR");
+        reply.setReply("CheckViaJRuby ERROR: " + e);
         return reply;
     }
 }

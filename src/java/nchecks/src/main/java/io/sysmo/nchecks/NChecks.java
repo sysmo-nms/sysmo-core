@@ -29,6 +29,7 @@ import io.sysmo.nchecks.modules.*;
 import io.sysmo.nchecks.helpers.*;
 import io.sysmo.nchecks.NChecksSNMP;
 import io.sysmo.nchecks.NHelperReply;
+import io.sysmo.nchecks.NChecksJRuby;
 
 import com.ericsson.otp.erlang.*;
 
@@ -89,6 +90,11 @@ public class NChecks
             .getPath(args[0], "etc", "nchecks.properties")
             .toString();
 
+        String scriptDir = FileSystems
+            .getDefault()
+            .getPath(args[0], "ruby_checks")
+            .toString();
+
         // init logger
         logger = NChecksLogger.start(logFile);
 
@@ -140,11 +146,10 @@ public class NChecks
                 new ArrayBlockingQueue<Runnable>(threadQueueCapacity),
                 new NChecksPoolReject());
 
-        CheckICMP.setPping(utilsPath);
 
 
         // Initialize otp
-        try 
+        try
         {
             node = new OtpNode(selfNodeName, erlangCookie);
             mbox = node.createMbox();
@@ -162,6 +167,12 @@ public class NChecks
 
         // when it is ok, inform the erl nchecks process
         acknowledgeOtpConnexion();
+        // initialize special CheckICMP class
+        CheckICMP.setPping(utilsPath);
+        // initialize .rb script cache
+        NChecksJRuby.startJRuby(scriptDir);
+        // initialize snmpman
+        NChecksSNMP.startSnmp();
 
         // then begin to loop and wait for calls
         OtpErlangObject call = null;
