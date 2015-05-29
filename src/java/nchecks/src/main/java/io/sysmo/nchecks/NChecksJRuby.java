@@ -20,6 +20,7 @@
  */
 
 package io.sysmo.nchecks;
+import io.sysmo.nchecks.NChecksLogger;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.HashMap;
@@ -34,16 +35,19 @@ public class NChecksJRuby {
         new NChecksJRuby(scriptPath);
     }
 
-    private NChecksJRuby(String scriptPath) {
-        scriptPath = scriptPath;
+    private NChecksJRuby(String scriptDir) {
+        NChecksLogger.getLogger().info("init path: " + scriptPath);
+        scriptPath = scriptDir;
         smap = new HashMap<String,String>();
         INSTANCE = this;
+        NChecksLogger.getLogger().info("JRuby init with path: " + scriptPath);
     }
 
-    public String getScript(String script) throws Exception {
+    public String getScript(String identifier) throws Exception {
         synchronized (smap) {
-            String val = smap.get(script);
+            String val = smap.get(identifier);
             if(val == null) {
+                String script = identifier + ".rb";
                 byte[] fbytes = Files.readAllBytes(Paths.get(scriptPath,script));
                 val = new String(fbytes);
                 smap.put(script,val);

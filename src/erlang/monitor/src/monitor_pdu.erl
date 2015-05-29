@@ -210,12 +210,7 @@ infoProbe(Probe, InfoType) ->
     JR = [char_to_binary(G) || G <- R],
     JW = [char_to_binary(G) || G <- W],
 
-    case is_record(ProbeConf, nchecks_probe_conf) of
-        true ->
-            {_,Class,_} = ProbeConf;
-        false ->
-            Class = gen_str_probe_conf(ProbeConf)
-    end,
+    Identifier = ProbeConf#nchecks_probe_conf.identifier,
 
     {struct,
         [
@@ -227,7 +222,7 @@ infoProbe(Probe, InfoType) ->
                 {<<"descr">>,       char_to_binary(Probe#probe.description)},
                 {<<"perm">>,        {struct, [{<<"read">>, {array, JR}}, {<<"write">>, {array, JW}}]}},
                 {<<"probeMod">>,    atom_to_binary(Probe#probe.module, utf8)},
-                {<<"probeClass">>,  char_to_binary(Class)},
+                {<<"probeId">>,     char_to_binary(Identifier)},
                 {<<"status">>,      char_to_binary(Probe#probe.status)},
                 {<<"timeout">>,     Probe#probe.timeout},
                 {<<"step">>,        Probe#probe.step},
@@ -239,9 +234,6 @@ infoProbe(Probe, InfoType) ->
 
 
 % UTILS
-gen_str_probe_conf(Conf) ->
-    lists:flatten(io_lib:format("~p", [Conf])).
-
 
 make_key_values(K) ->
     make_key_values(K, []).

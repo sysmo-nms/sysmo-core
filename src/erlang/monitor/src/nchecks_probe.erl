@@ -380,11 +380,9 @@ init_nchecks(#probe{belong_to=TargetName,module_config=NCheck} = Probe) ->
 
     TargetProp      = Target#target.properties,
     TargetSysProp   = Target#target.sys_properties,
-    #nchecks_probe_conf{class=Class, args=Args} = NCheck,
+    #nchecks_probe_conf{class=Class, identifier=Identifier, args=Args} = NCheck,
 
     % if "host" is not defined in probe conf, use the target "host" property
-    % TODO use Check.xml definition
-
     case proplists:lookup("host", Args) of
         none ->
             TargHost = proplists:lookup("host", TargetProp),
@@ -394,13 +392,13 @@ init_nchecks(#probe{belong_to=TargetName,module_config=NCheck} = Probe) ->
     end,
 
     % Generate XML Class definition file path
-    ClassDefinitionFile = string:concat(Class, ".xml"),
-    ClassDefinitionPath = filename:join(
-                                    ["etc", "nchecks", ClassDefinitionFile]),
+    XmlDefinitionFile = string:concat(Identifier, ".xml"),
+    XmlDefinitionPath = filename:join(
+                                    ["etc", "nchecks", XmlDefinitionFile]),
 
     % Load XML file content
     {#xmlDocument{content=XDocument_Content}, _} =
-        xmerl_scan:file(ClassDefinitionPath, [{document, true}]),
+        xmerl_scan:file(XmlDefinitionPath, [{document, true}]),
 
     % Extract <NChecks> content
     #xmlElement{content=XNChecks_Content} =
@@ -436,10 +434,13 @@ init_nchecks(#probe{belong_to=TargetName,module_config=NCheck} = Probe) ->
             Args3 = Args2
     end,
 
-    #probe{name=ProbeName,step=Step} = Probe,
-    RrdState = rrd4j_init(ProbeName, Step, Args3, TargetDir, XCheck_Content),
+    % append check_id to args for jruby checks, do not hurt for others.
+    Args4 = [{"check_id", Identifier}|Args3],
 
-    {{Class, Args3}, RrdState}.
+    #probe{name=ProbeName,step=Step} = Probe,
+    RrdState = rrd4j_init(ProbeName, Step, Args4, TargetDir, XCheck_Content),
+
+    {{Class, Args4}, RrdState}.
 
 
 exec_nchecks(Class, Args, Opaque) ->
@@ -545,7 +546,7 @@ rrd4j_init(ProbeName, Step, Args, TargetDir, XCheck_Content) ->
                 case filelib:is_regular(FilePath) of
                     true -> ok;
                     false ->
-                        ok = errd4j:create(FilePath, Step, 
+                        ok = errd4j:create(FilePath, Step,
                                                     DSDefinitions, "default")
                 end
             end, RRDList),
@@ -557,7 +558,7 @@ rrd4j_init(ProbeName, Step, Args, TargetDir, XCheck_Content) ->
             % "simple" Performance type mean only one rrd file (but off course
             % possibly multiple datasources)
 
-            % Get the FileName 
+            % Get the FileName
             XFileName_Content = x_get_content_text(
                                             XPerformances_Content, 'FileName'),
 

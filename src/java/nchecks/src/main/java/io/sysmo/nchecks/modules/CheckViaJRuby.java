@@ -36,13 +36,13 @@ public class CheckViaJRuby implements NChecksInterface
 {
     public Reply execute(Query query)
     {
-        String rbScript;
+        String rbScript = "undefined";
         String script;
         try {
-            rbScript = query.get("ruby_script").asString();
+            rbScript = query.get("check_id").asString();
             script = NChecksJRuby.getInstance().getScript(rbScript);
         } catch (Exception e) {
-            Reply err = handleError(e);
+            Reply err = handleError("Script not found: " + rbScript, e);
             return err;
         }
 
@@ -52,17 +52,18 @@ public class CheckViaJRuby implements NChecksInterface
         try {
             rep = container.callMethod(receiver,"execute",query,Reply.class);
         } catch(Exception e) {
-            Reply err = handleError(e);
+            Reply err = handleError("Script execution failure: " + rbScript, e);
             return err;
         }
         return rep;
     }
 
-    private static Reply handleError(Exception e) {
+    private static Reply handleError(String txt, Exception e) {
+        String msg = e.getMessage();
         NChecksLogger.getLogger().severe(e.toString());
         Reply reply = new Reply();
         reply.setStatus(Const.STATUS_ERROR);
-        reply.setReply("CheckViaJRuby ERROR: " + e);
+        reply.setReply("CheckViaJRuby ERROR: " + txt + msg);
         return reply;
     }
 }

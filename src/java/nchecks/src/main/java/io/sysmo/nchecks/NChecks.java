@@ -70,7 +70,6 @@ public class NChecks
     private static OtpMbox mbox;
 
     // nchecks vars
-    private static  String utilsPath;
     private static  ThreadPoolExecutor threadPool;
     private static  int threadMaxPoolSize;
     private static  int threadCorePoolSize;
@@ -90,13 +89,20 @@ public class NChecks
             .getPath(args[0], "etc", "nchecks.properties")
             .toString();
 
-        String scriptDir = FileSystems
+        String rubyDir = FileSystems
             .getDefault()
-            .getPath(args[0], "ruby_checks")
+            .getPath(args[0], "ruby")
             .toString();
+
+        String utilsDir = FileSystems
+            .getDefault()
+            .getPath(args[0], "utils")
+            .toString();
+
 
         // init logger
         logger = NChecksLogger.start(logFile);
+        logger.info("Logger initialized");
 
         // if -test
         if (args.length != 0 && args[0].equals("--test"))
@@ -111,7 +117,6 @@ public class NChecks
             selfNodeName     = prop.getProperty("self_name");
             foreignPidName   = prop.getProperty("foreign_pid");
             erlangCookie     = prop.getProperty("cookie");
-            utilsPath        = prop.getProperty("utils_path");
             threadMaxPoolSize =
                         Integer.parseInt(
                                     prop.getProperty("thread_pool_max_size"));
@@ -164,15 +169,20 @@ public class NChecks
             logger.severe("Otp Connection failure: " + e.getMessage() + e);
             return;
         }
+        logger.info("OTP initialized");
 
         // when it is ok, inform the erl nchecks process
         acknowledgeOtpConnexion();
+        logger.info("OTP send ack");
         // initialize special CheckICMP class
-        CheckICMP.setPping(utilsPath);
+        CheckICMP.setPping(utilsDir);
+        logger.info("CheckICMP init with path: " + utilsDir);
         // initialize .rb script cache
-        NChecksJRuby.startJRuby(scriptDir);
+        NChecksJRuby.startJRuby(rubyDir);
+        logger.info("JRuby init with path: " + rubyDir);
         // initialize snmpman
         NChecksSNMP.startSnmp();
+        logger.info("SNMP started");
 
         // then begin to loop and wait for calls
         OtpErlangObject call = null;

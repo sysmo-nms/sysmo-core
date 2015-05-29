@@ -1,8 +1,8 @@
 require 'java'
 require 'net/http'
 require 'benchmark'
-import  'javaSandbox.Reply'
-import  'javaSandbox.Const'
+import  'io.sysmo.nchecks.Reply'
+import  'io.sysmo.nchecks.Const'
 
 def execute(query)
   uri = URI('http://www.sysmo.io/index.html')
@@ -11,14 +11,9 @@ def execute(query)
     rep = Net::HTTP.get_response(uri)
   }
 
-  puts "body  is #{rep.body}"
-  puts "code  is #{rep.code}"
-  puts "delay is #{delay}"
-
   reply = Reply.new()
-  reply.setReply(query)
+  reply.setReply("hello from ruby!")
   reply.setStatus(Const::STATUS_OK)
-  reply.putPerformance("rubyin", 2344)
-  reply.putPerformance("rubyout", 2344)
+  reply.putPerformance("ReplyDuration", 2344)
   return reply
 end

@@ -51,8 +51,8 @@
 }).
 
 -record(nchecks_probe_conf, {
+    identifier                  :: string(),
     class                       :: string(),
-    %id                          :: string(),
     args        = []            :: [{string(), any()}]
 }).
 

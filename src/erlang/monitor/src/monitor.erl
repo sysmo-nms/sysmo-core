@@ -1,21 +1,21 @@
 % This file is part of "Enms" (http://sourceforge.net/projects/enms/)
 % Copyright (C) 2012 <Sébastien Serre sserre.bx@gmail.com>
-% 
+%
 % Enms is a Network Management System aimed to manage and monitor SNMP
 % target, monitor network hosts and services, provide a consistent
 % documentation system and tools to help network professionals
 % to have a wide perspective of the networks they manage.
-% 
+%
 % Enms is free software: you can redistribute it and/or modify
 % it under the terms of the GNU General Public License as published by
 % the Free Software Foundation, either version 3 of the License, or
 % (at your option) any later version.
-% 
+%
 % Enms is distributed in the hope that it will be useful,
 % but WITHOUT ANY WARRANTY; without even the implied warranty of
 % MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 % GNU General Public License for more details.
-% 
+%
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 % @private
@@ -42,14 +42,14 @@
 
     trigger_probe_return/2,
 
-    % private probe utils 
+    % private probe utils
     timestamp/0,
     read_timer/1,
     generate_temp_dir/0,
     send_after/2,
     send_after_rand/2,
 
-    
+
     % tests
     fill_test/1
 
@@ -98,12 +98,13 @@ fire_job(JobId) ->
 dependency_new(Probe, Depend) ->
     monitor_data_master:new(dependency, #dependency{a_probe=Probe,his_parent=Depend}).
 
-new_probe({nchecks_probe, JavaClass, Args}, Target) ->
+new_probe({nchecks_probe, Identifier, JavaClass, Args}, Target) ->
     Probe = #probe{
         belong_to   = Target,
         description = lists:concat(["NCHECKS: ", JavaClass]),
         module = nchecks_probe,
         module_config = #nchecks_probe_conf{
+            identifier  = Identifier,
             class       = JavaClass,
             args        = Args
         }

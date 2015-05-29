@@ -10,7 +10,7 @@ public class NChecksLogger
     private static final int LOG_MAX_BYTES = 10000000; // 10MB
     private static final int LOG_MAX_FILES = 5;        // 10MB + 5 max 50MB
     private static final boolean LOG_APPEND = true;
-    public  static Logger logger;
+    private static Logger logger;
 
     public static Logger start(String file)
     {
