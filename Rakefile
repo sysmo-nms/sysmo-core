@@ -1,3 +1,5 @@
+# -*- mode: ruby -*-
+#
 require 'rubygems'
 require 'rake'
 
@@ -42,9 +44,9 @@ end
 
 desc "Clean all"
 task :clean do
-  cd GO_DIR;     sh "go clean pping.go"
-  cd ERLANG_DIR; sh "#{REBAR} -r clean"
   cd JAVA_DIR;   sh "#{GRADLE} clean"
+  cd ERLANG_DIR; sh "#{REBAR} -r clean"
+  cd GO_DIR;     sh "go clean pping.go"
   cd ROOT;       sh "#{REBAR} clean"
 end
 

@@ -1,21 +1,21 @@
 % This file is part of "Enms" (http://sourceforge.net/projects/enms/)
 % Copyright (C) 2012 <Sébastien Serre sserre.bx@gmail.com>
-% 
+%
 % Enms is a Network Management System aimed to manage and monitor SNMP
 % target, monitor network hosts and services, provide a consistent
 % documentation system and tools to help network professionals
 % to have a wide perspective of the networks they manage.
-% 
+%
 % Enms is free software: you can redistribute it and/or modify
 % it under the terms of the GNU General Public License as published by
 % the Free Software Foundation, either version 3 of the License, or
 % (at your option) any later version.
-% 
+%
 % Enms is distributed in the hope that it will be useful,
 % but WITHOUT ANY WARRANTY; without even the implied warranty of
 % MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 % GNU General Public License for more details.
-% 
+%
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 % @doc
@@ -63,7 +63,7 @@
 
 
 start_link(#probe{name=Name} = Probe) ->
-    gen_server:start_link({via, supercast_registrar, 
+    gen_server:start_link({via, supercast_registrar,
                                     {?MODULE, Name}}, ?MODULE, Probe, []).
 
 do_init(Probe) ->
@@ -97,7 +97,7 @@ do_init(Probe) ->
     MilliRem = monitor:read_timer(ES#ets_state.tref),
     Pdu = monitor_pdu:probeReturn(
         PartialReturn,
-        ES#ets_state.belong_to,   
+        ES#ets_state.belong_to,
         ES#ets_state.name,
         MilliRem
     ),
@@ -397,7 +397,7 @@ init_nchecks(#probe{belong_to=TargetName,module_config=NCheck} = Probe) ->
     ClassDefinitionFile = string:concat(Class, ".xml"),
     ClassDefinitionPath = filename:join(
                                     ["etc", "nchecks", ClassDefinitionFile]),
-    
+
     % Load XML file content
     {#xmlDocument{content=XDocument_Content}, _} =
         xmerl_scan:file(ClassDefinitionPath, [{document, true}]),
@@ -522,7 +522,7 @@ rrd4j_init(ProbeName, Step, Args, TargetDir, XCheck_Content) ->
             % Get the flag conf himself. It should exist because it must be
             % a mandatory flag.
             {_Key,FlagValue} = lists:keyfind(XFlagSource_Content, 1, Args),
-            
+
             % Get the flag from where we will create rrds
             XFlagSeparator_Content = x_get_content_text(
                                         XPerformances_Content,'FlagSeparator'),
@@ -530,7 +530,7 @@ rrd4j_init(ProbeName, Step, Args, TargetDir, XCheck_Content) ->
             % With FlagSeparator and Args[Flag] content, generate a list
             % of elements
             RRDList = string:tokens(FlagValue, XFlagSeparator_Content),
-            
+
             % Generate the path prefix/suffix
             Suffix = XFileSuffix_Content,
             Prefix = XFilePrefix_Content,
@@ -585,7 +585,7 @@ x_get_content_text(Content, Key) ->
     #xmlElement{content=C1} = lists:keyfind(Key, 2, Content),
     #xmlText{value=V} = lists:keyfind(xmlText, 1, C1),
     V.
-    
+
 x_get_attr_val(Content, Key, Attr) ->
     #xmlElement{attributes=A1} = lists:keyfind(Key, 2, Content),
     #xmlAttribute{value=V} = lists:keyfind(Attr, 2, A1),

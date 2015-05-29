@@ -166,7 +166,6 @@
                         Color="#AD7FA8FF" >
                         Maximum Percent packets lost
                     </Draw>
-                    
                     <Draw
                         Type="area"
                         DataSource="PercentLost"
