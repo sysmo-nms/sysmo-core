@@ -2,6 +2,8 @@
 #
 require 'rubygems'
 require 'rake'
+require 'builder'
+require 'pathname'
 
 #
 # set dirs
@@ -71,6 +73,7 @@ desc "Generate a fresh release in directory ./sysmo"
 task :rel => [:build] do
   cd ROOT; sh "#{REBAR} generate"
   install_pping_command()
+  generate_all_checks()
   puts "Release ready!"
 end
 
@@ -80,8 +83,10 @@ task :run => [:rel] do
   sh "epmd -kill"
 end
 
+task :jo do
+  generate_all_checks
+end
 
-#
 # pping special case
 #
 def install_pping_command()
@@ -95,4 +100,25 @@ def install_pping_command()
     puts "Install #{unix_src}"
     FileUtils.copy(unix_src,dst)
   end
+end
+
+#
+# generate AllChecks.xml
+#
+def generate_all_checks()
+  puts "Building AllChecks.xml"
+  FileUtils.rm_f("sysmo/docroot/nchecks/AllChecks.xml")
+  checks = Dir.glob("sysmo/docroot/nchecks/Check*.xml")
+  file   = File.new("sysmo/docroot/nchecks/AllChecks.xml", "w:UTF-8")
+  xml    = Builder::XmlMarkup.new(:target => file, :indent => 4)
+  xml.instruct! :xml, :version=>"1.0", :encoding => "UTF-8"
+  xml.tag!('NChecks', {"xmlns" => "http://schemas.sysmo.io/2015/NChecks"}) do
+    xml.tag!('CheckAccessTable') do
+      checks.each do |c|
+        puts "Add CheckUrl Value=#{c}"
+        xml.tag!('CheckUrl', {"Value" => Pathname.new(c).basename})
+      end
+    end
+  end
+  file.close()
 end

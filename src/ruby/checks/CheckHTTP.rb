@@ -1,6 +1,7 @@
-require 'java'
 require 'net/http'
 require 'benchmark'
+
+require 'java'
 import  'io.sysmo.nchecks.Reply'
 import  'io.sysmo.nchecks.Const'
 
