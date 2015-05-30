@@ -1,15 +1,15 @@
 /* Copyright (C) 2014, Sebastien Serre <sserre.bx@gmail.com>
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all
  * copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -97,8 +97,8 @@ public class Errd4j
     private static final int LOG_MAX_BYTES = 10000000; // 10MB
     private static final int LOG_MAX_FILES = 5;        // 10MB + 5 max 50MB
     private static final boolean LOG_APPEND = true;
-    public static Logger logger;
-    
+    private static Logger logger;
+
     public static void main(String[] args)
     {
         String logFile = FileSystems
@@ -110,7 +110,7 @@ public class Errd4j
             .getDefault()
             .getPath(args[0], "etc", "errd4j.properties")
             .toString();
-        
+
         logger = Logger.getLogger(Errd4j.class.getName());
         logger.setLevel(Level.INFO);
         LogManager.getLogManager().reset();
@@ -150,18 +150,18 @@ public class Errd4j
         }
 
         // Initialize
-        try 
+        try
         {
             logger.info("Trying to connect to " + foreignNodeName);
             self = new OtpNode(selfNodeName, erlangCookie);
             mbox = self.createMbox();
-            if (!self.ping(foreignNodeName, 2000)) 
-            { 
+            if (!self.ping(foreignNodeName, 2000))
+            {
                 logger.severe("Connection timed out");
                 return;
             }
         }
-        catch (IOException e) 
+        catch (IOException e)
         {
             logger.severe("Fail to connect foreign node: " + e.getMessage() + e);
             return;
@@ -179,19 +179,19 @@ public class Errd4j
             new ArrayBlockingQueue<Runnable>(threadQueueCapacity),
             new RrdReject()
         );
-        rrdDbPool = RrdDbPool.getInstance();    
+        rrdDbPool = RrdDbPool.getInstance();
 
         // then begin to loop and wait for calls
         OtpErlangObject call = null;
         RrdRunnable worker;
-        while (true) try 
+        while (true) try
         {
             call = mbox.receive();
             threadPool.execute(new RrdRunnable(call));
-        } 
-        catch (OtpErlangExit e) 
+        }
+        catch (OtpErlangExit e)
         {
-            
+
             logger.severe("Connexion closed: " + e.getMessage() + e);
             threadPool.shutdown();
             break;
@@ -293,11 +293,11 @@ public class Errd4j
         } catch (Exception e) {
             logger.warning("Fail to update rrd: " + e.getMessage() + e);
             rrdDbPool.release(rrdDb);
-            throw e;  
+            throw e;
         }
         rrdDbPool.release(rrdDb);
     }
-    
+ 
 
     /*
      * Handle create a rrd file.
@@ -318,7 +318,7 @@ public class Errd4j
     {
         rrdCreate(tuple);
         sendReply(caller, atomOk);
-    } 
+    }
 
     private static void rrdCreate(OtpErlangTuple tuple) throws Exception
     {
@@ -390,6 +390,10 @@ public class Errd4j
         }
         return archiveDef;
     }
+
+    public static Logger getLogger() {
+        return logger;
+    }
 }
 
 class RrdRunnable implements Runnable
@@ -417,7 +421,7 @@ class RrdRunnable implements Runnable
         }
         catch (Exception|Error e)
         {
-            Errd4j.logger.warning("RrdRunnable fail to decode tuple: " + e.getMessage() + e);
+            Errd4j.getLogger().warning("RrdRunnable fail to decode tuple: " + e.getMessage() + e);
             return;
         }
 
@@ -438,7 +442,7 @@ class RrdRunnable implements Runnable
                     Errd4j.handleRrdCreate(caller, payload);
                     break;
                 default:
-                    Errd4j.logger.warning("unknown command: " + command);
+                    Errd4j.getLogger().warning("unknown command: " + command);
                     OtpErlangTuple dreply = Errd4j.buildErrorReply(new OtpErlangString("undefined"));
                     Errd4j.sendReply(caller, dreply);
             }
@@ -450,7 +454,7 @@ class RrdRunnable implements Runnable
                     + command.toString() + " -> " + e + " " + e.getMessage())
             );
 
-            Errd4j.logger.warning("RrdRunnable failure: " + e.getMessage() + e);
+            Errd4j.getLogger().warning("RrdRunnable failure: " + e.getMessage() + e);
             Errd4j.sendReply(caller, reply);
         }
     }

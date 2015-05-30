@@ -1,15 +1,15 @@
 /* Copyright (C) 2014, Sebastien Serre <sserre.bx@gmail.com>
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all
  * copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -91,14 +91,14 @@ public class Snmpman
     private static Snmp                snmp4jSession   = null;
     private static DefaultUdpTransportMapping transport = null;
     private static char[] hexArray = "0123456789ABCDEF".toCharArray();
-    private static Map<String, SnmpmanElement> snmpmanElements = 
+    private static Map<String, SnmpmanElement> snmpmanElements =
         new HashMap<String, SnmpmanElement>();
 
     // logging
     private static final int LOG_MAX_BYTES = 10000000; // 10MB
     private static final int LOG_MAX_FILES = 5;        // 10MB + 5 max 50MB
     private static final boolean LOG_APPEND = true;
-    public static Logger logger;
+    private static Logger logger;
 
     public static void main(String[] args)
     {
@@ -178,24 +178,23 @@ public class Snmpman
 
         logger.info("initialize otp " + foreignNodeName);
         // Initialize
-        try 
+        try
         {
             logger.info("Trying to connect to " + foreignNodeName);
             node = new OtpNode(selfNodeName, erlangCookie);
             mbox = node.createMbox();
-            if (!node.ping(foreignNodeName, 2000)) 
-            { 
+            if (!node.ping(foreignNodeName, 2000))
+            {
                 logger.info("Connection timed out");
                 return;
             }
         }
-        catch (IOException e) 
+        catch (IOException e)
         {
             logger.severe("otp initialization failure: " + e.getMessage() + e);
             return;
         }
 
-        
         logger.info("aknownledge otp" + foreignNodeName);
         // when it is ok, inform the erl snmpman process
         acknowledgeOtpConnexion();
@@ -203,12 +202,12 @@ public class Snmpman
         logger.info("begin to loop" + foreignNodeName);
         // then begin to loop and wait for calls
         OtpErlangObject call = null;
-        while (true) try 
+        while (true) try
         {
             call = mbox.receive();
             handleMsg(call);
-        } 
-        catch (OtpErlangExit e) 
+        }
+        catch (OtpErlangExit e)
         {
             logger.info("Quit?" + e.getMessage() + e);
             break;
@@ -306,7 +305,7 @@ public class Snmpman
                     handleWalkTable(caller, payload);
                     break;
 
-                case "discovery": 
+                case "discovery":
                     handleDiscovery(caller, payload);
                     break;
 
@@ -389,7 +388,7 @@ public class Snmpman
 
     /**
      * Unregister a new element.
-     * High level API form snmpman. Delete the target and for snmp v3, the 
+     * High level API form snmpman. Delete the target and for snmp v3, the
      * localized USM user from the USM table.
      */
     private static void handleUnregisterElement(
@@ -397,7 +396,7 @@ public class Snmpman
     {
         OtpErlangString elementName = (OtpErlangString) (unregArg.elementAt(0));
         SnmpmanElement element = snmpmanElements.remove(elementName.stringValue());
-    
+
         if (element == null)
         {
             sendReply(caller, buildErrorReply(atomUnknownTarget));
@@ -434,7 +433,7 @@ public class Snmpman
             sendReply(caller, buildErrorReply(atomUnknownTarget));
             return;
         }
-        
+
         OID[] oidFinalList = new OID[oidList.arity()];
 
         for (int i =0; i<oidList.arity(); i++)
@@ -443,7 +442,7 @@ public class Snmpman
             OID oid = new OID(oidString.stringValue());
             if (oid.isValid() == false)
             {
-                sendReply(caller, 
+                sendReply(caller,
                     buildErrorReply(
                         new OtpErlangString(
                             "invalid OID: " + oidString.stringValue()
@@ -700,7 +699,7 @@ public class Snmpman
 
     private static void handleWhichUSMUsers(OtpErlangObject caller) throws Exception, Error
     {
-        List<UsmUserEntry> usmUsers = 
+        List<UsmUserEntry> usmUsers =
             snmp4jSession.getUSM().getUserTable().getUserEntries();
 
         int size = usmUsers.size();
@@ -708,7 +707,7 @@ public class Snmpman
 
         for (int i=0; i<usmUsers.size(); i++)
         {
-            replyObj[i] = 
+            replyObj[i] =
                 new OtpErlangString(usmUsers.get(i).getUserName().toString());
         }
         OtpErlangList replyList = new OtpErlangList(replyObj);
@@ -717,10 +716,6 @@ public class Snmpman
 
 
 
-
-    // UTILS  UTILS  UTILS  UTILS  UTILS  UTILS  UTILS  UTILS  UTILS 
-    // UTILS  UTILS  UTILS  UTILS  UTILS  UTILS  UTILS  UTILS  UTILS 
-    // UTILS  UTILS  UTILS  UTILS  UTILS  UTILS  UTILS  UTILS  UTILS 
 
 
     public static OtpErlangTuple buildOkReply(OtpErlangObject msg)
@@ -916,46 +911,46 @@ class RegisterArgs
 {
 
     public String elementName   = null;
-    public String host          = null; 
-    public String snmpVersion   = null; 
-    public String secLevel      = null; 
-    public String secName       = null; 
-    public String community     = null; 
-    public String authProto     = null; 
-    public String authKey       = null; 
-    public String privProto     = null; 
-    public String privKey       = null; 
-    public int    ipPort; 
-    public int    retries; 
-    public int    timeout; 
+    public String host          = null;
+    public String snmpVersion   = null;
+    public String secLevel      = null;
+    public String secName       = null;
+    public String community     = null;
+    public String authProto     = null;
+    public String authKey       = null;
+    public String privProto     = null;
+    public String privKey       = null;
+    public int    ipPort;
+    public int    retries;
+    public int    timeout;
 
     public RegisterArgs(OtpErlangTuple confTuple) throws Exception, Error
     {
-        OtpErlangString erlElementName = 
+        OtpErlangString erlElementName =
             (OtpErlangString) (confTuple.elementAt(1));
-        OtpErlangString erlHost = 
+        OtpErlangString erlHost =
             (OtpErlangString) (confTuple.elementAt(2));
-        OtpErlangLong   erlIpPort  = 
+        OtpErlangLong   erlIpPort  =
             (OtpErlangLong)   (confTuple.elementAt(3));
-        OtpErlangString erlSnmpVersion  = 
+        OtpErlangString erlSnmpVersion  =
             (OtpErlangString) (confTuple.elementAt(4));
-        OtpErlangString erlSecLevel  = 
+        OtpErlangString erlSecLevel  =
             (OtpErlangString) (confTuple.elementAt(5));
-        OtpErlangLong   erlRetries  = 
+        OtpErlangLong   erlRetries  =
             (OtpErlangLong)   (confTuple.elementAt(6));
-        OtpErlangLong   erlTimeout  = 
+        OtpErlangLong   erlTimeout  =
             (OtpErlangLong)   (confTuple.elementAt(7));
-        OtpErlangString erlSecName  = 
+        OtpErlangString erlSecName  =
             (OtpErlangString) (confTuple.elementAt(8));
-        OtpErlangString erlCommunity  = 
+        OtpErlangString erlCommunity  =
             (OtpErlangString) (confTuple.elementAt(9));
-        OtpErlangString erlAuthProto  = 
+        OtpErlangString erlAuthProto  =
             (OtpErlangString) (confTuple.elementAt(10));
-        OtpErlangString erlAuthKey  = 
+        OtpErlangString erlAuthKey  =
             (OtpErlangString) (confTuple.elementAt(11));
         OtpErlangString erlPrivProto =
             (OtpErlangString) (confTuple.elementAt(12));
-        OtpErlangString erlPrivKey  = 
+        OtpErlangString erlPrivKey  =
             (OtpErlangString) (confTuple.elementAt(13));
 
         elementName = erlElementName.stringValue();
@@ -983,11 +978,11 @@ class SnmpmanResponseListener implements ResponseListener
         to = caller;
     }
 
-    public void onResponse(ResponseEvent event) 
+    public void onResponse(ResponseEvent event)
     {
         ((Snmp)event.getSource()).cancel(event.getRequest(), this);
         PDU rep = event.getResponse();
-        if (rep == null) 
+        if (rep == null)
         {
             Snmpman.sendReply(to, Snmpman.buildErrorReply(Snmpman.atomTimeout));
         }
@@ -999,7 +994,7 @@ class SnmpmanResponseListener implements ResponseListener
             OtpErlangTuple snmpReplyTuple = new OtpErlangTuple(snmpReply);
             Snmpman.sendReply(to, snmpReplyTuple);
         }
-        else 
+        else
         {
             Vector<? extends VariableBinding> vbs = rep.getVariableBindings();
             ArrayList<OtpErlangTuple> bindsAcc = new ArrayList<OtpErlangTuple>();
@@ -1041,7 +1036,7 @@ class SnmpmanTreeListener implements TreeListener
         {
             VariableBinding[] vbs = event.getVariableBindings();
             for (VariableBinding vb : vbs)
-            { 
+            {
                 String   oidVal = vb.getOid().toString();
                 Variable var    = vb.getVariable();
                 int      syntax = var.getSyntax();
@@ -1063,7 +1058,7 @@ class SnmpmanTreeListener implements TreeListener
     {
         if (event.getStatus() == RetrievalEvent.STATUS_EXCEPTION)
         {
-            Snmpman.sendReply(to, 
+            Snmpman.sendReply(to,
                     Snmpman.buildErrorReply(Snmpman.atomException));
         }
         else if (event.getStatus() == RetrievalEvent.STATUS_OK)
@@ -1089,7 +1084,7 @@ class SnmpmanTreeListener implements TreeListener
 
         finished = true;
     }
-    
+
     public boolean isFinished()
     {
         return finished;

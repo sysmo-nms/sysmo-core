@@ -38,24 +38,24 @@ public class EQuartzNode extends Thread {
 
     private Logger logger;
     @Override
-    public void run() 
+    public void run()
     {
 
         logger = EQuartzLogger.getLogger();
 
         // Initialize otp
-        try 
+        try
         {
             self = new OtpNode(selfNodeName, erlangCookie);
             mbox = self.createMbox();
-            if (!self.ping(foreignNodeName, 2000)) 
-            { 
+            if (!self.ping(foreignNodeName, 2000))
+            {
 
                 logger.severe("Connection to " + foreignNodeName + " timed out");
                 return;
             }
         }
-        catch (IOException e) 
+        catch (IOException e)
         {
             logger.severe(e.getMessage() + e);
             return;
@@ -65,12 +65,12 @@ public class EQuartzNode extends Thread {
 
         // then begin to loop and wait for calls
         OtpErlangObject call = null;
-        while (true) try 
+        while (true) try
         {
             call = mbox.receive();
             handleMsg(call);
-        } 
-        catch (OtpErlangExit e) 
+        }
+        catch (OtpErlangExit e)
         {
             quartzHandler.handleTerminate();
             logger.info("Erlang exit: " + e.getMessage() + e);
@@ -122,7 +122,7 @@ public class EQuartzNode extends Thread {
             sendReply(caller, reply);
             return;
         }
-        
+
         quartzHandler.handleMsg(command, caller, payload);
     }
 
@@ -140,7 +140,7 @@ public class EQuartzNode extends Thread {
     private void handleInit(OtpErlangTuple initMsg)
     {
         OtpErlangString initElement = (OtpErlangString) (initMsg.elementAt(0));
-        logger.info("Handle init");
+        logger.info("Handle init" + initElement);
     }
 
 
@@ -156,7 +156,7 @@ public class EQuartzNode extends Thread {
             mbox.send(foreignPidName, foreignNodeName, tuple);
         }
     }
-    
+
     public void fire(
             OtpErlangAtom   m,
             OtpErlangAtom   f,
@@ -173,9 +173,9 @@ public class EQuartzNode extends Thread {
             mbox.send(foreignPidName, foreignNodeName, tuple);
         }
     }
-    // UTILS  UTILS  UTILS  UTILS  UTILS  UTILS  UTILS  UTILS  UTILS 
-    // UTILS  UTILS  UTILS  UTILS  UTILS  UTILS  UTILS  UTILS  UTILS 
-    // UTILS  UTILS  UTILS  UTILS  UTILS  UTILS  UTILS  UTILS  UTILS 
+
+
+
     public static OtpErlangTuple buildOkReply(OtpErlangObject msg)
     {
         OtpErlangObject[] valObj   = new OtpErlangObject[2];

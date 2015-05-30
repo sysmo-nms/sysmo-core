@@ -1,15 +1,15 @@
 /* Copyright (C) 2014, Sebastien Serre <sserre.bx@gmail.com>
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all
  * copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -25,7 +25,6 @@ import io.sysmo.nchecks.NChecksInterface;
 import io.sysmo.nchecks.Argument;
 import io.sysmo.nchecks.Reply;
 import io.sysmo.nchecks.Query;
-import io.sysmo.nchecks.Const;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -118,7 +117,7 @@ public class CheckICMP implements NChecksInterface
             if (intervalArg != null) { this.msInterval  = intervalArg.asInteger(); }
             if (useV6Arg    != null) { this.useIpv6     = useV6Arg.asString(); }
         } catch (Exception|Error e) {
-            reply.setStatus(Const.STATUS_ERROR);
+            reply.setStatus(Reply.STATUS_ERROR);
             reply.setReply("Missing argument or argument type is wrong: " + e);
             return reply;
         }
@@ -127,7 +126,7 @@ public class CheckICMP implements NChecksInterface
 
 
         if ("".equals(host)) {
-            reply.setStatus(Const.STATUS_DOWN);
+            reply.setStatus(Reply.STATUS_DOWN);
             reply.setReply("Host must be specified");
             return reply;
         }
@@ -137,7 +136,7 @@ public class CheckICMP implements NChecksInterface
             addr = InetAddress.getByName(host);
             this.host = addr.getHostAddress();
         } catch (Exception e) {
-            reply.setStatus(Const.STATUS_DOWN);
+            reply.setStatus(Reply.STATUS_DOWN);
             reply.setReply("Host lookup fail for: " + host);
             return reply;
         }
@@ -193,14 +192,14 @@ public class CheckICMP implements NChecksInterface
 
         } catch (Exception e) {
             e.printStackTrace();
-            reply.setStatus(Const.STATUS_ERROR);
+            reply.setStatus(Reply.STATUS_ERROR);
             String errorMsg = e + e.getMessage();
             reply.setReply(errorMsg);
             return reply;
         }
 
         if (returnStatus != 0) {
-            reply.setStatus(Const.STATUS_ERROR);
+            reply.setStatus(Reply.STATUS_ERROR);
             reply.setReply("CheckICMP ERROR: " + stdoutReturn + stderrReturn);
             return reply;
         }
@@ -208,7 +207,7 @@ public class CheckICMP implements NChecksInterface
 
         String[] ppingReturn = stdoutReturn.split(",");
         if (! "<PPING_RETURN>".equals(ppingReturn[0])) {
-            reply.setStatus(Const.STATUS_DOWN);
+            reply.setStatus(Reply.STATUS_DOWN);
             reply.setReply(String.format("CheckICMP ERROR: stdout=%s, stderr=%s", stderrReturn, stdoutReturn));
             return reply;
         } 
@@ -224,13 +223,13 @@ public class CheckICMP implements NChecksInterface
 
         String st = null;
         if (percentLoss == 100) {
-            st = Const.STATUS_DOWN;
+            st = Reply.STATUS_DOWN;
         }else if (percentLoss >= plCritical || avgReplyTime >= msCritical) {
-            st = Const.STATUS_CRITICAL;
+            st = Reply.STATUS_CRITICAL;
         } else if (percentLoss >= plWarning || avgReplyTime >= msWarning) {
-            st = Const.STATUS_WARNING;
+            st = Reply.STATUS_WARNING;
         } else {
-            st = Const.STATUS_OK;
+            st = Reply.STATUS_OK;
         }
         String formated = String.format(
             "CheckICMP %s: PktsLoss=%d%%, RTMin=%d, RTAverage=%d, RTMax=%d",

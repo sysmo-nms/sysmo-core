@@ -25,7 +25,6 @@ import io.sysmo.nchecks.NChecksInterface;
 import io.sysmo.nchecks.Argument;
 import io.sysmo.nchecks.Reply;
 import io.sysmo.nchecks.Query;
-import io.sysmo.nchecks.Const;
 
 import java.util.Map;
 import java.time.Instant;
@@ -44,8 +43,8 @@ public class CheckTCP implements NChecksInterface
     private int     msWarning   = 500;
     private int     msCritical  = 2500;
     private int     msTimeout   = 5000;
-    private String  refuseState = Const.STATUS_CRITICAL;
-    private String  acceptState = Const.STATUS_OK;
+    private String  refuseState = Reply.STATUS_CRITICAL;
+    private String  acceptState = Reply.STATUS_OK;
 
     public CheckTCP() {}
 
@@ -77,14 +76,14 @@ public class CheckTCP implements NChecksInterface
             if (acceptStateArg  != null) { acceptState = acceptStateArg.asString(); }
         } catch (Exception|Error e) {
             e.printStackTrace();
-            reply.setStatus(Const.STATUS_ERROR);
+            reply.setStatus(Reply.STATUS_ERROR);
             reply.setReply("Bad or wrong argumentis: " + e);
             return reply;
         }
 
 
         if (port == 0 || port > 65535) {
-            reply.setStatus(Const.STATUS_ERROR);
+            reply.setStatus(Reply.STATUS_ERROR);
             reply.setReply("CheckTCP ERROR: Bad port definition " + port);
             return reply;
         }
@@ -93,7 +92,7 @@ public class CheckTCP implements NChecksInterface
         try {
             addr = InetAddress.getByName(host);
         } catch (Exception e) {
-            reply.setStatus(Const.STATUS_ERROR);
+            reply.setStatus(Reply.STATUS_ERROR);
             reply.setReply("Host lookup fail for: " + host);
             return reply;
         }
@@ -116,14 +115,14 @@ public class CheckTCP implements NChecksInterface
         long elapsed = ChronoUnit.MILLIS.between(start,stop);
         reply.putPerformance("ReplyDuration", elapsed);
         String st = null;
-        if (Const.STATUS_OK.equals(acceptState))
+        if (Reply.STATUS_OK.equals(acceptState))
         {
             if (elapsed >= msCritical) {
-                st = Const.STATUS_CRITICAL;
+                st = Reply.STATUS_CRITICAL;
             } else if (elapsed >= msWarning) {
-                st = Const.STATUS_WARNING;
+                st = Reply.STATUS_WARNING;
             } else {
-                st = Const.STATUS_OK;
+                st = Reply.STATUS_OK;
             }
         } else {
             st = acceptState;

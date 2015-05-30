@@ -1,15 +1,15 @@
 /* Copyright (C) 2014, Sebastien Serre <sserre.bx@gmail.com>
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all
  * copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -22,9 +22,9 @@
 package io.sysmo.nchecks.helpers;
 
 import io.sysmo.nchecks.NHelperInterface;
+import io.sysmo.nchecks.NHelperReply;
 import io.sysmo.nchecks.Argument;
 import io.sysmo.nchecks.Query;
-import io.sysmo.nchecks.Const;
 import io.sysmo.nchecks.NHelperReply;
 import io.sysmo.nchecks.NHelperSimpleReply;
 import io.sysmo.nchecks.NHelperTableReply;
@@ -115,7 +115,6 @@ public class HelperNetworkInterfaces implements NHelperInterface
 
     public NHelperReply execute(Query query)
     {
-    
         try {
             AbstractTarget target = NChecksSNMP.getInstance().getTarget(query);
 
@@ -144,16 +143,15 @@ public class HelperNetworkInterfaces implements NHelperInterface
                 row.addItem("ifType", getType(vbs[2].getVariable().toString()));
                 row.addItem("ifPhysAddress", vbs[3].getVariable().toString());
                 table.addRow(row);
-                
             }
             table.setId("SelectNetworkInterfaces");
-            table.setStatus(Const.HELPER_SUCCESS);
+            table.setStatus(NHelperReply.SUCCESS);
             return table;
 
         } catch (Exception|Error e) {
             NHelperSimpleReply simple = new NHelperSimpleReply();
             simple.setId("SelectNetworkInterfaces");
-            simple.setStatus(Const.HELPER_FAILURE);
+            simple.setStatus(NHelperReply.FAILURE);
             simple.setMessage(e.toString());
             return simple;
         }

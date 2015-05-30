@@ -3,7 +3,6 @@ require 'benchmark'
 
 require 'java'
 import  'io.sysmo.nchecks.Reply'
-import  'io.sysmo.nchecks.Const'
 
 def execute(query)
   uri = URI('http://www.sysmo.io/index.html')
@@ -14,7 +13,7 @@ def execute(query)
 
   reply = Reply.new()
   reply.setReply("hello from ruby!")
-  reply.setStatus(Const::STATUS_OK)
+  reply.setStatus(Reply::STATUS_OK)
   reply.putPerformance("ReplyDuration", 2344)
   return reply
 end

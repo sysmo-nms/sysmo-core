@@ -13,5 +13,4 @@ dependencies {
     compile 'org.jruby:jruby:1.7.20'
 }
 
-findbugs { ignoreFailures = true }
 pmd { ignoreFailures = true }

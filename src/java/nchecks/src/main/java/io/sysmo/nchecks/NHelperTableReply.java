@@ -1,15 +1,15 @@
 /* Copyright (C) 2014, Sebastien Serre <sserre.bx@gmail.com>
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all
  * copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -24,7 +24,6 @@ package io.sysmo.nchecks;
 import io.sysmo.nchecks.NHelperReply;
 import io.sysmo.nchecks.NHelperTableRow;
 import io.sysmo.nchecks.NHelperTableItem;
-import io.sysmo.nchecks.Const;
 
 import java.util.Map;
 import java.util.HashMap;
@@ -56,7 +55,7 @@ public class NHelperTableReply implements NHelperReply
     public static final int FAILURE = 1;
     private String  messageId   = "";
     private String  message     = "";
-    private String  status      = Const.HELPER_SUCCESS;
+    private String  status      = NHelperReply.SUCCESS;
 
     private ArrayList<NHelperTableRow> rows;
     public NHelperTableReply() {
@@ -68,7 +67,8 @@ public class NHelperTableReply implements NHelperReply
     */
     public void setId(String val)  { messageId = val; }
     /*
-    *  Set the status (Const.HELPER_SUCCESS | Const.HELPER_FAILURE)
+    *  Set the status
+    * (NHelperReply.SUCCESS | NHelperReply.FAILURE)
     */
     public void setStatus(String val) { status = val; }
     /*

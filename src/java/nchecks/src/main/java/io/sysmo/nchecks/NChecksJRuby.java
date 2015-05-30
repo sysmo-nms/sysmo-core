@@ -31,13 +31,13 @@ public class NChecksJRuby {
 
     private static NChecksJRuby INSTANCE;
     public static NChecksJRuby getInstance() {return INSTANCE;}
-    public static void startJRuby(String scriptPath) {
-        new NChecksJRuby(scriptPath);
+    public static void startJRuby(String scriptPathArg) {
+        new NChecksJRuby(scriptPathArg);
     }
 
     private NChecksJRuby(String scriptDir) {
-        NChecksLogger.getLogger().info("init path: " + scriptPath);
         scriptPath = scriptDir;
+        NChecksLogger.getLogger().info("init path: " + scriptPath);
         smap = new HashMap<String,String>();
         INSTANCE = this;
         NChecksLogger.getLogger().info("JRuby init with path: " + scriptPath);
@@ -49,7 +49,7 @@ public class NChecksJRuby {
             if(val == null) {
                 String script = identifier + ".rb";
                 byte[] fbytes = Files.readAllBytes(Paths.get(scriptPath,script));
-                val = new String(fbytes);
+                val = new String(fbytes, "UTF-8");
                 smap.put(script,val);
                 return val;
             } else {
