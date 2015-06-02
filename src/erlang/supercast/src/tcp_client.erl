@@ -106,7 +106,7 @@ init([Encoder]) ->
 
 'WAIT_FOR_SOCKET'({socket_ready, Socket}, State) when is_port(Socket) ->
     %% Now we own the socket!
-    inet:setopts(Socket, [{active, once}, {packet, 4}, binary]),
+    inet:setopts(Socket, [{active, once}]),
     {ok, {IP, Port}} = inet:peername(Socket),
     NextState = State#client_state{
         socket          = Socket,

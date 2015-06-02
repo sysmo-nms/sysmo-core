@@ -116,7 +116,7 @@ init([Encoder, {Key, Cert, CACert}]) ->
         {protocol,          tlsv1},
         {active,            false}], 3000),
 
-    ssl:setopts(SSLSocket, [{active, once}, {packet, 4}, binary]),
+    ssl:setopts(SSLSocket, [{active, once}]),
     {ok, {IP, Port}} = inet:peername(Socket),
     NextState = State#client_state{
         socket          = SSLSocket,

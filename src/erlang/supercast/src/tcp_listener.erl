@@ -67,10 +67,9 @@ start_link(Port, Module, ConnLimit) ->
 init([Port, Module, ConnLimit]) ->
     process_flag(trap_exit, true),
     Opts = [
-        binary,
-        {packet,        2},
         {reuseaddr,     true},
         {keepalive,     true},
+        {packet,        4},
         {backlog,       30},
         {active,        false},
         {send_timeout,  40000},

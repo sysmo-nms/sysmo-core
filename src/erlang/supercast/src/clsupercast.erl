@@ -72,7 +72,7 @@ init([]) ->
     application:start(public_key),
     application:start(ssl),
 
-    case ssl:connect("localhost", 4443, [binary, {packet, 2}], infinity) of
+    case ssl:connect("localhost", 4443, [binary, {packet, 4}], infinity) of
         {ok, S} -> 
             io:format("clsupercast started...\n"), 
             {ok, #clsupercast_state{sock = S}};
