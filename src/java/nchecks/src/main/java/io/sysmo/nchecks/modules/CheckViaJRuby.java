@@ -29,8 +29,6 @@ import io.sysmo.nchecks.NChecksJRuby;
 import io.sysmo.nchecks.NChecksLogger;
 import org.jruby.embed.ScriptingContainer;
 
-import org.jruby.embed.ScriptingContainer;
-
 public class CheckViaJRuby implements NChecksInterface
 {
     public Reply execute(Query query)
@@ -49,7 +47,7 @@ public class CheckViaJRuby implements NChecksInterface
         Object receiver = container.runScriptlet(script);
         Reply rep;
         try {
-            rep = container.callMethod(receiver,"execute",query,Reply.class);
+            rep = container.callMethod(receiver,"check",query,Reply.class);
         } catch(Exception e) {
             Reply err = handleError("Script execution failure: " + rbScript, e);
             return err;

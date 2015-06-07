@@ -78,14 +78,11 @@ task :rel => [:build] do
 end
 
 desc "Run the release in foreground"
-task :run => [:rel] do
+task :run do
   cd ROOT; sh "./sysmo/bin/sysmo console"
   sh "epmd -kill"
 end
 
-task :jo do
-  generate_all_checks
-end
 
 # pping special case
 #
@@ -101,6 +98,7 @@ def install_pping_command()
     FileUtils.copy(unix_src,dst)
   end
 end
+
 
 #
 # generate AllChecks.xml

@@ -4,7 +4,7 @@ require 'benchmark'
 require 'java'
 import  'io.sysmo.nchecks.Reply'
 
-def execute(query)
+def check(query)
   uri = URI('http://www.sysmo.io/index.html')
   rep = nil
   delay = Benchmark.measure {
