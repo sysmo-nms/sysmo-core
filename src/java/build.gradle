@@ -6,6 +6,7 @@ subprojects {
     apply plugin: 'pmd'
     apply plugin: 'findbugs'
     apply plugin: 'jdepend'
+    apply plugin: 'eclipse'
 
     applicationDefaultJvmArgs = ["-server", "-Duser.language=en"]
 
