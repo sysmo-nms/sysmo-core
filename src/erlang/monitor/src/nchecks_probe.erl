@@ -446,9 +446,10 @@ init_nchecks(#probe{belong_to=TargetName,module_config=NCheck} = Probe) ->
 exec_nchecks(Class, Args, Opaque) ->
     case (catch(nchecks:check(Class,Args,Opaque))) of
         {'EXIT', Error} ->
+            error_logger:error_msg("~p ~p ERROR: ~p", [?MODULE, ?LINE, Error]),
             ProbeReturn = #probe_return{
                 status          = "ERROR",
-                reply_string    = Error,
+                reply_string    = io_lib:format("OUCH a system error has occured! Check the server logs to see more. Returning to normal operations."),
                 opaque          = Opaque
             };
         {ok, Reply} ->
@@ -467,9 +468,10 @@ exec_nchecks(Class, Args, Opaque) ->
                 opaque          = Opaque
             };
         {error, Error} ->
+            error_logger:error_msg("~p ~p ERROR: ~p", [?MODULE, ?LINE, Error]),
             ProbeReturn = #probe_return{
                 status          = "ERROR",
-                reply_string    = Error,
+                reply_string    = io_lib:format("OUCH a system error has occured! Check the server logs to see more. Returning to normal operations."),
                 opaque          = Opaque
             }
     end,
