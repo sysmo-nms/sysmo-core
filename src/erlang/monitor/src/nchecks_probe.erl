@@ -509,8 +509,8 @@ exec_nchecks(Class, Args, Opaque) ->
                 opaque          = Opaque
             };
 
-        {_ERROR, _} = Err -> % _ERROR = 'EXIT' | timeout | error
-            error_logger:error_msg("~p ~p ERROR: ~p", [?MODULE, ?LINE, Err]),
+         Error ->
+            error_logger:error_msg("~p ~p ERROR: ~p", [?MODULE, ?LINE, Error]),
             ProbeReturn = #probe_return{
                 status          = "ERROR",
                 reply_string    = ?CRASH,
@@ -607,9 +607,10 @@ rrd4j_init(ProbeName, Step, Args, TargetDir, XCheck_Content) ->
                     false ->
                         case (catch errd4j:create(
                                   FilePath, Step, DSDefinitions, "default")) of
-                            {_ERROR, _} = Err ->
+                            ok    -> ok;
+                            Error ->
                                 error_logger:error_msg(
-                                  "~p ~p ERROR: ~p", [?MODULE, ?LINE, Err])
+                                  "~p ~p ERROR: ~p", [?MODULE, ?LINE, Error])
                         end
                 end
             end, RRDList),
@@ -641,9 +642,10 @@ rrd4j_init(ProbeName, Step, Args, TargetDir, XCheck_Content) ->
 
                     case (catch errd4j:create(
                                   RrdFilePath,Step, DSDefinitions,"default")) of
-                        {_ERROR, _} = Err->
+                        ok    -> ok;
+                        Error ->
                             error_logger:error_msg(
-                                    "~p ~p ERROR: ~p", [?MODULE, ?LINE, Err])
+                              "~p ~p ERROR: ~p", [?MODULE, ?LINE, Error])
                     end,
 
 
