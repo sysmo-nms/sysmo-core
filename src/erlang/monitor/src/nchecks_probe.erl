@@ -29,6 +29,11 @@
 -include("../nchecks/include/nchecks.hrl").
 -include_lib("xmerl/include/xmerl.hrl").
 
+-define(CRASH, "
+OUCH a system error has occured!
+Check the server logs to see more.
+Returning to normal operations.
+").
 
 % gen_server
 -export([
@@ -39,8 +44,16 @@
     handle_info/2,
     terminate/2,
     code_change/3]).
+
+% supercast
 -export([get_perms/1,sync_request/2]).
+
+% spawned
 -export([exec_nchecks/3]).
+
+% monitor
+-export([force/1, trigger_return/2, pause/1, resume/1]).
+
 
 -record(state, {name,ref}).
 -record(nchecks_state, {
@@ -60,6 +73,13 @@
 }).
 
 
+%
+% monitor
+%
+force(Pid)                 -> gen_server:cast(Pid, force).
+trigger_return(Pid,CState) -> gen_server:cast(Pid, {trigger_return, CState}).
+pause(_Pid)                -> ok.
+resume(_Pid)               -> ok.
 
 
 start_link(#probe{name=Name} = Probe) ->
@@ -69,32 +89,36 @@ start_link(#probe{name=Name} = Probe) ->
 do_init(Probe) ->
     Ref = make_ref(),
     random:seed(erlang:now()),
-    {ok, DumpDir}   = application:get_env(supercast, http_sync_dir),
+    {ok, DumpDir}              = application:get_env(supercast, http_sync_dir),
     {{Class, Args}, RrdConfig} = init_nchecks(Probe),
-    TRef = monitor:send_after_rand(Probe#probe.step, {take_of, Ref}),
+    TRef                       = monitor:send_after_rand(
+                                              Probe#probe.step, {take_of, Ref}),
+
     NS = #nchecks_state{
-        class = Class,
-        args = Args,
-        dump_dir = DumpDir,
+        class      = Class,
+        args       = Args,
+        dump_dir   = DumpDir,
         rrd_config = RrdConfig
     },
+
     ES = #ets_state{
-        name             = Probe#probe.name,
-        permissions      = Probe#probe.permissions,
-        belong_to        = Probe#probe.belong_to,
-        tref             = TRef,
+        name                = Probe#probe.name,
+        permissions         = Probe#probe.permissions,
+        belong_to           = Probe#probe.belong_to,
+        tref                = TRef,
         current_status_from = erlang:now(),
-        current_status   = Probe#probe.status,
-        local_state      = NS
+        current_status      = Probe#probe.status,
+        local_state         = NS
     },
 
     monitor_data_master:set_probe_state(ES),
 
     % partial return for clients allready connected
     PartialReturn = #probe_return{
-        status=ES#ets_state.current_status,
-        reply_string=ES#ets_state.last_return},
+        status       = ES#ets_state.current_status,
+        reply_string = ES#ets_state.last_return},
     MilliRem = monitor:read_timer(ES#ets_state.tref),
+
     Pdu = monitor_pdu:probeReturn(
         PartialReturn,
         ES#ets_state.belong_to,
@@ -109,32 +133,30 @@ do_init(Probe) ->
 
 
 %%----------------------------------------------------------------------------
-%% supercast channel behaviour API
+%% supercast channel behaviour
 %%----------------------------------------------------------------------------
 get_perms(PidName) ->
-    #ets_state{permissions=Perm} =
-            monitor_data_master:get_probe_state(PidName),
+    #ets_state{permissions=Perm} = monitor_data_master:get_probe_state(PidName),
     Perm.
 
 sync_request(PidName, CState) ->
-    gen_server:cast({via, supercast_registrar, PidName},
-                                    {sync_request, CState}).
+    gen_server:cast({via, supercast_registrar, PidName}, {sync_request, CState}).
 
 do_sync_request(CState, S) ->
     ES       = monitor_data_master:get_probe_state(S#state.name),
 
     % generate tmp dir in dump dir
+    % TODO cleanup dirs
     DumpDir  = ES#ets_state.local_state#nchecks_state.dump_dir,
     TmpDir   = monitor:generate_temp_dir(),
     DumpPath = filename:join(DumpDir, TmpDir),
 
-    % the rrd file
+    % generate the rrd file
     {Type, RrdCfg}  = ES#ets_state.local_state#nchecks_state.rrd_config,
     case Type of
         simple ->
             file:make_dir(DumpPath),
-            RrdFile = RrdCfg,
-            % basename needed???
+            RrdFile     = RrdCfg,
             RrdFileBase = filename:basename(RrdFile),
 
             % copy rrdfile to tmpdir
@@ -143,13 +165,17 @@ do_sync_request(CState, S) ->
 
             % build the PDU
             Pdu = monitor_pdu:nchecksSimpleDumpMessage(
-                        S#state.name, TmpDir, RrdFileBase),
+                                            S#state.name, TmpDir, RrdFileBase),
             supercast_channel:subscribe(ES#ets_state.name, CState),
             supercast_channel:unicast(CState, [Pdu]);
+
         table ->
             file:make_dir(DumpPath),
-            #rrd_table{elements=Elements,suffix=Suffix,
-                                            base=Base,prefix=Prefix} = RrdCfg,
+            #rrd_table{
+               elements = Elements,
+               suffix   = Suffix,
+               base     = Base,
+               prefix   = Prefix} = RrdCfg,
 
             ElementToFile = lists:map(fun(X) ->
                 FileName   = lists:flatten([Prefix,X,Suffix]),
@@ -163,6 +189,7 @@ do_sync_request(CState, S) ->
                                         S#state.name, TmpDir, ElementToFile),
             supercast_channel:subscribe(ES#ets_state.name, CState),
             supercast_channel:unicast(CState, [Pdu]);
+
         _ ->
             ok
     end.
@@ -181,31 +208,32 @@ do_trigger_return(CState, S) ->
     ES = monitor_data_master:get_probe_state(S#state.name),
 
     PartialPR = #probe_return{
-        status=ES#ets_state.current_status,
-        reply_string=ES#ets_state.last_return
+        status       = ES#ets_state.current_status,
+        reply_string = ES#ets_state.last_return
     },
 
     MilliRem = monitor:read_timer(ES#ets_state.tref),
-    Pdu = monitor_pdu:probeReturn(
-        PartialPR,
-        ES#ets_state.belong_to,
-        ES#ets_state.name,
-        MilliRem
-    ),
-    supercast_channel:unicast(CState, [Pdu]),
-    ok.
+    Pdu      = monitor_pdu:probeReturn(
+            PartialPR, ES#ets_state.belong_to, ES#ets_state.name, MilliRem),
 
+    supercast_channel:unicast(CState, [Pdu]).
+
+% Force a probe trigger
 do_force(#state{ref=Ref} = S) ->
     ES  = monitor_data_master:get_probe_state(S#state.name),
+
+    % cancel the running timer if it exist
     case erlang:cancel_timer(ES#ets_state.tref) of
         false ->
             ok;
         _ ->
             TRef = monitor:send_after(0, {take_of, Ref}),
             monitor_data_master:set_probe_state(ES#ets_state{tref=TRef}),
+
+            % build and send PDU for client with new TRef info (TRef = now)
             PartialReturn = #probe_return{
-                status=ES#ets_state.current_status,
-                reply_string=ES#ets_state.last_return
+                status       = ES#ets_state.current_status,
+                reply_string = ES#ets_state.last_return
             },
             Pdu = monitor_pdu:probeReturn(
                 PartialReturn,
@@ -213,8 +241,8 @@ do_force(#state{ref=Ref} = S) ->
                 ES#ets_state.name,
                 500
             ),
-            supercast_channel:emit(?MASTER_CHANNEL,
-                                            {ES#ets_state.permissions, Pdu})
+            supercast_channel:emit(
+                            ?MASTER_CHANNEL, {ES#ets_state.permissions, Pdu})
     end.
 %%----------------------------------------------------------------------------
 %% monitor API END
@@ -231,10 +259,12 @@ do_handle_probe_return(PR, #state{ref=Ref} = S) ->
     % get the probe state
     ES  = monitor_data_master:get_probe_state(S#state.name),
 
+
     % set status and update monitor_events and data_master if required
-    [Probe]  = monitor_data_master:get(probe, S#state.name),
+    [Probe]   = monitor_data_master:get(probe, S#state.name),
     OldStatus = Probe#probe.status,
     NewStatus = PR#probe_return.status,
+
     case NewStatus of
         OldStatus ->
             monitor_events:notify(S#state.name, OldStatus);
@@ -244,20 +274,25 @@ do_handle_probe_return(PR, #state{ref=Ref} = S) ->
             monitor_data_master:update(probe, NewProbe)
     end,
 
+
     % errd4j update
     Ts  = PR#probe_return.timestamp,
     Pfs = PR#probe_return.perfs,
+
     case ES#ets_state.local_state#nchecks_state.rrd_config of
         {simple, RrdFile} ->
+
             case Pfs of
                 [] ->
                     UpdatePdu = monitor_pdu:nchecksSimpleUpdateMessage(
                         S#state.name,PR#probe_return.timestamp, []);
+
                 [{"simple",Perfs}] ->
                     (catch  errd4j:update(RrdFile, Perfs, Ts)),
                     UpdatePdu = monitor_pdu:nchecksSimpleUpdateMessage(
                         S#state.name,PR#probe_return.timestamp,Perfs)
             end;
+
         {table, Record} ->
             #rrd_table{base=BasePrefix,suffix=Suffix} = Record,
             RrdMultiUpdates = [
@@ -265,18 +300,21 @@ do_handle_probe_return(PR, #state{ref=Ref} = S) ->
                     || {XE,XP} <- Pfs],
             (catch errd4j:multi_update(RrdMultiUpdates)),
             UpdatePdu = monitor_pdu:nchecksTableUpdateMessage(
-                S#state.name,PR#probe_return.timestamp,Pfs)
+                                     S#state.name,PR#probe_return.timestamp,Pfs)
     end,
+
 
     % send update pdu for subscribers
     supercast_channel:emit(S#state.name,
                                     {ES#ets_state.permissions, UpdatePdu}),
 
-    % initiate LAUNCH
+
+    % schedule next trigger
     TRef        = monitor:send_after(Probe#probe.step, {take_of,Ref}),
     MilliRem    = monitor:read_timer(TRef),
 
-    % SEND MESSAGES to subscribers of master channel
+
+    % send message to subscribers of master channel
     Pdu = monitor_pdu:probeReturn(
         PR,
         ES#ets_state.belong_to,
@@ -284,13 +322,14 @@ do_handle_probe_return(PR, #state{ref=Ref} = S) ->
         MilliRem),
     supercast_channel:emit(?MASTER_CHANNEL, {ES#ets_state.permissions, Pdu}),
 
-    % WRITE
+
+    % write state
     monitor_data_master:set_probe_state(
         ES#ets_state{
-            tref=TRef,
+            tref                =TRef,
             current_status_from = erlang:now(),
-            current_status=PR#probe_return.status,
-            last_return=PR#probe_return.reply_string
+            current_status      = PR#probe_return.status,
+            last_return         = PR#probe_return.reply_string
         }
     ).
 
@@ -363,7 +402,6 @@ handle_info(_I, SData) ->
 terminate(_Reason, _S) ->
     normal.
 
-
 code_change(_OldVsn, S, _Extra) ->
     {ok, S}.
 
@@ -372,6 +410,7 @@ code_change(_OldVsn, S, _Extra) ->
 %% Nchecks functions
 %%----------------------------------------------------------------------------
 init_nchecks(#probe{belong_to=TargetName,module_config=NCheck} = Probe) ->
+
 
     % Get the target directory TargetDir
     [Target]  = monitor_data_master:get(target, TargetName),
@@ -382,6 +421,7 @@ init_nchecks(#probe{belong_to=TargetName,module_config=NCheck} = Probe) ->
     TargetSysProp   = Target#target.sys_properties,
     #nchecks_probe_conf{class=Class, identifier=Identifier, args=Args} = NCheck,
 
+
     % if "host" is not defined in probe conf, use the target "host" property
     case proplists:lookup("host", Args) of
         none ->
@@ -391,22 +431,27 @@ init_nchecks(#probe{belong_to=TargetName,module_config=NCheck} = Probe) ->
             Args2 = Args
     end,
 
+
     % Generate XML Class definition file path
     XmlDefinitionFile = string:concat(Identifier, ".xml"),
     XmlDefinitionPath = filename:join(
                                     ["etc", "nchecks", XmlDefinitionFile]),
 
+
     % Load XML file content
     {#xmlDocument{content=XDocument_Content}, _} =
         xmerl_scan:file(XmlDefinitionPath, [{document, true}]),
+
 
     % Extract <NChecks> content
     #xmlElement{content=XNChecks_Content} =
         lists:keyfind('NChecks', 2, XDocument_Content),
 
+
     % Extract <Check> content
     #xmlElement{content=XCheck_Content,attributes=XCheck_Attrib} =
         lists:keyfind('Check', 2, XNChecks_Content),
+
 
     % handle special case flags
     case lists:keyfind('Type', 2, XCheck_Attrib) of
@@ -415,43 +460,39 @@ init_nchecks(#probe{belong_to=TargetName,module_config=NCheck} = Probe) ->
             % the targetId for the check to work corectly
             Adds = [
                 {"target_id", TargetName},
-                {_,_} = lists:keyfind("snmp_port",1,TargetSysProp),
-                {_,_} = lists:keyfind("snmp_version",1,TargetSysProp),
-                {_,_} = lists:keyfind("snmp_seclevel",1,TargetSysProp),
-                {_,_} = lists:keyfind("snmp_community",1,TargetSysProp),
-                {_,_} = lists:keyfind("snmp_usm_user",1,TargetSysProp),
-                {_,_} = lists:keyfind("snmp_authkey",1,TargetSysProp),
-                {_,_} = lists:keyfind("snmp_authproto",1,TargetSysProp),
-                {_,_} = lists:keyfind("snmp_privkey",1,TargetSysProp),
-                {_,_} = lists:keyfind("snmp_privproto",1,TargetSysProp),
-                {_,_} = lists:keyfind("snmp_timeout",1,TargetSysProp),
-                {_,_} = lists:keyfind("snmp_retries",1,TargetSysProp)
+                {_,_} = lists:keyfind("snmp_port",      1, TargetSysProp),
+                {_,_} = lists:keyfind("snmp_version",   1, TargetSysProp),
+                {_,_} = lists:keyfind("snmp_seclevel",  1, TargetSysProp),
+                {_,_} = lists:keyfind("snmp_community", 1, TargetSysProp),
+                {_,_} = lists:keyfind("snmp_usm_user",  1, TargetSysProp),
+                {_,_} = lists:keyfind("snmp_authkey",   1, TargetSysProp),
+                {_,_} = lists:keyfind("snmp_authproto", 1, TargetSysProp),
+                {_,_} = lists:keyfind("snmp_privkey",   1, TargetSysProp),
+                {_,_} = lists:keyfind("snmp_privproto", 1, TargetSysProp),
+                {_,_} = lists:keyfind("snmp_timeout",   1, TargetSysProp),
+                {_,_} = lists:keyfind("snmp_retries",   1, TargetSysProp)
             ],
-            SortedAdds = lists:sort(Adds),
+            SortedAdds  = lists:sort(Adds),
             SortedArgs2 = lists:sort(Args2),
             Args3 = lists:merge(SortedAdds, SortedArgs2);
         _ ->
             Args3 = Args2
     end,
 
+
     % append check_id to args for jruby checks, do not hurt for others.
-    Args4 = [{"check_id", Identifier}|Args3],
+    Args4 = [{"check_id", Identifier} | Args3],
 
     #probe{name=ProbeName,step=Step} = Probe,
-    RrdState = rrd4j_init(ProbeName, Step, Args4, TargetDir, XCheck_Content),
+    {ok, RrdState} = rrd4j_init(ProbeName, Step, Args4, TargetDir, XCheck_Content),
 
+    % return
     {{Class, Args4}, RrdState}.
 
 
 exec_nchecks(Class, Args, Opaque) ->
     case (catch(nchecks:check(Class,Args,Opaque))) of
-        {'EXIT', Error} ->
-            error_logger:error_msg("~p ~p ERROR: ~p", [?MODULE, ?LINE, Error]),
-            ProbeReturn = #probe_return{
-                status          = "ERROR",
-                reply_string    = io_lib:format("OUCH a system error has occured! Check the server logs to see more. Returning to normal operations."),
-                opaque          = Opaque
-            };
+
         {ok, Reply} ->
             #nchecks_reply{
                status=Status,
@@ -467,15 +508,19 @@ exec_nchecks(Class, Args, Opaque) ->
                 perfs           = Perfs,
                 opaque          = Opaque
             };
-        {error, Error} ->
-            error_logger:error_msg("~p ~p ERROR: ~p", [?MODULE, ?LINE, Error]),
+
+        {_ERROR, _} = Err -> % _ERROR = 'EXIT' | timeout | error
+            error_logger:error_msg("~p ~p ERROR: ~p", [?MODULE, ?LINE, Err]),
             ProbeReturn = #probe_return{
                 status          = "ERROR",
-                reply_string    = io_lib:format("OUCH a system error has occured! Check the server logs to see more. Returning to normal operations."),
+                reply_string    = ?CRASH,
                 opaque          = Opaque
             }
+
     end,
     {ok, ProbeReturn}.
+
+
 
 %%----------------------------------------------------------------------------
 %% errd4j functions
@@ -488,7 +533,7 @@ rrd4j_init(ProbeName, Step, Args, TargetDir, XCheck_Content) ->
     ProbeDir = filename:join([TargetDir, ProbeName]),
     case filelib:is_dir(ProbeDir) of
         false -> file:make_dir(ProbeDir);
-        true -> ok
+        true  -> ok
     end,
 
 
@@ -496,66 +541,84 @@ rrd4j_init(ProbeName, Step, Args, TargetDir, XCheck_Content) ->
     % Extract <Performances> content and attributes. This is where we
     % have all our relevant informations.
     #xmlElement{
-        content=XPerformances_Content,
-        attributes=XPerformances_Attrib
+        content    = XPerformances_Content,
+        attributes = XPerformances_Attrib
     } = lists:keyfind('Performances', 2, XCheck_Content),
 
+
     % Extract <Performances Type="?"> attributes and switch
-    #xmlAttribute{value=XPerformances_Attr_Type} =
-        lists:keyfind('Type', 2, XPerformances_Attrib),
+    #xmlAttribute{
+         value = XPerformances_Attr_Type
+    } = lists:keyfind('Type', 2, XPerformances_Attrib),
+
 
     case XPerformances_Attr_Type of
+
         "table" ->
             % "table" Performance type mean one rrd file definition
             % for x files. For monitoring lists of things that return
             % values. For example, interfaces staticstics.
 
+
             % Get the prefix used to build file names
             XFilePrefix_Content = x_get_content_text(
                                         XPerformances_Content, 'FilePrefix'),
+
 
             % Get the suffix used to build file names
             XFileSuffix_Content = x_get_content_text(
                                         XPerformances_Content, 'FileSuffix'),
 
+
             % Get the flag from where we will create rrds
             XFlagSource_Content = x_get_attr_val(
                                         XPerformances_Content, 'FlagSource', 'Name'),
+
 
             % Get the flag conf himself. It should exist because it must be
             % a mandatory flag.
             {_Key,FlagValue} = lists:keyfind(XFlagSource_Content, 1, Args),
 
+
             % Get the flag from where we will create rrds
             XFlagSeparator_Content = x_get_content_text(
                                         XPerformances_Content,'FlagSeparator'),
 
+
             % With FlagSeparator and Args[Flag] content, generate a list
             % of elements
             RRDList = string:tokens(FlagValue, XFlagSeparator_Content),
+
 
             % Generate the path prefix/suffix
             Suffix = XFileSuffix_Content,
             Prefix = XFilePrefix_Content,
             BasePrefix = filename:join([ProbeDir, Prefix]),
 
+
             % Create ds definitions
             DSDefinitions = build_DS_Def(XPerformances_Content, Step),
 
-            % Maybe create rrd file
+            % Create rrd files if needed
             lists:foreach(fun(Element) ->
                 FilePath = lists:flatten([BasePrefix, Element, Suffix]),
                 case filelib:is_regular(FilePath) of
-                    true -> ok;
+                    true  -> ok;
                     false ->
-                        ok = errd4j:create(FilePath, Step,
-                                                    DSDefinitions, "default")
+                        case (catch errd4j:create(
+                                  FilePath, Step, DSDefinitions, "default")) of
+                            {_ERROR, _} = Err ->
+                                error_logger:error_msg(
+                                  "~p ~p ERROR: ~p", [?MODULE, ?LINE, Err])
+                        end
                 end
             end, RRDList),
 
+
             ?LOG({RRDList, BasePrefix, Suffix}),
-            {table, #rrd_table{elements=RRDList,base=BasePrefix,
-                                            suffix=Suffix,prefix=Prefix}};
+            {ok, {table, #rrd_table{elements=RRDList,base=BasePrefix,
+                                            suffix=Suffix,prefix=Prefix}}};
+
         "simple" ->
             % "simple" Performance type mean only one rrd file (but off course
             % possibly multiple datasources)
@@ -570,39 +633,55 @@ rrd4j_init(ProbeName, Step, Args, TargetDir, XCheck_Content) ->
             case filelib:is_regular(RrdFilePath) of
                 true ->
                     % Allready done
-                    {simple, RrdFilePath};
+                    {ok, {simple, RrdFilePath}};
                 false ->
                     % Create ds definitions
                     DSDefinitions = build_DS_Def(XPerformances_Content, Step),
                     % Create rrd file.
-                    ok = errd4j:create(RrdFilePath,Step,
-                                                DSDefinitions,"default"),
+
+                    case (catch errd4j:create(
+                                  RrdFilePath,Step, DSDefinitions,"default")) of
+                        {_ERROR, _} = Err->
+                            error_logger:error_msg(
+                                    "~p ~p ERROR: ~p", [?MODULE, ?LINE, Err])
+                    end,
+
+
                     % Return rrd file path
-                    {simple, RrdFilePath}
+                    {ok, {simple, RrdFilePath}}
             end;
-        _ ->
+        Unknown ->
+            error_logger:error_msg("~p ~p ERROR: unknown rrd type: ~p",
+                                                     [?MODULE, ?LINE, Unknown]),
             error
     end.
 
+
 x_get_content_text(Content, Key) ->
     #xmlElement{content=C1} = lists:keyfind(Key, 2, Content),
-    #xmlText{value=V} = lists:keyfind(xmlText, 1, C1),
+    #xmlText{value=V}       = lists:keyfind(xmlText, 1, C1),
+
     V.
 
+
 x_get_attr_val(Content, Key, Attr) ->
-    #xmlElement{attributes=A1} = lists:keyfind(Key, 2, Content),
-    #xmlAttribute{value=V} = lists:keyfind(Attr, 2, A1),
+    #xmlElement{attributes=A1} = lists:keyfind(Key,  2, Content),
+    #xmlAttribute{value=V}     = lists:keyfind(Attr, 2, A1),
+
     V.
+
 
 build_DS_Def(XPerformances_Content, Step) ->
     % Get DataSourceTable
     #xmlElement{content=XDataSourceTable_Content} =
         lists:keyfind('DataSourceTable', 2, XPerformances_Content),
 
+
     % Filter and only keep xmlElements
     XDataSourceTable_Elements = lists:filter(fun(E) ->
         is_record(E, xmlElement)
     end, XDataSourceTable_Content),
+
 
     % Build DS definition tuples for errd4j
     DSDefinitions = lists:map(fun(#xmlElement{attributes=XAttrib}) ->
@@ -610,4 +689,5 @@ build_DS_Def(XPerformances_Content, Step) ->
         #xmlAttribute{value=DsType}  = lists:keyfind('Type', 2, XAttrib),
         {DsId, DsType, Step *2, 'Nan', 'Nan'}
     end, XDataSourceTable_Elements),
+
     DSDefinitions.

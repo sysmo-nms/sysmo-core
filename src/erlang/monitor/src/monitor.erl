@@ -59,7 +59,7 @@
 %%-----------------------------------------------------------------------------
 %% PUBLIC API
 %%-----------------------------------------------------------------------------
-%% TODO python access to these functions
+%% TODO jruby access to these functions
 which_targets() -> monitor_data_master:which(target).
 which_probes()  -> monitor_data_master:which(probe).
 which_jobs()    -> monitor_data_master:which(job).
@@ -93,7 +93,12 @@ new_job({internal, Function}, Target) ->
 
 
 fire_job(JobId) ->
-    equartz:fire_now(JobId).
+    case (catch equartz:fire_now(JobId)) of
+        {_ERROR, _} = Err -> % _ERROR = 'EXIT' | timeout
+            error_logger:error_msg(
+                       "~p ~p: fire_job failure: ~p", [?MODULE, ?LINE, Err]);
+        ok -> ok
+    end.
 
 dependency_new(Probe, Depend) ->
     monitor_data_master:new(dependency, #dependency{a_probe=Probe,his_parent=Depend}).
@@ -114,9 +119,10 @@ new_probe({nchecks_probe, Identifier, JavaClass, Args}, Target) ->
 force_probe(PidName) ->
     case supercast_registrar:whereis_name(PidName) of
         undefined ->
-            ok;
+            error_logger:error_msg(
+                       "~p ~p: Unknown PidName: ~p", [?MODULE, ?LINE, PidName]);
         Pid ->
-            gen_server:cast(Pid, force)
+            nchecks_probe:force(Pid)
     end.
 %%-----------------------------------------------------------------------------
 %% PUBLIC API END
@@ -138,7 +144,13 @@ force_probe(PidName) ->
 % return time. It did not trigger a check.
 % @end
 trigger_probe_return(PidName, CState) ->
-    gen_server:cast({via, supercast_registrar, PidName}, {trigger_return, CState}).
+    case supercast_registrar:whereis_name(PidName) of
+        undefined ->
+            error_logger:error_msg(
+                       "~p ~p: Unknown PidName: ~p", [?MODULE, ?LINE, PidName]),
+            error;
+        Pid -> nchecks_probe:trigger_return(Pid, CState)
+    end.
 
 -spec timestamp() -> {Seconds::integer(), Microseconds::integer()}.
 % @private
@@ -217,12 +229,12 @@ fill_test(N,Parent) ->
         {"snmp_retries",  1}
     ],
     Prop = [
-        {"host",          "192.168.0.5"},
+        {"host",        "192.168.0.5"},
         {"dnsName",     "undefined"},
         {"sysName",     "undefined"}
     ],
 
-    K = new_target(SysProp, Prop),
+    K    = new_target(SysProp, Prop),
     Ping = new_probe({nchecks, "CheckICMP", []}, K),
     Snmp = new_probe({nchecks, "CheckNetworkInterfaces", [1,2,3]}, K),
     dependency_new(Ping, Parent),
