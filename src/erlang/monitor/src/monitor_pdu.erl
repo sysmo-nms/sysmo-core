@@ -47,9 +47,9 @@ nchecksSimpleUpdateMessage(Probe, Ts, Updates) ->
             {<<"type">>, <<"nchecksSimpleUpdateMessage">>},
             {<<"value">>,
                 {struct, [
-                    {<<"name">>,        char_to_binary(Probe)},
-                    {<<"timestamp">>,   Ts},
-                    {<<"rrdupdates">>,  {struct, Up}}
+                    {<<"name">>,       char_to_binary(Probe)},
+                    {<<"timestamp">>,  Ts},
+                    {<<"rrdupdates">>, {struct, Up}}
                 ]}
             }
         ]
@@ -85,9 +85,9 @@ nchecksTableUpdateMessage(Probe, Ts, Updates) ->
             {<<"type">>, <<"nchecksTableUpdateMessage">>},
             {<<"value">>,
                 {struct, [
-                    {<<"name">>,        char_to_binary(Probe)},
-                    {<<"timestamp">>,   Ts},
-                    {<<"rrdupdates">>,  {struct, Up}}
+                    {<<"name">>,       char_to_binary(Probe)},
+                    {<<"timestamp">>,  Ts},
+                    {<<"rrdupdates">>, {struct, Up}}
                 ]}
             }
         ]
@@ -102,9 +102,9 @@ nchecksTableDumpMessage(Probe, DumpDir, ElemToFile) ->
             {<<"type">>, <<"nchecksTableDumpMessage">>},
             {<<"value">>,
                 {struct, [
-                    {<<"name">>,        char_to_binary(Probe)},
-                    {<<"httpDumpDir">>, char_to_binary(DumpDir)},
-                    {<<"elementToFile">>,   {struct, ElToFile}}
+                    {<<"name">>,          char_to_binary(Probe)},
+                    {<<"httpDumpDir">>,   char_to_binary(DumpDir)},
+                    {<<"elementToFile">>, {struct, ElToFile}}
                 ]}
             }
         ]
@@ -113,25 +113,26 @@ nchecksTableDumpMessage(Probe, DumpDir, ElemToFile) ->
 simpleReply(QueryId, Status, Last, Msg) ->
     {struct,
         [
-            {<<"from">>, <<"monitorUser">>},
-            {<<"type">>, <<"reply">>},
+            {<<"from">>,    <<"monitorUser">>},
+            {<<"type">>,    <<"reply">>},
+            {<<"queryId">>, QueryId},
+            {<<"lastPdu">>, Last},
             {<<"value">>, {struct, [
-                {<<"queryId">>, QueryId},
-                {<<"status">>,  Status},
-                {<<"last">>,    Last},
-                {<<"reply">>,   char_to_binary(Msg)}]}}
+                {<<"status">>, Status},
+                {<<"reply">>,  char_to_binary(Msg)}]}}
         ]
     }.
 
 nchecksHelperReply(QueryId, Class, Reply) ->
     {struct,
         [
-            {<<"from">>, <<"monitorUser">>},
-            {<<"type">>, <<"reply">>},
+            {<<"from">>,    <<"monitorUser">>},
+            {<<"type">>,    <<"reply">>},
+            {<<"queryId">>, QueryId},
+            {<<"lastPdu">>, true},
             {<<"value">>, {struct, [
-                {<<"queryId">>, QueryId},
-                {<<"class">>,   char_to_binary(Class)},
-                {<<"reply">>,   {json, Reply}}]}}
+                {<<"class">>, char_to_binary(Class)},
+                {<<"reply">>, {json, Reply}}]}}
         ]
     }.
 
@@ -204,8 +205,8 @@ infoProbeCreate(Probe) -> infoProbe(Probe, <<"create">>).
 infoProbeUpdate(Probe) -> infoProbe(Probe, <<"update">>).
 infoProbe(Probe, InfoType) ->
     #probe{
-        permissions         = #perm_conf{read = R, write = W},
-        module_config       = ProbeConf } = Probe,
+        permissions   = #perm_conf{read = R, write = W},
+        module_config = ProbeConf } = Probe,
 
     JR = [char_to_binary(G) || G <- R],
     JW = [char_to_binary(G) || G <- W],
@@ -217,17 +218,17 @@ infoProbe(Probe, InfoType) ->
             {<<"from">>, <<"monitor">>},
             {<<"type">>, <<"infoProbe">>},
             {<<"value">>, {struct, [
-                {<<"target">>,      char_to_binary(Probe#probe.belong_to)},
-                {<<"name">>,        char_to_binary(Probe#probe.name)},
-                {<<"descr">>,       char_to_binary(Probe#probe.description)},
-                {<<"perm">>,        {struct, [{<<"read">>, {array, JR}}, {<<"write">>, {array, JW}}]}},
-                {<<"probeMod">>,    atom_to_binary(Probe#probe.module, utf8)},
-                {<<"probeId">>,     char_to_binary(Identifier)},
-                {<<"status">>,      char_to_binary(Probe#probe.status)},
-                {<<"timeout">>,     Probe#probe.timeout},
-                {<<"step">>,        Probe#probe.step},
-                {<<"active">>,      Probe#probe.active},
-                {<<"infoType">>,      InfoType}]}
+                {<<"target">>,   char_to_binary(Probe#probe.belong_to)},
+                {<<"name">>,     char_to_binary(Probe#probe.name)},
+                {<<"descr">>,    char_to_binary(Probe#probe.description)},
+                {<<"perm">>,     {struct, [{<<"read">>, {array, JR}}, {<<"write">>, {array, JW}}]}},
+                {<<"probeMod">>, atom_to_binary(Probe#probe.module, utf8)},
+                {<<"probeId">>,  char_to_binary(Identifier)},
+                {<<"status">>,   char_to_binary(Probe#probe.status)},
+                {<<"timeout">>,  Probe#probe.timeout},
+                {<<"step">>,     Probe#probe.step},
+                {<<"active">>,   Probe#probe.active},
+                {<<"infoType">>, InfoType}]}
             }
         ]
     }.

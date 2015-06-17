@@ -26,20 +26,20 @@ GRADLE    = File.join(JAVA_DIR,  "gradlew")
 #
 task :default => :rel
 
-desc "Compile all"
-task :build => [:java, :erlang, :pping]
+desc "Build all"
+task :build => [:java, :erl, :pping]
 
-desc "Compile pping"
+desc "Build pping"
 task :pping do
   cd GO_DIR;     sh "go build pping.go"
 end
 
-desc "Compile erlang"
-task :erlang do
+desc "Build erlang"
+task :erl do
   cd ERLANG_DIR; sh "#{REBAR} -r compile"
 end
 
-desc "Compile java"
+desc "Build java"
 task :java do
   cd JAVA_DIR;   sh "#{GRADLE} installDist"
 end

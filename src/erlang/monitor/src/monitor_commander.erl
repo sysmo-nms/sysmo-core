@@ -51,19 +51,22 @@ handle_command(Command, CState) ->
     gen_server:cast(?MODULE, {Command, CState}).
 
 handle_cast({{"createTargetQuery", Contents}, CState}, S) ->
+    ?LOG(Contents),
     % TODO check permissions and spawn and catch
-    {struct, Contents2} = proplists:get_value(<<"value">>, Contents),
-    {struct, Prop}  = proplists:get_value(<<"properties">>, Contents2),
-    {struct, SProp} = proplists:get_value(<<"sysProperties">>, Contents2),
-    QueryId  = proplists:get_value(<<"queryId">>, Contents2),
+    QueryId             = proplists:get_value(<<"queryId">>, Contents),
+    {struct, Contents2} = proplists:get_value(<<"value">>,   Contents),
+    {struct, Prop}      = proplists:get_value(<<"properties">>,    Contents2),
+    {struct, SProp}     = proplists:get_value(<<"sysProperties">>, Contents2),
     NProp    = [{binary_to_list(Key), maybe_str(Val)} || {Key,Val} <- Prop],
     NSysProp = [{binary_to_list(Key), maybe_str(Val)} || {Key,Val} <- SProp],
     {NProp2, NSysProp2} = sysprop_guard(NProp,NSysProp),
     TargetId = monitor:new_target(NSysProp2, NProp2),
     case snmp_enabled(NProp2) of
         true ->
-            SInfoJob  = monitor:new_job({internal, update_snmp_system_info}, TargetId),
-            IfInfoJob = monitor:new_job({internal, update_snmp_if_aliases},  TargetId),
+            SInfoJob  = monitor:new_job(
+                          {internal, update_snmp_system_info}, TargetId),
+            IfInfoJob = monitor:new_job(
+                          {internal, update_snmp_if_aliases},  TargetId),
             monitor:fire_job(SInfoJob),
             monitor:fire_job(IfInfoJob);
         false -> ok
@@ -75,14 +78,14 @@ handle_cast({{"createTargetQuery", Contents}, CState}, S) ->
 handle_cast({{"createNchecksQuery", Contents}, CState}, S) ->
     % TODO check permissions and spawn and catch
 
-    {struct, Contents2} = proplists:get_value(<<"value">>, Contents),
+    QueryId             = proplists:get_value(<<"queryId">>, Contents),
+    {struct, Contents2} = proplists:get_value(<<"value">>,   Contents),
     {struct, Prop}  = proplists:get_value(<<"properties">>, Contents2),
     Prop2 = [{binary_to_list(Key), maybe_str(Val)} || {Key, Val} <- Prop],
 
     Class   = binary_to_list(proplists:get_value(<<"class">>,      Contents2)),
     Id      = binary_to_list(proplists:get_value(<<"identifier">>, Contents2)),
     Target  = binary_to_list(proplists:get_value(<<"target">>,     Contents2)),
-    QueryId = proplists:get_value(<<"queryId">>, Contents2),
 
     ProbeId = monitor:new_probe({nchecks_probe, Id, Class, Prop2}, Target),
 
@@ -92,9 +95,9 @@ handle_cast({{"createNchecksQuery", Contents}, CState}, S) ->
 
 handle_cast({{"deleteProbeQuery", Contents}, CState}, S) ->
     % TODO check permissions and spawn and catch
-    {struct, Contents2} = proplists:get_value(<<"value">>, Contents),
+    QueryId             = proplists:get_value(<<"queryId">>, Contents),
+    {struct, Contents2} = proplists:get_value(<<"value">>,   Contents),
     Probe   = binary_to_list(proplists:get_value(<<"name">>,  Contents2)),
-    QueryId = proplists:get_value(<<"queryId">>,  Contents2),
     monitor:del_probe(Probe),
     ReplyPDU = monitor_pdu:simpleReply(QueryId, true, true, Probe),
     supercast_channel:unicast(CState, [ReplyPDU]),
@@ -112,9 +115,9 @@ handle_cast({{"deleteTargetQuery", Contents}, CState}, S) ->
 
 handle_cast({{"forceProbeQuery", Contents}, CState}, S) ->
     % TODO check permissions and spawn and catch
-    {struct, Contents2}  = proplists:get_value(<<"value">>, Contents),
+    QueryId              = proplists:get_value(<<"queryId">>, Contents),
+    {struct, Contents2}  = proplists:get_value(<<"value">>,   Contents),
     Probe   = binary_to_list(proplists:get_value(<<"name">>, Contents2)),
-    QueryId = proplists:get_value(<<"queryId">>, Contents2),
     monitor:force_probe(Probe),
     ReplyPDU = monitor_pdu:simpleReply(QueryId, true, true, Probe),
     supercast_channel:unicast(CState, [ReplyPDU]),
@@ -122,11 +125,11 @@ handle_cast({{"forceProbeQuery", Contents}, CState}, S) ->
 
 handle_cast({{"ncheckHelperQuery", Contents}, CState}, S) ->
     % TODO check permissions and spawn and catch
-    {struct, Contents2} = proplists:get_value(<<"value">>,  Contents),
+    QueryId             = proplists:get_value(<<"queryId">>, Contents),
+    {struct, Contents2} = proplists:get_value(<<"value">>,   Contents),
     Target  = binary_to_list(proplists:get_value(<<"target">>, Contents2)),
-    Class   = binary_to_list(proplists:get_value(<<"class">>,   Contents2)),
-    Type    = binary_to_list(proplists:get_value(<<"type">>,    Contents2)),
-    QueryId = proplists:get_value(<<"queryId">>, Contents2),
+    Class   = binary_to_list(proplists:get_value(<<"class">>,  Contents2)),
+    Type    = binary_to_list(proplists:get_value(<<"type">>,   Contents2)),
     case Type of
         "snmp"  -> Args = get_snmp_args(Target);
         _       -> Args = []
@@ -162,18 +165,18 @@ get_snmp_args(TargetName) ->
     TargetProp      = Target#target.properties,
     [
         {"target_id", TargetName},
-        {_,_} = lists:keyfind("host", 1, TargetProp),
-        {_,_} = lists:keyfind("snmp_port",1,TargetSysProp),
-        {_,_} = lists:keyfind("snmp_version",1,TargetSysProp),
-        {_,_} = lists:keyfind("snmp_seclevel",1,TargetSysProp),
-        {_,_} = lists:keyfind("snmp_community",1,TargetSysProp),
-        {_,_} = lists:keyfind("snmp_usm_user",1,TargetSysProp),
-        {_,_} = lists:keyfind("snmp_authkey",1,TargetSysProp),
-        {_,_} = lists:keyfind("snmp_authproto",1,TargetSysProp),
-        {_,_} = lists:keyfind("snmp_privkey",1,TargetSysProp),
-        {_,_} = lists:keyfind("snmp_privproto",1,TargetSysProp),
-        {_,_} = lists:keyfind("snmp_timeout",1,TargetSysProp),
-        {_,_} = lists:keyfind("snmp_retries",1,TargetSysProp)
+        {_,_} = lists:keyfind("host",           1, TargetProp),
+        {_,_} = lists:keyfind("snmp_port",      1, TargetSysProp),
+        {_,_} = lists:keyfind("snmp_version",   1, TargetSysProp),
+        {_,_} = lists:keyfind("snmp_seclevel",  1, TargetSysProp),
+        {_,_} = lists:keyfind("snmp_community", 1, TargetSysProp),
+        {_,_} = lists:keyfind("snmp_usm_user",  1, TargetSysProp),
+        {_,_} = lists:keyfind("snmp_authkey",   1, TargetSysProp),
+        {_,_} = lists:keyfind("snmp_authproto", 1, TargetSysProp),
+        {_,_} = lists:keyfind("snmp_privkey",   1, TargetSysProp),
+        {_,_} = lists:keyfind("snmp_privproto", 1, TargetSysProp),
+        {_,_} = lists:keyfind("snmp_timeout",   1, TargetSysProp),
+        {_,_} = lists:keyfind("snmp_retries",   1, TargetSysProp)
     ].
 
 
@@ -191,6 +194,7 @@ build_snmpConf(NSysProp) ->
     build_snmpConf(NSysProp, Default).
 build_snmpConf([], Default) -> Default;
 build_snmpConf([{"snmp_port", Val}|R], Default) ->
+    ?LOG({port_is, Val}),
     Port = erlang:list_to_integer(Val),
     NDefault = lists:keystore("snmp_port", 1, Default, {"snmp_port", Port}),
     build_snmpConf(R, NDefault);
