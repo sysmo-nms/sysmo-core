@@ -105,9 +105,9 @@ handle_cast({{"deleteProbeQuery", Contents}, CState}, S) ->
 
 handle_cast({{"deleteTargetQuery", Contents}, CState}, S) ->
     % TODO check permissions and spawn and catch
-    {struct, Contents2}  = proplists:get_value(<<"value">>, Contents),
+    QueryId              = proplists:get_value(<<"queryId">>, Contents),
+    {struct, Contents2}  = proplists:get_value(<<"value">>,   Contents),
     Target  = binary_to_list(proplists:get_value(<<"name">>, Contents2)),
-    QueryId = proplists:get_value(<<"queryId">>, Contents2),
     monitor:del_target(Target),
     ReplyPDU = monitor_pdu:simpleReply(QueryId, true, true, Target),
     supercast_channel:unicast(CState, [ReplyPDU]),
