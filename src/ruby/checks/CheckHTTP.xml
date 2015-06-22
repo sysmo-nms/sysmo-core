@@ -1,45 +1,38 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <NChecks xmlns="http://schemas.sysmo.io/2015/NChecks">
+
     <Check
         Id="CheckHTTP"
-        AttribUrl="www.sysmo.io"
-        UpdatesUrl="www.sysmo.io/nchecks/updates/CheckHTTP/"
-        Type="simple"
-        Class="io.sysmo.nchecks.modules.CheckViaJRuby" >
+        Version="1.0"
+        Class="io.sysmo.nchecks.modules.CheckViaJRuby">
+
         <Author><![CDATA[Sebastien Serre <ssbx@sysmo.io>]]></Author>
+        <AuthorUrl>http://www.sysmo.io</AuthorUrl>
+        <UpdatesUrl>http://www.sysmo.io/nchecks/updates/CheckHTTP/</UpdatesUrl>
+
         <Description>Check HTTP service availability on the specified host.</Description>
-        <Overview></Overview>
+        <Overview>Overview and examples here</Overview>
+
+
         <FlagTable>
-            <Flag
-                Id="host"
-                AutoFill="host"
-                Role="mandatory"
-                Type="string" >
-                <Default></Default>
+          <!-- If Default is inexistant, the flag is mandatory -->
+            <Flag Id="host">
                 <Hint>Hostname or IP</Hint>
                 <Usage>Host target as ip version 4/6 or hostname</Usage>
             </Flag>
-            <Flag
-                Id="port"
-                Minimum="1"
-                Maximum="65535"
-                Role="mandatory"
-                Type="integer" >
+            <Flag Id="port">
                 <Default>8080</Default>
                 <Hint>IP protocol port</Hint>
                 <Usage>HTTP port number to query</Usage>
             </Flag>
-            <Flag
-                Id="ms_timeout"
-                Minimum="0"
-                Maximum="60000"
-                Role="mandatory"
-                Type="integer" >
+            <Flag Id="ms_timeout">
                 <Default>5000</Default>
                 <Hint>Milliseconds</Hint>
                 <Usage>Abort connection if it exceed the value.</Usage>
             </Flag>
         </FlagTable>
+
+
         <Performances Type="simple">
             <FileName>CheckHTTP.rrd</FileName>
             <DataSourceTable>
