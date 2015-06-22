@@ -8,6 +8,7 @@
         Class="io.sysmo.nchecks.modules.CheckTCP" >
         <Author><![CDATA[Sebastien Serre <ssbx@sysmo.io>]]></Author>
         <Description>Check TCP service availability on the specified host.</Description>
+        <Overview></Overview>
         <FlagTable>
             <Flag
                 Id="host"

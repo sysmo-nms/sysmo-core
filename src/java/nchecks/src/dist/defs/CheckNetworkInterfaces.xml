@@ -8,6 +8,7 @@
         Class="io.sysmo.nchecks.modules.CheckNetworkInterfaces" >
         <Author><![CDATA[Sebastien Serre <ssbx@sysmo.io>]]></Author>
         <Description>Monitor and log interfaces performances values</Description>
+        <Overview></Overview>
         <HelperTable>
             <Helper
                 Id="SelectNetworkInterfaces"

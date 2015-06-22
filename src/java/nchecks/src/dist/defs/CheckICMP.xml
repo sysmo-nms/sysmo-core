@@ -8,6 +8,7 @@
         Class="io.sysmo.nchecks.modules.CheckICMP" >
         <Author><![CDATA[Sebastien Serre <ssbx@sysmo.io>]]></Author>
         <Description>Check host presence using ICMP echo request</Description>
+        <Overview></Overview>
         <FlagTable>
             <Flag
                 Id="host"

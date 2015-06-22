@@ -5,15 +5,26 @@ require 'java'
 import  'io.sysmo.nchecks.Reply'
 
 def check(query)
-  uri = URI('http://www.sysmo.io/index.html')
-  rep = nil
-  delay = Benchmark.measure {
-    rep = Net::HTTP.get_response(uri)
-  }
+  uri    = URI('http://www.sysmo.ioo/index.html')
+  repstr = nil
+  reply  = Reply.new()
 
-  reply = Reply.new()
-  reply.setReply("hello from ruby!")
-  reply.setStatus(Reply::STATUS_OK)
-  reply.putPerformance("ReplyDuration", 2344)
+  begin
+    delay = Benchmark.measure {
+      repstr = Net::HTTP.get_response(uri)
+    }
+    reply.setStatus(Reply::STATUS_OK)
+    reply.setReply("HTTP Get successfull")
+    reply.putPerformance("ReplyDuration", 2344)
+
+  rescue Timeout::Error
+    reply.setStatus(Reply::STATUS_CRITICAL)
+    reply.setReply("HTTP Get timeout")
+
+  rescue SocketError
+    reply.setStatus(Reply::STATUS_ERROR)
+    reply.setReply("HTTP Get SocketError")
+  end
+
   return reply
 end
