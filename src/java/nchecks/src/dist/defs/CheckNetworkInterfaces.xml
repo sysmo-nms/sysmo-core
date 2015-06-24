@@ -2,68 +2,88 @@
 <NChecks xmlns="http://schemas.sysmo.io/2015/NChecks">
     <Check
         Id="CheckNetworkInterfaces"
-        AttribUrl="www.sysmo.io"
-        UpdatesUrl="www.sysmo.io/nchecks/updates/CheckNetworkInterfaces/"
-        Type="snmp"
-        Class="io.sysmo.nchecks.modules.CheckNetworkInterfaces" >
-        <Author><![CDATA[Sebastien Serre <ssbx@sysmo.io>]]></Author>
+        Version="1.0"
+        Class="io.sysmo.nchecks.modules.CheckNetworkInterfaces">
+
+        <Author><![CDATA[Sebastien Serre (ssbx@sysmo.io)]]></Author>
+        <AuthorUrl>http://www.sysmo.io</AuthorUrl>
+        <UpdatesUrl>http://www.sysmo.io/nchecks/updates/CheckNetworkInterfaces/</UpdatesUrl>
+
         <Description>Monitor and log interfaces performances values</Description>
-        <Overview></Overview>
-        <HelperTable>
-            <Helper
-                Id="SelectNetworkInterfaces"
-                Type="snmp"
-                Return="table"
-                AutoStart="true"
-                Class="io.sysmo.nchecks.helpers.HelperNetworkInterfaces" >
-                <!--
-                "io.sysmo.nchecks.CheckNetworkInterfaces" should return a json object like:
-                {
-                    "name": "SelectNetworkInterfaces",
-                    "rows": [
-                        {"ifType": "9", "ifDescr": "fa0/0", "ifIndex": "0", "ifPhysAddress": "aa"}
-                    ]
-                }
-                -->
-                <Description>This helper offer a list view of the target device interfaces</Description>
-                <HelperTableReturn
-                    TreeRoot="ifType"
-                    Select="ifIndex"
-                    Sort="ifDescr"
-                    SelectionType="multiple"
-                    FillFlag="if_selection">
-                    <ListSeparator>,</ListSeparator>
-                    <Usage>Please select interfaces you want to monitor from the list.</Usage>
-                    <Column Id="ifDescr"        Position="0" Type="string" />
-                    <Column Id="ifIndex"        Position="1" Type="string" />
-                    <Column Id="ifPhysAddress"  Position="2" Type="string" />
-                </HelperTableReturn>
-            </Helper>
-        </HelperTable>
+        <Overview>Overview and examples here</Overview>
+
+        <Require Ressource="snmp" />
+
         <FlagTable>
-            <Flag
-                Id="if_selection"
-                Role="mandatory"
-                Type="string"
-                HelperButton="SelectNetworkInterfaces" >
-                <Default></Default>
-                <Hint>If indexes list</Hint>
+
+            <Flag Id="if_selection">
+                <Hint>A comma separated list of interfaces indexes.</Hint>
                 <Usage>Comma separated list of integers representing snmp interface indexes</Usage>
+
+                <Helper Id="SelectNetworkInterfaces" Type="table">
+                    <Require Ressource="snmp" />
+                    <Description>This helper offer a list view of the target device interfaces</Description>
+
+                    <!--
+                        Return will be a table (Helper:Type=table)
+                        of type tree (TableReturn:TreeRoot=tr), with treeroot "ifType".
+                        User will be able to select multiple(SelectionType)
+                        elements.
+                        The row "ifIndex"(Select) of all selected elements
+                        will be appended to the content of the flag, separated
+                        by ","(ListSeparator mandatory because SelectionType).
+                        A usage message(Usage) will be shown to user.
+                        The table will have 3 rows (Column...), ifDescr,
+                        ifIndex and ifPhysAddress. The fourth, ifType is not
+                        listed because it will appear as "ifType(content)" as
+                        the tree root.
+                        "io.sysmo.nchecks.CheckNetworkInterfaces" should
+                        return a json object like:
+                        {
+                            "name": "SelectNetworkInterfaces",
+                            "rows": [
+                                {
+                                    "ifType": "9",
+                                    "ifDescr": "fa0/0",
+                                    "ifIndex": "0",
+                                    "ifPhysAddress": "aa"
+                                }
+                            ]
+                        }
+                        -->
+                    <TableReturn
+                        TreeRoot="ifType"
+                        Select="ifIndex"
+                        SelectionType="multiple">
+                        <ListSeparator>,</ListSeparator>
+                        <Usage>Please select interfaces you want to monitor.</Usage>
+                        <Column Id="ifDescr"        Position="0" Type="string" />
+                        <Column Id="ifIndex"        Position="1" Type="string" />
+                        <Column Id="ifPhysAddress"  Position="2" Type="string" />
+                    </TableReturn>
+                </Helper>
+
             </Flag>
+
         </FlagTable>
+
+
         <Performances Type="table">
+
             <FlagSource Name="if_selection"/>
             <FlagSeparator>,</FlagSeparator>
 
             <FilePrefix>ifIndex</FilePrefix>
             <FileSuffix>.rrd</FileSuffix>
 
-            <PropertyPrefix>ifIndex</PropertyPrefix>
-            <PropertySuffix>-ifName</PropertySuffix>
 
             <!-- PropertyPrefix PropertySuffix
             if present, the client will take the
             ${prefix="ifIndex"}${"if_selection[x]"}${suffix=""} from the target -->
+            <PropertyPrefix>ifIndex</PropertyPrefix>
+            <PropertySuffix>-ifName</PropertySuffix>
+
+
             <DataSourceTable>
                 <DataSource Id="IfInOctets"       Type="COUNTER" />
                 <DataSource Id="IfInUcastPkts"    Type="COUNTER" />
@@ -92,7 +112,6 @@
                         Color="#726fcfff" >
                         Octets in
                     </Draw>
-    
                      <Draw
                         Type="line"
                         DataSource="IfOutOctets"
@@ -157,7 +176,6 @@
                         Color="#cc0000ff" >
                         Octets in
                     </Draw>
-    
                      <Draw
                         Type="line"
                         DataSource="IfOutErrors"

@@ -5,7 +5,7 @@
         Version="1.0"
         Class="io.sysmo.nchecks.modules.CheckTCP">
 
-        <Author><![CDATA[Sebastien Serre <ssbx@sysmo.io>]]></Author>
+        <Author><![CDATA[Sebastien Serre (ssbx@sysmo.io)]]></Author>
         <AuthorUrl>http://www.sysmo.io</AuthorUrl>
         <UpdatesUrl>http://www.sysmo.io/nchecks/updates/CheckTCP/</UpdatesUrl>
 
@@ -19,7 +19,6 @@
                 <Usage>Host target as ip version 4/6 or hostname</Usage>
             </Flag>
             <Flag Id="port">
-                <Default>8080</Default>
                 <Hint>IP protocol port number</Hint>
                 <Usage>TCP port number to query</Usage>
             </Flag>
