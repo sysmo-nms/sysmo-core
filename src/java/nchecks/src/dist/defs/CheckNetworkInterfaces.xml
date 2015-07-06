@@ -19,50 +19,9 @@
             <Flag Id="if_selection">
                 <Hint>A comma separated list of interfaces indexes.</Hint>
                 <Usage>Comma separated list of integers representing snmp interface indexes</Usage>
-
-                <Helper Id="SelectNetworkInterfaces" Type="table">
-                    <Require Ressource="snmp" />
-                    <Description>This helper offer a list view of the target device interfaces</Description>
-
-                    <!--
-                        Return will be a table (Helper:Type=table)
-                        of type tree (TableReturn:TreeRoot=tr), with treeroot "ifType".
-                        User will be able to select multiple(SelectionType)
-                        elements.
-                        The row "ifIndex"(Select) of all selected elements
-                        will be appended to the content of the flag, separated
-                        by ","(ListSeparator mandatory because SelectionType).
-                        A usage message(Usage) will be shown to user.
-                        The table will have 3 rows (Column...), ifDescr,
-                        ifIndex and ifPhysAddress. The fourth, ifType is not
-                        listed because it will appear as "ifType(content)" as
-                        the tree root.
-                        "io.sysmo.nchecks.CheckNetworkInterfaces" should
-                        return a json object like:
-                        {
-                            "name": "SelectNetworkInterfaces",
-                            "rows": [
-                                {
-                                    "ifType": "9",
-                                    "ifDescr": "fa0/0",
-                                    "ifIndex": "0",
-                                    "ifPhysAddress": "aa"
-                                }
-                            ]
-                        }
-                        -->
-                    <TableReturn
-                        TreeRoot="ifType"
-                        Select="ifIndex"
-                        SelectionType="multiple">
-                        <ListSeparator>,</ListSeparator>
-                        <Usage>Please select interfaces you want to monitor.</Usage>
-                        <Column Id="ifDescr"        Position="0" Type="string" />
-                        <Column Id="ifIndex"        Position="1" Type="string" />
-                        <Column Id="ifPhysAddress"  Position="2" Type="string" />
-                    </TableReturn>
-                </Helper>
-
+                <Helper
+                    Id="SelectNetworkInterfaces"
+                    Class="io.sysmo.nchecks.modules.CheckNetworkInterfaces" />
             </Flag>
 
         </FlagTable>

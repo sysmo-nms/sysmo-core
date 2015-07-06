@@ -123,6 +123,25 @@ handle_cast({{"forceProbeQuery", Contents}, CState}, S) ->
     supercast_channel:unicast(CState, [ReplyPDU]),
     {noreply, S};
 
+handle_cast({{"ncheckHelperQuery2", Contents}, CState}, S) ->
+    QueryId             = proplists:get_value(<<"queryId">>, Contents),
+    {struct, Contents2} = proplists:get_value(<<"value">>,   Contents),
+    Target = binary_to_list(proplists:get_value(<<"target">>, Contents2)),
+    Class  = binary_to_list(proplists:get_value(<<"class">>,  Contents2)),
+    HId    = binary_to_list(proplists:get_value(<<"id">>,     Contents2)),
+    Props  = get_all_target_properties(Target),
+    case (catch nchecks:helper2(Class, HId, Props)) of
+        {ok, Reply} ->
+            Success = io_lib:format("~p", [Reply]),
+            ReplyPDU = monitor_pdu:simpleReply(QueryId, false, true, Success),
+            supercast_channel:unicast(CState, [ReplyPDU]);
+        Error ->
+            ErrorStr = io_lib:format("~p", [Error]),
+            ReplyPDU = monitor_pdu:simpleReply(QueryId, false, true, ErrorStr),
+            supercast_channel:unicast(CState, [ReplyPDU])
+    end,
+    {noreply, S};
+
 handle_cast({{"ncheckHelperQuery", Contents}, CState}, S) ->
     % TODO check permissions and spawn and catch
     QueryId             = proplists:get_value(<<"queryId">>, Contents),
@@ -158,6 +177,11 @@ terminate(_R, _S)       -> normal.
 code_change(_O, S, _E)  -> {ok, S}.
 %%----------------------------------------------------------------------------
 
+get_all_target_properties(TargetName) ->
+    [Target]        = monitor_data_master:get(target, TargetName),
+    TargetSysProp   = Target#target.sys_properties,
+    TargetProp      = Target#target.properties,
+    lists:append(TargetSysProp, TargetProp).
 
 get_snmp_args(TargetName) ->
     [Target]        = monitor_data_master:get(target, TargetName),

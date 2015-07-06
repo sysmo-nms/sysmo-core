@@ -32,3 +32,7 @@ pping.exe
 /src/java/*/.settings
 /src/java/*/bin
 /src/java/*.log
+
+# intellij
+*.iml
+.idea

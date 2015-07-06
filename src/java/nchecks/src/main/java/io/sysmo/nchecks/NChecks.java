@@ -320,6 +320,16 @@ public class NChecks
                         args);
                 threadPool.execute(worker);
             }
+            else if (cmdstr.equals("helper2")) {
+                OtpErlangString erlangClassName =
+                    (OtpErlangString)
+                    (payload.elementAt(0));
+                String className = erlangClassName.stringValue();
+                OtpErlangString erlangIdName =
+                    (OtpErlangString)
+                    (payload.elementAt(1));
+                String idName = erlangIdName.stringValue();
+            }
             else if (cmdstr.equals("init"))     handleInit(payload);
             else if (cmdstr.equals("cleanup"))  NChecksSNMP.getInstance().cleanup();
             else

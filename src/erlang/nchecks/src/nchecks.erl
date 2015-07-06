@@ -1,15 +1,15 @@
 % Copyright (C) 2014, Sebastien Serre <sserre.bx@gmail.com>
-% 
+%
 % Permission is hereby granted, free of charge, to any person obtaining a copy
 % of this software and associated documentation files (the "Software"), to deal
 % in the Software without restriction, including without limitation the rights
 % to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 % copies of the Software, and to permit persons to whom the Software is
 % furnished to do so, subject to the following conditions:
-% 
+%
 % The above copyright notice and this permission notice shall be included in all
 % copies or substantial portions of the Software.
-% 
+%
 % THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 % IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 % FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -40,7 +40,8 @@
 % API
 -export([
     check/3,
-    helper/2
+    helper/2,
+    helper2/3
 ]).
 
 -record(state, {
@@ -53,11 +54,16 @@
 -define(CHECK_TIMEOUT, 15000).
 
 helper(Class, ArgList) ->
-    gen_server:call(?MODULE, {call_nchecks, 
+    gen_server:call(?MODULE, {call_nchecks,
                 {helper, {Class, ArgList}}}, ?CHECK_TIMEOUT).
 
+helper2(_Class, _Id, _Props) ->
+    %gen_server:call(?MODULE, {call_nchecks,
+                %{helper2, {Class, Id, Props}}}, ?CHECK_TIMEOUT).
+    "hello helper2".
+
 check(Class, ArgList, Opaque) ->
-    gen_server:call(?MODULE, {call_nchecks, 
+    gen_server:call(?MODULE, {call_nchecks,
                 {check, {Class, ArgList, Opaque}}}, ?CHECK_TIMEOUT).
 
 % @private
