@@ -57,10 +57,10 @@ helper(Class, ArgList) ->
     gen_server:call(?MODULE, {call_nchecks,
                 {helper, {Class, ArgList}}}, ?CHECK_TIMEOUT).
 
-helper2(_Class, _Id, _Props) ->
-    %gen_server:call(?MODULE, {call_nchecks,
-                %{helper2, {Class, Id, Props}}}, ?CHECK_TIMEOUT).
-    "hello helper2".
+helper2(Class, Id, Props) ->
+    io:format("call nechecks 2~n"),
+    gen_server:call(?MODULE, {call_nchecks,
+                {helper2, {Class, Id, Props}}}, ?CHECK_TIMEOUT).
 
 check(Class, ArgList, Opaque) ->
     gen_server:call(?MODULE, {call_nchecks,
@@ -86,14 +86,14 @@ init([]) ->
     gen_server:cast(?MODULE, boot),
     {ok, #state{}}.
 
-% CALL 
+% CALL
 % @private
 handle_call(assert_init, F, #state{nchecks_pid = undefined} = S) ->
     {noreply, S#state{assert_init = F}};
 handle_call(assert_init, _F, S) ->
     {reply, ok, S};
 
-handle_call({call_nchecks, {Command, Payload}}, From, 
+handle_call({call_nchecks, {Command, Payload}}, From,
         #state{nchecks_pid = NChecks, replies_waiting = RWait} = S) ->
     NChecks ! {Command, From, Payload},
     {noreply, S#state{replies_waiting = [From|RWait]}}.
@@ -114,14 +114,14 @@ handle_cast(_,S) ->
 handle_info({Pid, nchecks_running}, S) ->
     io:format("receive init~n"),
     case S#state.assert_init of
-        undefined -> 
+        undefined ->
             ok;
         F ->
             gen_server:reply(F, ok)
     end,
     erlang:link(Pid),
     Pid ! {init, {}, {empty_init}},
-    {noreply, 
+    {noreply,
         S#state{
             nchecks_pid      = Pid,
             replies_waiting = [],
@@ -136,7 +136,7 @@ handle_info(stop, S) ->
 
 handle_info({reply, From, Reply}, #state{replies_waiting = RWait} = S) ->
     gen_server:reply(From, Reply),
-    {noreply, 
+    {noreply,
         S#state{
             replies_waiting = lists:delete(From, RWait)
         }

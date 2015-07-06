@@ -21,6 +21,8 @@
 
 package io.sysmo.nchecks;
 import io.sysmo.nchecks.NChecksInterface;
+import io.sysmo.nchecks.NHelperInterface;
+import io.sysmo.nchecks.NHelperInterface2;
 import io.sysmo.nchecks.NChecksLogger;
 import io.sysmo.nchecks.Argument;
 import io.sysmo.nchecks.Reply;
@@ -75,7 +77,7 @@ public class NChecks
     private static  int threadCorePoolSize;
     private static  int threadQueueCapacity;
 
-    private static Logger logger;
+    public static Logger logger;
 
     public static void main(String[] args)
     {
@@ -233,7 +235,7 @@ public class NChecks
 
     public static OtpErlangTuple buildOkReply(OtpErlangObject msg)
     {
-        OtpErlangObject[] valObj   = new OtpErlangObject[2];
+        OtpErlangObject[] valObj = new OtpErlangObject[2];
         valObj[0] = atomOk;
         valObj[1] = msg;
         OtpErlangTuple valTuple = new OtpErlangTuple(valObj);
@@ -284,6 +286,7 @@ public class NChecks
 
         try
         {
+            System.out.println("hello: " + command.toString());
             String cmdstr = command.toString();
             if (cmdstr.equals("check"))
             {
@@ -329,6 +332,14 @@ public class NChecks
                     (OtpErlangString)
                     (payload.elementAt(1));
                 String idName = erlangIdName.stringValue();
+                OtpErlangList args = (OtpErlangList)
+                    (payload.elementAt(2));
+                Runnable worker = new NHelperRunnable2(
+                        Class.forName(className).newInstance(),
+                        idName,
+                        caller,
+                        args);
+                threadPool.execute(worker);
             }
             else if (cmdstr.equals("init"))     handleInit(payload);
             else if (cmdstr.equals("cleanup"))  NChecksSNMP.getInstance().cleanup();
@@ -503,6 +514,49 @@ class NHelperRunnable implements Runnable
     {
         Query           query        = new Query(NChecks.decodeArgs(args));
         NHelperReply    helperReply  = helper.execute(query);
+        OtpErlangList   jsonCharList = buildErlangCharList(helperReply.toCharArray());
+        OtpErlangObject replyMsg     = NChecks.buildOkReply(jsonCharList);
+        NChecks.sendReply(caller, replyMsg);
+    }
+
+    public OtpErlangObject getCaller() {return this.caller;}
+
+    private static OtpErlangList buildErlangCharList(char[] charList)
+    {
+        OtpErlangObject[] objList = new OtpErlangObject[charList.length];
+        for (int i = 0; i < charList.length; i++)
+        {
+            objList[i] = new OtpErlangChar(charList[i]);
+        }
+        OtpErlangList erlangList = new OtpErlangList(objList);
+        return erlangList;
+    }
+}
+
+class NHelperRunnable2 implements Runnable
+{
+    private NHelperInterface2 helper;
+    private String            helper_id;
+    private OtpErlangObject   caller;
+    private OtpErlangList     args;
+
+    public NHelperRunnable2(
+            Object          helpObj,
+            String          id,
+            OtpErlangObject callerObj,
+            OtpErlangList   argsList)
+    {
+        helper    = (NHelperInterface2) helpObj;
+        helper_id = id;
+        caller    = callerObj;
+        args      = argsList;
+    }
+
+    @Override
+    public void run()
+    {
+        Query           query        = new Query(NChecks.decodeArgs(args));
+        NHelperReply    helperReply  = helper.callHelper(query, helper_id);
         OtpErlangList   jsonCharList = buildErlangCharList(helperReply.toCharArray());
         OtpErlangObject replyMsg     = NChecks.buildOkReply(jsonCharList);
         NChecks.sendReply(caller, replyMsg);

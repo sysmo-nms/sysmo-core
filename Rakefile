@@ -86,6 +86,7 @@ end
 
 desc "Generate a fresh release in directory ./sysmo"
 task :rel => [:build] do
+  FileUtils.rm_rf("sysmo/java_apps")
   cd ROOT; sh "#{REBAR} generate"
   install_pping_command()
   generate_all_checks()
