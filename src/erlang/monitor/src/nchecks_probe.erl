@@ -449,35 +449,12 @@ init_nchecks(#probe{belong_to=TargetName,module_config=NCheck} = Probe) ->
 
 
     % Extract <Check> content
-    #xmlElement{content=XCheck_Content,attributes=XCheck_Attrib} =
+    % TODO remove #ncheck_probe_conf.class and use XCheck_Attrib(Class)
+    #xmlElement{content=XCheck_Content,attributes=_XCheck_Attrib} =
         lists:keyfind('Check', 2, XNChecks_Content),
 
 
-    % handle special case flags
-    case lists:keyfind('Type', 2, XCheck_Attrib) of
-        #xmlAttribute{value="snmp"} ->
-            % must add all the snmp flags +
-            % the targetId for the check to work corectly
-            Adds = [
-                {"target_id", TargetName},
-                {_,_} = lists:keyfind("snmp_port",      1, TargetSysProp),
-                {_,_} = lists:keyfind("snmp_version",   1, TargetSysProp),
-                {_,_} = lists:keyfind("snmp_seclevel",  1, TargetSysProp),
-                {_,_} = lists:keyfind("snmp_community", 1, TargetSysProp),
-                {_,_} = lists:keyfind("snmp_usm_user",  1, TargetSysProp),
-                {_,_} = lists:keyfind("snmp_authkey",   1, TargetSysProp),
-                {_,_} = lists:keyfind("snmp_authproto", 1, TargetSysProp),
-                {_,_} = lists:keyfind("snmp_privkey",   1, TargetSysProp),
-                {_,_} = lists:keyfind("snmp_privproto", 1, TargetSysProp),
-                {_,_} = lists:keyfind("snmp_timeout",   1, TargetSysProp),
-                {_,_} = lists:keyfind("snmp_retries",   1, TargetSysProp)
-            ],
-            SortedAdds  = lists:sort(Adds),
-            SortedArgs2 = lists:sort(Args2),
-            Args3 = lists:merge(SortedAdds, SortedArgs2);
-        _ ->
-            Args3 = Args2
-    end,
+    Args3 = build_snmp_args(Args2, TargetSysProp, TargetName),
 
 
     % append check_id to args for jruby checks, do not hurt for others.
@@ -488,6 +465,24 @@ init_nchecks(#probe{belong_to=TargetName,module_config=NCheck} = Probe) ->
 
     % return
     {{Class, Args4}, RrdState}.
+
+
+build_snmp_args(Args,TargetSysProp,TargetName) ->
+    Adds = ["snmp_port","snmp_version","snmp_seclevel","snmp_community",
+            "snmp_usm_user","snmp_authkey","snmp_authproto","snmp_privkey",
+            "snmp_privproto", "snmp_timeout", "snmp_retries"],
+    Adds2 = build_snmp_args2(TargetSysProp,Adds,[{"target_id",TargetName}]),
+    SortedAdds = lists:sort(Adds2),
+    SortedArgs = lists:sort(Args),
+    lists:merge(SortedAdds, SortedArgs).
+build_snmp_args2(_,[], Value) -> Value;
+build_snmp_args2(TargetSysProp,[Prop|Others], Value) ->
+    case lists:keyfind(Prop,1,TargetSysProp) of
+        false ->
+            build_snmp_args2(TargetSysProp,Others,Value);
+        Val ->
+            build_snmp_args2(TargetSysProp,Others,[Val|Value])
+    end.
 
 
 exec_nchecks(Class, Args, Opaque) ->
