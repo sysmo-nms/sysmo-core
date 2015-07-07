@@ -280,6 +280,11 @@ class GetIfTableHelper
             }
             table.setId("SelectNetworkInterfaces");
             table.setStatus(NHelperReply.SUCCESS);
+            table.setMessage("Please select interfaces you want to monitor:");
+            table.setTreeRoot("ifType");
+            table.setSelectColumn("ifIndex");
+            table.setSelectType(NHelperTableReply.SELECT_MULTIPLE);
+            table.setListSeparator(",");
             return table;
 
         } catch (Exception|Error e) {

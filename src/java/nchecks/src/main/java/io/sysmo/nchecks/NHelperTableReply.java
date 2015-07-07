@@ -51,30 +51,21 @@ import javax.json.JsonObjectBuilder;
 public class NHelperTableReply implements NHelperReply
 {
 
-    public static final int SUCCESS = 0;
-    public static final int FAILURE = 1;
-    private String  messageId   = "";
-    private String  message     = "";
-    private String  status      = NHelperReply.SUCCESS;
+    public static final String SELECT_SINGLE   = "single";
+    public static final String SELECT_MULTIPLE = "multiple";
+    private String messageId = "";
+    private String message   = "";
+    private String status    = NHelperReply.SUCCESS;
+    private String treeRoot  = "";
+    private String select    = "";
+    private String selectionType = "";
+    private String listSeparator = "";
 
     private ArrayList<NHelperTableRow> rows;
     public NHelperTableReply() {
         rows = new ArrayList<NHelperTableRow>();
     }
 
-    /*
-    *  Set the reply id.
-    */
-    public void setId(String val)  { messageId = val; }
-    /*
-    *  Set the status
-    * (NHelperReply.SUCCESS | NHelperReply.FAILURE)
-    */
-    public void setStatus(String val) { status = val; }
-    /*
-    *  Set the message string shown on top of the table.
-    */
-    public void setMessage(String val) { message = val; }
 
     /*
     *  Add a HelperTableRow to the table.
@@ -82,6 +73,47 @@ public class NHelperTableReply implements NHelperReply
     public void addRow(NHelperTableRow row) {
         rows.add(row);
     }
+
+
+
+    /*
+    *  Set the reply id.
+    */
+    public void setId(String val)  { messageId = val; }
+
+    /*
+    *  Set the status
+    * (NHelperReply.SUCCESS | NHelperReply.FAILURE)
+    */
+    public void setStatus(String val) { status = val; }
+
+    /*
+    *  Set the message string shown on top of the table.
+    */
+    public void setMessage(String val) { message = val; }
+
+    /*
+     * Set the treeroot
+     */
+    public void setTreeRoot(String val) {treeRoot = val; }
+
+    /*
+     * Set the selectCol
+     */
+    public void setSelectColumn(String val) {select = val; }
+
+    /*
+     * Set the selectType
+    * (NHelperReply.SINGLE | NHelperReply.MULTIPLE)
+     */
+    public void setSelectType(String val) {selectionType = val; }
+
+
+    /*
+     * Set the list separator
+     */
+    public void setListSeparator(String val) {listSeparator = val; }
+
 
     public char[] toCharArray()
     {
@@ -99,18 +131,24 @@ public class NHelperTableReply implements NHelperReply
             List<NHelperTableItem>       items   = row.getItems();
             Iterator<NHelperTableItem>   tit     = items.iterator();
             while(tit.hasNext()) {
-                NHelperTableItem item = tit.next();
-                String key = item.getColumn();
-                String value = item.getValue();
+                NHelperTableItem item  = tit.next();
+                String           key   = item.getColumn();
+                String           value = item.getValue();
                 rowObj.add(item.getColumn(), item.getValue());
             }
             arraybuilder.add(rowObj);
         }
 
-        objectbuilder.add("status", status);
+        objectbuilder.add("type",          "table");
+        objectbuilder.add("treeRoot",      treeRoot);
+        objectbuilder.add("select",        select);
+        objectbuilder.add("selectionType", selectionType);
+        objectbuilder.add("listSeparator", listSeparator);
+
+        objectbuilder.add("status",  status);
         objectbuilder.add("message", message);
-        objectbuilder.add("id",   messageId);
-        objectbuilder.add("rows", arraybuilder);
+        objectbuilder.add("id",      messageId);
+        objectbuilder.add("rows",    arraybuilder);
         jsonWriter.writeObject(objectbuilder.build());
         return buffer.toCharArray();
     }
