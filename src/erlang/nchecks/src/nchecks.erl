@@ -40,8 +40,7 @@
 % API
 -export([
     check/3,
-    helper/2,
-    helper2/3
+    helper/3
 ]).
 
 -record(state, {
@@ -53,14 +52,10 @@
 -define(ASSERT_TIMEOUT, 5000).
 -define(CHECK_TIMEOUT, 15000).
 
-helper(Class, ArgList) ->
-    gen_server:call(?MODULE, {call_nchecks,
-                {helper, {Class, ArgList}}}, ?CHECK_TIMEOUT).
-
-helper2(Class, Id, Props) ->
+helper(Class, Id, Props) ->
     io:format("call nechecks 2~n"),
     gen_server:call(?MODULE, {call_nchecks,
-                {helper2, {Class, Id, Props}}}, ?CHECK_TIMEOUT).
+                {helper, {Class, Id, Props}}}, ?CHECK_TIMEOUT).
 
 check(Class, ArgList, Opaque) ->
     gen_server:call(?MODULE, {call_nchecks,

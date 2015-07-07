@@ -123,40 +123,18 @@ handle_cast({{"forceProbeQuery", Contents}, CState}, S) ->
     supercast_channel:unicast(CState, [ReplyPDU]),
     {noreply, S};
 
-handle_cast({{"ncheckHelperQuery2", Contents}, CState}, S) ->
+handle_cast({{"ncheckHelperQuery", Contents}, CState}, S) ->
     QueryId             = proplists:get_value(<<"queryId">>, Contents),
     {struct, Contents2} = proplists:get_value(<<"value">>,   Contents),
     Target = binary_to_list(proplists:get_value(<<"target">>, Contents2)),
     Class  = binary_to_list(proplists:get_value(<<"class">>,  Contents2)),
     HId    = binary_to_list(proplists:get_value(<<"id">>,     Contents2)),
     Props  = get_snmp_args(Target),
-    case (catch nchecks:helper2(Class, HId, Props)) of
+    case (catch nchecks:helper(Class, HId, Props)) of
         {ok, Reply} ->
             ReplyPDU = monitor_pdu:nchecksHelperReply(QueryId, Class, Reply),
             supercast_channel:unicast(CState, [ReplyPDU]);
         Error ->
-            ErrorStr = io_lib:format("~p", [Error]),
-            ReplyPDU = monitor_pdu:simpleReply(QueryId, false, true, ErrorStr),
-            supercast_channel:unicast(CState, [ReplyPDU])
-    end,
-    {noreply, S};
-
-handle_cast({{"ncheckHelperQuery", Contents}, CState}, S) ->
-    % TODO check permissions and spawn and catch
-    QueryId             = proplists:get_value(<<"queryId">>, Contents),
-    {struct, Contents2} = proplists:get_value(<<"value">>,   Contents),
-    Target  = binary_to_list(proplists:get_value(<<"target">>, Contents2)),
-    Class   = binary_to_list(proplists:get_value(<<"class">>,  Contents2)),
-    Type    = binary_to_list(proplists:get_value(<<"type">>,   Contents2)),
-    case Type of
-        "snmp"  -> Args = get_snmp_args(Target);
-        _       -> Args = []
-    end,
-    case (catch nchecks:helper(Class, Args)) of
-        {ok, Reply} ->
-            ReplyPDU = monitor_pdu:nchecksHelperReply(QueryId, Class, Reply),
-            supercast_channel:unicast(CState, [ReplyPDU]);
-        {_, Error}  ->
             ErrorStr = io_lib:format("~p", [Error]),
             ReplyPDU = monitor_pdu:simpleReply(QueryId, false, true, ErrorStr),
             supercast_channel:unicast(CState, [ReplyPDU])

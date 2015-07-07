@@ -28,7 +28,6 @@ import io.sysmo.nchecks.Argument;
 import io.sysmo.nchecks.Reply;
 import io.sysmo.nchecks.Query;
 import io.sysmo.nchecks.modules.*;
-import io.sysmo.nchecks.helpers.*;
 import io.sysmo.nchecks.NChecksSNMP;
 import io.sysmo.nchecks.NHelperReply;
 import io.sysmo.nchecks.NChecksJRuby;
@@ -107,8 +106,10 @@ public class NChecks
         logger.info("Logger initialized");
 
         // if -test
+        /*
         if (args.length != 0 && args[0].equals("--test"))
             {testSpace(); return;}
+        */
 
         // read config
         try
@@ -315,19 +316,6 @@ public class NChecks
                     (OtpErlangString)
                     (payload.elementAt(0));
                 String className = erlangClassName.stringValue();
-                OtpErlangList args = (OtpErlangList)
-                    (payload.elementAt(1));
-                Runnable worker = new NHelperRunnable(
-                        Class.forName(className).newInstance(),
-                        caller,
-                        args);
-                threadPool.execute(worker);
-            }
-            else if (cmdstr.equals("helper2")) {
-                OtpErlangString erlangClassName =
-                    (OtpErlangString)
-                    (payload.elementAt(0));
-                String className = erlangClassName.stringValue();
                 OtpErlangString erlangIdName =
                     (OtpErlangString)
                     (payload.elementAt(1));
@@ -393,6 +381,7 @@ public class NChecks
         return result;
     }
 
+    /*
     private static void testSpace()
     {
 
@@ -446,6 +435,7 @@ public class NChecks
         Query query = new Query(testArguments);
         module.execute(query);
     }
+    */
 
 }
 
