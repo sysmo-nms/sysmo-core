@@ -43,7 +43,7 @@ nchecksSimpleUpdateMessage(Probe, Ts, Updates) ->
     Up = [{char_to_binary(K), V} || {K,V} <- Updates],
     {struct,
         [
-            {<<"from">>, <<"monitor">>},
+            {<<"from">>, char_to_binary(Probe)},
             {<<"type">>, <<"nchecksSimpleUpdateMessage">>},
             {<<"value">>,
                 {struct, [
@@ -58,7 +58,7 @@ nchecksSimpleUpdateMessage(Probe, Ts, Updates) ->
 nchecksSimpleDumpMessage(Probe, DumpDir, RrdFile) ->
     {struct,
         [
-            {<<"from">>, <<"monitor">>},
+            {<<"from">>, char_to_binary(Probe)},
             {<<"type">>, <<"nchecksSimpleDumpMessage">>},
             {<<"value">>,
                 {struct, [
@@ -81,7 +81,7 @@ nchecksTableUpdateMessage(Probe, Ts, Updates) ->
     end, Updates),
     {struct,
         [
-            {<<"from">>, <<"monitor">>},
+            {<<"from">>, char_to_binary(Probe)},
             {<<"type">>, <<"nchecksTableUpdateMessage">>},
             {<<"value">>,
                 {struct, [
@@ -98,7 +98,7 @@ nchecksTableDumpMessage(Probe, DumpDir, ElemToFile) ->
     ElToFile = [{char_to_binary(A), char_to_binary(B)} || {A,B} <- ElemToFile],
     {struct,
         [
-            {<<"from">>, <<"monitor">>},
+            {<<"from">>, char_to_binary(Probe)},
             {<<"type">>, <<"nchecksTableDumpMessage">>},
             {<<"value">>,
                 {struct, [
@@ -140,7 +140,7 @@ nchecksHelperReply(QueryId, Class, Reply) ->
 deleteTarget(TargetName) ->
     {struct,
         [
-            {<<"from">>, <<"monitor">>},
+            {<<"from">>, <<"monitor_main">>},
             {<<"type">>, <<"deleteTarget">>},
             {<<"value">>, {struct, [
                 {<<"name">>, char_to_binary(TargetName)}]}}
@@ -151,7 +151,7 @@ deleteProbe(Probe) ->
     #probe{name=Name,belong_to=Target} = Probe,
     {struct,
         [
-            {<<"from">>, <<"monitor">>},
+            {<<"from">>, <<"monitor_main">>},
             {<<"type">>, <<"deleteProbe">>},
             {<<"value">>, {struct, [
                 {<<"name">>,   char_to_binary(Name)},
@@ -164,7 +164,7 @@ probeReturn(ProbeReturn, Target, Probe, NextReturn) ->
     JKeyVal = [{char_to_binary(Key), char_to_binary(Val)} || {Key, Val} <- KeyValStr],
     {struct,
         [
-            {<<"from">>, <<"monitor">>},
+            {<<"from">>, <<"monitor_main">>},
             {<<"type">>, <<"probeReturn">>},
             {<<"value">>, {struct, [
                 {<<"target">>,      char_to_binary(Target)},
@@ -185,7 +185,7 @@ infoTarget(#target{name=Name, properties=Prop}, InfoType) ->
     JProp = [{char_to_binary(Key), maybe_str(Val)} || {Key,Val} <- Prop],
     {struct,
         [
-            {<<"from">>, <<"monitor">>},
+            {<<"from">>, <<"monitor_main">>},
             {<<"type">>, <<"infoTarget">>},
             {<<"value">>, {struct, [
                 {<<"name">>,          char_to_binary(Name)},
@@ -215,7 +215,7 @@ infoProbe(Probe, InfoType) ->
 
     {struct,
         [
-            {<<"from">>, <<"monitor">>},
+            {<<"from">>, <<"monitor_main">>},
             {<<"type">>, <<"infoProbe">>},
             {<<"value">>, {struct, [
                 {<<"target">>,   char_to_binary(Probe#probe.belong_to)},
