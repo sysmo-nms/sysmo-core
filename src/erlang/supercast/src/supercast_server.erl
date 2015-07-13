@@ -1,21 +1,21 @@
 % This file is part of "Enms" (http://sourceforge.net/projects/enms/)
 % Copyright (C) 2012 <Sébastien Serre sserre.bx@gmail.com>
-% 
+%
 % Enms is a Network Management System aimed to manage and monitor SNMP
 % targets, monitor network hosts and services, provide a consistent
 % documentation system and tools to help network professionals
 % to have a wide perspective of the networks they manage.
-% 
+%
 % Enms is free software: you can redistribute it and/or modify
 % it under the terms of the GNU General Public License as published by
 % the Free Software Foundation, either version 3 of the License, or
 % (at your option) any later version.
-% 
+%
 % Enms is distributed in the hope that it will be useful,
 % but WITHOUT ANY WARRANTY; without even the implied warranty of
 % MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 % GNU General Public License for more details.
-% 
+%
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 % @private
@@ -25,10 +25,10 @@
 
 -export([
     init/1,
-    handle_call/3, 
-    handle_cast/2, 
-    handle_info/2, 
-    terminate/2, 
+    handle_call/3,
+    handle_cast/2,
+    handle_info/2,
+    terminate/2,
     code_change/3
 ]).
 
@@ -43,7 +43,7 @@
     http_port,
     http_proto
 }).
- 
+
 
 %%-------------------------------------------------------------
 %% API
@@ -64,7 +64,7 @@ client_msg(disconnect, ClientState) ->
     handle_client_msg(disconnect, ClientState);
 client_msg({message, Json}, ClientState) ->
     {struct, Contents} = Json,
-    
+
     From = binary_to_list(proplists:get_value(<<"from">>, Contents)),
     Type = binary_to_list(proplists:get_value(<<"type">>, Contents)),
 
@@ -181,7 +181,7 @@ handle_client_msg({"supercast", "subscribe", Contents}, ClientState) ->
                     supercast_mpd:subscribe_stage2(Channel,ClientState)
             end
     end;
-       
+
 handle_client_msg({"supercast", "unsubscribe", Contents}, ClientState) ->
     {struct, Values} = proplists:get_value(<<"value">>, Contents),
     QueryId = proplists:get_value(<<"queryId">>, Values),
@@ -195,7 +195,7 @@ handle_client_msg({OtherMod, Type, Contents}, ClientState) ->
 % server PDUs
 % @private
 pdu(serverInfo, {AuthType, DataPort, DataProto}) ->
-    {struct, 
+    {struct,
         [
             {<<"from">>, <<"supercast">>},
             {<<"type">>, <<"serverInfo">>},
