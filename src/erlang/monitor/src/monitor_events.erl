@@ -1,21 +1,21 @@
 % This file is part of "Enms" (http://sourceforge.net/projects/enms/)
 % Copyright (C) 2012 <Sébastien Serre sserre.bx@gmail.com>
-% 
+%
 % Enms is a Network Management System aimed to manage and monitor SNMP
 % target, monitor network hosts and services, provide a consistent
 % documentation system and tools to help network professionals
 % to have a wide perspective of the networks they manage.
-% 
+%
 % Enms is free software: you can redistribute it and/or modify
 % it under the terms of the GNU General Public License as published by
 % the Free Software Foundation, either version 3 of the License, or
 % (at your option) any later version.
-% 
+%
 % Enms is distributed in the hope that it will be useful,
 % but WITHOUT ANY WARRANTY; without even the implied warranty of
 % MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 % GNU General Public License for more details.
-% 
+%
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 -module(monitor_events).
@@ -93,13 +93,11 @@ handle_call(_R,_F,S) ->
 
 % is ok nothing to do
 handle_cast({notify, Name, "OK", Time}, #state{last_notif=Nt} = S) ->
-    %?LOG({todo_notify, Name, "OK", Time}),
     ets:insert(Nt, #notif{probe=Name,status="OK",time=Time}),
     {noreply, S};
 
 % is not good, something to do
 handle_cast({notify, Name, Status, Time}, #state{last_notif=Nt} = S) ->
-    %?LOG({todo_notify, Name, Status, Time}),
     ets:insert(Nt, #notif{probe=Name,status=Status,time=Time}),
     {noreply, S};
 
@@ -112,7 +110,6 @@ handle_cast({notify, Name, Status, Time}, #state{last_notif=Nt} = S) ->
 % Keep a state of all this.
 % Emit info for supercast.
 handle_cast({notify_move, Name, Status, Time}, #state{last_notif=Nt,last_move=Mv} = S) ->
-    %?LOG({todo_notify_and_log_move, Name, Status, Time}),
     Notif = #notif{probe=Name,status=Status,time=Time},
     ets:insert(Nt, Notif),
     ets:insert(Mv, Notif),
@@ -121,7 +118,6 @@ handle_cast({notify_move, Name, Status, Time}, #state{last_notif=Nt,last_move=Mv
 
 % called at probe startup, do not need to update postgre
 handle_cast({notify_init, Name, Status, Time}, #state{last_notif=Nt,last_move=Mv} = S) ->
-    %?LOG({todo_notify_and_log_move, Name, Status, Time}),
     Notif = #notif{probe=Name,status=Status,time=Time},
     ets:insert(Nt, Notif),
     ets:insert(Mv, Notif),

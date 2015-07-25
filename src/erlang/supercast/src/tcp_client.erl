@@ -2,22 +2,22 @@
 % Based on the work from Serge Aleynikov <saleyn at gmail.com> on the article
 % www.trapexit.org/Building_a_Non-blocking_TCP_server_using_OTP_principles
 % Copyright (C) 2012 <Sébastien Serre sserre.bx@gmail.com>
-% 
+%
 % Enms is a Network Management System aimed to manage and monitor SNMP
 % targets, monitor network hosts and services, provide a consistent
 % documentation system and tools to help network professionals
 % to have a wide perspective of the networks they manage.
-% 
+%
 % Enms is free software: you can redistribute it and/or modify
 % it under the terms of the GNU General Public License as published by
 % the Free Software Foundation, either version 3 of the License, or
 % (at your option) any later version.
-% 
+%
 % Enms is distributed in the hope that it will be useful,
 % but WITHOUT ANY WARRANTY; without even the implied warranty of
 % MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 % GNU General Public License for more details.
-% 
+%
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -27,7 +27,8 @@
 %%% @end
 -module(tcp_client).
 -behaviour(gen_fsm).
--include("../include/supercast.hrl").
+-include("include/supercast.hrl").
+-include_lib("common_hrl/include/logs.hrl").
 
 -export([
     start_link/1,
@@ -41,7 +42,7 @@
 -export([
     init/1,
     handle_event/3,
-    handle_sync_event/4, 
+    handle_sync_event/4,
     handle_info/3,
     terminate/3,
     code_change/4
@@ -67,7 +68,7 @@ start_link([Encoder]) ->
 set_socket(Pid, Socket) when is_pid(Pid), is_port(Socket) ->
     gen_fsm:send_event(Pid, {socket_ready, Socket}).
 
-auth_set(success,  
+auth_set(success,
     #client_state{pid = Pid, ref = Ref}, Name, Roles, AllowedMods) ->
     gen_fsm:send_event(Pid, {success, Ref, Name, Roles, AllowedMods}).
 
@@ -90,7 +91,7 @@ send(SockState, Msg) ->
         {encode_send_msg, SockState#client_state.ref, Msg}).
 
 raw_send(SockState, Pdu) ->
-    gen_fsm:send_all_state_event(SockState#client_state.pid, 
+    gen_fsm:send_all_state_event(SockState#client_state.pid,
         {send_pdu, SockState#client_state.ref, Pdu}).
 
 %%%------------------------------------------------------------------------
@@ -111,7 +112,7 @@ init([Encoder]) ->
     NextState = State#client_state{
         socket          = Socket,
         addr            = IP,
-        port            = Port, 
+        port            = Port,
         ref             = make_ref(),
         pid             = self(),
         module          = ?MODULE,
@@ -128,12 +129,12 @@ init([Encoder]) ->
 %%-------------------------------------------------------------------------
 %% process user credentials here
 %%-------------------------------------------------------------------------
-'WAIT_FOR_CLIENT_AUTH'({client_data, Pdu}, 
+'WAIT_FOR_CLIENT_AUTH'({client_data, Pdu},
         #client_state{encoding_mod = Encoder} = State) ->
     supercast_server:client_msg({message, Encoder:decode(Pdu)}, State),
     {next_state, 'WAIT_FOR_CLIENT_AUTH', State, ?TIMEOUT};
 
-'WAIT_FOR_CLIENT_AUTH'({success, Ref, Name, Roles, Mods}, 
+'WAIT_FOR_CLIENT_AUTH'({success, Ref, Name, Roles, Mods},
         #client_state{ref = Ref} = State) ->
     NextState = State#client_state{
         user_name       = Name,
@@ -142,12 +143,12 @@ init([Encoder]) ->
         state           = 'AUTHENTICATED'},
     {next_state, 'AUTHENTICATED', NextState};
 
-'WAIT_FOR_CLIENT_AUTH'({auth_fail, Ref, User}, 
+'WAIT_FOR_CLIENT_AUTH'({auth_fail, Ref, User},
         #client_state{ref = Ref} = State) ->
-    io:format("failed to register with user ~p ~n", [User]),
+    ?LOG_INFO("Failed to register use", User),
     {next_state, 'WAIT_FOR_CLIENT_AUTH', State, ?TIMEOUT};
 
-'WAIT_FOR_CLIENT_AUTH'(timeout, 
+'WAIT_FOR_CLIENT_AUTH'(timeout,
         #client_state{auth_request_count = ?MAX_AUTH_ATEMPT} = State) ->
     {stop, normal, State};
 
@@ -158,13 +159,13 @@ init([Encoder]) ->
     {next_state, 'WAIT_FOR_CLIENT_AUTH', NextState, ?TIMEOUT};
 
 'WAIT_FOR_CLIENT_AUTH'(Data, State) ->
-    io:format("~p Ignoring data: ~p\n", [self(), Data]),
+    ?LOG_WARNING("Ignoring data", {self(), Data}),
     {next_state, 'WAIT_FOR_CLIENT_AUTH', State}.
 
 %%-------------------------------------------------------------------------
 %% application running
 %%-------------------------------------------------------------------------
-'AUTHENTICATED'({client_data, Pdu}, 
+'AUTHENTICATED'({client_data, Pdu},
         #client_state{encoding_mod = Encoder} = State) ->
     supercast_server:client_msg({message, Encoder:decode(Pdu)}, State),
     {next_state, 'AUTHENTICATED', State};
@@ -183,7 +184,7 @@ init([Encoder]) ->
                 true
         end
     end, PduList),
-    lists:foreach(fun(Msg) -> 
+    lists:foreach(fun(Msg) ->
         Pdu = Encoder:encode(Msg),
         gen_tcp:send(Sock, Pdu)
     end, PduList2),
@@ -194,7 +195,7 @@ init([Encoder]) ->
     {stop, normal, State};
 
 'AUTHENTICATED'(Data, State) ->
-    io:format("~p Running Ignoring data: ~p\n", [self(), Data]),
+    ?LOG_WARNING("Running Ignoring data:", {self(), Data}),
     {next_state, 'AUTHENTICATED', State}.
 
 
@@ -229,18 +230,18 @@ handle_event({tcp_error, Reason}, StateName, State) ->
 
 
 handle_event(Event, StateName, StateData) ->
-    io:format("handle_event ~p ~p~n", [?MODULE, StateData]),
+    ?LOG_WARNING("Unknonw event type", {Event, StateName, StateData}),
     {stop, {StateName, undefined_event, Event}, StateData}.
 
 
 
 handle_sync_event(Event, _From, StateName, StateData) ->
-    io:format("handle_sync_event ~p ~p~n", [?MODULE, StateData]),
+    ?LOG_WARNING("Unknonw event type", {Event, StateName, StateData}),
     {stop, {StateName, undefined_event, Event}, StateData}.
 
 
 
-handle_info({tcp,Socket, Bin}, StateName, 
+handle_info({tcp,Socket, Bin}, StateName,
     #client_state{socket=Socket} = StateData) ->
     inet:setopts(Socket, [{active, once}]),
     ?MODULE:StateName({client_data, Bin}, StateData);
@@ -251,16 +252,13 @@ handle_info({tcp_closed, Socket}, _StateName,
     {stop, normal, StateData};
 
 handle_info(Info, StateName, StateData) ->
-    io:format("INFO: ~p~n", [Info]),
-    io:format("STATENAME: ~p~n", [StateName]),
-    io:format("STATEDATA: ~p~n", [StateData]),
-    io:format("handle_info 3 ~p ~p ~p~n", [?MODULE, StateData, Info]),
+    ?LOG_WARNING("Unknown info:", {Info,StateName,StateData}),
     {noreply, StateName, StateData}.
 
 
 
-terminate(_Reason, _StateName, #client_state{socket=Socket} = State) ->
-    io:format("terminate ~p ~p~n", [?MODULE, _Reason]),
+terminate(Reason, StateName, #client_state{socket=Socket} = State) ->
+    ?LOG_INFO("Terminate", {StateName, Reason, State}),
     (catch gen_tcp:close(Socket)),
     supercast_server:client_msg(disconnect, State),
     ok.
@@ -268,5 +266,4 @@ terminate(_Reason, _StateName, #client_state{socket=Socket} = State) ->
 
 
 code_change(_OldVsn, StateName, StateData, _Extra) ->
-    io:format("code_change ~p ~p~n", [?MODULE, StateData]),
     {ok, StateName, StateData}.

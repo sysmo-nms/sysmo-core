@@ -1,15 +1,15 @@
 % Copyright (C) 2014, Sebastien Serre <sserre.bx@gmail.com>
-% 
+%
 % Permission is hereby granted, free of charge, to any person obtaining a copy
 % of this software and associated documentation files (the "Software"), to deal
 % in the Software without restriction, including without limitation the rights
 % to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 % copies of the Software, and to permit persons to whom the Software is
 % furnished to do so, subject to the following conditions:
-% 
+%
 % The above copyright notice and this permission notice shall be included in all
 % copies or substantial portions of the Software.
-% 
+%
 % THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 % IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 % FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -20,6 +20,7 @@
 
 -module(errd4j).
 -include("include/errd4j.hrl").
+-include_lib("common_hrl/include/logs.hrl").
 -behaviour(gen_server).
 
 % gen_server
@@ -77,7 +78,7 @@ multi_update(Updates) ->
 update(File, Updates, Timestamp) ->
     Args = {File, Updates, Timestamp},
     gen_server:call(?MODULE, {call_errd4j, {update, Args}}).
-    
+
 
 -spec multi_create(Args::list()) -> ok.
 % @doc
@@ -87,8 +88,8 @@ update(File, Updates, Timestamp) ->
 % @end
 multi_create(Args) ->
     gen_server:call(?MODULE, {call_errd4j, {multi_create, {Args}}}).
-    
-    
+
+
 -spec create(File::string(), Step::integer(), DDs::[]) -> ok.
 % @doc
 % Same as create(File,Step,DDs,"default")
@@ -160,15 +161,15 @@ handle_cast(_,S) ->
 % INFO
 % @private
 handle_info({Pid, errd4j_running}, S) ->
-    io:format("receive init~n"),
+    ?LOG_INFO("Receive init"),
     case S#state.assert_init of
-        undefined -> 
+        undefined ->
             ok;
         F ->
             gen_server:reply(F, ok)
     end,
     erlang:link(Pid),
-    {noreply, 
+    {noreply,
         S#state{
             errd4j_pid      = Pid,
             replies_waiting = [],
@@ -178,23 +179,23 @@ handle_info({Pid, errd4j_running}, S) ->
 
 % @private
 handle_info(stop, S) ->
-    io:format("received stop~n"),
+    ?LOG_INFO("Received stop"),
     {noreply, S};
 
 handle_info({reply, From, Reply}, #state{replies_waiting = RWait} = S) ->
     gen_server:reply(From, Reply),
-    {noreply, 
+    {noreply,
         S#state{
             replies_waiting = lists:delete(From, RWait)
         }
     };
 
 handle_info({'EXIT', Pid, Reason}, #state{errd4j_pid = Pid} = S) ->
-    io:format("rrd4j EXIT with reason: ~p~n", [Reason]),
+    ?LOG_WARNING("rrd4j EXIT with reason:", Reason),
     {stop, Reason, S};
 
-handle_info(_I, S) ->
-    io:format("received handle info: ~p~n", [_I]),
+handle_info(I, S) ->
+    ?LOG_INFO("received handle info:", I),
     {noreply, S}.
 
 

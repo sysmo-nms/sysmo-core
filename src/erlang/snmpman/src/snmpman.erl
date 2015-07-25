@@ -1,15 +1,15 @@
 % Copyright (C) 2014, Sebastien Serre <sserre.bx@gmail.com>
-% 
+%
 % Permission is hereby granted, free of charge, to any person obtaining a copy
 % of this software and associated documentation files (the "Software"), to deal
 % in the Software without restriction, including without limitation the rights
 % to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 % copies of the Software, and to permit persons to whom the Software is
 % furnished to do so, subject to the following conditions:
-% 
+%
 % The above copyright notice and this permission notice shall be included in all
 % copies or substantial portions of the Software.
-% 
+%
 % THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 % IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 % FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -20,6 +20,7 @@
 
 -module(snmpman).
 -include("include/snmpman.hrl").
+-include_lib("common_hrl/include/logs.hrl").
 -behaviour(gen_server).
 
 % gen_server
@@ -89,7 +90,7 @@ which_usm_users() ->
         Ip::string(),
         IpVersion::string(),
         Port::integer(),
-        Timeout::integer()) -> 
+        Timeout::integer()) ->
     {ok, EngineId::string()} | {error, timeout}.
 % @doc
 % Return the engine ID of the target as hexadecimal string.
@@ -98,7 +99,7 @@ which_usm_users() ->
 discovery(Ip, IpVersion, Port, Timeout) ->
     case snmpman_guard:validate_discovery_conf(Ip, IpVersion, Port, Timeout) of
         true ->
-            gen_server:call(?MODULE, 
+            gen_server:call(?MODULE,
                 {call_snmp4j, {discovery, {Ip,IpVersion,Port,Timeout}}}, infinity);
         {false, Reason} ->
             {error, Reason}
@@ -114,7 +115,7 @@ element_registered(ElementName) ->
     lists:member(ElementName, Elements).
 
 
--spec which_elements() -> 
+-spec which_elements() ->
     {ok, [ElementName::string()]} | {error, Reason::term()}.
 % @doc
 % Return the list of registered elements.
@@ -155,7 +156,7 @@ unregister_element(ElementName) ->
 %
 % <b>OPTIONAL</b>:
 %
-% {security_level, SecLevel} when SecLevel = 
+% {security_level, SecLevel} when SecLevel =
 %   "authPriv" | "authNoPriv" | "noAuthNoPriv", default to "noAuthNoPriv",
 %
 % {port, Port} when Port is an integer. Default to 161.
@@ -183,7 +184,7 @@ unregister_element(ElementName) ->
 % @end
 register_element(ElementName, ElementConf) ->
     ElementDef = build_conf(ElementName,ElementConf),
-    io:format("register: ~p~n", [ElementDef]),
+    ?LOG_INFO("Register:", ElementDef),
     case snmpman_guard:validate_register_conf(ElementDef) of
         true ->
             gen_server:call(?MODULE,
@@ -195,8 +196,8 @@ register_element(ElementName, ElementConf) ->
 
 
 -spec walk_table(Target::string(), Oids::[Oid::string()]) ->
-        {ok, Reply::term()} | 
-        {error, Reason::term()} | 
+        {ok, Reply::term()} |
+        {error, Reason::term()} |
         {report, Report::string}.
 % @doc
 % Walk a table and return the rows specified in the Oids in the form of a
@@ -218,7 +219,7 @@ register_element(ElementName, ElementConf) ->
 %               {table_row,"bridge0",209,0},
 %               {table_row,"sis2",6,0},
 %               {table_row,"sis1",6,100000000}]}]}'''
-%   
+%
 % @end
 walk_table(Target, Oids) ->
     Cfg = {Target, Oids},
@@ -230,9 +231,9 @@ walk_table(Target, Oids) ->
     end.
 
 
--spec walk_tree(Target::string(), Oid::string()) -> 
-        {ok, Reply::term()} | 
-        {error, Reason::term()} | 
+-spec walk_tree(Target::string(), Oid::string()) ->
+        {ok, Reply::term()} |
+        {error, Reason::term()} |
         {report, Report::string}.
 % @doc
 % Walk the specified Oid on the target Target.
@@ -249,9 +250,9 @@ walk_tree(Target, Oid) ->
 
 
 
--spec get(Target::string(), [Oid::string()]) -> 
-        {ok, Reply::term()} | 
-        {error, Reason::term()} | 
+-spec get(Target::string(), [Oid::string()]) ->
+        {ok, Reply::term()} |
+        {error, Reason::term()} |
         {report, Report::string}.
 % @doc
 % Get the listed Oids from the target Target.
@@ -275,14 +276,14 @@ init([]) ->
     gen_server:cast(?MODULE, boot),
     {ok, #state{}}.
 
-% CALL 
+% CALL
 % @private
 handle_call(assert_init, F, #state{snmp4j_pid = undefined} = S) ->
     {noreply, S#state{assert_init = F}};
 handle_call(assert_init, _F, S) ->
     {reply, ok, S};
 
-handle_call({call_snmp4j, {Command, Payload}}, From, 
+handle_call({call_snmp4j, {Command, Payload}}, From,
         #state{snmp4j_pid = Snmp4j, replies_waiting = RWait} = S) ->
     Snmp4j ! {Command, From, Payload},
     {noreply, S#state{replies_waiting = [From|RWait]}}.
@@ -301,15 +302,15 @@ handle_cast(_,S) ->
 % INFO
 % @private
 handle_info({Pid, snmp4j_running}, S) ->
-    io:format("receive init~n"),
+    ?LOG_INFO("Receive init"),
     case S#state.assert_init of
-        undefined -> 
+        undefined ->
             ok;
         F ->
             gen_server:reply(F, ok)
     end,
     erlang:link(Pid),
-    {noreply, 
+    {noreply,
         S#state{
             snmp4j_pid      = Pid,
             replies_waiting = [],
@@ -319,23 +320,23 @@ handle_info({Pid, snmp4j_running}, S) ->
 
 % @private
 handle_info(stop, S) ->
-    io:format("received stop~n"),
+    ?LOG_INFO("Received stop"),
     {noreply, S};
 
 handle_info({reply, From, Reply}, #state{replies_waiting = RWait} = S) ->
     gen_server:reply(From, Reply),
-    {noreply, 
+    {noreply,
         S#state{
             replies_waiting = lists:delete(From, RWait)
         }
     };
 
 handle_info({'EXIT', Pid, Reason}, #state{snmp4j_pid = Pid} = S) ->
-    io:format("snmp4j EXIT with reason: ~p~n", [Reason]),
+    ?LOG_WARNING("snmp4j EXIT with reason:", Reason),
     {stop, Reason, S};
 
-handle_info(_I, S) ->
-    io:format("received handle info: ~p~n", [_I]),
+handle_info(I, S) ->
+    ?LOG_INFO("received handle info:", I),
     {noreply, S}.
 
 
@@ -383,7 +384,7 @@ build_conf(ElementName, ElementConf) ->
         retries         = Retries,
         timeout         = Timeout,
         sec_name        = SecName,
-        community       = Community, 
+        community       = Community,
         auth_proto      = AuthProto,
         auth_key        = AuthKey,
         priv_proto      = PrivProto,

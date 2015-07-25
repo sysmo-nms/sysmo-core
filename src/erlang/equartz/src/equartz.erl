@@ -1,15 +1,15 @@
 % Copyright (C) 2014, Sebastien Serre <sserre.bx@gmail.com>
-% 
+%
 % Permission is hereby granted, free of charge, to any person obtaining a copy
 % of this software and associated documentation files (the "Software"), to deal
 % in the Software without restriction, including without limitation the rights
 % to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 % copies of the Software, and to permit persons to whom the Software is
 % furnished to do so, subject to the following conditions:
-% 
+%
 % The above copyright notice and this permission notice shall be included in all
 % copies or substantial portions of the Software.
-% 
+%
 % THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 % IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 % FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -20,6 +20,7 @@
 
 -module(equartz).
 -include("include/equartz.hrl").
+-include_lib("common_hrl/include/logs.hrl").
 -behaviour(gen_server).
 
 % gen_server
@@ -136,7 +137,7 @@ init([]) ->
     gen_server:cast(?MODULE, boot),
     {ok, #state{}}.
 
-% CALL 
+% CALL
 % @private
 handle_call(assert_init, F, #state{equartz_pid = undefined} = S) ->
     {noreply, S#state{assert_init = F}};
@@ -162,15 +163,15 @@ handle_cast(_,S) ->
 % INFO
 % @private
 handle_info({Pid, equartz_running}, S) ->
-    io:format("receive init~n"),
+    ?LOG_INFO("Receive init"),
     case S#state.assert_init of
-        undefined -> 
+        undefined ->
             ok;
         F ->
             gen_server:reply(F, ok)
     end,
     erlang:link(Pid),
-    {noreply, 
+    {noreply,
         S#state{
             equartz_pid      = Pid,
             replies_waiting = [],
@@ -180,12 +181,12 @@ handle_info({Pid, equartz_running}, S) ->
 
 % @private
 handle_info(stop, S) ->
-    io:format("received stop~n"),
+    ?LOG_INFO("Receive stop"),
     {noreply, S};
 
 handle_info({reply, From, Reply}, #state{replies_waiting = RWait} = S) ->
     gen_server:reply(From, Reply),
-    {noreply, 
+    {noreply,
         S#state{
             replies_waiting = lists:delete(From, RWait)
         }
@@ -196,11 +197,11 @@ handle_info({fire, M,F,A}, S) ->
     {noreply, S};
 
 handle_info({'EXIT', Pid, Reason}, #state{equartz_pid = Pid} = S) ->
-    io:format("equartz EXIT with reason: ~p~n", [Reason]),
+    ?LOG_WARNING("equartz EXIT with reason:", Reason),
     {stop, Reason, S};
 
-handle_info(_I, S) ->
-    io:format("received handle info: ~p~n", [_I]),
+handle_info(I, S) ->
+    ?LOG_INFO("Received handle info:", I),
     {noreply, S}.
 
 

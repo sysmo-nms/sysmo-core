@@ -21,6 +21,7 @@
 % @private
 -module(monitor_commander).
 -include("include/monitor.hrl").
+-include_lib("common_hrl/include/logs.hrl").
 -behaviour(supercast_commander).
 -behaviour(gen_server).
 
@@ -51,7 +52,7 @@ handle_command(Command, CState) ->
     gen_server:cast(?MODULE, {Command, CState}).
 
 handle_cast({{"createTargetQuery", Contents}, CState}, S) ->
-    ?LOG(Contents),
+    ?LOG_INFO("Create target query", Contents),
     % TODO check permissions and spawn and catch
     QueryId             = proplists:get_value(<<"queryId">>, Contents),
     {struct, Contents2} = proplists:get_value(<<"value">>,   Contents),
@@ -189,7 +190,7 @@ build_snmpConf(NSysProp) ->
     build_snmpConf(NSysProp, Default).
 build_snmpConf([], Default) -> Default;
 build_snmpConf([{"snmp_port", Val}|R], Default) ->
-    ?LOG({port_is, Val}),
+    ?LOG_INFO("SNMP port", Val),
     Port = erlang:list_to_integer(Val),
     NDefault = lists:keystore("snmp_port", 1, Default, {"snmp_port", Port}),
     build_snmpConf(R, NDefault);

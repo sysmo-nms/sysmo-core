@@ -14,7 +14,6 @@
     priv_key
 }).
 
--define(LOG2(X), io:format("{~p, ~p}: DEBUG: ~p~n", [?MODULE, ?LINE, X])).
 -define(SNMPM_USER, "sysmo_snmpm_user").
 -define(BULK_MAX_REP, 64).
 % MIB2 'system' tree

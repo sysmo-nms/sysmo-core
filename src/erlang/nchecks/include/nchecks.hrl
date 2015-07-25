@@ -1,3 +1,5 @@
+%
+
 -record(nchecks_reply, {
     status,
     performances,

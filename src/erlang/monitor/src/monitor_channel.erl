@@ -22,6 +22,7 @@
 -behaviour(gen_server).
 -behaviour(supercast_channel).
 -include("include/monitor.hrl").
+-include_lib("common_hrl/include/logs.hrl").
 
 % GEN_SERVER
 -export([
@@ -110,13 +111,13 @@ handle_cast({sync_request, CState}, S) ->
                 ok  = supercast_channel:unicast(CState, [Pdu]),
                 % Dep = do_get(dependency,Name)
                 % Pdu = dep... supercast:unicast...
-                ?LOG({should_send_dependencies}),
+                ?LOG_INFO("Should_send_dependencies"),
                 monitor:trigger_probe_return(P#probe.name, CState);
             false   -> ok
         end
     end),
 
-    {ok, _Jobs} = monitor_data_master:iterate(job, fun(J,Acc) ->
+    {ok, Jobs} = monitor_data_master:iterate(job, fun(J,Acc) ->
         #job{permissions=Perm} = J,
         case supercast:satisfy(CState, Perm) of
             true    ->
@@ -126,7 +127,7 @@ handle_cast({sync_request, CState}, S) ->
         end
     end),
 
-    ?LOG({should_send_jobs, _Jobs}),
+    ?LOG_INFO("Should_send_jobs", Jobs),
 
     {noreply, S};
 
@@ -173,8 +174,8 @@ handle_info({mnesia_table_event, {delete, _Table, What, [OldRecord], _ActivityId
     handle_delete(What, OldRecord),
     {noreply, S};
 
-handle_info(_I, S) ->
-    ?LOG({"handle info: ", _I}),
+handle_info(I, S) ->
+    ?LOG_WARNING({"Received handle info: ", I}),
     {noreply, S}.
 
 terminate(_R, _) ->
@@ -204,16 +205,16 @@ handle_probe_update(#probe{permissions=Perm} = Probe,_) ->
 
 
 handle_job_create(#job{permissions=_Perm} = Job) ->
-    ?LOG({create_job, Job}).
+    ?LOG_INFO("Create job", Job).
 
 handle_job_update(#job{permissions=_Perm} = Job, _) ->
-    ?LOG({update_job, Job}).
+    ?LOG_INFO("Update job", Job).
 
 
 handle_dependency_create(Dep) ->
-    ?LOG({create_dep, Dep}).
+    ?LOG_INFO("Create dep", Dep).
 handle_dependency_update(Dep) ->
-    ?LOG({update_dep, Dep}).
+    ?LOG_INFO("update dep", Dep).
 
 
 handle_delete({target, Name}, #target{permissions=Perm}) ->
@@ -223,6 +224,6 @@ handle_delete({probe, _}, #probe{permissions=Perm} = Probe) ->
     Pdu = monitor_pdu:deleteProbe(Probe),
     supercast_channel:emit(?MASTER_CHANNEL, {Perm, Pdu});
 handle_delete({job, Name},_) ->
-    ?LOG({delete, Name});
+    ?LOG_INFO("Delete job", Name);
 handle_delete({dependency, Name},_) ->
-    ?LOG({delete, Name}).
+    ?LOG_INFO("Delete dependency", Name).

@@ -20,6 +20,7 @@
 
 -module(nchecks).
 -include("include/nchecks.hrl").
+-include_lib("common_hrl/include/logs.hrl").
 -behaviour(gen_server).
 
 % gen_server
@@ -53,7 +54,6 @@
 -define(CHECK_TIMEOUT, 15000).
 
 helper(Class, Id, Props) ->
-    io:format("call nechecks 2~n"),
     gen_server:call(?MODULE, {call_nchecks,
                 {helper, {Class, Id, Props}}}, ?CHECK_TIMEOUT).
 
@@ -107,7 +107,7 @@ handle_cast(_,S) ->
 % INFO
 % @private
 handle_info({Pid, nchecks_running}, S) ->
-    io:format("receive init~n"),
+    ?LOG_INFO("Received init"),
     case S#state.assert_init of
         undefined ->
             ok;
@@ -126,7 +126,7 @@ handle_info({Pid, nchecks_running}, S) ->
 
 % @private
 handle_info(stop, S) ->
-    io:format("received stop~n"),
+    ?LOG_INFO("Received stop"),
     {noreply, S};
 
 handle_info({reply, From, Reply}, #state{replies_waiting = RWait} = S) ->
@@ -138,11 +138,11 @@ handle_info({reply, From, Reply}, #state{replies_waiting = RWait} = S) ->
     };
 
 handle_info({'EXIT', Pid, Reason}, #state{nchecks_pid = Pid} = S) ->
-    io:format("nchecks EXIT with reason: ~p~n", [Reason]),
+    ?LOG_WARNING("EXIT with reason:", Reason),
     {stop, Reason, S};
 
-handle_info(_I, S) ->
-    io:format("received handle info: ~p~n", [_I]),
+handle_info(I, S) ->
+    ?LOG_INFO("Received handle info:", I),
     {noreply, S}.
 
 
@@ -160,7 +160,7 @@ code_change(_,S,_) ->
 
 % PRIVATE
 boot() ->
-    Prefix   = sysmo:get_java_bin_prefix(),
+    Prefix = sysmo:get_java_bin_prefix(),
     Relative = string:concat("nchecks/bin/nchecks", Prefix),
     Cmd = filename:join(filename:absname(sysmo:get_java_dir()),Relative),
     WorkDir = filename:absname(""),

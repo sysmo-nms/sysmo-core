@@ -21,7 +21,8 @@
 % @private
 -module(supercast_server).
 -behaviour(gen_server).
--include("../include/supercast.hrl").
+-include("include/supercast.hrl").
+-include_lib("common_hrl/include/logs.hrl").
 
 -export([
     init/1,
@@ -118,14 +119,14 @@ handle_call({get, auth_mod}, _F, #state{auth_mod = AuthMod} = S) ->
     {reply, AuthMod, S};
 
 % CLIENT RELATED CALLS
-handle_call(_R, _F, S) ->
-    io:format("handle_call ~p~p~n", [?MODULE, _R]),
+handle_call(Call, _F, S) ->
+    ?LOG_WARNING("Unknown call", Call),
     {noreply, S}.
 
 % CAST
 % @private
-handle_cast(_R, S) ->
-    io:format("handle_cast ~p~p~n", [?MODULE, _R]),
+handle_cast(Cast, S) ->
+    ?LOG_WARNING("Unknown cast", Cast),
     {noreply, S}.
 
 % OTHER
@@ -170,7 +171,7 @@ handle_client_msg({"supercast", "subscribe", Contents}, ClientState) ->
     Channel =  binary_to_list(proplists:get_value(<<"channel">>, Values)),
     case supercast_registrar:whereis_name(Channel) of
         undefined ->
-            io:format("undefined?~p~n", [Channel]),
+            ?LOG_ERROR("Unknown chan name", Channel),
             send(ClientState, pdu(subscribeErr, {QueryId, Channel}));
         _ ->
             case supercast_mpd:subscribe_stage1(Channel, ClientState) of

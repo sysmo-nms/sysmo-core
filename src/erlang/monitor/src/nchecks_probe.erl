@@ -28,6 +28,7 @@
 -include("include/monitor.hrl").
 -include("../nchecks/include/nchecks.hrl").
 -include_lib("xmerl/include/xmerl.hrl").
+-include_lib("common_hrl/include/logs.hrl").
 
 -define(CRASH, "
 OUCH a system error has occured!
@@ -343,6 +344,40 @@ do_take_of(#state{ref=Ref,name=PName}) ->
         {ok, Return} = ?MODULE:exec_nchecks(Class, Args, Opaque),
         erlang:send(ToPid, {probe_return, Ref, Return})
     end).
+
+exec_nchecks(Class, Args, Opaque) ->
+    case (catch(nchecks:check(Class,Args,Opaque))) of
+        {ok, Reply} ->
+            #nchecks_reply{
+               status=Status,
+                performances=Perfs,
+                reply_string=Str,
+                timestamp=Ts,
+                opaque=Opaque
+            } = Reply,
+            ProbeReturn = #probe_return{
+                status          = Status,
+                reply_string    = Str,
+                timestamp       = Ts,
+                perfs           = Perfs,
+                opaque          = Opaque
+            };
+
+         Error ->
+            % An error occured.
+            % TODO should I modify the probe state or set it to 'ERROR'?
+            % It is most a sysmo state than a probe state.
+            error_logger:error_msg("~p ~p ERROR: ~p", [?MODULE, ?LINE, Error]),
+            ProbeReturn = #probe_return{
+                status          = "ERROR",
+                reply_string    = ?CRASH,
+                opaque          = Opaque
+            }
+
+    end,
+    {ok, ProbeReturn}.
+
+
 %%----------------------------------------------------------------------------
 %% INTERNALS END
 %%----------------------------------------------------------------------------
@@ -376,7 +411,8 @@ handle_cast(force, S) ->
     do_force(S),
     {noreply, S};
 
-handle_cast(_Cast, S) ->
+handle_cast(Cast, S) ->
+    ?LOG_WARNING("Handle unknown cast", Cast),
     {noreply, S}.
 
 
@@ -384,7 +420,8 @@ handle_call(shut_it_down, _F, #state{name=Name} = S) ->
     supercast_channel:delete(Name),
     {stop, shutdown, ok, S};
 
-handle_call(_Call, _From, S) ->
+handle_call(Call, _From, S) ->
+    ?LOG_WARNING("Handle unknown call", Call),
     {noreply, S}.
 
 handle_info({probe_return, Ref, PR}, #state{ref=Ref} = S) ->
@@ -395,7 +432,8 @@ handle_info({take_of, Ref}, #state{ref=Ref} = S) ->
     do_take_of(S),
     {noreply, S};
 
-handle_info(_I, SData) ->
+handle_info(I, SData) ->
+    ?LOG_WARNING("Handle unknown info", I),
     {noreply, SData}.
 
 
@@ -483,37 +521,6 @@ build_snmp_args2(TargetSysProp,[Prop|Others], Value) ->
         Val ->
             build_snmp_args2(TargetSysProp,Others,[Val|Value])
     end.
-
-
-exec_nchecks(Class, Args, Opaque) ->
-    case (catch(nchecks:check(Class,Args,Opaque))) of
-
-        {ok, Reply} ->
-            #nchecks_reply{
-               status=Status,
-                performances=Perfs,
-                reply_string=Str,
-                timestamp=Ts,
-                opaque=Opaque
-            } = Reply,
-            ProbeReturn = #probe_return{
-                status          = Status,
-                reply_string    = Str,
-                timestamp       = Ts,
-                perfs           = Perfs,
-                opaque          = Opaque
-            };
-
-         Error ->
-            error_logger:error_msg("~p ~p ERROR: ~p", [?MODULE, ?LINE, Error]),
-            ProbeReturn = #probe_return{
-                status          = "ERROR",
-                reply_string    = ?CRASH,
-                opaque          = Opaque
-            }
-
-    end,
-    {ok, ProbeReturn}.
 
 
 
@@ -611,7 +618,6 @@ rrd4j_init(ProbeName, Step, Args, TargetDir, XCheck_Content) ->
             end, RRDList),
 
 
-            ?LOG({RRDList, BasePrefix, Suffix}),
             {ok, {table, #rrd_table{elements=RRDList,base=BasePrefix,
                                             suffix=Suffix,prefix=Prefix}}};
 
@@ -657,14 +663,12 @@ rrd4j_init(ProbeName, Step, Args, TargetDir, XCheck_Content) ->
 x_get_content_text(Content, Key) ->
     #xmlElement{content=C1} = lists:keyfind(Key, 2, Content),
     #xmlText{value=V}       = lists:keyfind(xmlText, 1, C1),
-
     V.
 
 
 x_get_attr_val(Content, Key, Attr) ->
     #xmlElement{attributes=A1} = lists:keyfind(Key,  2, Content),
     #xmlAttribute{value=V}     = lists:keyfind(Attr, 2, A1),
-
     V.
 
 
@@ -673,12 +677,10 @@ build_DS_Def(XPerformances_Content, Step) ->
     #xmlElement{content=XDataSourceTable_Content} =
         lists:keyfind('DataSourceTable', 2, XPerformances_Content),
 
-
     % Filter and only keep xmlElements
     XDataSourceTable_Elements = lists:filter(fun(E) ->
         is_record(E, xmlElement)
     end, XDataSourceTable_Content),
-
 
     % Build DS definition tuples for errd4j
     DSDefinitions = lists:map(fun(#xmlElement{attributes=XAttrib}) ->
@@ -686,5 +688,4 @@ build_DS_Def(XPerformances_Content, Step) ->
         #xmlAttribute{value=DsType}  = lists:keyfind('Type', 2, XAttrib),
         {DsId, DsType, Step *2, 'Nan', 'Nan'}
     end, XDataSourceTable_Elements),
-
     DSDefinitions.

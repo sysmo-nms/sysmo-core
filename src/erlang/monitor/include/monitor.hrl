@@ -2,8 +2,6 @@
 -include_lib("kernel/include/file.hrl").
 -include("../supercast/include/supercast.hrl").
 
--define(LOG(X), io:format("{~w, ~w}: DEBUG: ~p~n", [?MODULE, ?LINE, X])).
-
 -define(MASTER_CHANNEL, "monitor_main").
 -define(PROBES_STATE,   ets_probes_state).
 -define(DEFAULT_PERM_CONF, #perm_conf{read=["admin"],write=["admin"]}).
