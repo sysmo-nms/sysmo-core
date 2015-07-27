@@ -60,8 +60,8 @@
                     Maximum="undefined"
                     Rigid="false"
                     Base="1000"
-                    Unit="Mo"
-                    UnitExponent="6" >
+                    Unit="undefined"
+                    UnitExponent="undefined" >
                     <Title>Octets In/Out</Title>
                     <VerticalLabel>Octets</VerticalLabel>
                     <Draw
@@ -84,9 +84,9 @@
                     Minimum="0"
                     Maximum="undefined"
                     Rigid="false"
-                    Base="1"
-                    Unit=""
-                    UnitExponent="0" >
+                    Base="1000"
+                    Unit="undefined"
+                    UnitExponent="undefined" >
                     <Title>Unicast/Non Unicast Packets In/Out</Title>
                     <VerticalLabel>Packets</VerticalLabel>
                     <Draw
@@ -123,20 +123,20 @@
                     Minimum="0"
                     Maximum="undefined"
                     Rigid="false"
-                    Base="1"
-                    Unit=""
-                    UnitExponent="0" >
+                    Base="1000"
+                    Unit="undefined"
+                    UnitExponent="undefined" >
                     <Title>Errors In/Out</Title>
                     <VerticalLabel>Errors</VerticalLabel>
                     <Draw
-                        Type="line"
+                        Type="area"
                         DataSource="IfInErrors"
                         Consolidation="MAX"
                         Color="#cc0000ff" >
                         Errors in
                     </Draw>
                      <Draw
-                        Type="line"
+                        Type="stack"
                         DataSource="IfOutErrors"
                         Consolidation="MAX"
                         Color="#fce94fff" >

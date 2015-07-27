@@ -425,6 +425,7 @@ handle_call(Call, _From, S) ->
     {noreply, S}.
 
 handle_info({probe_return, Ref, PR}, #state{ref=Ref} = S) ->
+    ?LOG_INFO("Probe return", PR),
     do_handle_probe_return(PR, S),
     {noreply, S};
 
