@@ -62,21 +62,23 @@
                     Base="1000"
                     Unit="undefined"
                     UnitExponent="undefined" >
-                    <Title>Octets In/Out</Title>
-                    <VerticalLabel>Octets</VerticalLabel>
+                    <Title>Bits In/Out</Title>
+                    <VerticalLabel>bps</VerticalLabel>
                     <Draw
                         Type="area"
                         DataSource="IfInOctets"
+                        Calculation="IfInOctets,8,*"
                         Consolidation="MAX"
                         Color="#726fcfff" >
-                        Octets in
+                        In bits per second
                     </Draw>
                      <Draw
                         Type="line"
                         DataSource="IfOutOctets"
+                        Calculation="IfOutOctets,8,*"
                         Consolidation="MAX"
                         Color="#73d216ff" >
-                        Octets out
+                        Out bits per second
                     </Draw>
                 </Graph>
                 <Graph
