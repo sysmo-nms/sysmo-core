@@ -63,7 +63,7 @@
                     Unit="undefined"
                     UnitExponent="undefined" >
                     <Title>Bits In/Out</Title>
-                    <VerticalLabel>bps</VerticalLabel>
+                    <VerticalLabel>Bits/Second</VerticalLabel>
                     <Draw
                         Type="area"
                         DataSource="IfInOctets"
@@ -90,7 +90,7 @@
                     Unit="undefined"
                     UnitExponent="undefined" >
                     <Title>Unicast/Non Unicast Packets In/Out</Title>
-                    <VerticalLabel>Packets</VerticalLabel>
+                    <VerticalLabel>Packets/Second</VerticalLabel>
                     <Draw
                         Type="area"
                         DataSource="IfInUcastPkts"
@@ -129,7 +129,7 @@
                     Unit="undefined"
                     UnitExponent="undefined" >
                     <Title>Errors In/Out</Title>
-                    <VerticalLabel>Errors</VerticalLabel>
+                    <VerticalLabel>Errors/Second</VerticalLabel>
                     <Draw
                         Type="area"
                         DataSource="IfInErrors"
