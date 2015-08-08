@@ -78,7 +78,7 @@
                 <Graph
                     Id="ICMPPerfs"
                     Minimum="0"
-                    Maximum="undefined"
+                    Maximum=""
                     Rigid="false"
                     Base="1000"
                     Unit="ms"

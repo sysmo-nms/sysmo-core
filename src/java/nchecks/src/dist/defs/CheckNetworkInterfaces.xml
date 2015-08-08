@@ -57,11 +57,11 @@
                 <Graph
                     Id="OctetsInOut"
                     Minimum="0"
-                    Maximum="undefined"
+                    Maximum=""
                     Rigid="false"
                     Base="1000"
-                    Unit="undefined"
-                    UnitExponent="undefined" >
+                    Unit=""
+                    UnitExponent="" >
                     <Title>Bits In/Out</Title>
                     <VerticalLabel>Bits/Second</VerticalLabel>
                     <Draw
@@ -70,7 +70,7 @@
                         Calculation="IfInOctets,8,*"
                         Consolidation="MAX"
                         Color="#726fcfff" >
-                        In bits per second
+                        Bits per second In
                     </Draw>
                      <Draw
                         Type="line"
@@ -78,17 +78,17 @@
                         Calculation="IfOutOctets,8,*"
                         Consolidation="MAX"
                         Color="#73d216ff" >
-                        Out bits per second
+                        Bits per second Out
                     </Draw>
                 </Graph>
                 <Graph
                     Id="UnicastNonUnicast"
                     Minimum="0"
-                    Maximum="undefined"
+                    Maximum=""
                     Rigid="false"
                     Base="1000"
-                    Unit="undefined"
-                    UnitExponent="undefined" >
+                    Unit=""
+                    UnitExponent="" >
                     <Title>Unicast/Non Unicast Packets In/Out</Title>
                     <VerticalLabel>Packets/Second</VerticalLabel>
                     <Draw
@@ -123,11 +123,11 @@
                 <Graph
                     Id="ErrorsInOut"
                     Minimum="0"
-                    Maximum="undefined"
+                    Maximum=""
                     Rigid="false"
                     Base="1000"
-                    Unit="undefined"
-                    UnitExponent="undefined" >
+                    Unit=""
+                    UnitExponent="" >
                     <Title>Errors In/Out</Title>
                     <VerticalLabel>Errors/Second</VerticalLabel>
                     <Draw
