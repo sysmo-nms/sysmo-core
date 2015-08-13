@@ -24,6 +24,8 @@
 -include("include/supercast.hrl").
 -include_lib("common_hrl/include/logs.hrl").
 
+% TODO should use ets for state
+
 -export([
     init/1,
     handle_call/3,
@@ -163,12 +165,12 @@ unsubscribe(Chan, CState) ->
 %% GEN_SERVER CALLBACKS
 %%-------------------------------------------------------------
 init([]) ->
-    {ok, AcctrlMod}     = application:get_env(supercast, acctrl_module),
-    {ok, MainChannels}  = application:get_env(supercast, main_channels),
+    {ok, AcctrlMod}    = application:get_env(supercast, acctrl_module),
+    {ok, MainChannels} = application:get_env(supercast, main_channels),
     {ok, #state{
-            acctrl      = AcctrlMod,
-            main_chans  = MainChannels,
-            chans       = []
+            acctrl     = AcctrlMod,
+            main_chans = MainChannels,
+            chans      = []
         }
     }.
 
@@ -320,16 +322,16 @@ new_chan_subscriber(CState, Channel, Chans) ->
 
 del_chan_subscriber(CState, Channel, Chans) ->
     case lists:keyfind(Channel, 1, Chans) of
-        false ->
-            Chans;
+        false -> Chans;
         {Channel, CList} ->
             case lists:delete(CState, CList) of
                 [] ->
+                    % if list empty, delete the channel tuple
+                    ?LOG_INFO("Channel deleted", Channel),
                     lists:keydelete(Channel, 1, Chans);
                 NewCList ->
-                   NewChan = {Channel, NewCList},
-                   lists:keyreplace(Channel, 1, Chans, NewChan)
-            end,
+                    lists:keyreplace(Channel, 1, Chans, {Channel, NewCList})
+            end
     end.
 
 del_subscriber(CState, Chans) ->

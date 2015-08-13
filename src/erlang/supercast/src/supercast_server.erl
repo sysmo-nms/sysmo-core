@@ -80,10 +80,10 @@ handle_client_command(Mod, Msg, CState) ->
 %%-------------------------------------------------------------
 % @private
 init([]) ->
-    {ok, AuthModule}    = application:get_env(supercast, auth_module),
-    {ok, PduDispatch}   = application:get_env(supercast, pdu_dispatch),
-    {ok, HttpPort}      = application:get_env(supercast, http_port),
-    {ok, HttpUseSSL}    = application:get_env(supercast, http_use_ssl),
+    {ok, AuthModule}  = application:get_env(supercast, auth_module),
+    {ok, PduDispatch} = application:get_env(supercast, pdu_dispatch),
+    {ok, HttpPort}    = application:get_env(supercast, http_port),
+    {ok, HttpUseSSL}  = application:get_env(supercast, http_use_ssl),
     case HttpUseSSL of
         true ->
             DataProto = "https";
