@@ -95,7 +95,7 @@ public class Errd4j
 
     // logging
     private static final int LOG_MAX_BYTES = 10000000; // 10MB
-    private static final int LOG_MAX_FILES = 5;        // 10MB + 5 max 50MB
+    private static final int LOG_MAX_FILES = 5;        // 10MB * 5 max 50MB
     private static final boolean LOG_APPEND = true;
     private static Logger logger;
 
@@ -297,7 +297,7 @@ public class Errd4j
         }
         rrdDbPool.release(rrdDb);
     }
- 
+
 
     /*
      * Handle create a rrd file.
@@ -381,10 +381,10 @@ public class Errd4j
         for (int i = 0; i < defs.length; i++) {
             String def = defs[i];
             String[] defElements = def.split(":");
-            ConsolFun   cf    = ConsolFun.valueOf(defElements[1]);
-            double      xff   = Double.parseDouble(defElements[2]);
-            int         steps = Integer.parseInt(defElements[3]);
-            int         rows  = Integer.parseInt(defElements[4]);
+            ConsolFun cf = ConsolFun.valueOf(defElements[1]);
+            double xff = Double.parseDouble(defElements[2]);
+            int steps = Integer.parseInt(defElements[3]);
+            int rows = Integer.parseInt(defElements[4]);
             ArcDef archive = new ArcDef(cf,xff,steps,rows);
             archiveDef[i] = archive;
         }

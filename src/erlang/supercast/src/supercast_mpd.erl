@@ -323,8 +323,13 @@ del_chan_subscriber(CState, Channel, Chans) ->
         false ->
             Chans;
         {Channel, CList} ->
-            NewChan = {Channel, lists:delete(CState, CList)},
-            lists:keyreplace(Channel, 1, Chans, NewChan)
+            case lists:delete(CState, CList) of
+                [] ->
+                    lists:keydelete(Channel, 1, Chans);
+                NewCList ->
+                   NewChan = {Channel, NewCList},
+                   lists:keyreplace(Channel, 1, Chans, NewChan)
+            end,
     end.
 
 del_subscriber(CState, Chans) ->
