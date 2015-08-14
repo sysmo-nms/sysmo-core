@@ -19,7 +19,7 @@
  * THE SOFTWARE.
  */
 
-package io.sysmo.snmpm;
+package io.sysmo.jserver;
 
 import java.io.*;
 import java.util.*;
@@ -36,18 +36,14 @@ import com.ericsson.otp.erlang.OtpErlangAtom;
 import com.ericsson.otp.erlang.OtpErlangDecodeException;
 import com.ericsson.otp.erlang.OtpErlangExit;
 import com.ericsson.otp.erlang.OtpErlangObject;
-import com.ericsson.otp.erlang.OtpErlangPid;
 import com.ericsson.otp.erlang.OtpErlangTuple;
 import com.ericsson.otp.erlang.OtpErlangInt;
 import com.ericsson.otp.erlang.OtpErlangLong;
-import com.ericsson.otp.erlang.OtpErlangByte;
 import com.ericsson.otp.erlang.OtpMbox;
 import com.ericsson.otp.erlang.OtpNode;
 
 import org.snmp4j.*;
-import org.snmp4j.asn1.*;
 import org.snmp4j.event.*;
-import org.snmp4j.log.*;
 import org.snmp4j.mp.*;
 import org.snmp4j.security.*;
 import org.snmp4j.smi.*;
@@ -57,7 +53,7 @@ import org.snmp4j.util.*;
 import org.snmp4j.security.nonstandard.*;
 
 
-public class Snmpman
+public class SnmpManager
 {
     // my node name
     private static String selfNodeName;
@@ -121,7 +117,7 @@ public class Snmpman
 
 
         // init logger
-        logger = Logger.getLogger(Snmpman.class.getName());
+        logger = Logger.getLogger(io.sysmo.jserver.SnmpManager.class.getName());
         logger.setLevel(Level.INFO);
         LogManager.getLogManager().reset();
 
@@ -984,15 +980,15 @@ class SnmpmanResponseListener implements ResponseListener
         PDU rep = event.getResponse();
         if (rep == null)
         {
-            Snmpman.sendReply(to, Snmpman.buildErrorReply(Snmpman.atomTimeout));
+            io.sysmo.jserver.SnmpManager.sendReply(to, io.sysmo.jserver.SnmpManager.buildErrorReply(io.sysmo.jserver.SnmpManager.atomTimeout));
         }
         else if (rep.getType() == PDU.REPORT)
         {
             OtpErlangObject[] snmpReply = new OtpErlangObject[2];
-            snmpReply[0]    = Snmpman.atomReport;
-            snmpReply[1]    = Snmpman.getReport(rep);
+            snmpReply[0]    = io.sysmo.jserver.SnmpManager.atomReport;
+            snmpReply[1]    = io.sysmo.jserver.SnmpManager.getReport(rep);
             OtpErlangTuple snmpReplyTuple = new OtpErlangTuple(snmpReply);
-            Snmpman.sendReply(to, snmpReplyTuple);
+            io.sysmo.jserver.SnmpManager.sendReply(to, snmpReplyTuple);
         }
         else
         {
@@ -1003,17 +999,17 @@ class SnmpmanResponseListener implements ResponseListener
                 String   oidVal = vbv.getOid().toString();
                 Variable var    = vbv.getVariable();
                 int      syntax = var.getSyntax();
-                OtpErlangObject varObj = Snmpman.getValue(vbv);
+                OtpErlangObject varObj = io.sysmo.jserver.SnmpManager.getValue(vbv);
 
                 OtpErlangObject[] a1 = new OtpErlangObject[4];
-                a1[0] = Snmpman.atomVarbind;
+                a1[0] = io.sysmo.jserver.SnmpManager.atomVarbind;
                 a1[1] = new OtpErlangString(oidVal);
                 a1[2] = new OtpErlangInt(syntax);
                 a1[3] = varObj;
                 OtpErlangTuple encapTuple = new OtpErlangTuple(a1);
                 bindsAcc.add(encapTuple);
             }
-            Snmpman.sendReply(to, Snmpman.buildBindsTuple(bindsAcc));
+            io.sysmo.jserver.SnmpManager.sendReply(to, io.sysmo.jserver.SnmpManager.buildBindsTuple(bindsAcc));
         }
     }
 }
@@ -1040,10 +1036,10 @@ class SnmpmanTreeListener implements TreeListener
                 String   oidVal = vb.getOid().toString();
                 Variable var    = vb.getVariable();
                 int      syntax = var.getSyntax();
-                OtpErlangObject varObj = Snmpman.getValue(vb);
+                OtpErlangObject varObj = io.sysmo.jserver.SnmpManager.getValue(vb);
 
                 OtpErlangObject[] a1 = new OtpErlangObject[4];
-                a1[0] = Snmpman.atomVarbind;
+                a1[0] = io.sysmo.jserver.SnmpManager.atomVarbind;
                 a1[1] = new OtpErlangString(oidVal);
                 a1[2] = new OtpErlangInt(syntax);
                 a1[3] = varObj;
@@ -1058,28 +1054,28 @@ class SnmpmanTreeListener implements TreeListener
     {
         if (event.getStatus() == RetrievalEvent.STATUS_EXCEPTION)
         {
-            Snmpman.sendReply(to,
-                    Snmpman.buildErrorReply(Snmpman.atomException));
+            io.sysmo.jserver.SnmpManager.sendReply(to,
+                    io.sysmo.jserver.SnmpManager.buildErrorReply(io.sysmo.jserver.SnmpManager.atomException));
         }
         else if (event.getStatus() == RetrievalEvent.STATUS_OK)
         {
-            Snmpman.sendReply(to, Snmpman.buildBindsTuple(bindsAcc));
+            io.sysmo.jserver.SnmpManager.sendReply(to, io.sysmo.jserver.SnmpManager.buildBindsTuple(bindsAcc));
         }
         else if (event.getStatus() == RetrievalEvent.STATUS_REPORT)
         {
             OtpErlangObject[] snmpReply = new OtpErlangObject[2];
-            snmpReply[0]    = Snmpman.atomReport;
-            snmpReply[1]    = Snmpman.getReport(event.getReportPDU());
+            snmpReply[0]    = io.sysmo.jserver.SnmpManager.atomReport;
+            snmpReply[1]    = io.sysmo.jserver.SnmpManager.getReport(event.getReportPDU());
             OtpErlangTuple snmpReplyTuple = new OtpErlangTuple(snmpReply);
-            Snmpman.sendReply(to, Snmpman.buildErrorReply(snmpReplyTuple));
+            io.sysmo.jserver.SnmpManager.sendReply(to, io.sysmo.jserver.SnmpManager.buildErrorReply(snmpReplyTuple));
         }
         else if (event.getStatus() == RetrievalEvent.STATUS_TIMEOUT)
         {
-            Snmpman.sendReply(to, Snmpman.buildErrorReply(Snmpman.atomTimeout));
+            io.sysmo.jserver.SnmpManager.sendReply(to, io.sysmo.jserver.SnmpManager.buildErrorReply(io.sysmo.jserver.SnmpManager.atomTimeout));
         }
         else if (event.getStatus() == RetrievalEvent.STATUS_WRONG_ORDER)
         {
-            Snmpman.sendReply(to, Snmpman.buildErrorReply(Snmpman.atomWrongOrder));
+            io.sysmo.jserver.SnmpManager.sendReply(to, io.sysmo.jserver.SnmpManager.buildErrorReply(io.sysmo.jserver.SnmpManager.atomWrongOrder));
         }
 
         finished = true;
@@ -1107,12 +1103,12 @@ class SnmpmanTableListener implements TableListener
     {
         VariableBinding[] vbs = event.getColumns();
         OtpErlangObject[] tableRow = new OtpErlangObject[vbs.length+1];
-        tableRow[0] = Snmpman.atomTableRow;
+        tableRow[0] = io.sysmo.jserver.SnmpManager.atomTableRow;
 
 
         for (int i=0; i<vbs.length; i++) {
 
-            tableRow[i+1] = Snmpman.getValue(vbs[i]);
+            tableRow[i+1] = io.sysmo.jserver.SnmpManager.getValue(vbs[i]);
         }
         OtpErlangTuple tupleRow = new OtpErlangTuple(tableRow);
         tableAcc.add(tupleRow);
@@ -1123,31 +1119,31 @@ class SnmpmanTableListener implements TableListener
     {
         if (event.getStatus() == RetrievalEvent.STATUS_EXCEPTION)
         {
-            Snmpman.sendReply(to,
-                    Snmpman.buildErrorReply(Snmpman.atomException));
+            io.sysmo.jserver.SnmpManager.sendReply(to,
+                    io.sysmo.jserver.SnmpManager.buildErrorReply(io.sysmo.jserver.SnmpManager.atomException));
         }
         else if (event.getStatus() == RetrievalEvent.STATUS_OK)
         {
-            Snmpman.sendReply(to,
-                    Snmpman.buildTableTuple(tableAcc));
+            io.sysmo.jserver.SnmpManager.sendReply(to,
+                    io.sysmo.jserver.SnmpManager.buildTableTuple(tableAcc));
         }
         else if (event.getStatus() == RetrievalEvent.STATUS_REPORT)
         {
             OtpErlangObject[] snmpReply = new OtpErlangObject[2];
-            snmpReply[0]    = Snmpman.atomReport;
-            snmpReply[1]    = Snmpman.getReport(event.getReportPDU());
+            snmpReply[0]    = io.sysmo.jserver.SnmpManager.atomReport;
+            snmpReply[1]    = io.sysmo.jserver.SnmpManager.getReport(event.getReportPDU());
             OtpErlangTuple snmpReplyTuple = new OtpErlangTuple(snmpReply);
-            Snmpman.sendReply(to, Snmpman.buildErrorReply(snmpReplyTuple));
+            io.sysmo.jserver.SnmpManager.sendReply(to, io.sysmo.jserver.SnmpManager.buildErrorReply(snmpReplyTuple));
         }
         else if (event.getStatus() == RetrievalEvent.STATUS_TIMEOUT)
         {
-            Snmpman.sendReply(to,
-                    Snmpman.buildErrorReply(Snmpman.atomTimeout));
+            io.sysmo.jserver.SnmpManager.sendReply(to,
+                    io.sysmo.jserver.SnmpManager.buildErrorReply(io.sysmo.jserver.SnmpManager.atomTimeout));
         }
         else if (event.getStatus() == RetrievalEvent.STATUS_WRONG_ORDER)
         {
-            Snmpman.sendReply(to,
-                    Snmpman.buildErrorReply(Snmpman.atomWrongOrder));
+            io.sysmo.jserver.SnmpManager.sendReply(to,
+                    io.sysmo.jserver.SnmpManager.buildErrorReply(io.sysmo.jserver.SnmpManager.atomWrongOrder));
         }
         finished = true;
     }

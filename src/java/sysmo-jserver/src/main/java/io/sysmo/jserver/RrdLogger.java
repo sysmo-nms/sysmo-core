@@ -19,7 +19,7 @@
  * THE SOFTWARE.
  */
 
-package io.sysmo.errd4j;
+package io.sysmo.jserver;
 
 
 import java.io.*;
@@ -42,11 +42,8 @@ import com.ericsson.otp.erlang.OtpErlangAtom;
 import com.ericsson.otp.erlang.OtpErlangDecodeException;
 import com.ericsson.otp.erlang.OtpErlangExit;
 import com.ericsson.otp.erlang.OtpErlangObject;
-import com.ericsson.otp.erlang.OtpErlangPid;
 import com.ericsson.otp.erlang.OtpErlangTuple;
-import com.ericsson.otp.erlang.OtpErlangInt;
 import com.ericsson.otp.erlang.OtpErlangLong;
-import com.ericsson.otp.erlang.OtpErlangByte;
 import com.ericsson.otp.erlang.OtpErlangDouble;
 import com.ericsson.otp.erlang.OtpMbox;
 import com.ericsson.otp.erlang.OtpNode;
@@ -56,17 +53,11 @@ import org.rrd4j.core.RrdDef;
 import org.rrd4j.core.ArcDef;
 import org.rrd4j.core.RrdDb;
 import org.rrd4j.core.Sample;
-import org.rrd4j.core.FetchData;
-import org.rrd4j.core.FetchRequest;
 import org.rrd4j.core.RrdDbPool;
-import org.rrd4j.graph.RrdGraphDef;
-import org.rrd4j.graph.RrdGraph;
 import org.rrd4j.DsType;
 import org.rrd4j.ConsolFun;
-import java.awt.image.BufferedImage;
-import java.awt.Color;
 
-public class Errd4j
+public class RrdLogger
 {
 
     public static final OtpErlangAtom atomReply       = new OtpErlangAtom("reply");
@@ -95,7 +86,7 @@ public class Errd4j
 
     // logging
     private static final int LOG_MAX_BYTES = 10000000; // 10MB
-    private static final int LOG_MAX_FILES = 5;        // 10MB * 5 max 50MB
+    private static final int LOG_MAX_FILES = 5;        // 10MB + 5 max 50MB
     private static final boolean LOG_APPEND = true;
     private static Logger logger;
 
@@ -111,7 +102,7 @@ public class Errd4j
             .getPath(args[0], "etc", "errd4j.properties")
             .toString();
 
-        logger = Logger.getLogger(Errd4j.class.getName());
+        logger = Logger.getLogger(RrdLogger.class.getName());
         logger.setLevel(Level.INFO);
         LogManager.getLogManager().reset();
 
@@ -297,7 +288,7 @@ public class Errd4j
         }
         rrdDbPool.release(rrdDb);
     }
-
+ 
 
     /*
      * Handle create a rrd file.
@@ -381,10 +372,10 @@ public class Errd4j
         for (int i = 0; i < defs.length; i++) {
             String def = defs[i];
             String[] defElements = def.split(":");
-            ConsolFun cf = ConsolFun.valueOf(defElements[1]);
-            double xff = Double.parseDouble(defElements[2]);
-            int steps = Integer.parseInt(defElements[3]);
-            int rows = Integer.parseInt(defElements[4]);
+            ConsolFun   cf    = ConsolFun.valueOf(defElements[1]);
+            double      xff   = Double.parseDouble(defElements[2]);
+            int         steps = Integer.parseInt(defElements[3]);
+            int         rows  = Integer.parseInt(defElements[4]);
             ArcDef archive = new ArcDef(cf,xff,steps,rows);
             archiveDef[i] = archive;
         }
@@ -421,7 +412,7 @@ class RrdRunnable implements Runnable
         }
         catch (Exception|Error e)
         {
-            Errd4j.getLogger().warning("RrdRunnable fail to decode tuple: " + e.getMessage() + e);
+            RrdLogger.getLogger().warning("RrdRunnable fail to decode tuple: " + e.getMessage() + e);
             return;
         }
 
@@ -430,32 +421,32 @@ class RrdRunnable implements Runnable
             switch (command.toString())
             {
                 case "multi_update":
-                    Errd4j.handleRrdMultiUpdate(caller, payload);
+                    RrdLogger.handleRrdMultiUpdate(caller, payload);
                     break;
                 case "update":
-                    Errd4j.handleRrdUpdate(caller, payload);
+                    RrdLogger.handleRrdUpdate(caller, payload);
                     break;
                 case "multi_create":
-                    Errd4j.handleRrdMultiCreate(caller, payload);
+                    RrdLogger.handleRrdMultiCreate(caller, payload);
                     break;
                 case "create":
-                    Errd4j.handleRrdCreate(caller, payload);
+                    RrdLogger.handleRrdCreate(caller, payload);
                     break;
                 default:
-                    Errd4j.getLogger().warning("unknown command: " + command);
-                    OtpErlangTuple dreply = Errd4j.buildErrorReply(new OtpErlangString("undefined"));
-                    Errd4j.sendReply(caller, dreply);
+                    RrdLogger.getLogger().warning("unknown command: " + command);
+                    OtpErlangTuple dreply = RrdLogger.buildErrorReply(new OtpErlangString("undefined"));
+                    RrdLogger.sendReply(caller, dreply);
             }
         }
         catch (Exception|Error e)
         {
-            OtpErlangTuple reply = Errd4j.buildErrorReply(
-                new OtpErlangString("Java CATCH: Failed to honour command "
-                    + command.toString() + " -> " + e + " " + e.getMessage())
+            OtpErlangTuple reply = RrdLogger.buildErrorReply(
+                    new OtpErlangString("Java CATCH: Failed to honour command "
+                            + command.toString() + " -> " + e + " " + e.getMessage())
             );
 
-            Errd4j.getLogger().warning("RrdRunnable failure: " + e.getMessage() + e);
-            Errd4j.sendReply(caller, reply);
+            RrdLogger.getLogger().warning("RrdRunnable failure: " + e.getMessage() + e);
+            RrdLogger.sendReply(caller, reply);
         }
     }
 
@@ -471,6 +462,6 @@ class RrdReject implements RejectedExecutionHandler
     public void rejectedExecution(Runnable r, ThreadPoolExecutor executor)
     {
         RrdRunnable failRunner = (RrdRunnable) r;
-        Errd4j.sendReply(failRunner.getCaller(), Errd4j.atomBusy);
+        RrdLogger.sendReply(failRunner.getCaller(), RrdLogger.atomBusy);
     }
 }
