@@ -52,9 +52,8 @@
 ]).
 
 -record(state, {
-    errd4j_pid      = undefined,
-    replies_waiting = [],
-    assert_init     = undefined
+    java_pid        = undefined,
+    replies_waiting = []
 }).
 
 -define(ASSERT_TIMEOUT, 5000).
@@ -118,12 +117,14 @@ start_link() ->
 % GEN_SERVER
 % @private
 init([]) ->
-    {ok, #state{}}.
+    JavaPid = sysmo:get_pid(rrd4j),
+    ?LOG_INFO("success pid", JavaPid),
+    {ok, #state{java_pid=JavaPid}}.
 
 % CALL
 % @private
 handle_call({call_errd4j, {Command, Payload}}, From,
-        #state{errd4j_pid = Errd4j, replies_waiting = RWait} = S) ->
+        #state{java_pid = Errd4j, replies_waiting = RWait} = S) ->
     Errd4j ! {Command, From, Payload},
     {noreply, S#state{replies_waiting = [From|RWait]}}.
 
@@ -147,7 +148,7 @@ handle_info({reply, From, Reply}, #state{replies_waiting = RWait} = S) ->
         }
     };
 
-handle_info({'EXIT', Pid, Reason}, #state{errd4j_pid = Pid} = S) ->
+handle_info({'EXIT', Pid, Reason}, #state{java_pid = Pid} = S) ->
     ?LOG_WARNING("rrd4j EXIT with reason:", Reason),
     {stop, Reason, S};
 

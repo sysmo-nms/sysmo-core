@@ -49,9 +49,8 @@
 ]).
 
 -record(state, {
-    snmp4j_pid      = undefined,
-    replies_waiting = [],
-    assert_init     = undefined
+    java_pid      = undefined,
+    replies_waiting = []
 }).
 
 -define(ASSERT_TIMEOUT, 5000).
@@ -254,12 +253,14 @@ get(Target, Oids) ->
 % GEN_SERVER
 % @private
 init([]) ->
-    {ok, #state{}}.
+    JavaPid = sysmo:get_pid(snmp4j),
+    ?LOG_INFO("success pid", JavaPid),
+    {ok, #state{java_pid=JavaPid}}.
 
 % CALL
 % @private
 handle_call({call_snmp4j, {Command, Payload}}, From,
-        #state{snmp4j_pid = Snmp4j, replies_waiting = RWait} = S) ->
+        #state{java_pid = Snmp4j, replies_waiting = RWait} = S) ->
     Snmp4j ! {Command, From, Payload},
     {noreply, S#state{replies_waiting = [From|RWait]}}.
 

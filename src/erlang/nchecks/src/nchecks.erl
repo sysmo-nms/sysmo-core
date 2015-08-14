@@ -44,9 +44,8 @@
 ]).
 
 -record(state, {
-    nchecks_pid     = undefined,
-    replies_waiting = [],
-    assert_init     = undefined
+    java_pid        = undefined,
+    replies_waiting = []
 }).
 
 -define(ASSERT_TIMEOUT, 5000).
@@ -68,12 +67,14 @@ start_link() ->
 % GEN_SERVER
 % @private
 init([]) ->
-    {ok, #state{}}.
+    JavaPid = sysmo:get_pid(nchecks),
+    ?LOG_INFO("success pid", JavaPid),
+    {ok, #state{java_pid=JavaPid}}.
 
 % CALL
 % @private
 handle_call({call_nchecks, {Command, Payload}}, From,
-        #state{nchecks_pid = NChecks, replies_waiting = RWait} = S) ->
+        #state{java_pid = NChecks, replies_waiting = RWait} = S) ->
     NChecks ! {Command, From, Payload},
     {noreply, S#state{replies_waiting = [From|RWait]}}.
 
@@ -98,7 +99,7 @@ handle_info({reply, From, Reply}, #state{replies_waiting = RWait} = S) ->
         }
     };
 
-handle_info({'EXIT', Pid, Reason}, #state{nchecks_pid = Pid} = S) ->
+handle_info({'EXIT', Pid, Reason}, #state{java_pid = Pid} = S) ->
     ?LOG_WARNING("EXIT with reason:", Reason),
     {stop, Reason, S};
 
