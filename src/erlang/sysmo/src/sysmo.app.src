@@ -3,13 +3,14 @@
         {description, "Sysmo management system"},
         {vsn, "0.1.0"},
         {modules, []},
-        {registered, 
+        {registered,
             [
                 sysmo_app,
-                sysmo_sup
+                sysmo_sup,
+                sysmo
             ]
         },
-        {included_applications, 
+        {included_applications,
             [
                 mnesia,
                 monitor,
@@ -20,7 +21,7 @@
                 equartz
             ]
         },
-        {applications, 
+        {applications,
             [kernel, stdlib]
         },
         {start_phases, []},

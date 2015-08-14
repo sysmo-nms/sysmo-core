@@ -19,7 +19,14 @@ init([]) ->
         {
             {one_for_all, 1, 6000},
             [
-
+                {
+                    sysmo,
+                    {sysmo, start_link, []},
+                    permanent,
+                    2000,
+                    worker,
+                    [sysmo]
+                },
                 {
                     mnesia_sup,
                     {mnesia_sup, start, [normal,[]]},

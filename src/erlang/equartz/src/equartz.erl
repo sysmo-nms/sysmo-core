@@ -135,7 +135,11 @@ handle_call({fire_now, Job}, _From, JobList) ->
             NewJobList = lists:keyreplace(Job, 1, JobList,
                                           {Job, Step, {M,F,A}, TRef}),
             {reply, ok, NewJobList}
-    end.
+    end;
+
+handle_call(Call, _, S) ->
+    ?LOG_WARNING("Received unknow handle cast: ", Call),
+    {noreply, S}.
 
 
 % @private
@@ -147,14 +151,14 @@ handle_info({fire, Job, Step, {M,F,A}}, JobList) ->
     {noreply, NewJobList};
 
 handle_info(I, S) ->
-    ?LOG_INFO("Received handle info:", I),
+    ?LOG_WARNING("Received handle info:", I),
     {noreply, S}.
 
 
 
 % @private
 handle_cast(Cast,S) ->
-    ?LOG_INFO("Received unknow handle cast: ", Cast),
+    ?LOG_WARNING("Received unknow handle cast: ", Cast),
     {noreply, S}.
 
 % @private

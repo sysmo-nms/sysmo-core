@@ -28,7 +28,7 @@
          handle_info/2, terminate/2, code_change/3]).
 
 % utils
--export([start_link/0, assert_init/0]).
+-export([start_link/0]).
 
 
 % API
@@ -58,17 +58,7 @@
 
 % @private
 start_link() ->
-    Ret = gen_server:start_link({local, ?MODULE}, ?MODULE, [], []),
-    ok = assert_init(),
-    Ret.
-
-% @private
-% @doc
-% Called by start_link to ensure initialisation before returning.
-% @end
-assert_init() ->
-    gen_server:call(?MODULE, assert_init, ?ASSERT_TIMEOUT).
-
+    gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
 % @private
 % @doc
@@ -264,52 +254,21 @@ get(Target, Oids) ->
 % GEN_SERVER
 % @private
 init([]) ->
-    process_flag(trap_exit, true),
-    gen_server:cast(?MODULE, boot),
     {ok, #state{}}.
 
 % CALL
 % @private
-handle_call(assert_init, F, #state{snmp4j_pid = undefined} = S) ->
-    {noreply, S#state{assert_init = F}};
-handle_call(assert_init, _F, S) ->
-    {reply, ok, S};
-
 handle_call({call_snmp4j, {Command, Payload}}, From,
         #state{snmp4j_pid = Snmp4j, replies_waiting = RWait} = S) ->
     Snmp4j ! {Command, From, Payload},
     {noreply, S#state{replies_waiting = [From|RWait]}}.
 
-
-% CAST
 % @private
-handle_cast(boot, S) ->
-    boot(),
-    {noreply, S};
-
 handle_cast(_,S) ->
     {noreply, S}.
 
 
 % INFO
-% @private
-handle_info({Pid, snmp4j_running}, S) ->
-    ?LOG_INFO("Receive init"),
-    case S#state.assert_init of
-        undefined ->
-            ok;
-        F ->
-            gen_server:reply(F, ok)
-    end,
-    erlang:link(Pid),
-    {noreply,
-        S#state{
-            snmp4j_pid      = Pid,
-            replies_waiting = [],
-            assert_init     = undefined
-        }
-    };
-
 % @private
 handle_info(stop, S) ->
     ?LOG_INFO("Received stop"),
@@ -322,10 +281,6 @@ handle_info({reply, From, Reply}, #state{replies_waiting = RWait} = S) ->
             replies_waiting = lists:delete(From, RWait)
         }
     };
-
-handle_info({'EXIT', Pid, Reason}, #state{snmp4j_pid = Pid} = S) ->
-    ?LOG_WARNING("snmp4j EXIT with reason:", Reason),
-    {stop, Reason, S};
 
 handle_info(I, S) ->
     ?LOG_INFO("received handle info:", I),
@@ -345,14 +300,6 @@ code_change(_,S,_) ->
 
 
 % PRIVATE
-boot() ->
-    Prefix   = sysmo:get_java_bin_prefix(),
-    Relative = string:concat("snmpman/bin/snmpman", Prefix),
-    Cmd = filename:join(filename:absname(sysmo:get_java_dir()),Relative),
-    WorkDir = filename:absname(""),
-    Node = sysmo:get_node_name(),
-    erlang:open_port({spawn_executable, Cmd},
-                     [{args,[WorkDir, Node]}, stderr_to_stdout]).
 
 build_conf(ElementName, ElementConf) ->
     PrivProto = proplists:get_value(priv_proto, ElementConf, "AES"),

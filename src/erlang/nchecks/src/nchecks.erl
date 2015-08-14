@@ -34,8 +34,7 @@
 ]).
 
 -export([
-    start_link/0,
-    assert_init/0
+    start_link/0
 ]).
 
 % API
@@ -61,33 +60,18 @@ check(Class, ArgList, Opaque) ->
     gen_server:call(?MODULE, {call_nchecks,
                 {check, {Class, ArgList, Opaque}}}, ?CHECK_TIMEOUT).
 
-% @private
-% @doc
-% Called by start_link to ensure initialisation before returning.
-% @end
-assert_init() ->
-    gen_server:call(?MODULE, assert_init, ?ASSERT_TIMEOUT).
 
 % @private
 start_link() ->
-    Ret = gen_server:start_link({local, ?MODULE}, ?MODULE, [], []),
-    ok = assert_init(),
-    Ret.
+    gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
 % GEN_SERVER
 % @private
 init([]) ->
-    process_flag(trap_exit, true),
-    gen_server:cast(?MODULE, boot),
     {ok, #state{}}.
 
 % CALL
 % @private
-handle_call(assert_init, F, #state{nchecks_pid = undefined} = S) ->
-    {noreply, S#state{assert_init = F}};
-handle_call(assert_init, _F, S) ->
-    {reply, ok, S};
-
 handle_call({call_nchecks, {Command, Payload}}, From,
         #state{nchecks_pid = NChecks, replies_waiting = RWait} = S) ->
     NChecks ! {Command, From, Payload},
@@ -96,34 +80,11 @@ handle_call({call_nchecks, {Command, Payload}}, From,
 
 % CAST
 % @private
-handle_cast(boot, S) ->
-    boot(),
-    {noreply, S};
-
 handle_cast(_,S) ->
     {noreply, S}.
 
 
 % INFO
-% @private
-handle_info({Pid, nchecks_running}, S) ->
-    ?LOG_INFO("Received init"),
-    case S#state.assert_init of
-        undefined ->
-            ok;
-        F ->
-            gen_server:reply(F, ok)
-    end,
-    erlang:link(Pid),
-    Pid ! {init, {}, {empty_init}},
-    {noreply,
-        S#state{
-            nchecks_pid      = Pid,
-            replies_waiting = [],
-            assert_init     = undefined
-        }
-    };
-
 % @private
 handle_info(stop, S) ->
     ?LOG_INFO("Received stop"),
@@ -156,14 +117,3 @@ terminate(_,_) ->
 % @private
 code_change(_,S,_) ->
     {ok, S}.
-
-
-% PRIVATE
-boot() ->
-    Prefix = sysmo:get_java_bin_prefix(),
-    Relative = string:concat("nchecks/bin/nchecks", Prefix),
-    Cmd = filename:join(filename:absname(sysmo:get_java_dir()),Relative),
-    WorkDir = filename:absname(""),
-    Node = sysmo:get_node_name(),
-    erlang:open_port({spawn_executable, Cmd},
-                     [{args,[WorkDir, Node]}, stderr_to_stdout]).

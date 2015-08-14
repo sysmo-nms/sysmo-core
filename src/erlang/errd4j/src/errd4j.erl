@@ -34,8 +34,7 @@
 ]).
 
 -export([
-    start_link/0,
-    assert_init/0
+    start_link/0
 ]).
 
 
@@ -111,38 +110,19 @@ create(File, Step, DSs, RRAType) ->
 
 
 
-
-
 % @private
 start_link() ->
-    Ret = gen_server:start_link({local, ?MODULE}, ?MODULE, [], []),
-    ok = assert_init(),
-    Ret.
-
-% @private
-% @doc
-% Called by start_link to ensure initialisation before returning.
-% @end
-assert_init() ->
-    gen_server:call(?MODULE, assert_init, ?ASSERT_TIMEOUT).
-
+    gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
 
 % GEN_SERVER
 % @private
 init([]) ->
-    process_flag(trap_exit, true),
-    gen_server:cast(?MODULE, boot),
     {ok, #state{}}.
 
-% CALL 
+% CALL
 % @private
-handle_call(assert_init, F, #state{errd4j_pid = undefined} = S) ->
-    {noreply, S#state{assert_init = F}};
-handle_call(assert_init, _F, S) ->
-    {reply, ok, S};
-
-handle_call({call_errd4j, {Command, Payload}}, From, 
+handle_call({call_errd4j, {Command, Payload}}, From,
         #state{errd4j_pid = Errd4j, replies_waiting = RWait} = S) ->
     Errd4j ! {Command, From, Payload},
     {noreply, S#state{replies_waiting = [From|RWait]}}.
@@ -150,32 +130,9 @@ handle_call({call_errd4j, {Command, Payload}}, From,
 
 % CAST
 % @private
-handle_cast(boot, S) ->
-    boot(),
-    {noreply, S};
-
 handle_cast(_,S) ->
     {noreply, S}.
 
-
-% INFO
-% @private
-handle_info({Pid, errd4j_running}, S) ->
-    ?LOG_INFO("Receive init"),
-    case S#state.assert_init of
-        undefined ->
-            ok;
-        F ->
-            gen_server:reply(F, ok)
-    end,
-    erlang:link(Pid),
-    {noreply,
-        S#state{
-            errd4j_pid      = Pid,
-            replies_waiting = [],
-            assert_init     = undefined
-        }
-    };
 
 % @private
 handle_info(stop, S) ->
@@ -209,13 +166,3 @@ terminate(_,_) ->
 % @private
 code_change(_,S,_) ->
     {ok, S}.
-
-% PRIVATE
-boot() ->
-    Prefix   = sysmo:get_java_bin_prefix(),
-    Relative = string:concat("errd4j/bin/errd4j", Prefix),
-    Cmd = filename:join(filename:absname(sysmo:get_java_dir()),Relative),
-    WorkDir = filename:absname(""),
-    Node = sysmo:get_node_name(),
-    erlang:open_port({spawn_executable, Cmd},
-                     [{args,[WorkDir, Node]}, stderr_to_stdout]).
