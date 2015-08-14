@@ -21,6 +21,7 @@
 -module(monitor_data_master).
 -behaviour(gen_server).
 -include("include/monitor.hrl").
+-include_lib("common_hrl/include/logs.hrl").
 
 % GEN_SERVER
 -export([
@@ -358,7 +359,8 @@ init_mnesia_tables() ->
                     {storage_properties, [{dets, DetsOpts}]}
                 ]
             )
-    end.
+    end,
+    mnesia:wait_for_tables([target, job, probe, dependency], 2000).
 
 
 init_targets() ->
