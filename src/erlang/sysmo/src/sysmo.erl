@@ -28,8 +28,12 @@ init([]) ->
                  filename:absname(get_java_dir()), Relative),
     WorkDir  = filename:absname(""),
     Node     = get_node_name(),
+    Cookie   = get_cookie_string(),
     Port     = erlang:open_port({spawn_executable, Cmd},
-                     [{args,[WorkDir,Node]}, stderr_to_stdout]),
+                [{args,[Node, Cookie, WorkDir]},
+                 {cd, WorkDir},
+                 exit_status,
+                 stderr_to_stdout]),
     {ok, Port}.
 
 handle_call(Call, _, S) ->
@@ -39,6 +43,10 @@ handle_call(Call, _, S) ->
 handle_cast(Cast, S) ->
     ?LOG_WARNING("Received unknow cast", Cast),
     {noreply, S}.
+
+handle_info({_Port, {exit_status, Status}}, S) ->
+    ?LOG_ERROR("java node has crashed", {status, Status}),
+    {stop, "Java node has crashed", S};
 
 handle_info(Info, S) ->
     ?LOG_WARNING("Received unknow info", Info),
@@ -60,4 +68,8 @@ get_java_bin_prefix() ->
         {_,_} -> ""
     end.
 
-get_node_name() -> erlang:atom_to_list(erlang:node()).
+get_node_name() ->
+    erlang:atom_to_list(erlang:node()).
+
+get_cookie_string() ->
+    erlang:atom_to_list(erlang:get_cookie()).
