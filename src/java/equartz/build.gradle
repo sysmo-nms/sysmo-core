@@ -1,5 +1,0 @@
-mainClassName = 'io.sysmo.equartz.EQuartz'
-
-dependencies {
-    compile 'org.quartz-scheduler:quartz:2.2.1'
-}
