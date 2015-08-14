@@ -15,7 +15,7 @@ start_link() ->
     supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
 init([]) ->
-    {ok, 
+    {ok,
         {
             {one_for_all, 1, 6000},
             [
