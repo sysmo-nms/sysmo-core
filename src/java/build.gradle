@@ -1,24 +1,30 @@
-// root project
-
 subprojects {
     apply plugin: 'java'
-    apply plugin: 'application'
     apply plugin: 'pmd'
     apply plugin: 'findbugs'
     apply plugin: 'jdepend'
-    apply plugin: 'eclipse'
-
-    applicationDefaultJvmArgs = ["-server", "-Duser.language=en"]
 
     repositories {
-        flatDir {
-            dirs '../lib'
-        }
         mavenCentral()
+
+        // jinterface
+        flatDir {
+            dirs "${rootDir}/lib"
+        }
+
+        // rrd4j
+        maven {
+            url 'https://oss.sonatype.org/content/repositories/snapshots'
+        }
+
+        // snmp4j
+        maven {
+            url 'https://oosnmp.net/dist/release'
+        }
+
     }
 
     dependencies {
-        compile     'org.erlang.otp:jinterface:1.5.12'
         testCompile 'junit:junit:4.2'
     }
 
@@ -34,8 +40,35 @@ subprojects {
     }
 }
 
-/*
-task wrapper(type: Wrapper) {
-    gradleVersion = '2.3'
+project(':shared:nchecks') {
+    dependencies {
+        compile 'org.glassfish:javax.json:1.0.4'
+        compile 'org.jruby:jruby:1.7.20'
+        compile 'org.snmp4j:snmp4j:2.3.3'
+    }
 }
-*/
+
+project(':sysmo-jserver') {
+    apply plugin: 'application'
+
+    mainClassName = 'io.sysmo.jserver.SysmoServer'
+
+    dependencies {
+        compile project(':shared:nchecks')
+        compile 'org.erlang.otp:jinterface:1.5.12'
+        compile 'org.rrd4j:rrd4j:3.0-SNAPSHOT'
+        compile 'org.snmp4j:snmp4j:2.3.3'
+    }
+
+}
+
+project(':sysmo-jworker') {
+    apply plugin: 'application'
+
+    mainClassName = 'io.sysmo.jworker.SysmoWorker'
+
+    dependencies {
+        compile project(':shared:nchecks')
+        compile 'org.erlang.otp:jinterface:1.5.12'
+    }
+}

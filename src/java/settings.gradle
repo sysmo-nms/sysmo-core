@@ -1,4 +1,3 @@
-include 'equartz'
-include 'errd4j'
-include 'nchecks'
-include 'snmpman'
+include 'shared:nchecks'
+include 'sysmo-jserver'
+include 'sysmo-jworker'
