@@ -1,15 +1,15 @@
 {application, equartz,
     [
-        {description, "Erlang equartz"},
+        {description, "Erlang simplistic job scheduler"},
         {vsn, "0.1.0"},
         {modules, []},
-        {registered, 
+        {registered,
             [
                 equartz,
                 equartz_sup
             ]
         },
-        {applications, 
+        {applications,
             [kernel, stdlib]
         },
         {start_phases, []},

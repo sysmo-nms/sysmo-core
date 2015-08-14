@@ -79,11 +79,11 @@ new_target(SysProp, Props) ->
     T = #target{sys_properties=SysProp,properties=NewProp},
     monitor_data_master:new(target, T).
 
-new_job({internal, Function}, Target) ->
+new_job(Function, Target) ->
     J = #job{
         belong_to = Target,
         trigger  = ?CRON_EVERY20S,
-        %trigger  = ?CRON_DAILY4AM,
+        %trigger  = ?CRON_EVERYDAYS,
         module   = monitor_jobs,
         function = Function,
         argument = Target,
@@ -239,6 +239,6 @@ fill_test(N,Parent) ->
     Snmp = new_probe({nchecks, "CheckNetworkInterfaces", [1,2,3]}, K),
     dependency_new(Ping, Parent),
     dependency_new(Snmp, Parent),
-    new_job({internal, update_snmp_system_info}, K),
-    new_job({internal, update_snmp_if_aliases},  K),
+    new_job(update_snmp_system_info, K),
+    new_job(update_snmp_if_aliases,  K),
     fill_test(N - 1, Ping).

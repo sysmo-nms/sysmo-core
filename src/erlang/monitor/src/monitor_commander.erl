@@ -65,9 +65,9 @@ handle_cast({{"createTargetQuery", Contents}, CState}, S) ->
     case snmp_enabled(NProp2) of
         true ->
             SInfoJob  = monitor:new_job(
-                          {internal, update_snmp_system_info}, TargetId),
+                          update_snmp_system_info, TargetId),
             IfInfoJob = monitor:new_job(
-                          {internal, update_snmp_if_aliases},  TargetId),
+                          update_snmp_if_aliases,  TargetId),
             monitor:fire_job(SInfoJob),
             monitor:fire_job(IfInfoJob);
         false -> ok

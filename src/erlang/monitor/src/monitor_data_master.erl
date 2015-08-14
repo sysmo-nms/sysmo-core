@@ -1,21 +1,21 @@
 % This file is part of "Enms" (http://sourceforge.net/projects/enms/)
 % Copyright (C) 2012 <Sébastien Serre sserre.bx@gmail.com>
-% 
+%
 % Enms is a Network Management System aimed to manage and monitor SNMP
 % target, monitor network hosts and services, provide a consistent
 % documentation system and tools to help network professionals
 % to have a wide perspective of the networks they manage.
-% 
+%
 % Enms is free software: you can redistribute it and/or modify
 % it under the terms of the GNU General Public License as published by
 % the Free Software Foundation, either version 3 of the License, or
 % (at your option) any later version.
-% 
+%
 % Enms is distributed in the hope that it will be useful,
 % but WITHOUT ANY WARRANTY; without even the implied warranty of
 % MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 % GNU General Public License for more details.
-% 
+%
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 -module(monitor_data_master).
@@ -85,7 +85,7 @@ do_new(job, Job) ->
     IJob = Job#job{name=Name},
     mnesia:dirty_write(IJob),
     #job{trigger=Tr,module=M,function=F,argument=A} = IJob,
-    equartz:register_internal_job(Name,Tr,{M,F,A}),
+    equartz:register_job(Name,Tr,{M,F,A}),
     Name;
 do_new(probe, Probe) ->
     Name = generate_id(probe),
@@ -375,14 +375,14 @@ init_probes() ->
 init_jobs() ->
     do_iterate(job, fun(J,_) ->
         #job{name=Name,trigger=Tr,module=M,function=F,argument=A} = J,
-        equartz:register_internal_job(Name,Tr,{M,F,A})
+        equartz:register_job(Name,Tr,{M,F,A})
     end).
 
 launch_probe(#probe{module=nchecks_probe} = Probe) ->
     nchecks_probe_sup:launch(Probe).
 
 %%----------------------------------------------------------------------------
-%% UTILS    
+%% UTILS
 %%----------------------------------------------------------------------------
 generate_id(Table) ->
     Id = lists:concat([Table, [$-|generate_id()]]),

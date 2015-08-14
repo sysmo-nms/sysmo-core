@@ -24,206 +24,148 @@
 -behaviour(gen_server).
 
 % gen_server
--export([
-    init/1,
-    handle_call/3,
-    handle_cast/2,
-    handle_info/2,
-    terminate/2,
-    code_change/3
-]).
+-export([init/1,handle_call/3,handle_cast/2,handle_info/2,
+         terminate/2,code_change/3]).
 
--export([
-    start_link/0,
-    assert_init/0
-]).
+-export([start_link/0]).
 
 % API
--export([
-    test/0,
-    register_internal_job/3,
-    register_system_job/3,
-    delete_job/1,
-    job_exists/1,
-    which_jobs/0,
-    fire_now/1
-]).
+-export([test/0,register_job/3,delete_job/1,job_exists/1,
+         which_jobs/0,fire_now/1]).
 
--record(state, {
-    equartz_pid     = undefined,
-    replies_waiting = [],
-    assert_init     = undefined
-}).
 
--define(ASSERT_TIMEOUT, 5000).
 
-test() ->
-    register_internal_job("jojojob", "0/20 * * * * ?", {io,format,"hello truggerrrr"}).
+% @private
+start_link() ->
+    gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
--spec register_internal_job(
-        Name::string(),
+
+
+-spec register_job(
+        Job::string(),
         Trigger::string(),
-        {Mod::atom(), Func::atom(), Arg::string()}
+        {Mod::atom(), Func::atom(), Args::string()}
     ) -> ok.
 % @doc
 % Register internal job.
-% Register the job with name Name triggered with rule defined in Trigger and
-% launch spawn(Mod, Func, [Arg]) when fired.
+% Register the job with name Job triggered with rule defined in Trigger and
+% launch spawn(Mod, Func, Args) when fired.
 % @end
-register_internal_job(Name, Trigger, {M,F,A}) ->
-    gen_server:call(?MODULE, {call_equartz, 
-        {register_internal_job, {Name, Trigger, {M,F,A}}}}, infinity).
+register_job(Job, Step, MFA) ->
+    gen_server:call(?MODULE,
+                    {register_job, Job, Step, MFA}).
 
--spec register_system_job(
-        Name::string(),
-        Trigger::string(),
-        Command::string()
-    ) -> ok.
-% @doc
-% Register system job.
-% Register the job with name Name triggered with rule defined in Trigger and
-% launch the system command Command when fired.
-% @end
-register_system_job(Name, Trigger, Command) ->
-    gen_server:call(?MODULE, {call_equartz, 
-        {register_system_job, {Name, Trigger, Command}}}, infinity).
 
--spec delete_job(Name::string()) -> ok | {error, no_such_job}.
+
+-spec delete_job(Job::string()) -> ok | no_such_job.
 % @doc
 % Delete a job.
-% Delete job identified by Name if it exists.
+% Delete job identified by Job if it exists.
 % @end
-delete_job(Name) ->
-    gen_server:call(?MODULE, {call_equartz, {delete_job, {Name}}}, infinity).
+delete_job(Job) ->
+    gen_server:call(?MODULE, {delete_job, Job}).
+
+
 
 -spec which_jobs() -> {ok, Jobs::[string()]}.
 % @doc
 % Return all registered jobs.
 % @end
 which_jobs() ->
-    gen_server:call(?MODULE, {call_equartz, {which_jobs, {}}}, infinity).
+    gen_server:call(?MODULE, which_jobs).
 
--spec job_exists(JobName::string()) -> true | false | {error, Error::string()}.
+
+
+-spec job_exists(Job::string()) -> true | false.
 % @doc
 % Check if the job allready exists.
 % @end
-job_exists(JobName) ->
-    gen_server:call(?MODULE, {call_equartz, {job_exists, {JobName}}}, infinity).
+job_exists(Job) ->
+    gen_server:call(?MODULE, {job_exists, Job}).
 
--spec fire_now(JobName::string()) -> ok.
+
+
+-spec fire_now(Job::string()) -> ok.
 % @doc
-% Fire the job JobName as soon as possible.
+% Fire the job Job as soon as possible.
 % @end
-fire_now(JobName) ->
-    gen_server:call(?MODULE, {call_equartz, {fire_now, {JobName}}}, infinity).
+fire_now(Job) ->
+    gen_server:call(?MODULE, {fire_now, Job}).
 
-% @private
-% @doc
-% Called by start_link to ensure initialisation before returning.
-% @end
-assert_init() ->
-    gen_server:call(?MODULE, assert_init, ?ASSERT_TIMEOUT).
 
-% @private
-start_link() ->
-    Ret = gen_server:start_link({local, ?MODULE}, ?MODULE, [], []),
-    ok = assert_init(),
-    Ret.
 
-% GEN_SERVER
 % @private
 init([]) ->
-    process_flag(trap_exit, true),
-    gen_server:cast(?MODULE, boot),
-    {ok, #state{}}.
-
-% CALL
-% @private
-handle_call(assert_init, F, #state{equartz_pid = undefined} = S) ->
-    {noreply, S#state{assert_init = F}};
-handle_call(assert_init, _F, S) ->
-    {reply, ok, S};
-
-handle_call({call_equartz, {Command, Payload}}, From, 
-        #state{equartz_pid = NChecks, replies_waiting = RWait} = S) ->
-    NChecks ! {Command, From, Payload},
-    {noreply, S#state{replies_waiting = [From|RWait]}}.
+    {ok, []}.
 
 
-% CAST
-% @private
-handle_cast(boot, S) ->
-    boot(),
-    {noreply, S};
-
-handle_cast(_,S) ->
-    {noreply, S}.
-
-
-% INFO
-% @private
-handle_info({Pid, equartz_running}, S) ->
-    ?LOG_INFO("Receive init"),
-    case S#state.assert_init of
-        undefined ->
-            ok;
-        F ->
-            gen_server:reply(F, ok)
-    end,
-    erlang:link(Pid),
-    {noreply,
-        S#state{
-            equartz_pid      = Pid,
-            replies_waiting = [],
-            assert_init     = undefined
-        }
-    };
 
 % @private
-handle_info(stop, S) ->
-    ?LOG_INFO("Receive stop"),
-    {noreply, S};
+handle_call({register_job, Job, Step, MFA}, _From, JobList) ->
+    InitialStep = random:uniform(Step),
+    TRef = erlang:send_after(InitialStep, self(), {fire, Job, Step, MFA}),
+    {reply, ok, [{Job, Step, MFA, TRef} | JobList]};
 
-handle_info({reply, From, Reply}, #state{replies_waiting = RWait} = S) ->
-    gen_server:reply(From, Reply),
-    {noreply,
-        S#state{
-            replies_waiting = lists:delete(From, RWait)
-        }
-    };
+handle_call({delete_job, Job}, _From, JobList) ->
+    case lists:keytake(Job, 1, JobList) of
+        false ->
+            {reply, no_such_job, JobList};
+        {value, {_,_,_,TRef}, JobList2} ->
+            erlang:cancel_timer(TRef),
+            {reply, ok, JobList2}
+    end;
 
-handle_info({fire, M,F,A}, S) ->
-    spawn(M,F,[A]),
-    {noreply, S};
+handle_call({job_exists, Job}, _From, JobList) ->
+    case lists:keyfind(Job, 1, JobList) of
+        false -> {reply, false, JobList};
+        _     -> {reply, true,  JobList}
+    end;
 
-handle_info({'EXIT', Pid, Reason}, #state{equartz_pid = Pid} = S) ->
-    ?LOG_WARNING("equartz EXIT with reason:", Reason),
-    {stop, Reason, S};
+handle_call(which_jobs, _From, JobList) ->
+    Jobs = [J || {J,_,_,_} <- JobList],
+    {reply, {ok, Jobs}, JobList};
+
+handle_call({fire_now, Job}, _From, JobList) ->
+    case lists:keyfind(Job, 1, JobList) of
+        false -> {reply, no_shuch_job, JobList};
+        {Job, Step, {M,F,A}, OldTRef} ->
+            erlang:cancel_timer(OldTRef),
+            spawn(M,F,[A]),
+            TRef = erlang:send_after(Step, self(), {fire, Job, Step, {M,F,A}}),
+            NewJobList = lists:keyreplace(Job, 1, JobList,
+                                          {Job, Step, {M,F,A}, TRef}),
+            {reply, ok, NewJobList}
+    end.
+
+
+% @private
+handle_info({fire, Job, Step, {M,F,A}}, JobList) ->
+    ?LOG_INFO("Job fired", Job),
+    spawn(M, F, [A]),
+    TRef = erlang:send_after(Step, self(), {fire, Job, Step, {M,F,A}}),
+    NewJobList = lists:keyreplace(Job, 1, JobList, {Job, Step, {M,F,A}, TRef}),
+    {noreply, NewJobList};
 
 handle_info(I, S) ->
     ?LOG_INFO("Received handle info:", I),
     {noreply, S}.
 
 
-% TERMINATE
+
+% @private
+handle_cast(Cast,S) ->
+    ?LOG_INFO("Received unknow handle cast: ", Cast),
+    {noreply, S}.
+
 % @private
 terminate(_,_) ->
+    ?LOG_INFO("Received terminate"),
     ok.
 
-
-% CHANGE
 % @private
 code_change(_,S,_) ->
     {ok, S}.
 
-
-% PRIVATE
-% @private
-boot() ->
-    Prefix   = sysmo:get_java_bin_prefix(),
-    Relative = string:concat("equartz/bin/equartz", Prefix),
-    Cmd = filename:join(filename:absname(sysmo:get_java_dir()),Relative),
-    WorkDir = filename:absname(""),
-    Node = sysmo:get_node_name(),
-    erlang:open_port({spawn_executable, Cmd},
-                     [{args,[WorkDir, Node]}, stderr_to_stdout]).
+test() ->
+    Step = 5000, % every 5 seconds
+    register_job("jojojob", Step , {io,format, "hello trigggger"}).
