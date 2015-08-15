@@ -11,11 +11,8 @@ import io.sysmo.nchecks.NChecks;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.FileSystems;
-import java.util.Properties;
 
 public class SysmoServer {
 
@@ -23,20 +20,12 @@ public class SysmoServer {
 
     public static void main(String[] args) {
 
+        // init logger
+        Logger logger = LoggerFactory.getLogger(SysmoServer.class);
+
         // Extract args
         String foreignNodeName = args[0];
         String erlangCookie    = args[1];
-        String workDir         = args[2];
-
-         // Get log file
-        String logFile = FileSystems.getDefault()
-                .getPath(workDir, "log", "jserver.log")
-                .toString();
-
-        // Get property file
-        String propFile = FileSystems.getDefault()
-                .getPath(workDir, "etc", "sysmo-jserver.properties")
-                .toString();
 
         /*
          * Connect to erlang-main node
@@ -45,12 +34,11 @@ public class SysmoServer {
         try {
             node = new OtpNode(selfNodeName, erlangCookie);
             if (!node.ping(foreignNodeName, 2000)) {
-                System.out.println("can t connect");
+                logger.error("Can t connect to main erlang node.");
                 return;
             }
         } catch (IOException e) {
-            e.printStackTrace();
-            // TODO logging slf4j
+            logger.error(e.toString());
             return;
         }
 
@@ -82,9 +70,5 @@ public class SysmoServer {
         ackObj[3] = nchecksMbox.self();
         OtpErlangTuple ackTuple = new OtpErlangTuple(ackObj);
         mainMbox.send("sysmo", foreignNodeName, ackTuple);
-
-        Logger logger = LoggerFactory.getLogger(SysmoServer.class);
-        logger.warn("hello worlod to file??????");
-        System.out.println("hello world ");
     }
 }

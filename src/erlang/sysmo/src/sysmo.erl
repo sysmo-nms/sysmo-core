@@ -29,16 +29,27 @@ start_link() ->
     Ret.
 
 init([]) ->
-    Prefix   = get_java_bin_prefix(),
+    % build relative java server script path
+    Prefix = case os:type() of
+        {win32,_} -> ".bat";
+        _         -> ""
+    end,
     Relative = string:concat("sysmo-jserver/bin/sysmo-jserver", Prefix),
-    Cmd      = filename:join(
-                 filename:absname(get_java_dir()), Relative),
+
+    % get the location of the java app and generate cmd
+    {ok,JDir} = application:get_env(sysmo, java_dir),
+    Cmd = filename:join(filename:absname(JDir), Relative),
+
+    % build arguments
+    Node     = erlang:atom_to_list(erlang:node()),
+    Cookie   = erlang:atom_to_list(erlang:get_cookie()),
+
+    % the java app will be started from WorkDir (redundant?)
     WorkDir  = filename:absname(""),
-    Node     = get_node_name(),
-    Cookie   = get_cookie_string(),
+
     erlang:open_port({spawn_executable, Cmd},
-                [{args,[Node, Cookie, WorkDir]},
-                 {cd, WorkDir},
+                [{cd, WorkDir},
+                 {args,[Node, Cookie]},
                  exit_status,
                  stderr_to_stdout]),
     {ok, #state{}}.
@@ -96,22 +107,3 @@ terminate(_,_) ->
 
 code_change(_,S,_) ->
      {ok, S}.
-
-
-
-% UTILS
-get_java_dir() ->
-    {ok, Dir} = application:get_env(sysmo, java_dir),
-    Dir.
-
-get_java_bin_prefix() ->
-    case os:type() of
-        {win32,_} -> ".bat";
-        {_,_} -> ""
-    end.
-
-get_node_name() ->
-    erlang:atom_to_list(erlang:node()).
-
-get_cookie_string() ->
-    erlang:atom_to_list(erlang:get_cookie()).
