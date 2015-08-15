@@ -89,6 +89,7 @@ public class Reply
     public void setStatus(String str) {
         status = str;
     }
+
     /**
     * Get the return status.
     */
@@ -118,10 +119,10 @@ public class Reply
         groupObj.putPerformance(key, value);
     }
 
-    /*
-    * Return the PerformanceGroup for key groupKey. Create it if it does not
-    * exist.
-    */
+    /**
+     * Return the PerformanceGroup for key groupKey. Create it if it does not
+     * exist.
+     */
     private PerformanceGroup getPerformanceGroup(String groupKey)
     {
         PerformanceGroup group = perfValues.get(groupKey);
@@ -137,9 +138,9 @@ public class Reply
         }
     }
 
-    /*
-    * Return the erlang representation of the Reply.
-    */
+    /**
+     * Return the erlang representation of the Reply.
+     */
     public OtpErlangTuple asTuple() {
         OtpErlangObject[] perfValuesObj = new OtpErlangObject[perfValues.size()];
         int i = 0;

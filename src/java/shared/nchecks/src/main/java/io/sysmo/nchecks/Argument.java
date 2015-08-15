@@ -33,17 +33,17 @@ public class Argument
     public int getType() { return this.type; }
 
     public void set(int val) {
-        this.type = INT_VALUE;
+        this.type = Argument.INT_VALUE;
         this.argumentInteger = val;
     }
 
     public void set(String val) {
-        this.type = STRING_VALUE;
+        this.type = Argument.STRING_VALUE;
         this.argumentString = val;
     }
 
     public int asInteger() throws Exception,Error {
-        if (type == this.STRING_VALUE) {
+        if (type == Argument.STRING_VALUE) {
             return Integer.parseInt(this.argumentString);
         } else {
             return this.argumentInteger;
@@ -51,8 +51,7 @@ public class Argument
     }
 
     public String asString() throws Exception, Error {
-        if (type == this.INT_VALUE)
-        {
+        if (type == Argument.INT_VALUE) {
             return Integer.toString(this.argumentInteger);
         } else {
             return this.argumentString;

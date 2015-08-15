@@ -23,13 +23,15 @@ package io.sysmo.nchecks.modules;
 
 import io.sysmo.nchecks.NChecksInterface;
 import io.sysmo.nchecks.Argument;
+import io.sysmo.nchecks.NHelperInterface2;
+import io.sysmo.nchecks.NHelperReply;
 import io.sysmo.nchecks.Reply;
 import io.sysmo.nchecks.Query;
 import io.sysmo.nchecks.NChecksJRuby;
 import io.sysmo.nchecks.NChecksLogger;
 import org.jruby.embed.ScriptingContainer;
 
-public class CheckViaJRuby implements NChecksInterface
+public class CheckViaJRuby implements NChecksInterface //, NHelperInterface2
 {
     public Reply execute(Query query)
     {
@@ -54,6 +56,13 @@ public class CheckViaJRuby implements NChecksInterface
         }
         return rep;
     }
+
+    /*
+    public NHelperReply callHelper(Query query, String id)
+    {
+        // TODO implement helper for ruby
+    }
+    */
 
     private static Reply handleError(String txt, Exception e) {
         String msg = e.getMessage();

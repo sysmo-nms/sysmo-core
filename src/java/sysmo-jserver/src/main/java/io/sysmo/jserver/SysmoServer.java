@@ -6,9 +6,7 @@ import com.ericsson.otp.erlang.OtpErlangTuple;
 import com.ericsson.otp.erlang.OtpMbox;
 import com.ericsson.otp.erlang.OtpNode;
 
-//import io.sysmo.jserver.RrdLogger;
-
-import io.sysmo.nchecks.NChecks;
+import io.sysmo.nchecks.NChecksErlang;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,7 +17,7 @@ public class SysmoServer {
 
     private static final String selfNodeName = "sysmo-java";
 
-    public static void main(String[] args) {
+    public static void main(final String[] args) {
 
         // init logger
         Logger logger = LoggerFactory.getLogger(SysmoServer.class);
@@ -66,7 +64,7 @@ public class SysmoServer {
         /*
          * Create rrd4j thread
          */
-        RrdLogger rrd4j    = new RrdLogger(rrd4jMbox, foreignNodeName);
+        RrdLogger rrd4j = new RrdLogger(rrd4jMbox, foreignNodeName);
         Thread rrd4jThread = new Thread(rrd4j);
         rrd4jThread.start();
 
@@ -75,8 +73,11 @@ public class SysmoServer {
          */
 
         /*
-         * Create nchecks thread
+         * Create NChecks thread
          */
+        NChecksErlang nchecks = new NChecksErlang(nchecksMbox, foreignNodeName);
+        Thread nchecksThread = new Thread(nchecks);
+        nchecksThread.start();
 
         /*
          * Send acknowledgement to the "sysmo" erlang process

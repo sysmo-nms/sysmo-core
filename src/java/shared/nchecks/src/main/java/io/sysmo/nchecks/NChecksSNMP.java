@@ -108,12 +108,13 @@ public class NChecksSNMP
             }
             else
             {
-                if (SNMPUtils.usmUsersEquals(oldUser.getUsmUser(),user) == true)
+                if (SNMPUtils.usmUsersEquals(oldUser.getUsmUser(),user))
                 {
                     // same users conf, ok
                     agents.put(targetid, target);
                     return target;
                 }
+                // TODO then replace old user with new one.
             }
         }
         throw new Exception("User name exists with differents credencials");

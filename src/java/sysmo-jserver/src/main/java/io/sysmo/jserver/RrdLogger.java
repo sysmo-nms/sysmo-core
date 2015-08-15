@@ -54,6 +54,8 @@ import org.rrd4j.core.RrdDbPool;
 import org.rrd4j.DsType;
 import org.rrd4j.ConsolFun;
 
+// TODO move logic to RrdRunnable class and make RrdLogger dead simple
+
 public class RrdLogger implements Runnable
 {
     private static RrdLogger instance;
@@ -63,7 +65,7 @@ public class RrdLogger implements Runnable
     public static final OtpErlangAtom atomError = new OtpErlangAtom("error");
     public static final OtpErlangAtom atomBusy  = new OtpErlangAtom("server_busy");
 
-    // mboxLock is used to synchronize access on non final field mbox.
+    // lock is used to synchronize access to the object
     private OtpMbox mbox;
     private String nodeName;
     private final Object lock = new Object();
@@ -78,13 +80,14 @@ public class RrdLogger implements Runnable
     // logging
     private Logger logger;
 
-    public RrdLogger(OtpMbox mbox, String nodeName) {
+    public RrdLogger(final OtpMbox mbox, final String nodeName) {
         RrdLogger.instance = this;
         this.nodeName = nodeName;
         this.mbox = mbox;
         this.logger = LoggerFactory.getLogger(RrdLogger.class);
     }
 
+    @Override
     public void run() {
         String propFile = FileSystems
             .getDefault()
@@ -107,9 +110,9 @@ public class RrdLogger implements Runnable
         ThreadPoolExecutor threadPool = new ThreadPoolExecutor(
             8,  // initial pool size
             20, // max pool size
-            60,
+            60, // wait 60 minutes before going to initial
             TimeUnit.MINUTES,
-            new ArrayBlockingQueue<>(2000),
+            new ArrayBlockingQueue<>(2000), // queue capacity
             new RrdReject()
         );
         this.rrdDbPool = RrdDbPool.getInstance();
@@ -119,18 +122,15 @@ public class RrdLogger implements Runnable
         while (true) try {
             call = this.mbox.receive();
             threadPool.execute(new RrdRunnable(call));
-        } catch (OtpErlangExit e) {
-            this.logger.error("Connexion closed: " + e.toString());
-            threadPool.shutdown();
-            break;
-        } catch (OtpErlangDecodeException e) {
-            logger.warn("Decode Exception: " + e.toString());
+        } catch (OtpErlangExit|OtpErlangDecodeException e) {
+            this.logger.error(e.toString());
             threadPool.shutdown();
             break;
         }
     }
 
-    public static void sendReply(OtpErlangObject to, OtpErlangObject msg)
+    public static void sendReply(
+            final OtpErlangObject to, final OtpErlangObject msg)
     {
         OtpErlangObject[] obj = new OtpErlangObject[3];
         obj[0] = atomReply;
@@ -144,7 +144,7 @@ public class RrdLogger implements Runnable
         }
     }
 
-    public static OtpErlangTuple buildErrorReply(OtpErlangObject msg)
+    public static OtpErlangTuple buildErrorReply(final OtpErlangObject msg)
     {
         OtpErlangObject[] valObj   = new OtpErlangObject[2];
         valObj[0] = atomError;
@@ -156,7 +156,8 @@ public class RrdLogger implements Runnable
     * Handle updates
     */
     public static void handleRrdMultiUpdate(
-            OtpErlangObject caller, OtpErlangTuple tuple) throws Exception
+            final OtpErlangObject caller,
+            final OtpErlangTuple tuple) throws Exception
     {
         OtpErlangList updates = (OtpErlangList) (tuple.elementAt(0));
         Iterator<OtpErlangObject> updatesIt = updates.iterator();
@@ -169,13 +170,15 @@ public class RrdLogger implements Runnable
     }
 
     public static void handleRrdUpdate(
-            OtpErlangObject caller, OtpErlangTuple tuple) throws Exception
+            final OtpErlangObject caller,
+            final OtpErlangTuple tuple) throws Exception
     {
         RrdLogger.rrdUpdate(tuple);
         RrdLogger.sendReply(caller, atomOk);
     }
 
-    private static void rrdUpdate(OtpErlangTuple tuple) throws Exception
+    private static void rrdUpdate(
+            final OtpErlangTuple tuple) throws Exception
     {
         RrdLogger rrdObj = RrdLogger.instance;
         OtpErlangString filePath  = (OtpErlangString) (tuple.elementAt(0));
@@ -209,7 +212,8 @@ public class RrdLogger implements Runnable
      * Handle create a rrd file.
      */
     public static void handleRrdMultiCreate(
-            OtpErlangObject caller, OtpErlangTuple tuple) throws Exception
+            final OtpErlangObject caller,
+            final OtpErlangTuple tuple) throws Exception
     {
         OtpErlangList creates = (OtpErlangList) (tuple.elementAt(0));
         Iterator<OtpErlangObject> createsIt = creates.iterator();
@@ -222,13 +226,14 @@ public class RrdLogger implements Runnable
     }
 
     public static void handleRrdCreate(
-            OtpErlangObject caller, OtpErlangTuple tuple) throws Exception
+            final OtpErlangObject caller,
+            final OtpErlangTuple tuple) throws Exception
     {
         RrdLogger.rrdCreate(tuple);
         RrdLogger.sendReply(caller, atomOk);
     }
 
-    private static void rrdCreate(OtpErlangTuple tuple) throws Exception
+    private static void rrdCreate(final OtpErlangTuple tuple) throws Exception
     {
         OtpErlangString filePath = (OtpErlangString) (tuple.elementAt(0));
         OtpErlangLong   step     = (OtpErlangLong)   (tuple.elementAt(1));
@@ -282,7 +287,7 @@ public class RrdLogger implements Runnable
 
 
 
-    private static ArcDef[] decodeRRADef(String rraDef) throws Exception
+    private static ArcDef[] decodeRRADef(final String rraDef) throws Exception
     {
         String[] defs       = rraDef.split(",");
         ArcDef[] archiveDef = new ArcDef[defs.length];
@@ -306,9 +311,9 @@ class RrdRunnable implements Runnable
     private OtpErlangObject msg;
     private static Logger logger = LoggerFactory.getLogger(RrdRunnable.class);
 
-    public RrdRunnable(OtpErlangObject message)
+    public RrdRunnable(final OtpErlangObject message)
     {
-        msg = message;
+        this.msg = message;
     }
 
     @Override
@@ -319,9 +324,9 @@ class RrdRunnable implements Runnable
         OtpErlangTuple  payload;
         try
         {
-            tuple       = (OtpErlangTuple)  msg;
+            tuple       = (OtpErlangTuple)  this.msg;
             command     = (OtpErlangAtom)   (tuple.elementAt(0));
-            caller      = (tuple.elementAt(1));
+            this.caller =                   (tuple.elementAt(1));
             payload     = (OtpErlangTuple)  (tuple.elementAt(2));
         }
         catch (Exception|Error e)
@@ -370,14 +375,14 @@ class RrdRunnable implements Runnable
 
     public OtpErlangObject getCaller()
     {
-        return caller;
+        return this.caller;
     }
 }
 
 
 class RrdReject implements RejectedExecutionHandler
 {
-    public void rejectedExecution(Runnable r, ThreadPoolExecutor executor)
+    public void rejectedExecution(final Runnable r, final ThreadPoolExecutor e)
     {
         RrdRunnable failRunner = (RrdRunnable) r;
         RrdLogger.sendReply(failRunner.getCaller(), RrdLogger.atomBusy);

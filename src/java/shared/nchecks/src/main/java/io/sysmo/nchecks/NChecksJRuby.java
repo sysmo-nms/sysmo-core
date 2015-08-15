@@ -20,41 +20,45 @@
  */
 
 package io.sysmo.nchecks;
-import io.sysmo.nchecks.NChecksLogger;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.HashMap;
 
-public class NChecksJRuby {
-    private String scriptPath;
-    private HashMap<String,String> smap;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
-    private static NChecksJRuby INSTANCE;
-    public static NChecksJRuby getInstance() {return INSTANCE;}
-    public static void startJRuby(String scriptPathArg) {
-        new NChecksJRuby(scriptPathArg);
+public class NChecksJRuby {
+    private static Logger logger = LoggerFactory.getLogger(NChecksJRuby.class);
+    private String scriptPath;
+    private HashMap<String,String> scriptMap;
+
+    private static NChecksJRuby instance;
+    private static final Object lock = new Object();
+
+    public static NChecksJRuby getInstance() { return instance; }
+
+    public static void startJRuby(String scriptPath) {
+        new NChecksJRuby(scriptPath);
     }
 
-    private NChecksJRuby(String scriptDir) {
-        scriptPath = scriptDir;
-        NChecksLogger.getLogger().info("init path: " + scriptPath);
-        smap = new HashMap<String,String>();
-        INSTANCE = this;
-        NChecksLogger.getLogger().info("JRuby init with path: " + scriptPath);
+    private NChecksJRuby(String scriptPath) {
+        NChecksJRuby.instance = this;
+        this.scriptPath = scriptPath;
+        this.scriptMap = new HashMap<>();
+        NChecksJRuby.logger.info("JRuby init with path: " + scriptPath);
     }
 
     public String getScript(String identifier) throws Exception {
-        synchronized (smap) {
-            String val = smap.get(identifier);
+        synchronized (NChecksJRuby.lock) {
+            String val = this.scriptMap.get(identifier);
             if(val == null) {
                 String script = identifier + ".rb";
-                byte[] fbytes = Files.readAllBytes(Paths.get(scriptPath,script));
-                val = new String(fbytes, "UTF-8");
-                smap.put(script,val);
-                return val;
-            } else {
-                return val;
+                byte[] fileBytes =
+                        Files.readAllBytes(Paths.get(scriptPath,script));
+                val = new String(fileBytes, "UTF-8");
+                this.scriptMap.put(script, val);
             }
+            return val;
         }
     }
 }

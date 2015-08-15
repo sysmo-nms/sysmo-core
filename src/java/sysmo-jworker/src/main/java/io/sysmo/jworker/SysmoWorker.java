@@ -1,7 +1,5 @@
 package io.sysmo.jworker;
-
-import com.ericsson.otp.erlang.OtpErlangString;
-import io.sysmo.nchecks.NChecks;
+import io.sysmo.nchecks.NChecksErlang;
 
 public class SysmoWorker {
     public static void main(String[] args) throws Exception

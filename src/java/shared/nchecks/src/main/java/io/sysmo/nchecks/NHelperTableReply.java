@@ -41,12 +41,12 @@ import javax.json.JsonBuilderFactory;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 
-/*
-* This class build a simple message for client view. It will pop up
-* with an icon corresponding to the status, and the message defined.
-* It will fill the flag as defined in the xml check definition file
-* to "value". See tutorials for more informations
-*/
+/**
+ * This class build a simple message for client view. It will pop up
+ * with an icon corresponding to the status, and the message defined.
+ * It will fill the flag as defined in the xml check definition file
+ * to "value". See tutorials for more informations
+ */
 
 public class NHelperTableReply implements NHelperReply
 {
