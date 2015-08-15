@@ -6,13 +6,14 @@ import com.ericsson.otp.erlang.OtpErlangTuple;
 import com.ericsson.otp.erlang.OtpMbox;
 import com.ericsson.otp.erlang.OtpNode;
 
+//import io.sysmo.jserver.RrdLogger;
+
 import io.sysmo.nchecks.NChecks;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.nio.file.FileSystems;
 
 public class SysmoServer {
 
@@ -22,6 +23,7 @@ public class SysmoServer {
 
         // init logger
         Logger logger = LoggerFactory.getLogger(SysmoServer.class);
+        logger.info("Logger started");
 
         // Extract args
         String foreignNodeName = args[0];
@@ -49,8 +51,24 @@ public class SysmoServer {
         OtpMbox nchecksMbox = node.createMbox();
 
         /*
+         * Link to mainMbox.
+         * this way exiting mainMbox will raise an OtpExitException on
+         * other mailboxes.
+         */
+        try {
+            mainMbox.link(rrd4jMbox.self());
+            mainMbox.link(snmp4jMbox.self());
+            mainMbox.link(nchecksMbox.self());
+        } catch (Exception e) {
+            logger.error("Should not append here!");
+        }
+
+        /*
          * Create rrd4j thread
          */
+        RrdLogger rrd4j    = new RrdLogger(rrd4jMbox, foreignNodeName);
+        Thread rrd4jThread = new Thread(rrd4j);
+        rrd4jThread.start();
 
         /*
          * Create snmp4j thread
@@ -70,5 +88,8 @@ public class SysmoServer {
         ackObj[3] = nchecksMbox.self();
         OtpErlangTuple ackTuple = new OtpErlangTuple(ackObj);
         mainMbox.send("sysmo", foreignNodeName, ackTuple);
+
+        mainMbox.exit("normal");
+        //rrd4jMbox.exit("shutdown");
     }
 }

@@ -21,9 +21,7 @@
 
 package io.sysmo.jserver;
 
-
 import java.io.FileInputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.FileSystems;
 import java.util.Iterator;
@@ -32,11 +30,9 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.RejectedExecutionHandler;
-import java.util.logging.LogManager;
-import java.util.logging.Logger;
-import java.util.logging.Level;
-import java.util.logging.FileHandler;
-import java.util.logging.SimpleFormatter;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.ericsson.otp.erlang.OtpErlangString;
 import com.ericsson.otp.erlang.OtpErlangList;
@@ -48,7 +44,6 @@ import com.ericsson.otp.erlang.OtpErlangTuple;
 import com.ericsson.otp.erlang.OtpErlangLong;
 import com.ericsson.otp.erlang.OtpErlangDouble;
 import com.ericsson.otp.erlang.OtpMbox;
-import com.ericsson.otp.erlang.OtpNode;
 
 
 import org.rrd4j.core.RrdDef;
@@ -59,156 +54,80 @@ import org.rrd4j.core.RrdDbPool;
 import org.rrd4j.DsType;
 import org.rrd4j.ConsolFun;
 
-public class RrdLogger
+public class RrdLogger implements Runnable
 {
+    private static RrdLogger instance;
 
-    public static final OtpErlangAtom atomReply       = new OtpErlangAtom("reply");
-    public static final OtpErlangAtom atomOk          = new OtpErlangAtom("ok");
-    public static final OtpErlangAtom atomError       = new OtpErlangAtom("error");
-    public static final OtpErlangAtom atomBusy        = new OtpErlangAtom("server_busy");
+    public static final OtpErlangAtom atomReply = new OtpErlangAtom("reply");
+    public static final OtpErlangAtom atomOk    = new OtpErlangAtom("ok");
+    public static final OtpErlangAtom atomError = new OtpErlangAtom("error");
+    public static final OtpErlangAtom atomBusy  = new OtpErlangAtom("server_busy");
 
-    // otp
-    private static String selfNodeName;
-    private static String foreignNodeName;
-    private static String erlangCookie;
-    private static String foreignPidName;
-    private static  OtpNode self;
-    private static  OtpMbox mbox;
+    // mboxLock is used to synchronize access on non final field mbox.
+    private OtpMbox mbox;
+    private String nodeName;
+    private final Object lock = new Object();
 
     // rra definitions
-    private static ArcDef[] rraDefault;
-    private static ArcDef[] rraPrecise;
+    private ArcDef[] rraDefault;
+    private ArcDef[] rraPrecise;
 
     // threads
-    private static RrdDbPool rrdDbPool;
-    private static ThreadPoolExecutor threadPool;
-    private static int threadMaxPoolSize    = 20;
-    private static int threadCorePoolSize   = 8;
-    private static int threadQueueCapacity  = 2000;
+    private RrdDbPool rrdDbPool;
 
     // logging
-    private static final int LOG_MAX_BYTES = 10000000; // 10MB
-    private static final int LOG_MAX_FILES = 5;        // 10MB + 5 max 50MB
-    private static final boolean LOG_APPEND = true;
-    private static Logger logger;
+    private Logger logger;
 
-    public static void main(String[] args)
-    {
-        String logFile = FileSystems
-            .getDefault()
-            .getPath(args[0], "log", "errd4j.log")
-            .toString();
+    public RrdLogger(OtpMbox mbox, String nodeName) {
+        RrdLogger.instance = this;
+        this.nodeName = nodeName;
+        this.mbox = mbox;
+        this.logger = LoggerFactory.getLogger(RrdLogger.class);
+    }
 
+    public void run() {
         String propFile = FileSystems
             .getDefault()
-            .getPath(args[0], "etc", "errd4j.properties")
+            .getPath("etc", "sysmo-rrd.properties")
             .toString();
 
-        logger = Logger.getLogger(RrdLogger.class.getName());
-        logger.setLevel(Level.INFO);
-        LogManager.getLogManager().reset();
-
-        FileHandler handler;
         try {
-            handler = new FileHandler(logFile, LOG_MAX_BYTES, LOG_MAX_FILES, LOG_APPEND);
-            handler.setFormatter(new SimpleFormatter());
-            logger.addHandler(handler);
-        } catch (Exception e) {
-            System.out.println("Log to file will not work! " + e);
-        }
-
-        try
-        {
-            Properties prop  = new Properties();
+            Properties prop   = new Properties();
             InputStream input = new FileInputStream(propFile);
             prop.load(input);
-            selfNodeName     = prop.getProperty("self_name");
-            foreignPidName   = prop.getProperty("foreign_pid");
-            erlangCookie     = prop.getProperty("cookie");
-            rraDefault       = decodeRRADef(prop.getProperty("rra_default"));
-            rraPrecise       = decodeRRADef(prop.getProperty("rra_precise"));
-        }
-        catch(Exception|Error e)
-        {
-            logger.severe("Fail to load property file: " + e.getMessage() + e);
+            this.rraDefault = decodeRRADef(prop.getProperty("rra_default"));
+            this.rraPrecise = decodeRRADef(prop.getProperty("rra_precise"));
+        } catch(Exception|Error e) {
+            this.logger.error(
+                    "Fail to load property file: " + e.getMessage() + e);
             return;
         }
-        try 
-        {
-            foreignNodeName  = args[1];
-        } catch (Exception e) {
-            logger.severe("Fail to read node name (args[1]): "
-                                                        + e.getMessage() + e);
-            return;
-        }
-
-        // Initialize
-        try
-        {
-            logger.info("Trying to connect to " + foreignNodeName);
-            self = new OtpNode(selfNodeName, erlangCookie);
-            mbox = self.createMbox();
-            if (!self.ping(foreignNodeName, 2000))
-            {
-                logger.severe("Connection timed out");
-                return;
-            }
-        }
-        catch (IOException e)
-        {
-            logger.severe("Fail to connect foreign node: " + e.getMessage() + e);
-            return;
-        }
-
-        // when it is ok, inform the erl errd4j process
-        acknowledgeOtpConnexion();
 
         // set up the threads
-        threadPool = new ThreadPoolExecutor(
-            threadCorePoolSize,
-            threadMaxPoolSize,
+        ThreadPoolExecutor threadPool = new ThreadPoolExecutor(
+            8,  // initial pool size
+            20, // max pool size
             60,
             TimeUnit.MINUTES,
-            new ArrayBlockingQueue<Runnable>(threadQueueCapacity),
+            new ArrayBlockingQueue<>(2000),
             new RrdReject()
         );
-        rrdDbPool = RrdDbPool.getInstance();
+        this.rrdDbPool = RrdDbPool.getInstance();
 
         // then begin to loop and wait for calls
-        OtpErlangObject call = null;
-        RrdRunnable worker;
-        while (true) try
-        {
-            call = mbox.receive();
+        OtpErlangObject call;
+        while (true) try {
+            call = this.mbox.receive();
             threadPool.execute(new RrdRunnable(call));
-        }
-        catch (OtpErlangExit e)
-        {
-
-            logger.severe("Connexion closed: " + e.getMessage() + e);
+        } catch (OtpErlangExit e) {
+            this.logger.error("Connexion closed: " + e.toString());
+            threadPool.shutdown();
+            break;
+        } catch (OtpErlangDecodeException e) {
+            logger.warn("Decode Exception: " + e.toString());
             threadPool.shutdown();
             break;
         }
-        catch (OtpErlangDecodeException e)
-        {
-            logger.warning("Decode Exception: " + e.getMessage() + e);
-        }
-        System.exit(0);
-    }
-
-    private static void acknowledgeOtpConnexion()
-    {
-        OtpErlangObject[] msg = new OtpErlangObject[2];
-        msg[0] = mbox.self();
-        msg[1] = new OtpErlangAtom("errd4j_running");
-
-        OtpErlangTuple tuple  = new OtpErlangTuple(msg);
-
-        synchronized(mbox)
-        {
-            mbox.send(foreignPidName, foreignNodeName, tuple);
-        }
-
     }
 
     public static void sendReply(OtpErlangObject to, OtpErlangObject msg)
@@ -218,19 +137,11 @@ public class RrdLogger
         obj[1] = to;
         obj[2] = msg;
         OtpErlangTuple tuple = new OtpErlangTuple(obj);
-        synchronized(mbox)
+        synchronized(RrdLogger.instance.lock)
         {
-            mbox.send(foreignPidName, foreignNodeName, tuple);
+            RrdLogger.instance.mbox.send(
+                    "errd4j", RrdLogger.instance.nodeName, tuple);
         }
-    }
-
-    public static OtpErlangTuple buildOkReply(OtpErlangObject msg)
-    {
-        OtpErlangObject[] valObj   = new OtpErlangObject[2];
-        valObj[0] = atomOk;
-        valObj[1] = msg;
-        OtpErlangTuple valTuple = new OtpErlangTuple(valObj);
-        return valTuple;
     }
 
     public static OtpErlangTuple buildErrorReply(OtpErlangObject msg)
@@ -238,38 +149,40 @@ public class RrdLogger
         OtpErlangObject[] valObj   = new OtpErlangObject[2];
         valObj[0] = atomError;
         valObj[1] = msg;
-        OtpErlangTuple valTuple = new OtpErlangTuple(valObj);
-        return valTuple;
+        return new OtpErlangTuple(valObj);
     }
 
    /*
     * Handle updates
     */
-    public static void handleRrdMultiUpdate(OtpErlangObject caller, OtpErlangTuple tuple) throws Exception
+    public static void handleRrdMultiUpdate(
+            OtpErlangObject caller, OtpErlangTuple tuple) throws Exception
     {
         OtpErlangList updates = (OtpErlangList) (tuple.elementAt(0));
         Iterator<OtpErlangObject> updatesIt = updates.iterator();
         while (updatesIt.hasNext())
         {
-            OtpErlangTuple utuple = (OtpErlangTuple) updatesIt.next();
-            rrdUpdate(utuple);
+            OtpErlangTuple updateTuple = (OtpErlangTuple) updatesIt.next();
+            RrdLogger.rrdUpdate(updateTuple);
         }
-        sendReply(caller, atomOk);
+        RrdLogger.sendReply(caller, atomOk);
     }
 
-    public static void handleRrdUpdate(OtpErlangObject caller, OtpErlangTuple tuple) throws Exception
+    public static void handleRrdUpdate(
+            OtpErlangObject caller, OtpErlangTuple tuple) throws Exception
     {
-        rrdUpdate(tuple);
-        sendReply(caller, atomOk);
+        RrdLogger.rrdUpdate(tuple);
+        RrdLogger.sendReply(caller, atomOk);
     }
 
     private static void rrdUpdate(OtpErlangTuple tuple) throws Exception
     {
+        RrdLogger rrdObj = RrdLogger.instance;
         OtpErlangString filePath  = (OtpErlangString) (tuple.elementAt(0));
         OtpErlangList   updates   = (OtpErlangList)   (tuple.elementAt(1));
         OtpErlangLong   timestamp = (OtpErlangLong) (tuple.elementAt(2));
 
-        RrdDb rrdDb = rrdDbPool.requestRrdDb(filePath.stringValue());
+        RrdDb rrdDb = rrdObj.rrdDbPool.requestRrdDb(filePath.stringValue());
 
         try {
             Sample sample = rrdDb.createSample();
@@ -284,33 +197,35 @@ public class RrdLogger
             }
             sample.update();
         } catch (Exception e) {
-            logger.warning("Fail to update rrd: " + e.getMessage() + e);
-            rrdDbPool.release(rrdDb);
+            rrdObj.logger.warn("Fail to update rrd: " + e.getMessage() + e);
+            rrdObj.rrdDbPool.release(rrdDb);
             throw e;
         }
-        rrdDbPool.release(rrdDb);
+        rrdObj.rrdDbPool.release(rrdDb);
     }
  
 
     /*
      * Handle create a rrd file.
      */
-    public static void handleRrdMultiCreate(OtpErlangObject caller, OtpErlangTuple tuple) throws Exception
+    public static void handleRrdMultiCreate(
+            OtpErlangObject caller, OtpErlangTuple tuple) throws Exception
     {
         OtpErlangList creates = (OtpErlangList) (tuple.elementAt(0));
         Iterator<OtpErlangObject> createsIt = creates.iterator();
         while (createsIt.hasNext())
         {
-            OtpErlangTuple ctuple = (OtpErlangTuple) createsIt.next();
-            rrdCreate(ctuple);
+            OtpErlangTuple createTuple = (OtpErlangTuple) createsIt.next();
+            RrdLogger.rrdCreate(createTuple);
         }
-        sendReply(caller, atomOk);
+        RrdLogger.sendReply(caller, atomOk);
     }
 
-    public static void handleRrdCreate(OtpErlangObject caller, OtpErlangTuple tuple) throws Exception
+    public static void handleRrdCreate(
+            OtpErlangObject caller, OtpErlangTuple tuple) throws Exception
     {
-        rrdCreate(tuple);
-        sendReply(caller, atomOk);
+        RrdLogger.rrdCreate(tuple);
+        RrdLogger.sendReply(caller, atomOk);
     }
 
     private static void rrdCreate(OtpErlangTuple tuple) throws Exception
@@ -323,9 +238,9 @@ public class RrdLogger
         RrdDef rrdDef = new RrdDef(filePath.stringValue(), step.uIntValue());
 
         if (rraType.stringValue().equals("precise")) {
-            rrdDef.addArchive(rraPrecise);
+            rrdDef.addArchive(RrdLogger.instance.rraPrecise);
         } else {
-            rrdDef.addArchive(rraDefault);
+            rrdDef.addArchive(RrdLogger.instance.rraDefault);
         }
 
         Iterator<OtpErlangObject> dssIt  = dss.iterator();
@@ -337,16 +252,16 @@ public class RrdLogger
             OtpErlangLong   dsHbeat = (OtpErlangLong)   (ds.elementAt(2));
             DsType dsType = DsType.valueOf(dsTypeStr.stringValue());
 
-            Double dsMinVal = null;
-            Double dsMaxVal = null;
+            Double dsMinVal;
+            Double dsMaxVal;
             try {
-                OtpErlangDouble dsMin   = (OtpErlangDouble)   (ds.elementAt(3));
+                OtpErlangDouble dsMin = (OtpErlangDouble) (ds.elementAt(3));
                 dsMinVal = dsMin.doubleValue();
             } catch (Exception|Error e) {
                 dsMinVal = Double.NaN;
             }
             try {
-                OtpErlangDouble  dsMax   = (OtpErlangDouble)   (ds.elementAt(4));
+                OtpErlangDouble dsMax = (OtpErlangDouble) (ds.elementAt(4));
                 dsMaxVal = dsMax.doubleValue();
             } catch (Exception|Error e) {
                 dsMaxVal = Double.NaN;
@@ -361,8 +276,8 @@ public class RrdLogger
             );
         }
 
-        RrdDb rrdDb = rrdDbPool.requestRrdDb(rrdDef);
-        rrdDbPool.release(rrdDb);
+        RrdDb rrdDb = RrdLogger.instance.rrdDbPool.requestRrdDb(rrdDef);
+        RrdLogger.instance.rrdDbPool.release(rrdDb);
     }
 
 
@@ -383,16 +298,13 @@ public class RrdLogger
         }
         return archiveDef;
     }
-
-    public static Logger getLogger() {
-        return logger;
-    }
 }
 
 class RrdRunnable implements Runnable
 {
     private OtpErlangObject caller;
     private OtpErlangObject msg;
+    private static Logger logger = LoggerFactory.getLogger(RrdRunnable.class);
 
     public RrdRunnable(OtpErlangObject message)
     {
@@ -409,12 +321,13 @@ class RrdRunnable implements Runnable
         {
             tuple       = (OtpErlangTuple)  msg;
             command     = (OtpErlangAtom)   (tuple.elementAt(0));
-            caller      = (OtpErlangObject) (tuple.elementAt(1));
+            caller      = (tuple.elementAt(1));
             payload     = (OtpErlangTuple)  (tuple.elementAt(2));
         }
         catch (Exception|Error e)
         {
-            RrdLogger.getLogger().warning("RrdRunnable fail to decode tuple: " + e.getMessage() + e);
+            RrdRunnable.logger.warn(
+                    "RrdRunnable fail to decode tuple: " + e.getMessage() + e);
             return;
         }
 
@@ -435,19 +348,22 @@ class RrdRunnable implements Runnable
                     RrdLogger.handleRrdCreate(caller, payload);
                     break;
                 default:
-                    RrdLogger.getLogger().warning("unknown command: " + command);
-                    OtpErlangTuple dreply = RrdLogger.buildErrorReply(new OtpErlangString("undefined"));
-                    RrdLogger.sendReply(caller, dreply);
+                    RrdRunnable.logger.warn("unknown command: " + command);
+                    OtpErlangTuple reply = RrdLogger.buildErrorReply(
+                                            new OtpErlangString("undefined"));
+                    RrdLogger.sendReply(caller, reply);
             }
         }
         catch (Exception|Error e)
         {
+            RrdRunnable.logger.warn(
+                    "RrdRunnable failure: " + e.getMessage() + e);
             OtpErlangTuple reply = RrdLogger.buildErrorReply(
                     new OtpErlangString("Java CATCH: Failed to honour command "
-                            + command.toString() + " -> " + e + " " + e.getMessage())
+                            + command.toString() + " -> " + e
+                            + " " + e.getMessage())
             );
 
-            RrdLogger.getLogger().warning("RrdRunnable failure: " + e.getMessage() + e);
             RrdLogger.sendReply(caller, reply);
         }
     }
