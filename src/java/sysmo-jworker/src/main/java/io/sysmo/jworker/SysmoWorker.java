@@ -6,6 +6,6 @@ import io.sysmo.nchecks.NChecks;
 public class SysmoWorker {
     public static void main(String[] args) throws Exception
     {
-        System.out.println("hello world " + NChecks.toctoc());
+        System.out.println("hello world ");
     }
 }

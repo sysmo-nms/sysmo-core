@@ -1,10 +1,21 @@
 package io.sysmo.jserver;
 
-import com.ericsson.otp.erlang.*;
+import com.ericsson.otp.erlang.OtpErlangAtom;
+import com.ericsson.otp.erlang.OtpErlangObject;
+import com.ericsson.otp.erlang.OtpErlangTuple;
+import com.ericsson.otp.erlang.OtpMbox;
+import com.ericsson.otp.erlang.OtpNode;
+
 import io.sysmo.nchecks.NChecks;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.FileSystems;
+import java.util.Properties;
 
 public class SysmoServer {
 
@@ -12,25 +23,19 @@ public class SysmoServer {
 
     public static void main(String[] args) {
 
-        /*
-         * Extract args
-         */
+        // Extract args
         String foreignNodeName = args[0];
         String erlangCookie    = args[1];
         String workDir         = args[2];
 
-        /*
-         * Get log file
-         */
+         // Get log file
         String logFile = FileSystems.getDefault()
                 .getPath(workDir, "log", "jserver.log")
                 .toString();
 
-        /*
-         * Get property file
-         */
+        // Get property file
         String propFile = FileSystems.getDefault()
-                .getPath(workDir, "etc", "jserver.properties")
+                .getPath(workDir, "etc", "sysmo-jserver.properties")
                 .toString();
 
         /*
@@ -44,7 +49,7 @@ public class SysmoServer {
                 return;
             }
         } catch (IOException e) {
-            System.out.println(e);
+            e.printStackTrace();
             // TODO logging slf4j
             return;
         }
@@ -78,6 +83,8 @@ public class SysmoServer {
         OtpErlangTuple ackTuple = new OtpErlangTuple(ackObj);
         mainMbox.send("sysmo", foreignNodeName, ackTuple);
 
-        System.out.println("hello world " + NChecks.toctoc());
+        Logger logger = LoggerFactory.getLogger(SysmoServer.class);
+        logger.warn("hello worlod to file??????");
+        System.out.println("hello world ");
     }
 }

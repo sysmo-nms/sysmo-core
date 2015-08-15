@@ -135,7 +135,7 @@ public class Reply
         {
             return group;
         }
-    } 
+    }
 
     /*
     * Return the erlang representation of the Reply.

@@ -22,10 +22,12 @@
 package io.sysmo.jserver;
 
 
-import java.io.*;
-import java.util.*;
-import java.nio.file.*;
-
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.FileSystems;
+import java.util.Iterator;
+import java.util.Properties;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -117,8 +119,8 @@ public class RrdLogger
 
         try
         {
-            Properties   prop  = new Properties();
-            InputStream  input = new FileInputStream(propFile);
+            Properties prop  = new Properties();
+            InputStream input = new FileInputStream(propFile);
             prop.load(input);
             selfNodeName     = prop.getProperty("self_name");
             foreignPidName   = prop.getProperty("foreign_pid");
