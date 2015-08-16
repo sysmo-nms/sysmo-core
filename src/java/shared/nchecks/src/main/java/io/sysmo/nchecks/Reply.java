@@ -21,7 +21,6 @@
 package io.sysmo.nchecks;
 import java.util.Map;
 import java.util.HashMap;
-import java.io.Serializable;
 import com.ericsson.otp.erlang.*;
 
 /**
@@ -48,7 +47,7 @@ public class Reply
         replyMsg = "";
         status   = "DOWN";
         timestamp = System.currentTimeMillis() / 1000;
-        perfValues = new HashMap<String,PerformanceGroup>();
+        perfValues = new HashMap<>();
         opaque = new byte[0];
     }
 
@@ -164,8 +163,7 @@ public class Reply
         replyRecord[4] = new OtpErlangLong(timestamp);
         replyRecord[5] = new OtpErlangBinary(opaque);
 
-        OtpErlangTuple replyTuple = new OtpErlangTuple(replyRecord);
-        return replyTuple;
+        return new OtpErlangTuple(replyRecord);
     }
 }
 
@@ -196,7 +194,6 @@ class PerformanceGroup
             perfValuesObj[i] = new OtpErlangTuple(objEntry);
             i++;
         }
-        OtpErlangList perfValueList = new OtpErlangList(perfValuesObj);
-        return perfValueList;
+        return new OtpErlangList(perfValuesObj);
     }
 }

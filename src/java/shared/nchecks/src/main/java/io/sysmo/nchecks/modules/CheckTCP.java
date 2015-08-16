@@ -26,8 +26,6 @@ import io.sysmo.nchecks.Argument;
 import io.sysmo.nchecks.Reply;
 import io.sysmo.nchecks.Query;
 
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.net.Socket;
 import java.net.InetSocketAddress;
 import java.net.InetAddress;
@@ -78,7 +76,7 @@ public class CheckTCP implements NChecksInterface
         } catch (Exception|Error e) {
             CheckTCP.logger.error(e.toString());
             reply.setStatus(Reply.STATUS_ERROR);
-            reply.setReply("Bad or wrong argumentis: " + e);
+            reply.setReply("Bad or wrong arguments: " + e);
             return reply;
         }
 
@@ -100,12 +98,12 @@ public class CheckTCP implements NChecksInterface
 
 
         Socket  sock = new Socket();
-        Instant start;
-        Instant stop;
+        long start;
+        long stop;
         try {
-            start = Instant.now();
+            start = System.nanoTime();
             sock.connect(new InetSocketAddress(addr, port), msTimeout);
-            stop = Instant.now();
+            stop  = System.nanoTime();
             sock.close();
         } catch (Exception e) {
             reply.setReply(e.getMessage());
@@ -113,9 +111,9 @@ public class CheckTCP implements NChecksInterface
             return reply;
         }
 
-        long elapsed = ChronoUnit.MILLIS.between(start,stop);
+        long elapsed = (stop - start) / 1000000;
         reply.putPerformance("ReplyDuration", elapsed);
-        String st = null;
+        String st;
         if (Reply.STATUS_OK.equals(acceptState))
         {
             if (elapsed >= msCritical) {

@@ -21,8 +21,6 @@
 package io.sysmo.nchecks;
 import java.util.Map;
 import java.util.HashMap;
-import java.io.Serializable;
-import io.sysmo.nchecks.Argument;
 
 /**
 * The Reply class contain all the values and informations related to the execution of 
@@ -36,12 +34,12 @@ public class Query
     public Query(Map<String,Argument> args, byte[] state)
     {
         this.state      = state.clone();
-        this.arguments  = new HashMap<String,Argument>(args);
+        this.arguments  = new HashMap<>(args);
     }
 
     public Query(Map<String,Argument> args)
     {
-        this.arguments = new HashMap<String,Argument>(args);
+        this.arguments = new HashMap<>(args);
     }
 
 

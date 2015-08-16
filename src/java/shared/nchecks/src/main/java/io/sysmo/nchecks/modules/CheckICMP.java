@@ -218,7 +218,7 @@ public class CheckICMP implements NChecksInterface
         reply.putPerformance("AverageRoundTrip",    avgReplyTime);
         reply.putPerformance("MaxRoundTrip",        maxReplyTime);
 
-        String st = null;
+        String st;
         if (percentLoss == 100) {
             st = Reply.STATUS_DOWN;
         }else if (percentLoss >= plCritical || avgReplyTime >= msCritical) {

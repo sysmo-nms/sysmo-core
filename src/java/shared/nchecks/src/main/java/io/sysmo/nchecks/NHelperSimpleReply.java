@@ -21,21 +21,9 @@
 
 package io.sysmo.nchecks;
 
-import io.sysmo.nchecks.NHelperReply;
-
-import java.util.Map;
-import java.util.HashMap;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Iterator;
-
 import java.io.CharArrayWriter;
 import javax.json.Json;
 import javax.json.JsonWriter;
-import javax.json.JsonArray;
-import javax.json.JsonArrayBuilder;
-import javax.json.JsonBuilderFactory;
-import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 
 /*

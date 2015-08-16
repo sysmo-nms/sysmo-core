@@ -21,13 +21,6 @@
 
 package io.sysmo.nchecks;
 
-import io.sysmo.nchecks.NHelperReply;
-import io.sysmo.nchecks.NHelperTableRow;
-import io.sysmo.nchecks.NHelperTableItem;
-
-import java.util.Map;
-import java.util.HashMap;
-import java.util.Arrays;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -35,10 +28,8 @@ import java.util.Iterator;
 import java.io.CharArrayWriter;
 import javax.json.Json;
 import javax.json.JsonWriter;
-import javax.json.JsonArray;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonBuilderFactory;
-import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 
 /**
@@ -63,7 +54,7 @@ public class NHelperTableReply implements NHelperReply
 
     private ArrayList<NHelperTableRow> rows;
     public NHelperTableReply() {
-        rows = new ArrayList<NHelperTableRow>();
+        rows = new ArrayList<>();
     }
 
 

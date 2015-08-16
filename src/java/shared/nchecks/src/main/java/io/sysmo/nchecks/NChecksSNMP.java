@@ -30,6 +30,9 @@ import org.snmp4j.security.*;
 import org.snmp4j.smi.*;
 import org.snmp4j.transport.*;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 // AES192_3DES AES256_3DES
 import org.snmp4j.security.nonstandard.*;
 
@@ -38,6 +41,7 @@ public class NChecksSNMP
     public  Snmp snmp4jSession;
     private Map<String, AbstractTarget> agents;
     private static NChecksSNMP INSTANCE;
+    private static Logger logger = LoggerFactory.getLogger(NChecksSNMP.class);
 
     public static void startSnmp() {new NChecksSNMP();}
     private NChecksSNMP()
@@ -50,13 +54,12 @@ public class NChecksSNMP
             USM usm         = new USM(SecurityProtocols.getInstance(),
                                                 new OctetString(engineId), 0);
             SecurityModels.getInstance().addSecurityModel(usm);
-            agents          = new HashMap<String, AbstractTarget>();
+            agents          = new HashMap<>();
             transport.listen();
         }
         catch (Exception e)
         {
-            NChecksLogger.getLogger().severe("SNMP init fail: " +
-                                                    e.getMessage() + e);
+            NChecksSNMP.logger.error("SNMP init fail: " + e.getMessage() + e);
         }
         INSTANCE = this;
     }
@@ -68,7 +71,7 @@ public class NChecksSNMP
     public synchronized void cleanup()
     {
         snmp4jSession.getUSM().removeAllUsers();
-        agents = new HashMap<String, AbstractTarget>();
+        agents = new HashMap<>();
     }
 
     public synchronized AbstractTarget getTarget(Query query) throws Exception
@@ -168,10 +171,8 @@ public class NChecksSNMP
                         new OctetString(query.get("snmp_authkey").asString());
         OctetString privkey = 
                         new OctetString(query.get("snmp_privkey").asString());
-        UsmUser usmuser = new UsmUser(
-                                        uName,authProtoOid,authkey,
-                                                        privProtoOid,privkey);
-        return usmuser;
+
+        return new UsmUser(uName,authProtoOid,authkey, privProtoOid,privkey);
     }
 }
 
@@ -185,12 +186,11 @@ class SNMPUtils
                                                     throws Exception, Error
     {
         Path path = Paths.get(stringPath);
-        if (Files.isRegularFile(path) == true)
+        if (Files.isRegularFile(path))
         {
             byte[] engineIdDump = Files.readAllBytes(path);
             String engineIdHex = new String(engineIdDump, "UTF-8");
-            byte[] engineId = SNMPUtils.hexStringToBytes(engineIdHex);
-            return engineId;
+            return SNMPUtils.hexStringToBytes(engineIdHex); // return engine Id
         }
         else
         {
@@ -222,10 +222,7 @@ class SNMPUtils
             hexChars[j * 2] = hexArray[v >>> 4];
             hexChars[j * 2 + 1] = hexArray[v & 0x0F];
         }
-        String chars = 
-                new String(
-                        new String(hexChars).getBytes("UTF-8"), "UTF-8");
-        return chars;
+        return new String(new String(hexChars).getBytes("UTF-8"), "UTF-8");
     }
     
     public static int getSecLevel(String constString) throws Exception
@@ -249,7 +246,7 @@ class SNMPUtils
     public static OID getAuthProto(String constString) throws Exception
     {
 
-        OID authProtoOid = null;
+        OID authProtoOid;
         switch (constString)
         {
             case "SHA": authProtoOid = AuthSHA.ID; break;
@@ -262,7 +259,7 @@ class SNMPUtils
 
     public static OID getPrivProto(String constString) throws Exception
     {
-        OID privProtoOid = null;
+        OID privProtoOid;
         switch (constString)
         {
             case "AES":         privProtoOid = PrivAES128.ID; break;
@@ -282,13 +279,6 @@ class SNMPUtils
 
     public static boolean usmUsersEquals(UsmUser a, UsmUser b)
     {
-        if (a.toString().equals(b.toString()))
-        {
-            return true;
-        }
-        else
-        {
-            return false;
-        }
+        return a.toString().equals(b.toString());
     }
 }

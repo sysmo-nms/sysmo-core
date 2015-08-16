@@ -200,55 +200,59 @@ public class NChecksErlang implements Runnable
         try {
             String cmdString = command.toString();
 
-            if (cmdString.equals("check")) {
+            switch (cmdString)
+            {
+                case "check":
+                    OtpErlangString erlangCheckClassName = (OtpErlangString)
+                            (payload.elementAt(0));
 
-                OtpErlangString erlangClassName = (OtpErlangString)
-                    (payload.elementAt(0));
+                    // TODO full class name as argument
+                    String checkClassName = erlangCheckClassName.stringValue();
 
-                // TODO full class name as argument
-                String className = erlangClassName.stringValue();
+                    OtpErlangList checkArgs = (OtpErlangList)
+                            (payload.elementAt(1));
 
-                OtpErlangList checkArgs = (OtpErlangList)
-                    (payload.elementAt(1));
+                    OtpErlangBinary opaque = (OtpErlangBinary)
+                            (payload.elementAt(2));
 
-                OtpErlangBinary opaque = (OtpErlangBinary)
-                    (payload.elementAt(2));
+                    Runnable checkWorker = new NChecksRunnable(
+                            Class.forName(checkClassName).newInstance(),
+                            caller,
+                            checkArgs,
+                            opaque);
+                    this.threadPool.execute(checkWorker);
+                    break;
 
-                Runnable worker = new NChecksRunnable(
-                        Class.forName(className).newInstance(),
-                        caller,
-                        checkArgs,
-                        opaque);
-                this.threadPool.execute(worker);
+                case "helper":
+                    OtpErlangString erlangHelperClassName =
+                            (OtpErlangString)
+                                    (payload.elementAt(0));
+                    String helperClassName = erlangHelperClassName.stringValue();
+                    OtpErlangString erlangIdName =
+                            (OtpErlangString)
+                                    (payload.elementAt(1));
+                    String idName = erlangIdName.stringValue();
+                    OtpErlangList args = (OtpErlangList)
+                            (payload.elementAt(2));
+                    Runnable helperWorker = new NHelperRunnable(
+                            Class.forName(helperClassName).newInstance(),
+                            idName,
+                            caller,
+                            args);
+                    this.threadPool.execute(helperWorker);
+                    break;
 
-            } else if (cmdString.equals("helper")) {
+                case "init":
+                    this.handleInit(payload);
+                    break;
 
-                OtpErlangString erlangClassName =
-                    (OtpErlangString)
-                    (payload.elementAt(0));
-                String className = erlangClassName.stringValue();
-                OtpErlangString erlangIdName =
-                    (OtpErlangString)
-                    (payload.elementAt(1));
-                String idName = erlangIdName.stringValue();
-                OtpErlangList args = (OtpErlangList)
-                    (payload.elementAt(2));
-                Runnable worker = new NHelperRunnable(
-                        Class.forName(className).newInstance(),
-                        idName,
-                        caller,
-                        args);
-                this.threadPool.execute(worker);
+                case "cleanup":
+                    NChecksSNMP.getInstance().cleanup();
+                    break;
 
-            } else if (cmdString.equals("init")) {
-                this.handleInit(payload);
-
-            } else if (cmdString.equals("cleanup")) {
-                NChecksSNMP.getInstance().cleanup();
-
-            } else {
-                OtpErlangObject reply = buildErrorReply(command);
-                NChecksErlang.sendReply(caller, reply);
+                default:
+                    OtpErlangObject reply = buildErrorReply(command);
+                    NChecksErlang.sendReply(caller, reply);
             }
         }
         catch (Exception|Error e)

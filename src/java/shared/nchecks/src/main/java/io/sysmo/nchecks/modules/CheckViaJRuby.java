@@ -25,7 +25,6 @@ import io.sysmo.nchecks.NChecksInterface;
 import io.sysmo.nchecks.Reply;
 import io.sysmo.nchecks.Query;
 import io.sysmo.nchecks.NChecksJRuby;
-import io.sysmo.nchecks.NChecksLogger;
 import org.jruby.embed.ScriptingContainer;
 
 import org.slf4j.LoggerFactory;
@@ -44,8 +43,8 @@ public class CheckViaJRuby implements NChecksInterface //, NHelperInterface
             script = NChecksJRuby.getInstance().getScript(rbScript);
         } catch (Exception e) {
             CheckViaJRuby.logger.error(e.toString());
-            Reply err = handleError("Script not found: " + rbScript, e);
-            return err;
+            return CheckViaJRuby.handleError(
+                    "Script not found: " + rbScript, e);
         }
 
         ScriptingContainer container = new ScriptingContainer();
@@ -55,8 +54,8 @@ public class CheckViaJRuby implements NChecksInterface //, NHelperInterface
             rep = container.callMethod(receiver,"check",query,Reply.class);
         } catch(Exception e) {
             CheckViaJRuby.logger.error(e.toString());
-            Reply err = handleError("Script execution failure: " + rbScript, e);
-            return err;
+            return CheckViaJRuby.handleError(
+                    "Script execution failure: " + rbScript, e);
         }
         return rep;
     }
@@ -70,7 +69,7 @@ public class CheckViaJRuby implements NChecksInterface //, NHelperInterface
 
     private static Reply handleError(String txt, Exception e) {
         String msg = e.getMessage();
-        NChecksLogger.getLogger().severe(e.toString());
+        CheckViaJRuby.logger.error(e.toString());
         Reply reply = new Reply();
         reply.setStatus(Reply.STATUS_ERROR);
         reply.setReply("CheckViaJRuby ERROR: " + txt + msg);

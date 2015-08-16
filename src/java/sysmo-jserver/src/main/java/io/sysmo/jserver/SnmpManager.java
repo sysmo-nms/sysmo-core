@@ -160,7 +160,7 @@ public class SnmpManager implements Runnable
     /**
      * Send a message to the caller.
      * Used by SnmpmanResponseListener SnmpmanTreeListener and SnmpmanTableListener
-     * which are executed in the asynchroneously in another thread.
+     * which are executed in another thread.
      */
     public static void sendReply(
             final OtpErlangObject to, final OtpErlangObject msg)
@@ -420,23 +420,13 @@ public class SnmpManager implements Runnable
             this.snmp4jSession.getUSM().addUser(newUsmUser);
             return true;
         }  else { // usm user exist
-            if (this.usmUsersEquals(existUsmUser.getUsmUser(), newUsmUser)) {
-                // same user, do nothing
-                return true;
-            } else {
-                // same user but different config, it is an error
-                return false;
-            }
+            return this.usmUsersEquals(existUsmUser.getUsmUser(), newUsmUser);
         }
     }
 
     private boolean usmUsersEquals(UsmUser a, UsmUser b)
     {
-        if (a.toString().equals(b.toString())) {
-            return true;
-        } else {
-            return false;
-        }
+        return a.toString().equals(b.toString());
     }
 
     private AbstractTarget generateTarget(
@@ -1053,8 +1043,7 @@ class GetNextPDUFactory implements PDUFactory
         if (target.getVersion() == SnmpConstants.version3) {
             request = new ScopedPDU();
             ScopedPDU scopedPDU = (ScopedPDU)request;
-        }
-        else {
+        } else {
             request = new PDU();
         }
         request.setType(pduType);

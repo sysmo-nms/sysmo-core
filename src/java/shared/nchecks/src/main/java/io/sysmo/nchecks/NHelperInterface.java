@@ -19,12 +19,8 @@
  * THE SOFTWARE.
  */
 package io.sysmo.nchecks;
-import io.sysmo.nchecks.Query;
-import io.sysmo.nchecks.Argument;
-import io.sysmo.nchecks.NHelperReply;
-import java.util.Map;
 
 public interface NHelperInterface
 {
-    public NHelperReply callHelper(Query query, String id);
+    NHelperReply callHelper(Query query, String id);
 }

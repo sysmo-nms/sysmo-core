@@ -29,9 +29,6 @@ public class Argument
     private int      argumentInteger;
     private int      type;
 
-
-    public int getType() { return this.type; }
-
     public void set(int val) {
         this.type = Argument.INT_VALUE;
         this.argumentInteger = val;

@@ -21,8 +21,6 @@
 
 package io.sysmo.nchecks;
 
-import io.sysmo.nchecks.NHelperTableItem;
-
 import java.util.List;
 import java.util.ArrayList;
 
@@ -31,7 +29,7 @@ public class NHelperTableRow
     private ArrayList<NHelperTableItem> items;
 
     public NHelperTableRow() {
-        items = new ArrayList<NHelperTableItem>();
+        items = new ArrayList<>();
     }
 
     /*

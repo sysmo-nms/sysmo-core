@@ -22,8 +22,8 @@ package io.sysmo.nchecks;
 
 public interface NHelperReply
 {
-    public static final String SUCCESS = "success";
-    public static final String FAILURE = "failure";
+    String SUCCESS = "success";
+    String FAILURE = "failure";
 
-    public char[] toCharArray();
+    char[] toCharArray();
 }

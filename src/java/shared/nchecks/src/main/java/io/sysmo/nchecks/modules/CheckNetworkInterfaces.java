@@ -77,14 +77,13 @@ public class CheckNetworkInterfaces implements NChecksInterface, NHelperInterfac
             new OID(IF_OUT_ERRORS)
     };
 
-    private String  ifSelection;
-
     public CheckNetworkInterfaces() {}
 
     public Reply execute(Query query)
     {
         Reply  reply = new Reply();
         String error = "undefined";
+        String ifSelection;
 
         try {
             ifSelection = query.get("if_selection").asString();
@@ -128,7 +127,7 @@ public class CheckNetworkInterfaces implements NChecksInterface, NHelperInterfac
                 error = evt.getErrorMessage();
                 VariableBinding[]   vbs = evt.getColumns();
                 String ifIndex = vbs[0].getVariable().toString();
-                if (indexesList.contains(ifIndex) == false) continue;
+                if (!indexesList.contains(ifIndex)) continue;
                 reply.putPerformance(ifIndex,"IfInOctets",
                         vbs[1].getVariable().toLong());
                 reply.putPerformance(ifIndex,"IfInUcastPkts",
@@ -166,8 +165,7 @@ public class CheckNetworkInterfaces implements NChecksInterface, NHelperInterfac
     public NHelperReply callHelper(Query query, String id)
     {
         GetIfTableHelper helper = new GetIfTableHelper();
-        NHelperReply reply = helper.call(query);
-        return reply;
+        return helper.call(query);
     }
 }
 
@@ -190,7 +188,7 @@ class GetIfTableHelper
     private static final Map<String, String> iftype;
     static
     {
-        iftype = new HashMap<String,String>();
+        iftype = new HashMap<>();
         iftype.put("1", "other");
         iftype.put("2", "regular1822");
         iftype.put("3", "hdh1822");
