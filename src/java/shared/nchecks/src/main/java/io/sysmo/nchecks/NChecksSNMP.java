@@ -20,23 +20,15 @@
  */
 
 package io.sysmo.nchecks;
-import io.sysmo.nchecks.Argument;
-import io.sysmo.nchecks.Query;
-import io.sysmo.nchecks.NChecksLogger;
 
-import java.io.*;
 import java.util.*;
 import java.nio.file.*;
 
 import org.snmp4j.*;
-import org.snmp4j.asn1.*;
-import org.snmp4j.event.*;
-import org.snmp4j.log.*;
 import org.snmp4j.mp.*;
 import org.snmp4j.security.*;
 import org.snmp4j.smi.*;
 import org.snmp4j.transport.*;
-import org.snmp4j.util.*;
 
 // AES192_3DES AES256_3DES
 import org.snmp4j.security.nonstandard.*;

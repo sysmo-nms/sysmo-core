@@ -19,10 +19,8 @@
  * THE SOFTWARE.
  */
 package io.sysmo.nchecks;
-import io.sysmo.nchecks.Reply;
-import io.sysmo.nchecks.Query;
 
 public interface NChecksInterface
 {
-    public Reply execute(Query query);
+    Reply execute(Query query);
 }

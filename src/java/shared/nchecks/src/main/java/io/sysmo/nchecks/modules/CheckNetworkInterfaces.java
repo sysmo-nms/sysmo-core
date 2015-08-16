@@ -21,15 +21,14 @@
 
 package io.sysmo.nchecks.modules;
 
-import io.sysmo.nchecks.NHelperInterface2;
+import io.sysmo.nchecks.NHelperInterface;
+
 import io.sysmo.nchecks.NHelperReply;
 import io.sysmo.nchecks.NHelperSimpleReply;
 import io.sysmo.nchecks.NHelperTableReply;
 import io.sysmo.nchecks.NHelperTableRow;
-import io.sysmo.nchecks.NChecksLogger;
 
 import io.sysmo.nchecks.NChecksInterface;
-import io.sysmo.nchecks.Argument;
 import io.sysmo.nchecks.Reply;
 import io.sysmo.nchecks.Query;
 import io.sysmo.nchecks.NChecksSNMP;
@@ -48,29 +47,14 @@ import java.util.HashMap;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Iterator;
-import java.io.CharArrayWriter;
 
-import javax.json.Json;
-import javax.json.JsonWriter;
-import javax.json.JsonArray;
-import javax.json.JsonArrayBuilder;
-import javax.json.JsonBuilderFactory;
-import javax.json.JsonObject;
-import javax.json.JsonObjectBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import io.sysmo.nchecks.NChecksSNMP;
-import org.snmp4j.Snmp;
-import org.snmp4j.AbstractTarget;
-import org.snmp4j.util.TableUtils;
-import org.snmp4j.util.TableEvent;
-import org.snmp4j.util.DefaultPDUFactory;
-import org.snmp4j.smi.OID;
-import org.snmp4j.smi.VariableBinding;
-import org.snmp4j.PDU;
-
-
-public class CheckNetworkInterfaces implements NChecksInterface, NHelperInterface2
+public class CheckNetworkInterfaces implements NChecksInterface, NHelperInterface
 {
+    private static Logger logger =
+            LoggerFactory.getLogger(CheckNetworkInterfaces.class);
     private static String IF_INDEX = "1.3.6.1.2.1.2.2.1.1";
     private static String IF_IN_OCTETS = "1.3.6.1.2.1.2.2.1.10";
     private static String IF_IN_UCASTPKTS = "1.3.6.1.2.1.2.2.1.11";
@@ -105,7 +89,7 @@ public class CheckNetworkInterfaces implements NChecksInterface, NHelperInterfac
         try {
             ifSelection = query.get("if_selection").asString();
         } catch (Exception|Error e) {
-            e.printStackTrace();
+            CheckNetworkInterfaces.logger.error(e.toString());
             reply.setStatus(Reply.STATUS_ERROR);
             reply.setReply("Missing or wrong argument: " + e);
             return reply;
@@ -113,11 +97,8 @@ public class CheckNetworkInterfaces implements NChecksInterface, NHelperInterfac
 
         try {
             AbstractTarget target = NChecksSNMP.getInstance().getTarget(query);
-            System.out.println("snmptarget? " + target);
 
             Snmp session = NChecksSNMP.getInstance().getSnmpSession();
-            System.out.println("snmpsession? " + session);
-
 
             // TODO try PDU.GETBULK then PDU.GETNEXT to degrade....
             // TODO keep degrade state in reply.setOpaqueData(v)
@@ -126,7 +107,6 @@ public class CheckNetworkInterfaces implements NChecksInterface, NHelperInterfac
                         session,
                         new DefaultPDUFactory(PDU.GETNEXT));
 
-            System.out.println("tableutils?" + tablewalker);
 
             // TODO set lower and upper bound indexes
             List<TableEvent> snmpReply = tablewalker.getTable(
@@ -173,7 +153,7 @@ public class CheckNetworkInterfaces implements NChecksInterface, NHelperInterfac
             reply.setReply("IfPerTableTest success fetch for: " + ifSelection);
             return reply;
         } catch (Exception|Error e) {
-            e.printStackTrace();
+            CheckNetworkInterfaces.logger.error(e.toString());
             reply.setStatus(Reply.STATUS_ERROR);
             reply.setReply("Error: " + error);
             return reply;

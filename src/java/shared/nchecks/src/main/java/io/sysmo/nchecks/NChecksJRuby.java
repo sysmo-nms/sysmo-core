@@ -29,13 +29,14 @@ import org.slf4j.Logger;
 
 public class NChecksJRuby {
     private static Logger logger = LoggerFactory.getLogger(NChecksJRuby.class);
-    private String scriptPath;
-    private HashMap<String,String> scriptMap;
 
     private static NChecksJRuby instance;
     private static final Object lock = new Object();
 
     public static NChecksJRuby getInstance() { return instance; }
+
+    private String scriptPath;
+    private HashMap<String,String> scriptMap;
 
     public static void startJRuby(String scriptPath) {
         new NChecksJRuby(scriptPath);
@@ -50,7 +51,9 @@ public class NChecksJRuby {
 
     public String getScript(String identifier) throws Exception {
         synchronized (NChecksJRuby.lock) {
+
             String val = this.scriptMap.get(identifier);
+
             if(val == null) {
                 String script = identifier + ".rb";
                 byte[] fileBytes =
@@ -58,6 +61,7 @@ public class NChecksJRuby {
                 val = new String(fileBytes, "UTF-8");
                 this.scriptMap.put(script, val);
             }
+
             return val;
         }
     }

@@ -22,17 +22,19 @@
 package io.sysmo.nchecks.modules;
 
 import io.sysmo.nchecks.NChecksInterface;
-import io.sysmo.nchecks.Argument;
-import io.sysmo.nchecks.NHelperInterface2;
-import io.sysmo.nchecks.NHelperReply;
 import io.sysmo.nchecks.Reply;
 import io.sysmo.nchecks.Query;
 import io.sysmo.nchecks.NChecksJRuby;
 import io.sysmo.nchecks.NChecksLogger;
 import org.jruby.embed.ScriptingContainer;
 
-public class CheckViaJRuby implements NChecksInterface //, NHelperInterface2
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+
+public class CheckViaJRuby implements NChecksInterface //, NHelperInterface
 {
+    private static Logger logger = LoggerFactory.getLogger(CheckViaJRuby.class);
+
     public Reply execute(Query query)
     {
         String rbScript = "undefined";
@@ -41,6 +43,7 @@ public class CheckViaJRuby implements NChecksInterface //, NHelperInterface2
             rbScript = query.get("check_id").asString();
             script = NChecksJRuby.getInstance().getScript(rbScript);
         } catch (Exception e) {
+            CheckViaJRuby.logger.error(e.toString());
             Reply err = handleError("Script not found: " + rbScript, e);
             return err;
         }
@@ -51,6 +54,7 @@ public class CheckViaJRuby implements NChecksInterface //, NHelperInterface2
         try {
             rep = container.callMethod(receiver,"check",query,Reply.class);
         } catch(Exception e) {
+            CheckViaJRuby.logger.error(e.toString());
             Reply err = handleError("Script execution failure: " + rbScript, e);
             return err;
         }

@@ -26,18 +26,19 @@ import io.sysmo.nchecks.Argument;
 import io.sysmo.nchecks.Reply;
 import io.sysmo.nchecks.Query;
 
-import java.util.Map;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.net.Socket;
 import java.net.InetSocketAddress;
 import java.net.InetAddress;
-import java.net.Inet4Address;
-import java.net.Inet6Address;
 
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 public class CheckTCP implements NChecksInterface
 {
+    private static Logger logger = LoggerFactory.getLogger(CheckTCP.class);
+
     private String  host        = "";
     private int     port        = 0;
     private int     msWarning   = 500;
@@ -75,7 +76,7 @@ public class CheckTCP implements NChecksInterface
             if (refuseStateArg  != null) { refuseState = refuseStateArg.asString(); }
             if (acceptStateArg  != null) { acceptState = acceptStateArg.asString(); }
         } catch (Exception|Error e) {
-            e.printStackTrace();
+            CheckTCP.logger.error(e.toString());
             reply.setStatus(Reply.STATUS_ERROR);
             reply.setReply("Bad or wrong argumentis: " + e);
             return reply;

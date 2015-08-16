@@ -233,7 +233,7 @@ public class NChecksErlang implements Runnable
                 String idName = erlangIdName.stringValue();
                 OtpErlangList args = (OtpErlangList)
                     (payload.elementAt(2));
-                Runnable worker = new NHelperRunnable2(
+                Runnable worker = new NHelperRunnable(
                         Class.forName(className).newInstance(),
                         idName,
                         caller,
@@ -345,7 +345,6 @@ public class NChecksErlang implements Runnable
 
 
 
-        NHelperInterface module = new HelperNetworkInterfaces();
         Query query = new Query(testArguments);
         module.execute(query);
     }
@@ -408,56 +407,17 @@ class NChecksRunnable implements Runnable, CheckCaller
 class NHelperRunnable implements Runnable, CheckCaller
 {
     private NHelperInterface helper;
-    private OtpErlangObject  caller;
-    private OtpErlangList    args;
-
-    public NHelperRunnable(
-            Object          helpObj,
-            OtpErlangObject callerObj,
-            OtpErlangList   argsList)
-    {
-        helper  = (NHelperInterface) helpObj;
-        caller  = callerObj;
-        args    = argsList;
-    }
-
-    @Override
-    public void run()
-    {
-        Query           query        = new Query(NChecksErlang.decodeArgs(args));
-        NHelperReply    helperReply  = helper.execute(query);
-        OtpErlangList   jsonCharList = buildErlangCharList(helperReply.toCharArray());
-        OtpErlangObject replyMsg     = NChecksErlang.buildOkReply(jsonCharList);
-        NChecksErlang.sendReply(caller, replyMsg);
-    }
-
-    public OtpErlangObject getCaller() {return this.caller;}
-
-    private static OtpErlangList buildErlangCharList(char[] charList)
-    {
-        OtpErlangObject[] objList = new OtpErlangObject[charList.length];
-        for (int i = 0; i < charList.length; i++)
-        {
-            objList[i] = new OtpErlangChar(charList[i]);
-        }
-        return new OtpErlangList(objList);
-    }
-}
-
-class NHelperRunnable2 implements Runnable, CheckCaller
-{
-    private NHelperInterface2 helper;
     private String            helper_id;
     private OtpErlangObject   caller;
     private OtpErlangList     args;
 
-    public NHelperRunnable2(
+    public NHelperRunnable(
             final Object helpObj,
             final String id,
             final OtpErlangObject callerObj,
             final OtpErlangList argsList)
     {
-        this.helper    = (NHelperInterface2) helpObj;
+        this.helper    = (NHelperInterface) helpObj;
         this.helper_id = id;
         this.caller    = callerObj;
         this.args      = argsList;
