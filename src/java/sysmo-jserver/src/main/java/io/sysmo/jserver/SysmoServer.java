@@ -83,7 +83,7 @@ public class SysmoServer {
         nchecksThread.start();
 
         /*
-         * TODO Create web server thread
+         * TODO Create http server thread
          */
 
         /*
@@ -101,11 +101,12 @@ public class SysmoServer {
         OtpErlangTuple ackTuple = new OtpErlangTuple(ackObj);
         mainMbox.send("sysmo", foreignNodeName, ackTuple);
 
-        try {
-            mainMbox.receive();
-        } catch (Exception e) {
-            mainMbox.exit("normal");
+        while(node.ping(foreignNodeName, 2000)) try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            break;
         }
-        //rrd4jMbox.exit("shutdown");
+
+        mainMbox.exit("normal");
     }
 }
