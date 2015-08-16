@@ -21,7 +21,9 @@
 % @private
 -module(monitor).
 -include("include/monitor.hrl").
--include("../equartz/include/equartz.hrl").
+-include_lib("equartz/include/equartz.hrl").
+-include_lib("common_hrl/include/logs.hrl").
+
 -export([
     % public
     new_target/2,
@@ -95,8 +97,7 @@ new_job(Function, Target) ->
 fire_job(JobId) ->
     case (catch equartz:fire_now(JobId)) of
         {_ERROR, _} = Err -> % _ERROR = 'EXIT' | timeout
-            error_logger:error_msg(
-                       "~p ~p: fire_job failure: ~p", [?MODULE, ?LINE, Err]);
+            ?LOG_ERROR("fire_job failure", Err);
         ok -> ok
     end.
 
@@ -119,8 +120,7 @@ new_probe({nchecks_probe, Identifier, JavaClass, Args}, Target) ->
 force_probe(PidName) ->
     case supercast_registrar:whereis_name(PidName) of
         undefined ->
-            error_logger:error_msg(
-                       "~p ~p: Unknown PidName: ~p", [?MODULE, ?LINE, PidName]);
+            ?LOG_ERROR("Unknown PidName", PidName);
         Pid ->
             nchecks_probe:force(Pid)
     end.
@@ -146,8 +146,7 @@ force_probe(PidName) ->
 trigger_probe_return(PidName, CState) ->
     case supercast_registrar:whereis_name(PidName) of
         undefined ->
-            error_logger:error_msg(
-                       "~p ~p: Unknown PidName: ~p", [?MODULE, ?LINE, PidName]),
+            ?LOG_ERROR("Unknown PidName", PidName),
             error;
         Pid -> nchecks_probe:trigger_return(Pid, CState)
     end.

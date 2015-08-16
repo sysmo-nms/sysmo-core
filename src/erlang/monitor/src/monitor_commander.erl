@@ -143,7 +143,7 @@ handle_cast({{"ncheckHelperQuery", Contents}, CState}, S) ->
     {noreply, S};
 
 handle_cast(R, S) ->
-    error_logger:info_msg("unknown cast for command ~p ~p ~p~n", [?MODULE, ?LINE, R]),
+    ?LOG_INFO("unknown cast for command", R),
     {noreply, S}.
 
 %%----------------------------------------------------------------------------

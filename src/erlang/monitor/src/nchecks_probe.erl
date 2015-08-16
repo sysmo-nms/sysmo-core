@@ -26,7 +26,7 @@
 -behaviour(gen_server).
 -behaviour(supercast_channel).
 -include("include/monitor.hrl").
--include("../nchecks/include/nchecks.hrl").
+-include_lib("nchecks/include/nchecks.hrl").
 -include_lib("xmerl/include/xmerl.hrl").
 -include_lib("common_hrl/include/logs.hrl").
 
@@ -367,7 +367,7 @@ exec_nchecks(Class, Args, Opaque) ->
             % An error occured.
             % TODO should I modify the probe state or set it to 'ERROR'?
             % It is most a sysmo state than a probe state.
-            error_logger:error_msg("~p ~p ERROR: ~p", [?MODULE, ?LINE, Error]),
+            ?LOG_ERROR("", Error),
             ProbeReturn = #probe_return{
                 status          = "ERROR",
                 reply_string    = ?CRASH,
@@ -612,8 +612,7 @@ rrd4j_init(ProbeName, Step, Args, TargetDir, XCheck_Content) ->
                                   FilePath, Step, DSDefinitions, "default")) of
                             ok    -> ok;
                             Error ->
-                                error_logger:error_msg(
-                                  "~p ~p ERROR: ~p", [?MODULE, ?LINE, Error])
+                                ?LOG_ERROR("", Error)
                         end
                 end
             end, RRDList),
@@ -646,8 +645,7 @@ rrd4j_init(ProbeName, Step, Args, TargetDir, XCheck_Content) ->
                                   RrdFilePath,Step, DSDefinitions,"default")) of
                         ok    -> ok;
                         Error ->
-                            error_logger:error_msg(
-                              "~p ~p ERROR: ~p", [?MODULE, ?LINE, Error])
+                            ?LOG_ERROR("", Error)
                     end,
 
 
@@ -655,8 +653,7 @@ rrd4j_init(ProbeName, Step, Args, TargetDir, XCheck_Content) ->
                     {ok, {simple, RrdFilePath}}
             end;
         Unknown ->
-            error_logger:error_msg("~p ~p ERROR: unknown rrd type: ~p",
-                                                     [?MODULE, ?LINE, Unknown]),
+            ?LOG_ERROR("unknown rrd type", Unknown),
             error
     end.
 
