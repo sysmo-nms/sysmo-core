@@ -124,10 +124,10 @@ public class NChecksErlang implements Runnable
         while (true) try {
             call = this.mbox.receive();
             this.handleMsg(call);
-        } catch (OtpErlangExit |OtpErlangDecodeException e) {
+        } catch (OtpErlangExit|OtpErlangDecodeException e) {
             logger.warn(e.toString());
             threadPool.shutdownNow();
-            return;
+            break;
         }
     }
 

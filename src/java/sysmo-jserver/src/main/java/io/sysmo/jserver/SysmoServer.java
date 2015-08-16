@@ -71,6 +71,9 @@ public class SysmoServer {
         /*
          * Create snmp4j thread
          */
+        SnmpManager snmp4j = new SnmpManager(snmp4jMbox, foreignNodeName);
+        Thread snmp4jThread = new Thread(snmp4j);
+        snmp4jThread.start();
 
         /*
          * Create NChecks thread
@@ -78,6 +81,14 @@ public class SysmoServer {
         NChecksErlang nchecks = new NChecksErlang(nchecksMbox, foreignNodeName);
         Thread nchecksThread = new Thread(nchecks);
         nchecksThread.start();
+
+        /*
+         * TODO Create web server thread
+         */
+
+        /*
+         * TODO Create sql database thread
+         */
 
         /*
          * Send acknowledgement to the "sysmo" erlang process
@@ -90,7 +101,11 @@ public class SysmoServer {
         OtpErlangTuple ackTuple = new OtpErlangTuple(ackObj);
         mainMbox.send("sysmo", foreignNodeName, ackTuple);
 
-        mainMbox.exit("normal");
+        try {
+            mainMbox.receive();
+        } catch (Exception e) {
+            mainMbox.exit("normal");
+        }
         //rrd4jMbox.exit("shutdown");
     }
 }

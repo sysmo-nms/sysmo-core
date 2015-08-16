@@ -21,9 +21,6 @@
 
 package io.sysmo.jserver;
 
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -32,13 +29,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Vector;
-import java.util.logging.LogManager;
-import java.util.logging.Logger;
-import java.util.logging.Level;
-import java.util.logging.FileHandler;
-import java.util.logging.SimpleFormatter;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.ericsson.otp.erlang.OtpErlangString;
 import com.ericsson.otp.erlang.OtpErlangList;
@@ -50,7 +44,6 @@ import com.ericsson.otp.erlang.OtpErlangTuple;
 import com.ericsson.otp.erlang.OtpErlangInt;
 import com.ericsson.otp.erlang.OtpErlangLong;
 import com.ericsson.otp.erlang.OtpMbox;
-import com.ericsson.otp.erlang.OtpNode;
 
 import org.snmp4j.*;
 import org.snmp4j.event.*;
@@ -63,198 +56,105 @@ import org.snmp4j.util.*;
 import org.snmp4j.security.nonstandard.*;
 
 
-public class SnmpManager
+public class SnmpManager implements Runnable
 {
-    // my node name
-    private static String selfNodeName;
 
-    // the foreign node name (-sname)
-    private static String foreignNodeName;
-    private static String erlangCookie;
+    public static final OtpErlangAtom atomReply = new OtpErlangAtom("reply");
+    public static final OtpErlangAtom atomOk = new OtpErlangAtom("ok");
+    public static final OtpErlangAtom atomReport = new OtpErlangAtom("report");
+    public static final OtpErlangAtom atomTable  = new OtpErlangAtom("table");
+    public static final OtpErlangAtom atomError = new OtpErlangAtom("error");
+    public static final OtpErlangAtom atomTimeout =
+                                        new OtpErlangAtom("timeout");
+    public static final OtpErlangAtom atomVarbinds =
+                                        new OtpErlangAtom("varbinds");
+    public static final OtpErlangAtom atomVarbind =
+                                        new OtpErlangAtom("varbind");
+    public static final OtpErlangAtom atomUnknownTarget =
+                                        new OtpErlangAtom("unknown_target");
+    public static final OtpErlangAtom atomTargetExist =
+                                        new OtpErlangAtom("target_exist");
+    public static final OtpErlangAtom atomTableRow =
+                                        new OtpErlangAtom("table_row");
+    public static final OtpErlangAtom atomException =
+                                        new OtpErlangAtom("exception");
+    public static final OtpErlangAtom atomWrongOrder =
+                                        new OtpErlangAtom("wrong_order");
 
-    // the foreign snmpman.erl gen_server pid name
-    private static String foreignPidName;
 
-    public static final OtpErlangAtom atomReply       = new OtpErlangAtom("reply");
-    public static final OtpErlangAtom atomOk          = new OtpErlangAtom("ok");
-    public static final OtpErlangAtom atomTimeout     = new OtpErlangAtom("timeout");
-    public static final OtpErlangAtom atomError       = new OtpErlangAtom("error");
-    public static final OtpErlangAtom atomVarbinds    = new OtpErlangAtom("varbinds");
-    public static final OtpErlangAtom atomVarbind     = new OtpErlangAtom("varbind");
-    public static final OtpErlangAtom atomUnknownTarget = new OtpErlangAtom("unknown_target");
-    public static final OtpErlangAtom atomTargetExist   = new OtpErlangAtom("target_exist");
-    public static final OtpErlangAtom atomTableRow    = new OtpErlangAtom("table_row");
-    public static final OtpErlangAtom atomException   = new OtpErlangAtom("exception");
-    public static final OtpErlangAtom atomWrongOrder  = new OtpErlangAtom("wrong_order");
-    public static final OtpErlangAtom atomReport      = new OtpErlangAtom("report");
-    public static final OtpErlangAtom atomTable       = new OtpErlangAtom("table");
-    // erlang server
-    private static  OtpNode node = null;
-    private static  OtpMbox mbox = null;
-
-    // snmp4j
-    private static Snmp                snmp4jSession   = null;
-    private static DefaultUdpTransportMapping transport = null;
     private static char[] hexArray = "0123456789ABCDEF".toCharArray();
-    private static Map<String, SnmpmanElement> snmpmanElements =
-        new HashMap<String, SnmpmanElement>();
 
-    // logging
-    private static final int LOG_MAX_BYTES = 10000000; // 10MB
-    private static final int LOG_MAX_FILES = 5;        // 10MB + 5 max 50MB
-    private static final boolean LOG_APPEND = true;
-    private static Logger logger;
+    private static SnmpManager instance;
+    private static final Object lock = new Object();
 
-    public static void main(String[] args)
+    private OtpMbox mbox;
+    private String nodeName;
+    private Snmp snmp4jSession;
+    private Map<String, SnmpmanElement> snmpmanElements;
+    private Logger logger;
+
+    public SnmpManager(final OtpMbox mbox, final String nodeName)
     {
-        // init paths
+        SnmpManager.instance = this;
+        this.snmpmanElements = new HashMap<>();
+        this.nodeName = nodeName;
+        this.mbox = mbox;
+        this.logger = LoggerFactory.getLogger(SnmpManager.class);
+    }
 
-        String logFile = FileSystems
-                        .getDefault()
-                        .getPath(args[0], "log", "snmpman.log")
-                        .toString();
-
-        String propFile = FileSystems
-                        .getDefault()
-                        .getPath(args[0], "etc", "snmpman.properties")
-                        .toString();
-
+    @Override
+    public void run()
+    {
         String engineIdFile = FileSystems
                         .getDefault()
-                        .getPath(args[0], "etc", "engine.id")
+                        .getPath("etc", "engine.id")
                         .toString();
 
-
-        // init logger
-        logger = Logger.getLogger(SnmpManager.class.getName());
-        logger.setLevel(Level.INFO);
-        LogManager.getLogManager().reset();
-
-        FileHandler handler;
-        try {
-            handler = new FileHandler(logFile, LOG_MAX_BYTES, LOG_MAX_FILES, LOG_APPEND);
-            handler.setFormatter(new SimpleFormatter());
-            logger.addHandler(handler);
-        } catch (Exception e) {
-            System.out.println("Log to file will not work! " + e);
-        }
-
-        try
-        {
-            Properties   prop  = new Properties();
-            InputStream input = new FileInputStream(propFile);
-            prop.load(input);
-            selfNodeName     = prop.getProperty("self_name");
-            foreignPidName   = prop.getProperty("foreign_pid");
-            erlangCookie     = prop.getProperty("cookie");
-        }
-        catch(IOException e)
-        {
-            logger.severe("Failed to laod proprety file: " + e.getMessage() + e);
-            return;
-        }
-
-        try
-        {
-            foreignNodeName  = args[1];
-        } catch (Exception e) {
-            logger.severe("Failed to read node name (args[1]): "
-                                                        + e.getMessage() + e);
-            return;
-        }
-
         // may take a wile? /dev/random ?
-        logger.info("build engine id " + foreignNodeName);
-        try
-        {
+        this.logger.info("build engine id " + this.nodeName);
+        try {
             Path engineIdPath = Paths.get(engineIdFile);
-            byte[] engineId = getEngineId(engineIdPath);
-            transport       = new DefaultUdpTransportMapping();
-            snmp4jSession   = new Snmp(transport);
-            USM usm         = new USM(SecurityProtocols.getInstance(), new OctetString(engineId), 0);
+            byte[] engineId = this.getEngineId(engineIdPath);
+            DefaultUdpTransportMapping transport =
+                    new DefaultUdpTransportMapping();
+            this.snmp4jSession = new Snmp(transport);
+            USM usm = new USM(SecurityProtocols.getInstance(),
+                                    new OctetString(engineId), 0);
             SecurityModels.getInstance().addSecurityModel(usm);
             transport.listen();
-        }
-        catch (Exception|Error e)
-        {
-            logger.severe("Failed to build engine id: " + e.getMessage() + e);
+        } catch (Exception|Error e) {
+            this.logger.error(e.toString());
             return;
         }
 
-        logger.info("initialize otp " + foreignNodeName);
-        // Initialize
-        try
-        {
-            logger.info("Trying to connect to " + foreignNodeName);
-            node = new OtpNode(selfNodeName, erlangCookie);
-            mbox = node.createMbox();
-            if (!node.ping(foreignNodeName, 2000))
-            {
-                logger.info("Connection timed out");
-                return;
-            }
-        }
-        catch (IOException e)
-        {
-            logger.severe("otp initialization failure: " + e.getMessage() + e);
-            return;
-        }
-
-        logger.info("aknownledge otp" + foreignNodeName);
-        // when it is ok, inform the erl snmpman process
-        acknowledgeOtpConnexion();
-
-        logger.info("begin to loop" + foreignNodeName);
+        this.logger.info("begin to loop " + this.nodeName);
         // then begin to loop and wait for calls
-        OtpErlangObject call = null;
+        OtpErlangObject call;
         while (true) try
         {
-            call = mbox.receive();
-            handleMsg(call);
+            call = this.mbox.receive();
+            this.handleMsg(call);
         }
-        catch (OtpErlangExit e)
+        catch (OtpErlangExit|OtpErlangDecodeException e)
         {
-            logger.info("Quit?" + e.getMessage() + e);
+            this.logger.error(e.toString());
             break;
-        }
-        catch (OtpErlangDecodeException e)
-        {
-            logger.warning("Decode exception: " + e.getMessage() + e);
         }
     }
 
-    private static byte[] getEngineId(Path path) throws Exception, Error
+    private byte[] getEngineId(Path path) throws Exception, Error
     {
-        if (Files.isRegularFile(path) == true)
-        {
+        if (Files.isRegularFile(path)) {
             byte[] engineIdDump = Files.readAllBytes(path);
             String engineIdHex = new String(engineIdDump, "UTF-8");
-            byte[] engineId = hexStringToBytes(engineIdHex);
-            return engineId;
-        }
-        else
-        {
-            byte[] engineId     = MPv3.createLocalEngineID();
-            String engineIdHex  = bytesToHexString(engineId);
+            return SnmpManager.hexStringToBytes(engineIdHex);
+        } else {
+            byte[] engineId = MPv3.createLocalEngineID();
+            String engineIdHex = SnmpManager.bytesToHexString(engineId);
             byte[] engineIdDump = engineIdHex.getBytes("UTF-8");
             Files.write(path, engineIdDump);
             return engineId;
         }
-    }
-
-    private static void acknowledgeOtpConnexion()
-    {
-        OtpErlangObject[] msg = new OtpErlangObject[2];
-        msg[0] = mbox.self();
-        msg[1] = new OtpErlangAtom("snmp4j_running");
-
-        OtpErlangTuple tuple  = new OtpErlangTuple(msg);
-
-        synchronized(mbox)
-        {
-            mbox.send(foreignPidName, foreignNodeName, tuple);
-        }
-
     }
 
     /**
@@ -262,35 +162,34 @@ public class SnmpManager
      * Used by SnmpmanResponseListener SnmpmanTreeListener and SnmpmanTableListener
      * which are executed in the asynchroneously in another thread.
      */
-    public static void sendReply(OtpErlangObject to, OtpErlangObject msg)
+    public static void sendReply(
+            final OtpErlangObject to, final OtpErlangObject msg)
     {
         OtpErlangObject[] obj = new OtpErlangObject[3];
-        obj[0] = atomReply;
+        obj[0] = SnmpManager.atomReply;
         obj[1] = to;
         obj[2] = msg;
         OtpErlangTuple tuple = new OtpErlangTuple(obj);
-        synchronized(mbox)
+        synchronized(SnmpManager.lock)
         {
-            mbox.send(foreignPidName, foreignNodeName, tuple);
+            SnmpManager.instance.mbox.send(
+                    "snmpman", SnmpManager.instance.nodeName, tuple);
         }
     }
 
-    private static void handleMsg(OtpErlangObject msg)
+    private void handleMsg(final OtpErlangObject msg)
     {
         OtpErlangTuple  tuple;
         OtpErlangAtom   command;
         OtpErlangObject caller;
         OtpErlangTuple  payload;
-        try
-        {
+        try {
             tuple       = (OtpErlangTuple) msg;
             command     = (OtpErlangAtom)   (tuple.elementAt(0));
-            caller      = (OtpErlangObject) (tuple.elementAt(1));
+            caller      =                   (tuple.elementAt(1));
             payload     = (OtpErlangTuple)  (tuple.elementAt(2));
-        }
-        catch (Exception|Error e)
-        {
-            logger.warning("Failed to decode tuple: " + e.getMessage() + e);
+        } catch (Exception|Error e) {
+            this.logger.warn(e.toString());
             return;
         }
 
@@ -299,49 +198,48 @@ public class SnmpManager
             switch (command.toString())
             {
                 case "get":
-                    handleGet(caller, payload);
+                    this.handleGet(caller, payload);
                     break;
 
                 case "walk_tree":
-                    handleWalkTree(caller, payload);
+                    this.handleWalkTree(caller, payload);
                     break;
 
                 case "walk_table":
-                    handleWalkTable(caller, payload);
+                    this.handleWalkTable(caller, payload);
                     break;
 
                 case "discovery":
-                    handleDiscovery(caller, payload);
+                    this.handleDiscovery(caller, payload);
                     break;
 
                 case "register_element":
-                    handleRegisterElement(caller, payload);
+                    this.handleRegisterElement(caller, payload);
                     break;
 
                 case "unregister_element":
-                    handleUnregisterElement(caller, payload);
+                    this.handleUnregisterElement(caller, payload);
                     break;
 
                 case "which_elements":
-                    handleWhichElements(caller);
+                    this.handleWhichElements(caller);
                     break;
 
                 case "which_usm_users":
-                    handleWhichUSMUsers(caller);
+                    this.handleWhichUSMUsers(caller);
                     break;
                 default:
                     throw new Exception("Unknown command: " + command.toString());
             }
-        }
-        catch (Exception|Error e)
-        {
-            OtpErlangTuple reply = buildErrorReply(
-                new OtpErlangString("Java CATCH: Failed to honour command "
-                    + command.toString() + " -> " + e.getMessage())
+
+        } catch (Exception|Error e) {
+
+            OtpErlangTuple reply = SnmpManager.buildErrorReply(
+                    new OtpErlangString("Java CATCH: Failed to honour command "
+                            + command.toString() + " -> " + e.getMessage())
             );
-            logger.warning("Failed to honour command: " + command.toString() +
-                                                           e.getMessage() + e);
-            sendReply(caller, reply);
+            this.logger.warn(e.toString());
+            SnmpManager.sendReply(caller, reply);
         }
     }
 
@@ -349,16 +247,17 @@ public class SnmpManager
      * Register a new element.
      * High level API form snmpman.
      */
-    private static void handleRegisterElement(
-            OtpErlangObject caller, OtpErlangTuple confTuple) throws Exception, Error
+    private void handleRegisterElement(
+            final OtpErlangObject caller,
+            final OtpErlangTuple confTuple) throws Exception, Error
     {
-        RegisterArgs registerArgs   = new RegisterArgs(confTuple);
-        SnmpmanElement element      = new SnmpmanElement();
+        RegisterArgs registerArgs = new RegisterArgs(confTuple);
+        SnmpmanElement element = new SnmpmanElement();
 
-        if (snmpmanElements.get(registerArgs.elementName) != null)
-        {
-            OtpErlangTuple reply = buildErrorReply(atomTargetExist);
-            sendReply(caller, reply);
+        if (this.snmpmanElements.get(registerArgs.elementName) != null) {
+            OtpErlangTuple reply =
+                    SnmpManager.buildErrorReply(SnmpManager.atomTargetExist);
+            SnmpManager.sendReply(caller, reply);
             return;
         }
 
@@ -367,25 +266,22 @@ public class SnmpManager
             case "3":
                 element.setTarget(generateTarget(registerArgs));
                 element.setName(registerArgs.elementName);
-                if (registerUSMUser(registerArgs) == true)
-                {
-                    snmpmanElements.put(element.getName(), element);
-                    sendReply(caller, atomOk);
+                if (registerUSMUser(registerArgs)) {
+                    this.snmpmanElements.put(element.getName(), element);
+                    SnmpManager.sendReply(caller, atomOk);
                     break;
-                }
-                else
-                {
-                    OtpErlangTuple reply = buildErrorReply(
-                        new OtpErlangString("USM user definition do not match a predefined entry")
+                } else {
+                    OtpErlangTuple reply = SnmpManager.buildErrorReply(
+                            new OtpErlangString("USM user definition do not match a predefined entry")
                     );
-                    sendReply(caller, reply);
+                    SnmpManager.sendReply(caller, reply);
                     break;
                 }
             default:
-                element.setTarget(generateTarget(registerArgs));
+                element.setTarget(this.generateTarget(registerArgs));
                 element.setName(registerArgs.elementName);
-                snmpmanElements.put(element.getName(), element);
-                sendReply(caller, atomOk);
+                this.snmpmanElements.put(element.getName(), element);
+                SnmpManager.sendReply(caller, atomOk);
                 break;
         }
     }
@@ -396,46 +292,49 @@ public class SnmpManager
      * High level API form snmpman. Delete the target and for snmp v3, the
      * localized USM user from the USM table.
      */
-    private static void handleUnregisterElement(
-            OtpErlangObject caller, OtpErlangTuple unregArg) throws Exception, Error
+    private void handleUnregisterElement(
+            final OtpErlangObject caller,
+            final OtpErlangTuple unregArg) throws Exception, Error
     {
         OtpErlangString elementName = (OtpErlangString) (unregArg.elementAt(0));
-        SnmpmanElement element = snmpmanElements.remove(elementName.stringValue());
+        SnmpmanElement element =
+                this.snmpmanElements.remove(elementName.stringValue());
 
-        if (element == null)
-        {
-            sendReply(caller, buildErrorReply(atomUnknownTarget));
+        if (element == null) {
+            SnmpManager.sendReply(caller,
+                    SnmpManager.buildErrorReply(SnmpManager.atomUnknownTarget));
             return;
         }
 
-        if (element.getTarget().getVersion() == SnmpConstants.version3)
-        {
-            OctetString secUser     = element.getSecurityName();
+        if (element.getTarget().getVersion() == SnmpConstants.version3) {
+            OctetString secUser = element.getSecurityName();
             boolean deleteUsm = true;
-            for (Map.Entry<String, SnmpmanElement> remaining: snmpmanElements.entrySet())
+            for (Map.Entry<String, SnmpmanElement> remaining:
+                                        this.snmpmanElements.entrySet())
             {
                 if (remaining.getValue().getSecurityName().equals(secUser)) {
                     deleteUsm = false;
                     break;
                 }
             }
-            if (deleteUsm == true)
-            {
-                snmp4jSession.getUSM().removeAllUsers(secUser);
+            if (deleteUsm) {
+                this.snmp4jSession.getUSM().removeAllUsers(secUser);
             }
         }
 
-        sendReply(caller, atomOk);
+        SnmpManager.sendReply(caller, atomOk);
     }
 
-    private static void handleGet(
-            OtpErlangObject caller, OtpErlangTuple tuple) throws Exception, Error
+    private void handleGet(
+            final OtpErlangObject caller,
+            final OtpErlangTuple tuple) throws Exception, Error
     {
-        OtpErlangString elementName     = (OtpErlangString) (tuple.elementAt(0));
-        OtpErlangList oidList           = (OtpErlangList) (tuple.elementAt(1));
+        OtpErlangString elementName = (OtpErlangString) (tuple.elementAt(0));
+        OtpErlangList oidList = (OtpErlangList) (tuple.elementAt(1));
 
-        if (snmpmanElements.containsKey(elementName.stringValue()) == false) {
-            sendReply(caller, buildErrorReply(atomUnknownTarget));
+        if (!this.snmpmanElements.containsKey(elementName.stringValue())) {
+            SnmpManager.sendReply(caller,
+                    SnmpManager.buildErrorReply(SnmpManager.atomUnknownTarget));
             return;
         }
 
@@ -445,28 +344,25 @@ public class SnmpManager
         {
             OtpErlangString oidString = (OtpErlangString) (oidList.elementAt(i));
             OID oid = new OID(oidString.stringValue());
-            if (oid.isValid() == false)
+            if (!oid.isValid())
             {
                 sendReply(caller,
-                    buildErrorReply(
-                        new OtpErlangString(
-                            "invalid OID: " + oidString.stringValue()
+                    SnmpManager.buildErrorReply(
+                            new OtpErlangString(
+                                    "invalid OID: " + oidString.stringValue()
                             )
-                        )
+                    )
                     );
                 return;
             }
             oidFinalList[i] = oid;
         }
 
-        Target  target  = snmpmanElements.get(elementName.stringValue()).getTarget();
-        PDU     pdu     = null;
-        if (target.getVersion() == SnmpConstants.version3)
-        {
+        Target target = this.snmpmanElements.get(elementName.stringValue()).getTarget();
+        PDU pdu;
+        if (target.getVersion() == SnmpConstants.version3) {
             pdu = new ScopedPDU();
-        }
-        else
-        {
+        } else {
             pdu = new PDU();
         }
         pdu.setType(PDU.GET);
@@ -477,15 +373,15 @@ public class SnmpManager
         }
 
         ResponseListener listener = new SnmpmanResponseListener(caller);
-        snmp4jSession.send(pdu, target, null, listener);
+        this.snmp4jSession.send(pdu, target, null, listener);
     }
 
 
-    private static boolean registerUSMUser(
-            RegisterArgs registerArgs) throws Exception, Error
+    private boolean registerUSMUser(
+            final RegisterArgs registerArgs) throws Exception, Error
     {
 
-        OID authProtoOid = null;
+        OID authProtoOid;
         switch (registerArgs.authProto)
         {
             case "SHA": authProtoOid = AuthSHA.ID; break;
@@ -494,7 +390,7 @@ public class SnmpManager
                 throw new Exception("Unknown authentication protocol");
         }
 
-        OID privProtoOid = null;
+        OID privProtoOid;
         switch (registerArgs.privProto)
         {
             case "AES":         privProtoOid = PrivAES128.ID; break;
@@ -508,9 +404,6 @@ public class SnmpManager
                 throw new Exception("Unknown private protocol");
         }
 
-        SecurityProtocols secProtocols = SecurityProtocols.getInstance();
-
-
         OctetString uName = new OctetString(registerArgs.secName);
         UsmUser newUsmUser = new UsmUser(
             uName,
@@ -520,46 +413,39 @@ public class SnmpManager
             new OctetString (registerArgs.privKey)
         );
 
-        UsmUserEntry existUsmUser = snmp4jSession.getUSM().getUserTable().getUser(uName);
-        if (existUsmUser == null)
-        {
-            snmp4jSession.getUSM().addUser(newUsmUser);
+        UsmUserEntry existUsmUser =
+                    this.snmp4jSession.getUSM().getUserTable().getUser(uName);
+
+        if (existUsmUser == null) {
+            this.snmp4jSession.getUSM().addUser(newUsmUser);
             return true;
-        }
-        else // usm user exist
-        {
-            if (usmUsersEquals(existUsmUser.getUsmUser(), newUsmUser) == true)
-            {
+        }  else { // usm user exist
+            if (this.usmUsersEquals(existUsmUser.getUsmUser(), newUsmUser)) {
                 // same user, do nothing
                 return true;
-            }
-            else
-            {
+            } else {
                 // same user but different config, it is an error
                 return false;
             }
         }
     }
 
-    private static boolean usmUsersEquals(UsmUser a, UsmUser b)
+    private boolean usmUsersEquals(UsmUser a, UsmUser b)
     {
-        if (a.toString().equals(b.toString()))
-        {
+        if (a.toString().equals(b.toString())) {
             return true;
-        }
-        else
-        {
+        } else {
             return false;
         }
     }
 
-    private static AbstractTarget generateTarget(
-                RegisterArgs registerArgs) throws Exception, Error
+    private AbstractTarget generateTarget(
+                final RegisterArgs registerArgs) throws Exception, Error
     {
         Address targetAddress = GenericAddress.parse(
                 "udp:" + registerArgs.host + "/" + registerArgs.ipPort);
 
-        int securityLevelConst = 0;
+        int securityLevelConst;
         switch (registerArgs.secLevel)
         {
             case "authPriv":
@@ -599,46 +485,45 @@ public class SnmpManager
         }
     }
 
-    private static void handleDiscovery(
-            OtpErlangObject caller, OtpErlangTuple tuple) throws Exception, Error
+    private void handleDiscovery(
+            final OtpErlangObject caller,
+            final OtpErlangTuple tuple) throws Exception, Error
     {
-        OtpErlangString targetIp        = (OtpErlangString) (tuple.elementAt(0));
-        OtpErlangLong   targetPort      = (OtpErlangLong)   (tuple.elementAt(2));
-        OtpErlangLong   timeout         = (OtpErlangLong)   (tuple.elementAt(3));
+        OtpErlangString targetIp = (OtpErlangString) (tuple.elementAt(0));
+        OtpErlangLong targetPort = (OtpErlangLong)   (tuple.elementAt(2));
+        OtpErlangLong timeout =    (OtpErlangLong)   (tuple.elementAt(3));
 
         Address targetAddress = GenericAddress.parse(
                 "udp:" + targetIp.stringValue() + "/" + targetPort.intValue());
 
-        byte[] engineId = snmp4jSession.discoverAuthoritativeEngineID(
-                targetAddress, timeout.intValue());
-        if (engineId == null)
-        {
-            sendReply(caller, buildErrorReply(atomTimeout));
-        }
-        else
-        {
-            String hexEngineID = bytesToHexString(engineId);
+        byte[] engineId = this.snmp4jSession.discoverAuthoritativeEngineID(
+                                            targetAddress, timeout.intValue());
+        if (engineId == null) {
+            SnmpManager.sendReply(
+                    caller, SnmpManager.buildErrorReply(SnmpManager.atomTimeout));
+        } else {
+            String hexEngineID = SnmpManager.bytesToHexString(engineId);
             OtpErlangString hexString = new OtpErlangString(hexEngineID);
-            sendReply(caller, buildOkReply(hexString));
+            sendReply(caller, SnmpManager.buildOkReply(hexString));
         }
     }
 
-    private static void handleWalkTable(
-            OtpErlangObject caller, OtpErlangTuple tuple) throws Exception, Error
+    private void handleWalkTable(
+            final OtpErlangObject caller,
+            final OtpErlangTuple tuple) throws Exception, Error
     {
-        OtpErlangString elementName     = (OtpErlangString) (tuple.elementAt(0));
-        OtpErlangList   oidList         = (OtpErlangList)   (tuple.elementAt(1));
+        OtpErlangString elementName = (OtpErlangString) (tuple.elementAt(0));
+        OtpErlangList oidList =       (OtpErlangList)   (tuple.elementAt(1));
 
 
 
-        if (snmpmanElements.containsKey(elementName.stringValue()) == false)
-        {
-            sendReply(caller, buildErrorReply(atomUnknownTarget));
+        if (!this.snmpmanElements.containsKey(elementName.stringValue())) {
+            SnmpManager.sendReply(caller, SnmpManager.buildErrorReply(atomUnknownTarget));
             return;
         }
 
-        OtpErlangObject[]   elements    = oidList.elements();
-        OID[]               columnOIDs  = new OID[elements.length];
+        OtpErlangObject[] elements    = oidList.elements();
+        OID[]             columnOIDs  = new OID[elements.length];
 
         for (int i=0; i<elements.length; i++)
         {
@@ -646,12 +531,14 @@ public class SnmpManager
             columnOIDs[i] = new OID(val.stringValue());
         }
 
-        OID     lowerBoundIndex = null;
-        OID     upperBoundIndex = null;
+        OID lowerBoundIndex = null;
+        OID upperBoundIndex = null;
 
-        Target target = snmpmanElements.get(elementName.stringValue()).getTarget();
+        Target target =
+                this.snmpmanElements.get(elementName.stringValue()).getTarget();
 
-        TableUtils tableUtils = new TableUtils(snmp4jSession, new GetNextPDUFactory());
+        TableUtils tableUtils =
+                new TableUtils(this.snmp4jSession, new GetNextPDUFactory());
 
         TableListener listener = new SnmpmanTableListener(caller);
         tableUtils.getTable(target, columnOIDs,
@@ -659,53 +546,56 @@ public class SnmpManager
     }
 
 
-    private static void handleWalkTree(
-            OtpErlangObject caller, OtpErlangTuple tuple) throws Exception, Error
+    private void handleWalkTree(
+            final OtpErlangObject caller,
+            final OtpErlangTuple tuple) throws Exception, Error
     {
-        OtpErlangString elementName     = (OtpErlangString) (tuple.elementAt(0));
-        OtpErlangString oidString       = (OtpErlangString) (tuple.elementAt(1));
+        OtpErlangString elementName = (OtpErlangString) (tuple.elementAt(0));
+        OtpErlangString oidString   = (OtpErlangString) (tuple.elementAt(1));
 
-        if (snmpmanElements.containsKey(elementName.stringValue()) == false)
-        {
-            sendReply(caller, buildErrorReply(atomUnknownTarget));
+        if (!snmpmanElements.containsKey(elementName.stringValue())) {
+            SnmpManager.sendReply(caller, SnmpManager.buildErrorReply(atomUnknownTarget));
             return;
         }
 
         OID walkOid = new OID(oidString.stringValue());
-        if (walkOid.isValid() == false)
-        {
-            OtpErlangTuple objTuple = buildErrorReply(
-                new OtpErlangString("invalid OID: " + oidString.stringValue())
+        if (!walkOid.isValid()) {
+            OtpErlangTuple objTuple = SnmpManager.buildErrorReply(
+                    new OtpErlangString("invalid OID: " + oidString.stringValue())
             );
-            sendReply(caller, objTuple);
+            SnmpManager.sendReply(caller, objTuple);
             return;
         }
 
-        Target target = snmpmanElements.get(elementName.stringValue()).getTarget();
-        TreeUtils treeUtils = new TreeUtils(snmp4jSession, new GetNextPDUFactory());
+        Target target =
+                this.snmpmanElements.get(elementName.stringValue()).getTarget();
+        TreeUtils treeUtils =
+                new TreeUtils(this.snmp4jSession, new GetNextPDUFactory());
         TreeListener treeListener = new SnmpmanTreeListener(caller);
         treeUtils.getSubtree(target, walkOid, null, treeListener);
     }
 
-    private static void handleWhichElements(OtpErlangObject caller) throws Exception, Error
+    private void handleWhichElements(
+            final OtpErlangObject caller) throws Exception, Error
     {
-        int size = snmpmanElements.size();
+        int size = this.snmpmanElements.size();
         OtpErlangObject[] replyObj = new OtpErlangObject[size];
         int i = 0;
-        for (String key: snmpmanElements.keySet())
+        for (String key: this.snmpmanElements.keySet())
         {
             replyObj[i] = new OtpErlangString(key);
             i += 1;
         }
         OtpErlangList replyList = new OtpErlangList(replyObj);
 
-        sendReply(caller, buildOkReply(replyList));
+        SnmpManager.sendReply(caller, SnmpManager.buildOkReply(replyList));
     }
 
-    private static void handleWhichUSMUsers(OtpErlangObject caller) throws Exception, Error
+    private void handleWhichUSMUsers(
+            final OtpErlangObject caller) throws Exception, Error
     {
         List<UsmUserEntry> usmUsers =
-            snmp4jSession.getUSM().getUserTable().getUserEntries();
+            this.snmp4jSession.getUSM().getUserTable().getUserEntries();
 
         int size = usmUsers.size();
         OtpErlangObject[] replyObj = new OtpErlangObject[size];
@@ -716,20 +606,15 @@ public class SnmpManager
                 new OtpErlangString(usmUsers.get(i).getUserName().toString());
         }
         OtpErlangList replyList = new OtpErlangList(replyObj);
-        sendReply(caller, buildOkReply(replyList));
+        SnmpManager.sendReply(caller, SnmpManager.buildOkReply(replyList));
     }
-
-
-
-
 
     public static OtpErlangTuple buildOkReply(OtpErlangObject msg)
     {
         OtpErlangObject[] valObj   = new OtpErlangObject[2];
         valObj[0] = atomOk;
         valObj[1] = msg;
-        OtpErlangTuple valTuple = new OtpErlangTuple(valObj);
-        return valTuple;
+        return new OtpErlangTuple(valObj);
     }
 
     public static OtpErlangTuple buildErrorReply(OtpErlangObject msg)
@@ -737,11 +622,11 @@ public class SnmpManager
         OtpErlangObject[] valObj   = new OtpErlangObject[2];
         valObj[0] = atomError;
         valObj[1] = msg;
-        OtpErlangTuple valTuple = new OtpErlangTuple(valObj);
-        return valTuple;
+        return new OtpErlangTuple(valObj);
     }
 
-    public static OtpErlangTuple buildBindsTuple(ArrayList<OtpErlangTuple> bindsAcc)
+    public static OtpErlangTuple buildBindsTuple(
+            final ArrayList<OtpErlangTuple> bindsAcc)
     {
         int vbSize = bindsAcc.size();
         OtpErlangTuple[] bindsAcc1 = new OtpErlangTuple[vbSize];
@@ -756,15 +641,15 @@ public class SnmpManager
 
         // generate reply vbs = {varbinds, [varbind]}
         OtpErlangObject[] vbValObj   = new OtpErlangObject[2];
-        vbValObj[0] = atomVarbinds;
+        vbValObj[0] = SnmpManager.atomVarbinds;
         vbValObj[1] = allBinds;
         OtpErlangTuple vbValTuple = new OtpErlangTuple(vbValObj);
 
-
-        return buildOkReply(vbValTuple);
+        return SnmpManager.buildOkReply(vbValTuple);
     }
 
-    public static OtpErlangTuple buildTableTuple(ArrayList<OtpErlangTuple> bindsAcc)
+    public static OtpErlangTuple buildTableTuple(
+            final ArrayList<OtpErlangTuple> bindsAcc)
     {
         int vbSize = bindsAcc.size();
         OtpErlangTuple[] bindsAcc1 = new OtpErlangTuple[vbSize];
@@ -779,12 +664,11 @@ public class SnmpManager
 
         // generate reply vbs = {varbinds, [varbind]}
         OtpErlangObject[] vbValObj   = new OtpErlangObject[2];
-        vbValObj[0] = atomTable;
+        vbValObj[0] = SnmpManager.atomTable;
         vbValObj[1] = allBinds;
         OtpErlangTuple vbValTuple = new OtpErlangTuple(vbValObj);
 
-
-        return buildOkReply(vbValTuple);
+        return SnmpManager.buildOkReply(vbValTuple);
     }
 
 
@@ -869,8 +753,8 @@ public class SnmpManager
         for (int j=0; j<bytes.length; j++)
         {
             int v = bytes[j] & 0xFF;
-            hexChars[j * 2] = hexArray[v >>> 4];
-            hexChars[j * 2 + 1] = hexArray[v & 0x0F];
+            hexChars[j * 2] = SnmpManager.hexArray[v >>> 4];
+            hexChars[j * 2 + 1] = SnmpManager.hexArray[v & 0x0F];
         }
         return new String(hexChars);
     }
@@ -878,14 +762,13 @@ public class SnmpManager
 
 class SnmpmanElement
 {
-    private AbstractTarget   target         = null;
-    private OctetString      securityName   = null;
-    private String           targetName     = null;
+    private AbstractTarget target;
+    private OctetString securityName;
+    private String targetName;
 
     // target get and set
-    public void setTarget(AbstractTarget aTarget)
-    {
-        this.target = aTarget;
+    public void setTarget(AbstractTarget target) {
+        this.target = target;
         this.securityName = this.target.getSecurityName();
     }
 
@@ -899,7 +782,6 @@ class SnmpmanElement
         return this.securityName;
     }
 
-    // targetName get and set
     public void setName(String name)
     {
         this.targetName = name;
@@ -929,7 +811,7 @@ class RegisterArgs
     public int    retries;
     public int    timeout;
 
-    public RegisterArgs(OtpErlangTuple confTuple) throws Exception, Error
+    public RegisterArgs(final OtpErlangTuple confTuple) throws Exception, Error
     {
         OtpErlangString erlElementName =
             (OtpErlangString) (confTuple.elementAt(1));
@@ -958,29 +840,28 @@ class RegisterArgs
         OtpErlangString erlPrivKey  =
             (OtpErlangString) (confTuple.elementAt(13));
 
-        elementName = erlElementName.stringValue();
-        host        = erlHost.stringValue();
-        snmpVersion = erlSnmpVersion.stringValue();
-        secLevel    = erlSecLevel.stringValue();
-        secName     = erlSecName.stringValue();
-        community   = erlCommunity.stringValue();
-        authProto   = erlAuthProto.stringValue();
-        authKey     = erlAuthKey.stringValue();
-        privProto   = erlPrivProto.stringValue();
-        privKey     = erlPrivKey.stringValue();
-        ipPort      = erlIpPort.intValue();
-        retries     = erlRetries.intValue();
-        timeout     = erlTimeout.intValue();
+        this.elementName = erlElementName.stringValue();
+        this.host        = erlHost.stringValue();
+        this.snmpVersion = erlSnmpVersion.stringValue();
+        this.secLevel    = erlSecLevel.stringValue();
+        this.secName     = erlSecName.stringValue();
+        this.community   = erlCommunity.stringValue();
+        this.authProto   = erlAuthProto.stringValue();
+        this.authKey     = erlAuthKey.stringValue();
+        this.privProto   = erlPrivProto.stringValue();
+        this.privKey     = erlPrivKey.stringValue();
+        this.ipPort      = erlIpPort.intValue();
+        this.retries     = erlRetries.intValue();
+        this.timeout     = erlTimeout.intValue();
     }
 }
 
 class SnmpmanResponseListener implements ResponseListener
 {
-    private OtpErlangObject to = null;
+    private OtpErlangObject to;
 
-    public  SnmpmanResponseListener(OtpErlangObject caller)
-    {
-        to = caller;
+    public  SnmpmanResponseListener(final OtpErlangObject to) {
+        this.to = to;
     }
 
     public void onResponse(ResponseEvent event)
@@ -1003,7 +884,7 @@ class SnmpmanResponseListener implements ResponseListener
         else
         {
             Vector<? extends VariableBinding> vbs = rep.getVariableBindings();
-            ArrayList<OtpErlangTuple> bindsAcc = new ArrayList<OtpErlangTuple>();
+            ArrayList<OtpErlangTuple> bindsAcc = new ArrayList<>();
             for (VariableBinding vbv: vbs)
             {
                 String   oidVal = vbv.getOid().toString();
@@ -1026,20 +907,20 @@ class SnmpmanResponseListener implements ResponseListener
 
 class SnmpmanTreeListener implements TreeListener
 {
-    private final long       startTime  = System.nanoTime();
-    private boolean          finished   = false;
-    private OtpErlangObject  to         = null;
-    private ArrayList<OtpErlangTuple> bindsAcc = new ArrayList<OtpErlangTuple>();
+    private boolean finished;
+    private OtpErlangObject to;
+    private ArrayList<OtpErlangTuple> bindsAcc;
 
-    public SnmpmanTreeListener(OtpErlangObject caller)
+    public SnmpmanTreeListener(OtpErlangObject to)
     {
-        to = caller;
+        this.to = to;
+        this.finished = false;
+        this.bindsAcc = new ArrayList<>();
     }
 
     public boolean next(TreeEvent event)
     {
-        if (event.getVariableBindings() != null)
-        {
+        if (event.getVariableBindings() != null) {
             VariableBinding[] vbs = event.getVariableBindings();
             for (VariableBinding vb : vbs)
             {
@@ -1054,7 +935,7 @@ class SnmpmanTreeListener implements TreeListener
                 a1[2] = new OtpErlangInt(syntax);
                 a1[3] = varObj;
                 OtpErlangTuple encapTuple = new OtpErlangTuple(a1);
-                bindsAcc.add(encapTuple);
+                this.bindsAcc.add(encapTuple);
             }
         }
         return true;
@@ -1062,31 +943,27 @@ class SnmpmanTreeListener implements TreeListener
 
     public void finished(TreeEvent event)
     {
-        if (event.getStatus() == RetrievalEvent.STATUS_EXCEPTION)
-        {
+        if (event.getStatus() == RetrievalEvent.STATUS_EXCEPTION) {
             SnmpManager.sendReply(to,
                     SnmpManager.buildErrorReply(SnmpManager.atomException));
-        }
-        else if (event.getStatus() == RetrievalEvent.STATUS_OK)
-        {
-            SnmpManager.sendReply(to, SnmpManager.buildBindsTuple(bindsAcc));
-        }
-        else if (event.getStatus() == RetrievalEvent.STATUS_REPORT)
-        {
+
+        } else if (event.getStatus() == RetrievalEvent.STATUS_OK) {
+            SnmpManager.sendReply(to,
+                    SnmpManager.buildBindsTuple(this.bindsAcc));
+
+        } else if (event.getStatus() == RetrievalEvent.STATUS_REPORT) {
             OtpErlangObject[] snmpReply = new OtpErlangObject[2];
             snmpReply[0]    = SnmpManager.atomReport;
             snmpReply[1]    = SnmpManager.getReport(event.getReportPDU());
             OtpErlangTuple snmpReplyTuple = new OtpErlangTuple(snmpReply);
             SnmpManager.sendReply(to,
                     SnmpManager.buildErrorReply(snmpReplyTuple));
-        }
-        else if (event.getStatus() == RetrievalEvent.STATUS_TIMEOUT)
-        {
+
+        } else if (event.getStatus() == RetrievalEvent.STATUS_TIMEOUT) {
             SnmpManager.sendReply(to,
                     SnmpManager.buildErrorReply(SnmpManager.atomTimeout));
-        }
-        else if (event.getStatus() == RetrievalEvent.STATUS_WRONG_ORDER)
-        {
+
+        } else if (event.getStatus() == RetrievalEvent.STATUS_WRONG_ORDER) {
             SnmpManager.sendReply(to,
                     SnmpManager.buildErrorReply(SnmpManager.atomWrongOrder));
         }
@@ -1103,13 +980,15 @@ class SnmpmanTreeListener implements TreeListener
 
 class SnmpmanTableListener implements TableListener
 {
-    private boolean         finished;
-    private OtpErlangObject to       = null;
-    private ArrayList<OtpErlangTuple> tableAcc = new ArrayList<OtpErlangTuple>();
+    private boolean finished;
+    private OtpErlangObject to;
+    private ArrayList<OtpErlangTuple> tableAcc;
 
-    public SnmpmanTableListener(OtpErlangObject replyTo)
+    public SnmpmanTableListener(OtpErlangObject to)
     {
-        to = replyTo;
+        this.finished = false;
+        this.to = to;
+        this.tableAcc = new ArrayList<>();
     }
 
     public boolean next(TableEvent event)
@@ -1124,42 +1003,38 @@ class SnmpmanTableListener implements TableListener
             tableRow[i+1] = SnmpManager.getValue(vbs[i]);
         }
         OtpErlangTuple tupleRow = new OtpErlangTuple(tableRow);
-        tableAcc.add(tupleRow);
+        this.tableAcc.add(tupleRow);
         return true;
     }
 
     public void finished(TableEvent event)
     {
-        if (event.getStatus() == RetrievalEvent.STATUS_EXCEPTION)
-        {
+        if (event.getStatus() == RetrievalEvent.STATUS_EXCEPTION) {
             SnmpManager.sendReply(to,
                     SnmpManager.buildErrorReply(SnmpManager.atomException));
-        }
-        else if (event.getStatus() == RetrievalEvent.STATUS_OK)
-        {
+
+        } else if (event.getStatus() == RetrievalEvent.STATUS_OK) {
             SnmpManager.sendReply(to,
-                    SnmpManager.buildTableTuple(tableAcc));
-        }
-        else if (event.getStatus() == RetrievalEvent.STATUS_REPORT)
-        {
+                    SnmpManager.buildTableTuple(this.tableAcc));
+
+        } else if (event.getStatus() == RetrievalEvent.STATUS_REPORT) {
             OtpErlangObject[] snmpReply = new OtpErlangObject[2];
             snmpReply[0]    = SnmpManager.atomReport;
             snmpReply[1]    = SnmpManager.getReport(event.getReportPDU());
             OtpErlangTuple snmpReplyTuple = new OtpErlangTuple(snmpReply);
             SnmpManager.sendReply(to,
                     SnmpManager.buildErrorReply(snmpReplyTuple));
-        }
-        else if (event.getStatus() == RetrievalEvent.STATUS_TIMEOUT)
-        {
+
+        } else if (event.getStatus() == RetrievalEvent.STATUS_TIMEOUT) {
             SnmpManager.sendReply(to,
                     SnmpManager.buildErrorReply(SnmpManager.atomTimeout));
-        }
-        else if (event.getStatus() == RetrievalEvent.STATUS_WRONG_ORDER)
-        {
+
+        } else if (event.getStatus() == RetrievalEvent.STATUS_WRONG_ORDER) {
             SnmpManager.sendReply(to,
                     SnmpManager.buildErrorReply(SnmpManager.atomWrongOrder));
         }
-        finished = true;
+
+        this.finished = true;
     }
 
     public boolean isFinished()
