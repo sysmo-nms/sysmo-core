@@ -4,6 +4,7 @@ subprojects {
     apply plugin: 'findbugs'
     apply plugin: 'jdepend'
 
+    sourceCompatibility = 1.7
     repositories {
         mavenCentral()
 

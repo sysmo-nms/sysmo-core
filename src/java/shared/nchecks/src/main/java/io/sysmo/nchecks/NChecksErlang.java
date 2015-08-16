@@ -103,7 +103,7 @@ public class NChecksErlang implements Runnable
                 20, // max pool size
                 60, // return to base after
                 TimeUnit.MINUTES,
-                new ArrayBlockingQueue<>(2000), // queue capacity
+                new ArrayBlockingQueue<Runnable>(2000), // queue capacity
                 new NChecksPoolReject());
 
         // initialize special CheckICMP class

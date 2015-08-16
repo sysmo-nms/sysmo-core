@@ -112,7 +112,7 @@ public class RrdLogger implements Runnable
             20, // max pool size
             60, // wait 60 minutes before going to initial
             TimeUnit.MINUTES,
-            new ArrayBlockingQueue<>(2000), // queue capacity
+            new ArrayBlockingQueue<Runnable>(2000), // queue capacity
             new RrdReject()
         );
         this.rrdDbPool = RrdDbPool.getInstance();
