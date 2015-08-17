@@ -21,7 +21,6 @@
 % @private
 -module(monitor).
 -include("include/monitor.hrl").
--include_lib("equartz/include/equartz.hrl").
 -include_lib("common_hrl/include/logs.hrl").
 
 -export([
@@ -95,7 +94,7 @@ new_job(Function, Target) ->
 
 
 fire_job(JobId) ->
-    case (catch equartz:fire_now(JobId)) of
+    case (catch monitor_scheduler:fire_now(JobId)) of
         {_ERROR, _} = Err -> % _ERROR = 'EXIT' | timeout
             ?LOG_ERROR("fire_job failure", Err);
         ok -> ok

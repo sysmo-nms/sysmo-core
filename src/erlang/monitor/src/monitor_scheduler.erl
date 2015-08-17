@@ -18,8 +18,8 @@
 % OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 % THE SOFTWARE.
 
--module(equartz).
--include("include/equartz.hrl").
+-module(monitor_scheduler).
+-include("include/monitor.hrl").
 -include_lib("common_hrl/include/logs.hrl").
 -behaviour(gen_server).
 

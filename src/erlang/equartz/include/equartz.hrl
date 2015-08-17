@@ -1,2 +1,0 @@
--define(CRON_EVERYDAYS, 86400000).
--define(CRON_EVERY20S,  20000).

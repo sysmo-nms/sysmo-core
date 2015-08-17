@@ -1,6 +1,6 @@
 -include_lib("kernel/include/inet.hrl").
 -include_lib("kernel/include/file.hrl").
--include("../supercast/include/supercast.hrl").
+-include_lib("supercast/include/supercast.hrl").
 
 -define(MASTER_CHANNEL, "monitor_main").
 -define(PROBES_STATE,   ets_probes_state).
@@ -101,3 +101,6 @@
     properties  = ?DEFAULT_TARGET_PROPERTIES :: [{string(), string()}],
     permissions = ?DEFAULT_PERM_CONF    :: #perm_conf{}
 }).
+
+-define(CRON_EVERYDAYS, 86400000).
+-define(CRON_EVERY20S,  20000).

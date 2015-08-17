@@ -86,7 +86,7 @@ do_new(job, Job) ->
     IJob = Job#job{name=Name},
     mnesia:dirty_write(IJob),
     #job{trigger=Tr,module=M,function=F,argument=A} = IJob,
-    equartz:register_job(Name,Tr,{M,F,A}),
+    monitor_scheduler:register_job(Name,Tr,{M,F,A}),
     Name;
 do_new(probe, Probe) ->
     Name = generate_id(probe),
@@ -170,7 +170,7 @@ do_delete(probe, Key) ->
     end,
     mnesia:dirty_delete({probe,Key});
 do_delete(job, Key) ->
-    equartz:delete_job(Key),
+    monitor_scheduler:delete_job(Key),
     mnesia:dirty_delete({job, Key});
 do_delete(dependency, Key) ->
     mnesia:dirty_delete({dependency, Key}).
@@ -377,7 +377,7 @@ init_probes() ->
 init_jobs() ->
     do_iterate(job, fun(J,_) ->
         #job{name=Name,trigger=Tr,module=M,function=F,argument=A} = J,
-        equartz:register_job(Name,Tr,{M,F,A})
+        monitor_scheduler:register_job(Name,Tr,{M,F,A})
     end).
 
 launch_probe(#probe{module=nchecks_probe} = Probe) ->

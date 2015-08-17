@@ -10,11 +10,10 @@
                 monitor_sup,
                 probe_nchecks_sup
             ]},
-        {applications, 
-            [kernel, stdlib, xmerl, mnesia, supercast, equartz, errd4j, snmpman]
+        {applications,
+            [kernel, stdlib, xmerl, mnesia, supercast, errd4j, snmpman]
         },
         {start_phases, []},
         {mod, {monitor_app, []}}
     ]
 }.
-
