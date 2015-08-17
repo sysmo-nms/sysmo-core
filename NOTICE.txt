@@ -1,4 +1,6 @@
-Copyright 2012, 1015 Sysmo NMS (http://www.sysmo.io/)
+Sysmo NMS (http://www.sysmo.io/)
+
+Copyright 2012, 1015 Sebastien Serre <ssbx@sysmo.io>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
