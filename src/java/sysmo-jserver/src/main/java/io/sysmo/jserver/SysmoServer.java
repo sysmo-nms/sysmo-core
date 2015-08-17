@@ -36,7 +36,7 @@ import java.io.IOException;
 
 public class SysmoServer {
 
-    private static final String selfNodeName = "sysmo-java";
+    private static final String selfNodeName = "sysmo-jserver";
 
     public static void main(final String[] args) {
 
@@ -45,8 +45,15 @@ public class SysmoServer {
         logger.info("Logger started");
 
         // Extract args
-        String foreignNodeName = args[0];
-        String erlangCookie    = args[1];
+        String foreignNodeName;
+        String erlangCookie;
+        try {
+            foreignNodeName = args[0];
+            erlangCookie    = args[1];
+        } catch (ArrayIndexOutOfBoundsException e) {
+            logger.error(e.toString());
+            return;
+        }
 
         /*
          * Connect to erlang-main node
@@ -128,6 +135,17 @@ public class SysmoServer {
             break;
         }
 
+        /*
+         * Will raise OtpErlangExit exception on other threads and cause them
+         * to terminate.
+         */
         mainMbox.exit("normal");
+        try {
+            nchecksThread.join();
+            rrd4jThread.join();
+            snmp4jThread.join();
+        } catch (InterruptedException e) {
+            logger.error(e.toString());
+        }
     }
 }
