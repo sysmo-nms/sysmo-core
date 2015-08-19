@@ -81,16 +81,13 @@ handle_call({call_nchecks, {Command, Payload}}, From,
 
 % CAST
 % @private
-handle_cast(_,S) ->
+handle_cast(Cast ,S) ->
+    ?LOG_INFO("Received handle cast: ", Cast),
     {noreply, S}.
 
 
 % INFO
 % @private
-handle_info(stop, S) ->
-    ?LOG_INFO("Received stop"),
-    {noreply, S};
-
 handle_info({reply, From, Reply}, #state{replies_waiting = RWait} = S) ->
     gen_server:reply(From, Reply),
     {noreply,
@@ -98,6 +95,15 @@ handle_info({reply, From, Reply}, #state{replies_waiting = RWait} = S) ->
             replies_waiting = lists:delete(From, RWait)
         }
     };
+
+handle_info({worker_available, NodeName, _MainMbox, _NchecksMbox, _Weight} ,S) ->
+    R = erlang:monitor_node(erlang:list_to_atom(NodeName), true),
+    ?LOG_INFO("Begin to monitor node", {NodeName, R}),
+    {noreply, S};
+
+handle_info(stop, S) ->
+    ?LOG_INFO("Received stop"),
+    {noreply, S};
 
 handle_info({'EXIT', Pid, Reason}, #state{java_pid = Pid} = S) ->
     ?LOG_WARNING("EXIT with reason:", Reason),

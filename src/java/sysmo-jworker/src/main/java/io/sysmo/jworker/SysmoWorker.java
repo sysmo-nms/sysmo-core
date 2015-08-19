@@ -24,6 +24,7 @@ package io.sysmo.jworker;
 import com.ericsson.otp.erlang.OtpErlangAtom;
 import com.ericsson.otp.erlang.OtpErlangInt;
 import com.ericsson.otp.erlang.OtpErlangObject;
+import com.ericsson.otp.erlang.OtpErlangString;
 import com.ericsson.otp.erlang.OtpErlangTuple;
 import com.ericsson.otp.erlang.OtpMbox;
 import com.ericsson.otp.erlang.OtpMsg;
@@ -45,24 +46,30 @@ import java.io.IOException;
 public class SysmoWorker {
 
     static boolean active = true;
+    static final String selfShortName = "jworker";
 
     public static void main(String[] args) throws Exception
     {
         Logger logger = LoggerFactory.getLogger(SysmoWorker.class);
         logger.info("jworker started");
 
-
         // TODO read from a property file
-        String selfNodeName    = args[0];
-        String foreignNodeName = args[1];
-        String erlangCookie    = args[2];
-        int weight; // 1 least used 10 most used. 0 is reserved to server proc.
+        /*
+        String selfShortName    = args[0];
+        String masterNode = args[1];
+        String masterCookie    = args[2];
+        int weight; // 1 least used 10 most used. 0 is reserved to the server
         try {
             weight = Integer.parseInt(args[3]);
         } catch (Exception e) {
             logger.error(e.toString());
             weight = 5;
         }
+        */
+        String masterNode = "sysmo-erlang@127.0.0.1";
+        String masterCookie = "sysmo-cookie";
+        int weight = 1;
+        int ackTimeout = 5000;
 
         Runtime.getRuntime().addShutdownHook(
                 new Thread() {
@@ -82,9 +89,9 @@ public class SysmoWorker {
              */
             OtpNode node;
             try {
-                node = new OtpNode(selfNodeName, erlangCookie);
+                node = new OtpNode(SysmoWorker.selfShortName, masterCookie);
                 // loop and wait for master node to come up
-                if (!node.ping(foreignNodeName, 2000)) {
+                if (!node.ping(masterNode, 2000)) {
                     logger.info("Foreign node down");
                     node.close();
                     continue;
@@ -104,7 +111,7 @@ public class SysmoWorker {
              * Create Nchecks thread
              */
             NChecksErlang nchecks =
-                    new NChecksErlang(nchecksMbox, foreignNodeName);
+                    new NChecksErlang(nchecksMbox, masterNode);
 
             Thread nchecksThread = new Thread(nchecks);
             nchecksThread.start();
@@ -115,22 +122,23 @@ public class SysmoWorker {
              */
 
 
-            OtpErlangObject[] readyObj = new OtpErlangObject[4];
+            OtpErlangObject[] readyObj = new OtpErlangObject[5];
             readyObj[0] = new OtpErlangAtom("worker_available");
-            readyObj[1] = mainMbox.self();
-            readyObj[2] = nchecksMbox.self();
-            readyObj[3] = new OtpErlangInt(weight);
+            readyObj[1] = new OtpErlangString(node.node());
+            readyObj[2] = mainMbox.self();
+            readyObj[3] = nchecksMbox.self();
+            readyObj[4] = new OtpErlangInt(weight);
             OtpErlangTuple ackTuple = new OtpErlangTuple(readyObj);
-            mainMbox.send("nchecks", foreignNodeName, ackTuple);
+            mainMbox.send("nchecks", masterNode, ackTuple);
             logger.info("availability object sent, waiting for ack");
 
             try {
-                OtpMsg ack = mainMbox.receiveMsg(2000);
+                OtpMsg ack = mainMbox.receiveMsg(ackTimeout);
                 OtpErlangAtom atom = (OtpErlangAtom) ack.getMsg();
                 if (!atom.toString().equals("worker_ack"))
                     throw new JworkerInitException();
             } catch (Exception e) {
-                logger.error(e.toString());
+                logger.error("Ack timed out:" + e.toString());
                 node.close();
                 mainMbox.exit("normal");
                 nchecksThread.join();
@@ -138,7 +146,7 @@ public class SysmoWorker {
             }
 
 
-            while (node.ping(foreignNodeName, 2000)) {
+            while (node.ping(masterNode, 2000)) {
                 try {
                     if (!active) throw new JworkerShutdownException();
                     Thread.sleep(1000);
