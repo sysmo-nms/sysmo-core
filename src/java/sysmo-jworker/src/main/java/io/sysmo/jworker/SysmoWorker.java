@@ -54,18 +54,6 @@ public class SysmoWorker {
         logger.info("jworker started");
 
         // TODO read from a property file
-        /*
-        String selfShortName    = args[0];
-        String masterNode = args[1];
-        String masterCookie    = args[2];
-        int weight; // 1 least used 10 most used. 0 is reserved to the server
-        try {
-            weight = Integer.parseInt(args[3]);
-        } catch (Exception e) {
-            logger.error(e.toString());
-            weight = 5;
-        }
-        */
         String masterNode = "sysmo-erlang@127.0.0.1";
         String masterCookie = "sysmo-cookie";
         int weight = 1;
