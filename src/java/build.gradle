@@ -66,6 +66,7 @@ project(':sysmo-jserver') {
         compile 'org.slf4j:slf4j-api:1.7.12'
         compile 'org.slf4j:slf4j-jdk14:1.7.12'
         compile 'org.eclipse.jetty:jetty-server:8.1.17.v20150415'
+        compile 'org.apache.derby:derby:10.11.1.1'
     }
 }
 

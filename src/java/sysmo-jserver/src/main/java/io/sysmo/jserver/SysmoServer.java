@@ -114,14 +114,15 @@ public class SysmoServer {
         nchecksThread.start();
 
         /*
-         * TODO Create http server thread
+         * Create simple http file server
          */
         Server jettyThread = JettyServer.startServer();
         int jettyPort = JettyServer.getPort();
 
         /*
-         * TODO Create sql database thread
+         * TODO Create sql database thread (derby)
          */
+        //SQLDatabase db = new SQLDatabase();
 
         /*
          * Send acknowledgement to the "sysmo" erlang process
