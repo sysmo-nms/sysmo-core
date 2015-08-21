@@ -28,10 +28,14 @@ import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.nio.file.FileSystems;
+import java.util.Properties;
 
 /**
  * Created by seb on 21/08/15.
@@ -39,6 +43,7 @@ import java.nio.file.FileSystems;
 public class JettyServer
 {
     private static Logger logger = LoggerFactory.getLogger(JettyServer.class);
+    private static final int DEFAULT_PORT = 9699;
 
     public static Server startServer()
     {
@@ -47,7 +52,7 @@ public class JettyServer
 
         Server jettyThread = new Server();
         SelectChannelConnector connector = new SelectChannelConnector();
-        connector.setPort(8080);
+        connector.setPort(JettyServer.getPort());
         jettyThread.addConnector(connector);
 
         ResourceHandler resource_handler = new ResourceHandler();
@@ -66,5 +71,22 @@ public class JettyServer
             logger.error(e.toString());
         }
         return jettyThread;
+    }
+
+    public static int getPort()
+    {
+        String propFile = FileSystems.getDefault()
+                .getPath("etc", "sysmo-web.properties").toString();
+
+        try {
+            Properties  props = new Properties();
+            InputStream input = new FileInputStream(propFile);
+            props.load(input);
+            return Integer.parseInt(props.getProperty("port"));
+        } catch (Exception e) {
+            JettyServer.logger.error(
+                    "Can not read property file. " + e.toString());
+            return DEFAULT_PORT;
+        }
     }
 }

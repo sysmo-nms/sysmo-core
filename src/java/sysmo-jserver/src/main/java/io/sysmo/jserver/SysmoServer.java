@@ -22,6 +22,7 @@
 package io.sysmo.jserver;
 
 import com.ericsson.otp.erlang.OtpErlangAtom;
+import com.ericsson.otp.erlang.OtpErlangInt;
 import com.ericsson.otp.erlang.OtpErlangObject;
 import com.ericsson.otp.erlang.OtpErlangTuple;
 import com.ericsson.otp.erlang.OtpMbox;
@@ -116,6 +117,7 @@ public class SysmoServer {
          * TODO Create http server thread
          */
         Server jettyThread = JettyServer.startServer();
+        int jettyPort = JettyServer.getPort();
 
         /*
          * TODO Create sql database thread
@@ -124,11 +126,12 @@ public class SysmoServer {
         /*
          * Send acknowledgement to the "sysmo" erlang process
          */
-        OtpErlangObject[] ackObj = new OtpErlangObject[4];
+        OtpErlangObject[] ackObj = new OtpErlangObject[5];
         ackObj[0] = new OtpErlangAtom("java_connected");
         ackObj[1] = rrd4jMbox.self();
         ackObj[2] = snmp4jMbox.self();
         ackObj[3] = nchecksMbox.self();
+        ackObj[4] = new OtpErlangInt(jettyPort);
         OtpErlangTuple ackTuple = new OtpErlangTuple(ackObj);
         mainMbox.send("sysmo", foreignNodeName, ackTuple);
 
