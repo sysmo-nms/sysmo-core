@@ -13,7 +13,8 @@
 % other
 -export([get_pid/1, get_http_port/0]).
 
--record(state, {rrd4j_pid, snmp4j_pid, nchecks_pid, jetty_port, assert, ready=false}).
+-record(state, {rrd4j_pid, snmp4j_pid, nchecks_pid,
+                derby_pid, jetty_port, assert, ready=false}).
 
 get_pid(For) ->
     gen_server:call(?MODULE, {get_pid, For}).
@@ -82,22 +83,24 @@ handle_cast(Cast, S) ->
     {noreply, S}.
 
 
-handle_info({java_connected, Rrd4jPid, Snmp4jPid, NchecksPid, JettyPort},
-            #state{assert=undefined}) ->
+handle_info({java_connected, Rrd4jPid, Snmp4jPid,
+             NchecksPid, DerbyPid, JettyPort}, #state{assert=undefined}) ->
     {noreply, #state{
                  ready = true,
                  rrd4j_pid = Rrd4jPid,
                  snmp4j_pid = Snmp4jPid,
                  nchecks_pid = NchecksPid,
+                 derby_pid = DerbyPid,
                  jetty_port = JettyPort}};
-handle_info({java_connected, Rrd4jPid, Snmp4jPid, NchecksPid, JettyPort},
-            #state{assert=From}) ->
+handle_info({java_connected, Rrd4jPid, Snmp4jPid,
+             NchecksPid, DerbyPid, JettyPort}, #state{assert=From}) ->
     gen_server:reply(From, ok),
     {noreply, #state{
                  ready = true,
                  rrd4j_pid = Rrd4jPid,
                  snmp4j_pid = Snmp4jPid,
                  nchecks_pid = NchecksPid,
+                 derby_pid = DerbyPid,
                  jetty_port = JettyPort}};
 
 handle_info({_Port, {exit_status, Status}}, S) ->

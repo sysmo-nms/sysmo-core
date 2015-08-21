@@ -78,18 +78,20 @@ public class SysmoServer {
         OtpMbox rrd4jMbox   = node.createMbox();
         OtpMbox snmp4jMbox  = node.createMbox();
         OtpMbox nchecksMbox = node.createMbox();
+        OtpMbox derbyMbox   = node.createMbox();
 
         /*
          * Link to mainMbox.
          * this way exiting mainMbox will raise an OtpExitException on
-         * other mailboxes.
+         * other mailboxes, closing the threads.
          */
         try {
             mainMbox.link(rrd4jMbox.self());
             mainMbox.link(snmp4jMbox.self());
             mainMbox.link(nchecksMbox.self());
+            mainMbox.link(derbyMbox.self());
         } catch (Exception e) {
-            logger.error("Should not append here!");
+            logger.error("Should not append here!" + e.toString());
         }
 
         /*
@@ -114,25 +116,28 @@ public class SysmoServer {
         nchecksThread.start();
 
         /*
+         * Create derby thread
+         */
+        SQLDatabase derbyDb = new SQLDatabase(derbyMbox, foreignNodeName);
+        Thread derbyThread = new Thread(derbyDb);
+        derbyThread.start();
+
+        /*
          * Create simple http file server
          */
         Server jettyThread = JettyServer.startServer();
         int jettyPort = JettyServer.getPort();
 
         /*
-         * TODO Create sql database thread (derby)
-         */
-        new SQLDatabase();
-
-        /*
          * Send acknowledgement to the "sysmo" erlang process
          */
-        OtpErlangObject[] ackObj = new OtpErlangObject[5];
+        OtpErlangObject[] ackObj = new OtpErlangObject[6];
         ackObj[0] = new OtpErlangAtom("java_connected");
         ackObj[1] = rrd4jMbox.self();
         ackObj[2] = snmp4jMbox.self();
         ackObj[3] = nchecksMbox.self();
-        ackObj[4] = new OtpErlangInt(jettyPort);
+        ackObj[4] = derbyMbox.self();
+        ackObj[5] = new OtpErlangInt(jettyPort);
         OtpErlangTuple ackTuple = new OtpErlangTuple(ackObj);
         mainMbox.send("sysmo", foreignNodeName, ackTuple);
 
@@ -152,8 +157,10 @@ public class SysmoServer {
             nchecksThread.join();
             rrd4jThread.join();
             snmp4jThread.join();
+            derbyThread.join();
         } catch (Exception e) {
             logger.error(e.toString());
         }
+        System.exit(0);
     }
 }

@@ -73,21 +73,16 @@ public class NChecksErlang implements Runnable
         this.nodeName = nodeName;
         this.mbox = mbox;
         this.logger = LoggerFactory.getLogger(NChecksErlang.class);
-    }
-
-    @Override
-    public void run()
-    {
 
         String rubyDir = FileSystems
-            .getDefault()
-            .getPath("ruby")
-            .toString();
+                .getDefault()
+                .getPath("ruby")
+                .toString();
 
         String utilsDir = FileSystems
-            .getDefault()
-            .getPath("utils")
-            .toString();
+                .getDefault()
+                .getPath("utils")
+                .toString();
 
         this.logger.info("ruby dir is: " + rubyDir);
 
@@ -117,16 +112,20 @@ public class NChecksErlang implements Runnable
         // initialize snmpman
         NChecksSNMP.startSnmp();
         this.logger.info("SNMP started");
+    }
 
-        // then begin to loop and wait for calls
+    @Override
+    public void run()
+    {
+        // loop and wait for calls
         this.logger.info("begin too loop");
         OtpErlangObject call;
         while (true) try {
             call = this.mbox.receive();
             this.handleMsg(call);
         } catch (OtpErlangExit|OtpErlangDecodeException e) {
-            logger.warn(e.toString());
-            threadPool.shutdownNow();
+            this.logger.warn(e.toString());
+            this.threadPool.shutdownNow();
             break;
         }
     }

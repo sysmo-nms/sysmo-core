@@ -76,6 +76,7 @@ public class RrdLogger implements Runnable
 
     // threads
     private RrdDbPool rrdDbPool;
+    private ThreadPoolExecutor threadPool;
 
     // logging
     private Logger logger;
@@ -85,46 +86,46 @@ public class RrdLogger implements Runnable
         this.nodeName = nodeName;
         this.mbox = mbox;
         this.logger = LoggerFactory.getLogger(RrdLogger.class);
-    }
 
-    @Override
-    public void run() {
         String propFile = FileSystems
-            .getDefault()
-            .getPath("etc", "sysmo-rrd.properties")
-            .toString();
+                .getDefault()
+                .getPath("etc", "sysmo-rrd.properties")
+                .toString();
 
         try {
-            Properties prop   = new Properties();
+            Properties prop = new Properties();
             InputStream input = new FileInputStream(propFile);
             prop.load(input);
             this.rraDefault = decodeRRADef(prop.getProperty("rra_default"));
             this.rraPrecise = decodeRRADef(prop.getProperty("rra_precise"));
-        } catch(Exception|Error e) {
+        } catch (Exception | Error e) {
             this.logger.error(
                     "Fail to load property file: " + e.getMessage() + e);
             return;
         }
 
         // set up the threads
-        ThreadPoolExecutor threadPool = new ThreadPoolExecutor(
-            8,  // initial pool size
-            20, // max pool size
-            60, // wait 60 minutes before going to initial
-            TimeUnit.MINUTES,
-            new ArrayBlockingQueue<Runnable>(2000), // queue capacity
-            new RrdReject()
+        this.threadPool = new ThreadPoolExecutor(
+                8,  // initial pool size
+                20, // max pool size
+                60, // wait 60 minutes before going to initial
+                TimeUnit.MINUTES,
+                new ArrayBlockingQueue<Runnable>(2000), // queue capacity
+                new RrdReject()
         );
         this.rrdDbPool = RrdDbPool.getInstance();
+    }
 
-        // then begin to loop and wait for calls
+    @Override
+    public void run() {
+        // begin to loop and wait for calls
         OtpErlangObject call;
         while (true) try {
             call = this.mbox.receive();
-            threadPool.execute(new RrdRunnable(call));
+            this.threadPool.execute(new RrdRunnable(call));
         } catch (OtpErlangExit|OtpErlangDecodeException e) {
             this.logger.error(e.toString());
-            threadPool.shutdown();
+            this.threadPool.shutdown();
             break;
         }
     }

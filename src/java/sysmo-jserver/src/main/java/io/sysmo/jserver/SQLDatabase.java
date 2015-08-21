@@ -29,6 +29,10 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
+import com.ericsson.otp.erlang.OtpErlangDecodeException;
+import com.ericsson.otp.erlang.OtpErlangExit;
+import com.ericsson.otp.erlang.OtpMbox;
+
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
@@ -40,12 +44,18 @@ import java.util.Properties;
  * See http://db.apache.org/derby/papers/DerbyTut/embedded_intro.html
  *
  */
-public class SQLDatabase
+public class SQLDatabase implements Runnable
 {
-    private static Logger logger = LoggerFactory.getLogger(SQLDatabase.class);
+    private Logger logger;
+    private OtpMbox mbox;
+    private String foreignNodeName;
 
-    SQLDatabase()
+    SQLDatabase(OtpMbox mbox, String foreignNodeName)
     {
+        this.mbox = mbox;
+        this.foreignNodeName = foreignNodeName;
+        this.logger = LoggerFactory.getLogger(SQLDatabase.class);
+
         /*
          * Initialize derby.system.home
          */
@@ -56,16 +66,16 @@ public class SQLDatabase
 
         Properties p = System.getProperties();
         p.setProperty("derby.system.home", derbySysmoHome);
-        SQLDatabase.logger.info("derby.system.home set: " + derbySysmoHome);
+        this.logger.info("derby.system.home set: " + derbySysmoHome);
 
         /*
          * Start the driver
          */
         try {
             Class.forName("org.apache.derby.jdbc.EmbeddedDriver").newInstance();
-            SQLDatabase.logger.info("Loaded the appropriate driver");
+            this.logger.info("Loaded the appropriate driver");
         } catch (Exception e) {
-            SQLDatabase.logger.error(e.toString());
+            this.logger.error(e.toString());
         }
 
         String protocol = "jdbc:derby:";
@@ -82,12 +92,15 @@ public class SQLDatabase
             props.put("user", "user1");
             props.put("password", "user1");
 
-            String dbName = "sysmoDB"; // the name of the database
+            String dbName = "sysmoDB";
 
             conn = DriverManager.getConnection(protocol + dbName
                     + ";create=true", props);
 
             System.out.println("Connected to and created database " + dbName);
+            // TODO begin to loop over mbox
+            System.out.println("loop over mbox: " + this.mbox.toString() +
+                foreignNodeName);
 
             conn.setAutoCommit(false);
 
@@ -224,6 +237,16 @@ public class SQLDatabase
         }
     }
 
+    public void run() {
+        // begin to loop and wait for calls
+        this.logger.info("begin too loop");
+        while (true) try {
+            this.mbox.receive();
+        } catch (OtpErlangExit |OtpErlangDecodeException e) {
+            this.logger.warn(e.toString());
+            break;
+        }
+    }
     private void reportFailure(String message) {
         System.err.println("\nData verification failed:");
         System.err.println('\t' + message);

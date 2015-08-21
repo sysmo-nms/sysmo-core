@@ -93,22 +93,17 @@ public class SnmpManager implements Runnable
     private Map<String, SnmpmanElement> snmpmanElements;
     private Logger logger;
 
-    public SnmpManager(final OtpMbox mbox, final String nodeName)
-    {
+    public SnmpManager(final OtpMbox mbox, final String nodeName) {
         SnmpManager.instance = this;
         this.snmpmanElements = new HashMap<>();
         this.nodeName = nodeName;
         this.mbox = mbox;
         this.logger = LoggerFactory.getLogger(SnmpManager.class);
-    }
 
-    @Override
-    public void run()
-    {
         String engineIdFile = FileSystems
-                        .getDefault()
-                        .getPath("etc", "engine.id")
-                        .toString();
+                .getDefault()
+                .getPath("etc", "engine.id")
+                .toString();
 
         // may take a wile? /dev/random ?
         this.logger.info("build engine id " + this.nodeName);
@@ -119,15 +114,20 @@ public class SnmpManager implements Runnable
                     new DefaultUdpTransportMapping();
             this.snmp4jSession = new Snmp(transport);
             USM usm = new USM(SecurityProtocols.getInstance(),
-                                    new OctetString(engineId), 0);
+                    new OctetString(engineId), 0);
             SecurityModels.getInstance().addSecurityModel(usm);
             transport.listen();
-        } catch (Exception|Error e) {
+        } catch (Exception | Error e) {
             this.logger.error(e.toString());
             return;
         }
 
         this.logger.info("begin to loop " + this.nodeName);
+    }
+
+    @Override
+    public void run()
+    {
         // then begin to loop and wait for calls
         OtpErlangObject call;
         while (true) try
