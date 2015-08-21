@@ -31,6 +31,8 @@ import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.file.FileSystems;
+
 /**
  * Created by seb on 21/08/15.
  */
@@ -40,6 +42,9 @@ public class JettyServer
 
     public static Server startServer()
     {
+
+        String docroot = FileSystems.getDefault().getPath("docroot").toString();
+
         Server jettyThread = new Server();
         SelectChannelConnector connector = new SelectChannelConnector();
         connector.setPort(8080);
@@ -47,7 +52,7 @@ public class JettyServer
 
         ResourceHandler resource_handler = new ResourceHandler();
         resource_handler.setDirectoriesListed(false);
-        resource_handler.setResourceBase("./docroot");
+        resource_handler.setResourceBase(docroot);
 
         HandlerList handlers = new HandlerList();
         handlers.setHandlers(
