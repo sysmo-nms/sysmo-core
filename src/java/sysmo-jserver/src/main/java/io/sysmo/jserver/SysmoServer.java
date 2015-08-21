@@ -122,7 +122,7 @@ public class SysmoServer {
         /*
          * TODO Create sql database thread (derby)
          */
-        //SQLDatabase db = new SQLDatabase();
+        new SQLDatabase();
 
         /*
          * Send acknowledgement to the "sysmo" erlang process

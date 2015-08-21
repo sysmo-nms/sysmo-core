@@ -21,12 +21,16 @@
 
 package io.sysmo.jserver;
 
+import java.nio.file.FileSystems;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Properties;
@@ -38,29 +42,33 @@ import java.util.Properties;
  */
 public class SQLDatabase
 {
+    private static Logger logger = LoggerFactory.getLogger(SQLDatabase.class);
 
     SQLDatabase()
     {
-        String protocol = "jdbc:derby:";
+        /*
+         * Initialize derby.system.home
+         */
+        String derbySysmoHome = FileSystems
+            .getDefault()
+            .getPath("data", "derby")
+            .toString();
 
-        String driver = "org.apache.derby.jdbc.EmbeddedDriver";
+        Properties p = System.getProperties();
+        p.setProperty("derby.system.home", derbySysmoHome);
+        SQLDatabase.logger.info("derby.system.home set: " + derbySysmoHome);
+
+        /*
+         * Start the driver
+         */
         try {
-            Class.forName(driver).newInstance();
-            System.out.println("Loaded the appropriate driver");
-        } catch (ClassNotFoundException cnfe) {
-            System.err.println("\nUnable to load the JDBC driver " + driver);
-            System.err.println("Please check your CLASSPATH.");
-            cnfe.printStackTrace(System.err);
-        } catch (InstantiationException ie) {
-            System.err.println(
-                        "\nUnable to instantiate the JDBC driver " + driver);
-            ie.printStackTrace(System.err);
-        } catch (IllegalAccessException iae) {
-            System.err.println(
-                        "\nNot allowed to access the JDBC driver " + driver);
-            iae.printStackTrace(System.err);
+            Class.forName("org.apache.derby.jdbc.EmbeddedDriver").newInstance();
+            SQLDatabase.logger.info("Loaded the appropriate driver");
+        } catch (Exception e) {
+            SQLDatabase.logger.error(e.toString());
         }
 
+        String protocol = "jdbc:derby:";
         Connection conn = null;
 
         ArrayList<Statement> statements = new ArrayList<>();
@@ -68,8 +76,8 @@ public class SQLDatabase
         PreparedStatement psUpdate;
         Statement s;
         ResultSet rs = null;
-        try
-        {
+
+        try {
             Properties props = new Properties();
             props.put("user", "user1");
             props.put("password", "user1");
