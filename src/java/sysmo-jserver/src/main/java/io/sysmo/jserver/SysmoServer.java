@@ -29,6 +29,8 @@ import com.ericsson.otp.erlang.OtpNode;
 
 import io.sysmo.nchecks.NChecksErlang;
 
+import org.eclipse.jetty.server.Server;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -113,6 +115,7 @@ public class SysmoServer {
         /*
          * TODO Create http server thread
          */
+        Server jettyThread = JettyServer.startServer();
 
         /*
          * TODO Create sql database thread
@@ -141,10 +144,11 @@ public class SysmoServer {
          */
         mainMbox.exit("normal");
         try {
+            jettyThread.stop();
             nchecksThread.join();
             rrd4jThread.join();
             snmp4jThread.join();
-        } catch (InterruptedException e) {
+        } catch (Exception e) {
             logger.error(e.toString());
         }
     }
