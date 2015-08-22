@@ -248,14 +248,21 @@ public class SQLDatabase implements Runnable
         } catch (OtpErlangExit |OtpErlangDecodeException e) {
             this.logger.warn(e.toString());
             try {
-                DriverManager.getConnection("jbdc:derby:;shutdown=true");
+                DriverManager.getConnection("jdbc:derby:;shutdown=true");
                 this.conn.close();
-            } catch (Exception inner) {
-                this.logger.warn("Shutdown exception: " + inner.toString());
+            } catch (SQLException se) {
+                if (    se.getErrorCode() == 50000 &&
+                        se.getSQLState().equals("XJ015") ) {
+                    this.logger.info("Derby shutdown ok");
+                }
+                this.logger.warn("Shutdown exception: " + se.toString());
+            } catch (Exception other) {
+                this.logger.warn("Shutdown exception: " + other.toString());
             }
             break;
         }
     }
+
     private void reportFailure(String message) {
         this.logger.error("Data verification failed:" + message);
     }
