@@ -39,16 +39,17 @@ import org.slf4j.Logger;
 import java.util.ArrayList;
 import java.util.Properties;
 
-/**
- *
+/*
  * See http://db.apache.org/derby/papers/DerbyTut/embedded_intro.html
- *
+ * and
+ * db-derby-10.10.2.0-src/java/demo/workingwithderby/WwdEmbedded.java
  */
 public class SQLDatabase implements Runnable
 {
     private Logger logger;
     private OtpMbox mbox;
     private String foreignNodeName;
+    private Connection conn;
 
     SQLDatabase(OtpMbox mbox, String foreignNodeName)
     {
@@ -69,7 +70,7 @@ public class SQLDatabase implements Runnable
         this.logger.info("derby.system.home set: " + derbySysmoHome);
 
         /*
-         * Start the driver
+         * Load the driver
          */
         try {
             Class.forName("org.apache.derby.jdbc.EmbeddedDriver").newInstance();
@@ -79,7 +80,7 @@ public class SQLDatabase implements Runnable
         }
 
         String protocol = "jdbc:derby:";
-        Connection conn = null;
+        conn = null;
 
         ArrayList<Statement> statements = new ArrayList<>();
         PreparedStatement psInsert;
@@ -87,6 +88,9 @@ public class SQLDatabase implements Runnable
         Statement s;
         ResultSet rs = null;
 
+        /*
+         * Boot database
+         */
         try {
             Properties props = new Properties();
             props.put("user", "user1");
@@ -94,24 +98,23 @@ public class SQLDatabase implements Runnable
 
             String dbName = "sysmoDB";
 
+            // Create (if needed) and connect to the database
             conn = DriverManager.getConnection(protocol + dbName
                     + ";create=true", props);
 
             System.out.println("Connected to and created database " + dbName);
-            // TODO begin to loop over mbox
-            System.out.println("loop over mbox: " + this.mbox.toString() +
-                foreignNodeName);
 
             conn.setAutoCommit(false);
 
             s = conn.createStatement();
             statements.add(s);
 
-            s.execute("create table location(num int, addr varchar(40))");
+            s.execute("CREATE TABLE LOCATION(NUM INT, ADDR VARCHAR(40))");
             System.out.println("Created table location");
 
             psInsert = conn.prepareStatement(
-                        "insert into location values (?, ?)");
+                        "INSERT INTO LOCATION VALUES (?, ?)");
+
             statements.add(psInsert);
 
             psInsert.setInt(1, 1956);
@@ -238,28 +241,33 @@ public class SQLDatabase implements Runnable
     }
 
     public void run() {
-        // begin to loop and wait for calls
+        // begin to loop and wait for calls (select) or casts (insert)
         this.logger.info("begin too loop");
         while (true) try {
             this.mbox.receive();
         } catch (OtpErlangExit |OtpErlangDecodeException e) {
             this.logger.warn(e.toString());
+            try {
+                DriverManager.getConnection("jbdc:derby:;shutdown=true");
+                this.conn.close();
+            } catch (Exception inner) {
+                this.logger.warn("Shutdown exception: " + inner.toString());
+            }
             break;
         }
     }
     private void reportFailure(String message) {
-        System.err.println("\nData verification failed:");
-        System.err.println('\t' + message);
+        this.logger.error("Data verification failed:" + message);
     }
 
-    public static void printSQLException(SQLException e)
+    public void printSQLException(SQLException e)
     {
         while (e != null)
         {
-            System.err.println("\n----- SQLException -----");
-            System.err.println("  SQL State:  " + e.getSQLState());
-            System.err.println("  Error Code: " + e.getErrorCode());
-            System.err.println("  Message:    " + e.getMessage());
+            this.logger.error("----- SQLException -----");
+            this.logger.error("  SQL State:  " + e.getSQLState());
+            this.logger.error("  Error Code: " + e.getErrorCode());
+            this.logger.error("  Message:    " + e.getMessage());
             e = e.getNextException();
         }
     }
