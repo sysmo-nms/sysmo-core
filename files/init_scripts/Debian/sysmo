@@ -9,8 +9,10 @@ DAEMON=myapp
 NAME=sysmo
 DESC="Sysmo System Management and Monitoring service"
 
-# set SYSMO_SCRIPT to an absolute path if it is not present in the $PATH:
-# example: /release_location/bin/sysmo
+# EDITME
+# set SYSMO_SCRIPT to an absolute path if it is not present in the $PATH.
+# example: 
+# SYSMO_SCRIPT="/opt/bin/sysmo"
 SYSMO_SCRIPT="sysmo"
 
 restart_all() {

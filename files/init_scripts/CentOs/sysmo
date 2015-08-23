@@ -14,14 +14,16 @@
 . /etc/init.d/functions
 
 
+# EDITME
 # If the sysmo startup script is not in the $PATH, set this variable
-# to an absolute value ( exemple: /release_location/bin/sysmo )
+# to an absolute value. Exemple:
+# SYSMO_SCRIPT="/opt/bin/sysmo")
 SYSMO_SCRIPT="sysmo"
 
 start() {
   echo -n "Starting sysmo: "
   return `$SYSMO_SCRIPT start`
-}   
+}
 
 stop() {
   echo -n "Shutting down sysmo: "
