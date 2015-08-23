@@ -16,7 +16,7 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
+ * along with Sysmo.  If not, see <http://www.gnu.org/licenses/>.
  */
 package main
 
@@ -59,16 +59,19 @@ var LocalAddr       string
 var RemoteAddr      string
 
 func init() {
-    flag.BoolVar(&InteractiveFlag,  "interactive",  false, "Enable interactive mode")
-    flag.BoolVar(&VersionFlag,  "version",  false, "Show version")
-    flag.StringVar(&HostFlag,   "host",     "", "Target")
-    flag.IntVar(&TimeoutFlag,   "timeout",  5000, "Timeout")
-    flag.IntVar(&NumberFlag,    "number",   5, "Number of packets to send")
-    flag.IntVar(&IntervalFlag,  "interval", 100, "Send packet interval in millisecond")
-    flag.IntVar(&SizeFlag,      "size",     56,"Size of the icmp body in octets")
-    flag.BoolVar(&Ip6Flag,      "ipv6",     false, "Enable version 6 icmp")
-    flag.StringVar(&Ip6IfFlag,  "ipv6-if",  "", "Required if host is an ipv6 link-local address")
-    flag.BoolVar(&HelpFlag,     "help",    false, "Arguments description")
+    flag.BoolVar(&InteractiveFlag, "interactive", false,
+                                "Enable interactive mode")
+    flag.BoolVar(&VersionFlag, "version", false, "Show version")
+    flag.StringVar(&HostFlag, "host", "", "Target")
+    flag.IntVar(&TimeoutFlag, "timeout", 5000, "Timeout")
+    flag.IntVar(&NumberFlag, "number", 5, "Number of packets to send")
+    flag.IntVar(&IntervalFlag, "interval", 100,
+                                "Send packet interval in millisecond")
+    flag.IntVar(&SizeFlag, "size", 56,"Size of the icmp body in octets")
+    flag.BoolVar(&Ip6Flag, "ipv6", false, "Enable version 6 icmp")
+    flag.StringVar(&Ip6IfFlag, "ipv6-if", "", 
+                               "Required if host is an ipv6 link-local address")
+    flag.BoolVar(&HelpFlag, "help", false, "Arguments description")
 }
 
 func main() {
@@ -88,14 +91,15 @@ func main() {
     if testip.To4 == nil {
         ipVersion   = 6
         if Ip6IfFlag != "" {
-            host = strings.Join([]string{HostFlag,Ip6IfFlag}, "%") 
+            host = strings.Join([]string{HostFlag,Ip6IfFlag}, "%")
         } else {
             host = HostFlag
         }
         conn, err   = net.Dial("ip6:58", host)
     } else {
         if Ip6Flag == true {
-            fmt.Println("Host is not a valid version 6 IP, when it is required")
+            fmt.Println(
+            "Host is not a valid version 6 IP, when it is required")
             os.Exit(1)
         }
         ipVersion   = 4
@@ -239,7 +243,8 @@ func icmpEchoSender(
         }).Encode(conn)
         _, err = conn.Write(pdu)
         if err != nil { fmt.Println(err); os.Exit(1) }
-        eventchan <- ppingEvent{Msg: "Sent: ", SeqId: seqId, EventTime: time.Now()}
+        eventchan <-
+            ppingEvent{Msg: "Sent: ", SeqId: seqId, EventTime: time.Now()}
         go icmpExpireIn(timeout, seqId, eventchan)
         time.Sleep(interval)
     }
@@ -270,7 +275,7 @@ func icmpEchoReceiver(
     // for an unknown reason, conn.Read on version 6 skipp the v6
     // header.
     if ipVersion == 6 {
-        for 
+        for
         {
             read, err = conn.Read(icmpBuffer)
 
@@ -288,7 +293,8 @@ func icmpEchoReceiver(
             if body.GetProcID() != procId { continue }
 
             seqId = body.GetSequenceID()
-            eventchan <- ppingEvent{Msg: "Received: ", SeqId: seqId, EventTime: time.Now()}
+            eventchan <-
+              ppingEvent{Msg: "Received: ", SeqId: seqId, EventTime: time.Now()}
             counter -= 1
             if counter == 0 { break }
         }
@@ -312,7 +318,8 @@ func icmpEchoReceiver(
             if body.GetProcID() != procId { continue }
 
             seqId = body.GetSequenceID()
-            eventchan <- ppingEvent{Msg: "Received: ", SeqId: seqId, EventTime: time.Now()}
+            eventchan <-
+              ppingEvent{Msg: "Received: ", SeqId: seqId, EventTime: time.Now()}
             counter -= 1
             if counter == 0 { break }
         }
@@ -332,11 +339,6 @@ func computeComplementSum(bytes []byte) uint32 {
     sum = sum + sum>>16
     return sum
 }
-
-
-
-
-
 
 /* ICMP PART */
 const (
@@ -426,7 +428,8 @@ func parseICMPMessage(b []byte) (*icmpMessage, error) {
     if msglen > 4 {
         var err error
         switch m.Type {
-        case icmpv4EchoRequest, icmpv4EchoReply, icmpv6EchoRequest, icmpv6EchoReply:
+        case icmpv4EchoRequest, icmpv4EchoReply,
+             icmpv6EchoRequest, icmpv6EchoReply:
             m.Body, err = parseICMPEcho(b[4:])
             if err != nil {
                 return nil, err
@@ -448,14 +451,6 @@ func parseICMPEcho(b []byte) (*icmpBody, error) {
     }
     return p, nil
 }
-
-
-
-
-
-
-
-
 
 // imcpBody represenets an ICMP echo request or reply message body.
 type icmpBody struct {
