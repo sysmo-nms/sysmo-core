@@ -35,7 +35,10 @@ import org.slf4j.Logger;
 
 import io.sysmo.nchecks.NChecksErlang;
 
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.util.Properties;
 
 /**
  * SysmoWorker try to connect to the specified erlang node and loop on
@@ -50,14 +53,42 @@ public class SysmoWorker {
 
     public static void main(String[] args) throws Exception
     {
+        String masterNode = "undefined";
+        String masterCookie = "undefined";
+        int weight = 10;
+        int ackTimeout = 2000;
+
+        String configFile;
+        try {
+            configFile = args[0];
+        } catch (ArrayIndexOutOfBoundsException e) {
+            // try default config file location
+            configFile = "/etc/sysmo-jworker.properties";
+        }
+
+        try {
+            Properties prop = new Properties();
+            InputStream input = new FileInputStream(configFile);
+            prop.load(input);
+            masterNode = prop.getProperty("master_node");
+            masterCookie = prop.getProperty("master_cookie");
+            weight = Integer.parseInt(prop.getProperty("node_weight"));
+            ackTimeout = Integer.parseInt(prop.getProperty("ack_timeout"));
+        } catch (Exception e) {
+            System.err.println(
+                    "Error while loading the config file: " + e.toString());
+            System.exit(1);
+        }
         Logger logger = LoggerFactory.getLogger(SysmoWorker.class);
         logger.info("jworker started");
 
         // TODO read from a property file
-        String masterNode = "sysmo-erlang@127.0.0.1";
-        String masterCookie = "sysmo-cookie";
-        int weight = 1;
-        int ackTimeout = 5000;
+        /*
+        masterNode = "sysmo-erlang@127.0.0.1";
+        masterCookie = "sysmo-cookie";
+        weight = 1;
+        ackTimeout = 5000;
+        */
 
         Runtime.getRuntime().addShutdownHook(
                 new Thread() {
@@ -108,8 +139,6 @@ public class SysmoWorker {
             /*
              * Send an availability information to the "nchecks" process
              */
-
-
             OtpErlangObject[] readyObj = new OtpErlangObject[5];
             readyObj[0] = new OtpErlangAtom("worker_available");
             readyObj[1] = new OtpErlangString(node.node());
@@ -127,19 +156,20 @@ public class SysmoWorker {
                     throw new JworkerInitException();
             } catch (Exception e) {
                 logger.error("Ack timed out:" + e.toString());
-                node.close();
+                logger.info("Closing mbox");
                 mainMbox.exit("normal");
+                logger.info("Closing node");
+                node.close();
                 nchecksThread.join();
                 continue;
             }
-
 
             while (node.ping(masterNode, 2000)) {
                 try {
                     if (!active) throw new JworkerShutdownException();
                     Thread.sleep(1000);
                 } catch (InterruptedException e) {
-                    logger.info(e.toString());
+                    logger.error(e.toString());
                     break;
                 } catch (JworkerShutdownException e) {
                     logger.info(e.toString());
@@ -163,6 +193,7 @@ public class SysmoWorker {
             super("Shutdown called from the machine");
         }
     }
+
     static class JworkerInitException extends Exception {
         public JworkerInitException() {
             super("Received bad term");

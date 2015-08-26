@@ -36,6 +36,7 @@ import org.slf4j.LoggerFactory;
 // AES192_3DES AES256_3DES
 import org.snmp4j.security.nonstandard.*;
 
+// TODO handle snmp v3 usm user modification;
 public class NChecksSNMP
 {
     public  Snmp snmp4jSession;
@@ -109,7 +110,7 @@ public class NChecksSNMP
                     agents.put(targetid, target);
                     return target;
                 }
-                // TODO then replace old user with new one.
+                // TODO then replace old user with new one, use a thread lock
             }
         }
         throw new Exception("User name exists with differents credencials");
