@@ -45,8 +45,7 @@
 
 -record(java_node, {name, pid}).
 -record(state, {
-    java_nodes      = [],
-    replies_waiting = []
+    java_nodes      = []
 }).
 
 -define(CHECK_TIMEOUT, 15000).
@@ -75,14 +74,12 @@ init([]) ->
 % CALL
 % @private
 handle_call({call_nchecks, {Command, Payload}}, From,
-        #state{java_nodes = JavaNodes, replies_waiting = RWait} = S) ->
+        #state{java_nodes = JavaNodes} = S) ->
     Node = lists:last(JavaNodes),
     JavaNodes2 = lists:droplast(JavaNodes),
     JavaNodes3 = [Node|JavaNodes2],
     Node#java_node.pid ! {Command, From, Payload},
-    {noreply, S#state{
-                java_nodes = JavaNodes3,
-                replies_waiting = [From|RWait]}}.
+    {noreply, S#state{java_nodes = JavaNodes3}}.
 
 
 % CAST
@@ -94,13 +91,9 @@ handle_cast(Cast ,S) ->
 
 % INFO
 % @private
-handle_info({reply, From, Reply}, #state{replies_waiting = RWait} = S) ->
+handle_info({reply, From, Reply}, S) ->
     gen_server:reply(From, Reply),
-    {noreply,
-        S#state{
-            replies_waiting = lists:delete(From, RWait)
-        }
-    };
+    {noreply, S};
 
 handle_info({worker_available, NodeName, MainMbox, NchecksMbox, _Weight} ,S) ->
     R = erlang:monitor_node(erlang:list_to_atom(NodeName), true),
