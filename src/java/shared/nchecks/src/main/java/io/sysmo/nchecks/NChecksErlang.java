@@ -70,7 +70,7 @@ public class NChecksErlang implements Runnable
     public NChecksErlang(
             final OtpMbox mbox, final String nodeName,
             final String rubyDir, final String utilsDir,
-            final String etcDir) throws Exception {
+            final String varDir) throws Exception {
         NChecksErlang.instance = this;
         this.nodeName = nodeName;
         this.mbox = mbox;
@@ -104,7 +104,7 @@ public class NChecksErlang implements Runnable
         this.logger.info("JRuby init with path: " + rubyDir);
 
         // initialize snmpman
-        NChecksSNMP.startSnmp(etcDir);
+        NChecksSNMP.startSnmp(varDir);
         this.logger.info("SNMP started");
     }
 

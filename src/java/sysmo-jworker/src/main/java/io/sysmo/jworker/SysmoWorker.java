@@ -55,7 +55,7 @@ public class SysmoWorker {
         String masterNode;
         String masterCookie;
         String utilsDir;
-        String etcDir;
+        String varDir;
         String rubyDir;
         int weight;
         int ackTimeout;
@@ -75,7 +75,7 @@ public class SysmoWorker {
             masterNode = prop.getProperty("master_node");
             masterCookie = prop.getProperty("master_cookie");
             utilsDir = prop.getProperty("utils_dir");
-            etcDir = prop.getProperty("etc_dir");
+            varDir = prop.getProperty("var_dir");
             rubyDir = prop.getProperty("ruby_dir");
             weight = Integer.parseInt(prop.getProperty("node_weight"));
             ackTimeout = Integer.parseInt(prop.getProperty("ack_timeout"));
@@ -129,7 +129,7 @@ public class SysmoWorker {
              */
             NChecksErlang nchecks =
                     new NChecksErlang(nchecksMbox, masterNode,
-                            rubyDir, utilsDir, etcDir);
+                            rubyDir, utilsDir, varDir);
 
             Thread nchecksThread = new Thread(nchecks);
             nchecksThread.start();

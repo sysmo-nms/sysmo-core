@@ -44,16 +44,15 @@ public class NChecksSNMP
     private static NChecksSNMP INSTANCE;
     private static Logger logger = LoggerFactory.getLogger(NChecksSNMP.class);
 
-    public static void startSnmp(final String etcDir) throws Exception {
-        new NChecksSNMP(etcDir);
+    public static void startSnmp(final String varDir) throws Exception {
+        new NChecksSNMP(varDir);
     }
-    private NChecksSNMP(final String etcDir) throws Exception
+    private NChecksSNMP(final String varDir) throws Exception
     {
-        try
-        {
+        try {
             String eidFile = FileSystems
                     .getDefault()
-                    .getPath(etcDir, "engine.id")
+                    .getPath(varDir, "engine.id")
                     .toString();
 
             byte[] engineId = SNMPUtils.getEngineId(eidFile);
@@ -64,9 +63,7 @@ public class NChecksSNMP
             SecurityModels.getInstance().addSecurityModel(usm);
             agents          = new HashMap<>();
             transport.listen();
-        }
-        catch (Exception e)
-        {
+        } catch (Exception e) {
             NChecksSNMP.logger.error("SNMP init fail: " + e.getMessage() + e);
             throw e;
         }
