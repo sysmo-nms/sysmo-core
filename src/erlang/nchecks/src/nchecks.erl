@@ -43,12 +43,12 @@
     helper/3
 ]).
 
+-record(java_node, {name, pid}).
 -record(state, {
-    java_pid        = undefined,
+    java_nodes      = [],
     replies_waiting = []
 }).
 
--define(ASSERT_TIMEOUT, 5000).
 -define(CHECK_TIMEOUT, 15000).
 
 helper(Class, Id, Props) ->
@@ -68,15 +68,21 @@ start_link() ->
 % @private
 init([]) ->
     JavaPid = sysmo:get_pid(nchecks),
-    ?LOG_INFO("success pid", JavaPid),
-    {ok, #state{java_pid=JavaPid}}.
+    JavaNode = #java_node{name='local',pid=JavaPid},
+    ?LOG_INFO("success pid", JavaNode),
+    {ok, #state{java_nodes=[JavaNode]}}.
 
 % CALL
 % @private
 handle_call({call_nchecks, {Command, Payload}}, From,
-        #state{java_pid = NChecks, replies_waiting = RWait} = S) ->
-    NChecks ! {Command, From, Payload},
-    {noreply, S#state{replies_waiting = [From|RWait]}}.
+        #state{java_nodes = JavaNodes, replies_waiting = RWait} = S) ->
+    Node = lists:last(JavaNodes),
+    JavaNodes2 = lists:droplast(JavaNodes),
+    JavaNodes3 = [Node|JavaNodes2],
+    Node#java_node.pid ! {Command, From, Payload},
+    {noreply, S#state{
+                java_nodes = JavaNodes3,
+                replies_waiting = [From|RWait]}}.
 
 
 % CAST
@@ -96,18 +102,25 @@ handle_info({reply, From, Reply}, #state{replies_waiting = RWait} = S) ->
         }
     };
 
-handle_info({worker_available, NodeName, _MainMbox, _NchecksMbox, _Weight} ,S) ->
+handle_info({worker_available, NodeName, MainMbox, NchecksMbox, _Weight} ,S) ->
     R = erlang:monitor_node(erlang:list_to_atom(NodeName), true),
     ?LOG_INFO("Begin to monitor node", {NodeName, R}),
-    {noreply, S};
+    L2 = [#java_node{name=NodeName,pid=NchecksMbox} |S#state.java_nodes],
+    MainMbox ! worker_ack,
+    {noreply, S#state{java_nodes=L2}};
 
 handle_info(stop, S) ->
     ?LOG_INFO("Received stop"),
     {noreply, S};
 
-handle_info({'EXIT', Pid, Reason}, #state{java_pid = Pid} = S) ->
+handle_info({'EXIT', _Pid, Reason}, S) ->
     ?LOG_WARNING("EXIT with reason:", Reason),
     {stop, Reason, S};
+
+handle_info({nodedown, NodeName}, S) ->
+    ?LOG_INFO("Received nodedown:", NodeName),
+    L2 = lists:keydelete(NodeName, 2, S#state.java_nodes),
+    {noreply, S#state{java_nodes=L2}};
 
 handle_info(I, S) ->
     ?LOG_INFO("Received handle info:", I),
