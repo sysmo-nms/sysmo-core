@@ -49,6 +49,9 @@ public class SysmoWorker {
 
     static boolean active = true;
     static final String selfShortName = "jworker";
+    static final int ACK_TIMEOUT = 5000;
+    static final int PING_TIMEOUT = 2000;
+    static final int RETRY_TIMEOUT = 2000;
 
     public static void main(String[] args) throws Exception
     {
@@ -58,7 +61,6 @@ public class SysmoWorker {
         String varDir;
         String rubyDir;
         int weight;
-        int ackTimeout;
 
         String configFile;
         try {
@@ -78,10 +80,9 @@ public class SysmoWorker {
             varDir = prop.getProperty("var_dir");
             rubyDir = prop.getProperty("ruby_dir");
             weight = Integer.parseInt(prop.getProperty("node_weight"));
-            ackTimeout = Integer.parseInt(prop.getProperty("ack_timeout"));
         } catch (Exception e) {
             System.err.println(
-                    "Error while loading the config file: " + e.toString());
+                    "Error while loading config file." + e.toString());
             System.exit(1);
             return;
         }
@@ -99,7 +100,7 @@ public class SysmoWorker {
          * Indefinitely loop and wait for master to come up
          */
         while (active) try {
-            Thread.sleep(2000);
+            Thread.sleep(SysmoWorker.RETRY_TIMEOUT);
 
             /*
              * Try to connect to erlang master node.
@@ -108,7 +109,7 @@ public class SysmoWorker {
             try {
                 node = new OtpNode(SysmoWorker.selfShortName, masterCookie);
                 // loop and wait for master node to come up
-                if (!node.ping(masterNode, 2000)) {
+                if (!node.ping(masterNode, SysmoWorker.PING_TIMEOUT)) {
                     logger.info("Foreign node down");
                     node.close();
                     continue;
@@ -149,7 +150,7 @@ public class SysmoWorker {
             logger.info("availability object sent, waiting for ack");
 
             try {
-                OtpMsg ack = mainMbox.receiveMsg(ackTimeout);
+                OtpMsg ack = mainMbox.receiveMsg(SysmoWorker.ACK_TIMEOUT);
                 OtpErlangAtom atom = (OtpErlangAtom) ack.getMsg();
                 if (!atom.toString().equals("worker_ack"))
                     throw new JworkerInitException();
@@ -163,7 +164,7 @@ public class SysmoWorker {
                 continue;
             }
 
-            while (node.ping(masterNode, 2000)) try {
+            while (node.ping(masterNode, SysmoWorker.PING_TIMEOUT)) try {
                 if (!active) throw new JworkerShutdownException();
                 Thread.sleep(1000);
             } catch (InterruptedException e) {

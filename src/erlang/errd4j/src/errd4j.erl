@@ -51,12 +51,10 @@
     %updates_fetch/0,
 ]).
 
--record(state, {
-    java_pid        = undefined,
-    replies_waiting = []
-}).
+-record(state, {java_pid}).
 
 -define(ASSERT_TIMEOUT, 5000).
+-define(CALL_TIMEOUT,   10000).
 
 
 -spec multi_update(Updates::[tuple()]) -> ok.
@@ -66,26 +64,30 @@
 % @end
 multi_update([]) -> ok;
 multi_update(Updates) ->
-    gen_server:call(?MODULE, {call_errd4j, {multi_update, {Updates}}}).
+    gen_server:call(?MODULE, {call_errd4j, {multi_update, {Updates}}},
+                    ?CALL_TIMEOUT).
 
--spec update(File::string(), Updates::{string(), integer()}, Timstamp::integer()) -> ok.
+-spec update(File::string(), Updates::{string(), integer()},
+             Timstamp::integer()) -> ok.
 % @doc
 % Execute an update to a single rrdfile.
 % example: Updates = [{"MaxRoundTrip", 3000}, {"MinRoundTrip", 399}],
 % @end
 update(File, Updates, Timestamp) ->
     Args = {File, Updates, Timestamp},
-    gen_server:call(?MODULE, {call_errd4j, {update, Args}}).
+    gen_server:call(?MODULE, {call_errd4j, {update, Args}}, ?CALL_TIMEOUT).
 
 
 -spec multi_create(Args::list()) -> ok.
 % @doc
 % Send multiple create command in one call. Args is a list of tuples with the
 % same elements as in create/4 call.
-% Example = [{"jojo.rrd",300,[{"speed", "COUNTER", 600, 0, 'Nan'}],"default"}...]
+% Example = [{"jojo.rrd",300,
+%   [{"speed", "COUNTER", 600, 0, 'Nan'}],"default"}...]
 % @end
 multi_create(Args) ->
-    gen_server:call(?MODULE, {call_errd4j, {multi_create, {Args}}}).
+    gen_server:call(?MODULE, 
+                    {call_errd4j, {multi_create, {Args}}}, ?CALL_TIMEOUT).
 
 
 -spec create(File::string(), Step::integer(), DDs::[]) -> ok.
@@ -123,10 +125,9 @@ init([]) ->
 
 % CALL
 % @private
-handle_call({call_errd4j, {Command, Payload}}, From,
-        #state{java_pid = Errd4j, replies_waiting = RWait} = S) ->
-    Errd4j ! {Command, From, Payload},
-    {noreply, S#state{replies_waiting = [From|RWait]}}.
+handle_call({call_errd4j, {Command, Payload}}, From, S) ->
+    S#state.java_pid ! {Command, From, Payload},
+    {noreply, S}.
 
 
 % CAST
@@ -140,13 +141,9 @@ handle_info(stop, S) ->
     ?LOG_INFO("Received stop"),
     {noreply, S};
 
-handle_info({reply, From, Reply}, #state{replies_waiting = RWait} = S) ->
+handle_info({reply, From, Reply}, S) ->
     gen_server:reply(From, Reply),
-    {noreply,
-        S#state{
-            replies_waiting = lists:delete(From, RWait)
-        }
-    };
+    {noreply, S};
 
 handle_info({'EXIT', Pid, Reason}, #state{java_pid = Pid} = S) ->
     ?LOG_WARNING("rrd4j EXIT with reason:", Reason),

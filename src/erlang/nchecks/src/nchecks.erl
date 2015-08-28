@@ -44,19 +44,19 @@
 ]).
 
 -record(java_node, {name, pid}).
--record(state, {
-    java_nodes      = []
-}).
+-record(state, {java_nodes=[]}).
 
--define(CHECK_TIMEOUT, 15000).
+-define(CALL_TIMEOUT, 15000).
+
+%% TODO implement node weight concept
 
 helper(Class, Id, Props) ->
     gen_server:call(?MODULE, {call_nchecks,
-                {helper, {Class, Id, Props}}}, ?CHECK_TIMEOUT).
+                {helper, {Class, Id, Props}}}, ?CALL_TIMEOUT).
 
 check(Class, ArgList, Opaque) ->
     gen_server:call(?MODULE, {call_nchecks,
-                {check, {Class, ArgList, Opaque}}}, ?CHECK_TIMEOUT).
+                {check, {Class, ArgList, Opaque}}}, ?CALL_TIMEOUT).
 
 
 % @private

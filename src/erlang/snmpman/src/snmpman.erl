@@ -48,12 +48,10 @@
     which_usm_users/0
 ]).
 
--record(state, {
-    java_pid      = undefined,
-    replies_waiting = []
-}).
+-record(state, {java_pid}).
 
 -define(ASSERT_TIMEOUT, 5000).
+-define(CALL_TIMEOUT, 10000).
 
 % @private
 start_link() ->
@@ -65,7 +63,7 @@ start_link() ->
 % @end
 which_usm_users() ->
     gen_server:call(?MODULE,
-        {call_snmp4j, {which_usm_users, {}}}, infinity).
+        {call_snmp4j, {which_usm_users, {}}}, ?CALL_TIMEOUT).
 
 -spec discovery(
         Ip::string(),
@@ -81,7 +79,7 @@ discovery(Ip, IpVersion, Port, Timeout) ->
     case snmpman_guard:validate_discovery_conf(Ip, IpVersion, Port, Timeout) of
         true ->
             gen_server:call(?MODULE,
-                {call_snmp4j, {discovery, {Ip,IpVersion,Port,Timeout}}}, infinity);
+                {call_snmp4j, {discovery, {Ip,IpVersion,Port,Timeout}}}, ?CALL_TIMEOUT);
         {false, Reason} ->
             {error, Reason}
     end.
@@ -103,7 +101,7 @@ element_registered(ElementName) ->
 % @end
 which_elements() ->
     gen_server:call(?MODULE,
-        {call_snmp4j, {which_elements, {}}}, infinity).
+        {call_snmp4j, {which_elements, {}}}, ?CALL_TIMEOUT).
 
 
 
@@ -113,8 +111,8 @@ which_elements() ->
 % Remove the specified element.
 % @end
 unregister_element(ElementName) ->
-    gen_server:call(?MODULE,
-        {call_snmp4j, {unregister_element, {ElementName}}}, infinity).
+    gen_server:call(?MODULE, {call_snmp4j, 
+                   {unregister_element, {ElementName}}}, ?CALL_TIMEOUT).
 
 
 
@@ -169,7 +167,7 @@ register_element(ElementName, ElementConf) ->
     case snmpman_guard:validate_register_conf(ElementDef) of
         true ->
             gen_server:call(?MODULE,
-                {call_snmp4j, {register_element, ElementDef}}, infinity);
+                {call_snmp4j, {register_element, ElementDef}}, ?CALL_TIMEOUT);
         Error ->
             Error
     end.
@@ -206,7 +204,8 @@ walk_table(Target, Oids) ->
     Cfg = {Target, Oids},
     case snmpman_guard:validate_oids(Oids) of
         true ->
-            gen_server:call(?MODULE, {call_snmp4j, {walk_table, Cfg}}, infinity);
+            gen_server:call(?MODULE, 
+                            {call_snmp4j, {walk_table, Cfg}}, ?CALL_TIMEOUT);
         false ->
             {error, "Bad OID value"}
     end.
@@ -223,7 +222,8 @@ walk_tree(Target, Oid) ->
     Cfg = {Target, Oid},
     case snmpman_guard:validate_oids([Oid]) of
         true ->
-            gen_server:call(?MODULE, {call_snmp4j, {walk_tree, Cfg}}, infinity);
+            gen_server:call(?MODULE,
+                            {call_snmp4j, {walk_tree, Cfg}}, ?CALL_TIMEOUT);
         false ->
             {error, "Bad OID value"}
     end.
@@ -243,7 +243,8 @@ get(Target, Oids) ->
     Cfg = {Target, Oids},
     case snmpman_guard:validate_oids(Oids) of
         true ->
-            gen_server:call(?MODULE, {call_snmp4j, {get, Cfg}}, infinity);
+            gen_server:call(?MODULE,
+                            {call_snmp4j, {get, Cfg}}, ?CALL_TIMEOUT);
         false ->
             {error, "Bad OID value"}
     end.
@@ -259,10 +260,9 @@ init([]) ->
 
 % CALL
 % @private
-handle_call({call_snmp4j, {Command, Payload}}, From,
-        #state{java_pid = Snmp4j, replies_waiting = RWait} = S) ->
-    Snmp4j ! {Command, From, Payload},
-    {noreply, S#state{replies_waiting = [From|RWait]}}.
+handle_call({call_snmp4j, {Command, Payload}}, From, S) ->
+    S#state.java_pid ! {Command, From, Payload},
+    {noreply, S}.
 
 % @private
 handle_cast(_,S) ->
@@ -275,13 +275,9 @@ handle_info(stop, S) ->
     ?LOG_INFO("Received stop"),
     {noreply, S};
 
-handle_info({reply, From, Reply}, #state{replies_waiting = RWait} = S) ->
+handle_info({reply, From, Reply}, S) ->
     gen_server:reply(From, Reply),
-    {noreply,
-        S#state{
-            replies_waiting = lists:delete(From, RWait)
-        }
-    };
+    {noreply, S};
 
 handle_info(I, S) ->
     ?LOG_INFO("received handle info:", I),
