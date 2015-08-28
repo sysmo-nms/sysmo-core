@@ -78,6 +78,7 @@ handle_call({call_nchecks, {Command, Payload}}, From,
     Node = lists:last(JavaNodes),
     JavaNodes2 = lists:droplast(JavaNodes),
     JavaNodes3 = [Node|JavaNodes2],
+    ?LOG_INFO("Calling nchecks node", {node, Node}),
     Node#java_node.pid ! {Command, From, Payload},
     {noreply, S#state{java_nodes = JavaNodes3}}.
 
@@ -96,7 +97,7 @@ handle_info({reply, From, Reply}, S) ->
     {noreply, S};
 
 handle_info({worker_available, NodeName, MainMbox, NchecksMbox, _Weight} ,S) ->
-    R = erlang:monitor_node(erlang:list_to_atom(NodeName), true),
+    R = erlang:monitor_node(NodeName, true),
     ?LOG_INFO("Begin to monitor node", {NodeName, R}),
     L2 = [#java_node{name=NodeName,pid=NchecksMbox} |S#state.java_nodes],
     MainMbox ! worker_ack,

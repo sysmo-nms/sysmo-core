@@ -36,6 +36,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.nio.file.FileSystems;
 
 public class SysmoServer {
 
@@ -111,7 +112,31 @@ public class SysmoServer {
         /*
          * Create NChecks thread
          */
-        NChecksErlang nchecks = new NChecksErlang(nchecksMbox, foreignNodeName);
+        String rubyDir = FileSystems
+                .getDefault()
+                .getPath("ruby")
+                .toString();
+
+        String utilsDir = FileSystems
+                .getDefault()
+                .getPath("utils")
+                .toString();
+
+        String etcDir = FileSystems
+                .getDefault()
+                .getPath("etc")
+                .toString();
+
+        NChecksErlang nchecks;
+        try {
+            nchecks = new NChecksErlang(
+                    nchecksMbox, foreignNodeName, rubyDir, utilsDir, etcDir);
+        } catch (Exception e) {
+            logger.error("NChecks failed to start" + e.toString());
+            System.err.println("NChecks failed to start" + e.toString());
+            return;
+        }
+
         Thread nchecksThread = new Thread(nchecks);
         nchecksThread.start();
 

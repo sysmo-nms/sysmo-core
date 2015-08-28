@@ -39,7 +39,6 @@ import com.ericsson.otp.erlang.OtpMbox;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.file.FileSystems;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Iterator;
@@ -68,21 +67,16 @@ public class NChecksErlang implements Runnable
     static NChecksErlang instance;
     public Logger logger;
 
-    public NChecksErlang(final OtpMbox mbox, final String nodeName) {
+    public NChecksErlang(
+            final OtpMbox mbox, final String nodeName,
+            final String rubyDir, final String utilsDir,
+            final String etcDir) throws Exception {
         NChecksErlang.instance = this;
         this.nodeName = nodeName;
         this.mbox = mbox;
         this.logger = LoggerFactory.getLogger(NChecksErlang.class);
 
-        String rubyDir = FileSystems
-                .getDefault()
-                .getPath("ruby")
-                .toString();
 
-        String utilsDir = FileSystems
-                .getDefault()
-                .getPath("utils")
-                .toString();
 
         this.logger.info("ruby dir is: " + rubyDir);
 
@@ -110,7 +104,7 @@ public class NChecksErlang implements Runnable
         this.logger.info("JRuby init with path: " + rubyDir);
 
         // initialize snmpman
-        NChecksSNMP.startSnmp();
+        NChecksSNMP.startSnmp(etcDir);
         this.logger.info("SNMP started");
     }
 

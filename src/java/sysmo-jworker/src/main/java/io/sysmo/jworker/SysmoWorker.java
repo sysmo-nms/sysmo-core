@@ -24,7 +24,6 @@ package io.sysmo.jworker;
 import com.ericsson.otp.erlang.OtpErlangAtom;
 import com.ericsson.otp.erlang.OtpErlangInt;
 import com.ericsson.otp.erlang.OtpErlangObject;
-import com.ericsson.otp.erlang.OtpErlangString;
 import com.ericsson.otp.erlang.OtpErlangTuple;
 import com.ericsson.otp.erlang.OtpMbox;
 import com.ericsson.otp.erlang.OtpMsg;
@@ -53,10 +52,13 @@ public class SysmoWorker {
 
     public static void main(String[] args) throws Exception
     {
-        String masterNode = "undefined";
-        String masterCookie = "undefined";
-        int weight = 10;
-        int ackTimeout = 2000;
+        String masterNode;
+        String masterCookie;
+        String utilsDir;
+        String etcDir;
+        String rubyDir;
+        int weight;
+        int ackTimeout;
 
         String configFile;
         try {
@@ -72,23 +74,19 @@ public class SysmoWorker {
             prop.load(input);
             masterNode = prop.getProperty("master_node");
             masterCookie = prop.getProperty("master_cookie");
+            utilsDir = prop.getProperty("utils_dir");
+            etcDir = prop.getProperty("etc_dir");
+            rubyDir = prop.getProperty("ruby_dir");
             weight = Integer.parseInt(prop.getProperty("node_weight"));
             ackTimeout = Integer.parseInt(prop.getProperty("ack_timeout"));
         } catch (Exception e) {
             System.err.println(
                     "Error while loading the config file: " + e.toString());
             System.exit(1);
+            return;
         }
         Logger logger = LoggerFactory.getLogger(SysmoWorker.class);
         logger.info("jworker started");
-
-        // TODO read from a property file
-        /*
-        masterNode = "sysmo-erlang@127.0.0.1";
-        masterCookie = "sysmo-cookie";
-        weight = 1;
-        ackTimeout = 5000;
-        */
 
         Runtime.getRuntime().addShutdownHook(
                 new Thread() {
@@ -100,7 +98,7 @@ public class SysmoWorker {
         /*
          * Indefinitely loop and wait for master to come up
          */
-        while (active) {
+        while (active) try {
             Thread.sleep(2000);
 
             /*
@@ -130,7 +128,8 @@ public class SysmoWorker {
              * Create Nchecks thread
              */
             NChecksErlang nchecks =
-                    new NChecksErlang(nchecksMbox, masterNode);
+                    new NChecksErlang(nchecksMbox, masterNode,
+                            rubyDir, utilsDir, etcDir);
 
             Thread nchecksThread = new Thread(nchecks);
             nchecksThread.start();
@@ -141,7 +140,7 @@ public class SysmoWorker {
              */
             OtpErlangObject[] readyObj = new OtpErlangObject[5];
             readyObj[0] = new OtpErlangAtom("worker_available");
-            readyObj[1] = new OtpErlangString(node.node());
+            readyObj[1] = new OtpErlangAtom(node.node());
             readyObj[2] = mainMbox.self();
             readyObj[3] = nchecksMbox.self();
             readyObj[4] = new OtpErlangInt(weight);
@@ -164,26 +163,29 @@ public class SysmoWorker {
                 continue;
             }
 
-            while (node.ping(masterNode, 2000)) {
-                try {
-                    if (!active) throw new JworkerShutdownException();
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    logger.error(e.toString());
-                    break;
-                } catch (JworkerShutdownException e) {
-                    logger.info(e.toString());
-                    break;
-                }
+            while (node.ping(masterNode, 2000)) try {
+                if (!active) throw new JworkerShutdownException();
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                logger.error(e.toString());
+                break;
+            } catch (JworkerShutdownException e) {
+                logger.info(e.toString());
+                break;
             }
 
-            logger.info("Closing node and main mbox");
+            logger.info("Exiting main mbox");
+
             // mbox.exit() will raise an exception in the nchecksThread mbox
-            node.close();
             mainMbox.exit("normal");
 
             logger.info("Wait for nchecks thread to join");
             nchecksThread.join();
+            logger.info("Ncheck thread joined");
+        } catch (Exception e) {
+            logger.error(e.toString());
+            System.err.println(e.toString());
+            System.exit(1);
         }
         System.exit(0);
     }

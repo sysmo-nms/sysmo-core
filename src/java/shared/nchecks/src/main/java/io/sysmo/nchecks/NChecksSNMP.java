@@ -44,12 +44,19 @@ public class NChecksSNMP
     private static NChecksSNMP INSTANCE;
     private static Logger logger = LoggerFactory.getLogger(NChecksSNMP.class);
 
-    public static void startSnmp() {new NChecksSNMP();}
-    private NChecksSNMP()
+    public static void startSnmp(final String etcDir) throws Exception {
+        new NChecksSNMP(etcDir);
+    }
+    private NChecksSNMP(final String etcDir) throws Exception
     {
         try
         {
-            byte[] engineId = SNMPUtils.getEngineId("etc/worker_engine.id");
+            String eidFile = FileSystems
+                    .getDefault()
+                    .getPath(etcDir, "engine.id")
+                    .toString();
+
+            byte[] engineId = SNMPUtils.getEngineId(eidFile);
             UdpTransportMapping transport = new DefaultUdpTransportMapping();
             snmp4jSession   = new Snmp(transport);
             USM usm         = new USM(SecurityProtocols.getInstance(),
@@ -61,6 +68,7 @@ public class NChecksSNMP
         catch (Exception e)
         {
             NChecksSNMP.logger.error("SNMP init fail: " + e.getMessage() + e);
+            throw e;
         }
         INSTANCE = this;
     }
