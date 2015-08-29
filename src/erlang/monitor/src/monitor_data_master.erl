@@ -98,14 +98,20 @@ do_new(target, Target) ->
     {ok, DataDir} = application:get_env(monitor,targets_data_dir),
     Name = generate_id(target),
     VDir = {var_directory, filename:join(DataDir,Name)},
-    SP   = lists:keystore(var_directory, 1, Target#target.sys_properties, VDir),
+    SP = lists:keystore(var_directory, 1, Target#target.sys_properties, VDir),
     SName = {"staticName", Name},
-    P    = lists:keystore("staticName", 1, Target#target.properties, SName),
+    P = lists:keystore("staticName", 1, Target#target.properties, SName),
     ITarget = Target#target{name=Name,sys_properties=SP,properties=P},
-    mnesia:dirty_write(ITarget),
-    monitor_utils:init_target_snmp(ITarget),
-    monitor_utils:init_target_dir(ITarget),
-    Name;
+
+    % if register target snmp (v3) is valid (USM user valid) continue
+    case monitor_utils:init_target_snmp(ITarget) of
+        ok ->
+            monitor_utils:init_target_dir(ITarget),
+            mnesia:dirty_write(ITarget),
+            Name;
+        Error ->
+            Error
+    end;
 do_new(dependency, Dep) ->
     mnesia:dirty_write(Dep),
     Dep#dependency.a_probe.

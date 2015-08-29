@@ -76,7 +76,11 @@ del_job(JobName) ->
 
 new_target(SysProp, Props) ->
     Default = ?DEFAULT_TARGET_PROPERTIES,
-    NewProp = lists:foldl(fun({K,V},Acc) -> lists:keystore(K,1,Acc,{K,V}) end, Default, Props),
+    NewProp = lists:foldl(
+        fun({K,V},Acc) ->
+           lists:keystore(K,1,Acc,{K,V})
+        end,
+    Default, Props),
     T = #target{sys_properties=SysProp,properties=NewProp},
     monitor_data_master:new(target, T).
 

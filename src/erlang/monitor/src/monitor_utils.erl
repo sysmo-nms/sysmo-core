@@ -74,10 +74,7 @@ init_target_snmp(Target) ->
                 {retries,           SnmpRetries},
                 {security_name,     SnmpUsmUser}
             ],
-            case snmpman:register_element(Target#target.name, SnmpArgs) of
-                ok    -> ok;
-                Other -> exit(Other)
-            end
+            snmpman:register_element(Target#target.name, SnmpArgs)
     end.
 
 walk_ifTable(Props,SProps) ->

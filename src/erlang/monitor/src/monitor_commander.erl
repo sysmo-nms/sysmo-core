@@ -61,18 +61,25 @@ handle_cast({{"createTargetQuery", Contents}, CState}, S) ->
     NProp    = [{binary_to_list(Key), maybe_str(Val)} || {Key,Val} <- Prop],
     NSysProp = [{binary_to_list(Key), maybe_str(Val)} || {Key,Val} <- SProp],
     {NProp2, NSysProp2} = sysprop_guard(NProp,NSysProp),
-    TargetId = monitor:new_target(NSysProp2, NProp2),
-    case snmp_enabled(NProp2) of
-        true ->
-            SInfoJob  = monitor:new_job(
-                          update_snmp_system_info, TargetId),
-            IfInfoJob = monitor:new_job(
-                          update_snmp_if_aliases,  TargetId),
-            monitor:fire_job(SInfoJob),
-            monitor:fire_job(IfInfoJob);
-        false -> ok
+
+    % can fail if USM user is incorrect
+    case monitor:new_target(NSysProp2, NProp2) of
+        {error, Error} ->
+            ?LOG_ERROR("Create target error: ", Error),
+            ReplyPDU = monitor_pdu:simpleReply(QueryId, true, false, Error);
+        TargetId ->
+            ReplyPDU = monitor_pdu:simpleReply(QueryId, true, true, TargetId),
+            case snmp_enabled(NProp2) of
+                true ->
+                    SInfoJob  = monitor:new_job(
+                                  update_snmp_system_info, TargetId),
+                    IfInfoJob = monitor:new_job(
+                                  update_snmp_if_aliases,  TargetId),
+                    monitor:fire_job(SInfoJob),
+                    monitor:fire_job(IfInfoJob);
+                false -> ok
+            end
     end,
-    ReplyPDU = monitor_pdu:simpleReply(QueryId, true, true, TargetId),
     supercast_channel:unicast(CState, [ReplyPDU]),
     {noreply, S};
 

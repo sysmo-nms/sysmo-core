@@ -281,7 +281,7 @@ public class SnmpManager implements Runnable
                     SnmpManager.sendReply(caller, atomOk);
                 } else {
                     OtpErlangTuple reply = SnmpManager.buildErrorReply(
-                            new OtpErlangString("USM user definition do not match a predefined entry")
+                            new OtpErlangString("Snmp USM user already exists with a different auth/priv config. This is not allowed.")
                     );
                     SnmpManager.sendReply(caller, reply);
                 }
