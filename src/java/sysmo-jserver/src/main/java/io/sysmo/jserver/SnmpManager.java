@@ -429,7 +429,14 @@ public class SnmpManager implements Runnable
             this.snmp4jSession.getUSM().addUser(newUsmUser);
             return true;
         }  else { // usm user exist
-            return this.usmUsersEquals(existUsmUser.getUsmUser(), newUsmUser);
+            boolean userIsEqual = this.usmUsersEquals(
+                        existUsmUser.getUsmUser(), newUsmUser);
+            // and must be identical
+            if (!userIsEqual) {
+                this.logger.error(
+                        "Bad USM user config for " + newUsmUser.toString());
+            }
+            return userIsEqual;
         }
     }
 
