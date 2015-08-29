@@ -22,6 +22,9 @@ pping.exe
 # sysmo release
 /sysmo
 
+# sysmo-worker release
+/sysmo-worker
+
 # local TODO files
 *TODO*
 

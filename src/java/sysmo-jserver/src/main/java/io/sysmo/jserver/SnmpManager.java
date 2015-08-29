@@ -93,6 +93,8 @@ public class SnmpManager implements Runnable
     private Map<String, SnmpmanElement> snmpmanElements;
     private Logger logger;
 
+    // TODO: crash when configuring a USM user with the same name but not the same
+    // TODO: auth/priv method. Should return an error.
     public SnmpManager(final OtpMbox mbox, final String nodeName) {
         SnmpManager.instance = this;
         this.snmpmanElements = new HashMap<>();
@@ -199,33 +201,41 @@ public class SnmpManager implements Runnable
             {
                 case "get":
                     this.handleGet(caller, payload);
+                    this.logger.info("Handle get: " + payload.toString());
                     break;
 
                 case "walk_tree":
                     this.handleWalkTree(caller, payload);
+                    this.logger.info("Handle walk_tree: " + payload.toString());
                     break;
 
                 case "walk_table":
                     this.handleWalkTable(caller, payload);
+                    this.logger.info("Handle walk_table: " + payload.toString());
                     break;
 
                 case "discovery":
                     this.handleDiscovery(caller, payload);
+                    this.logger.info("Handle discovery: " + payload.toString());
                     break;
 
                 case "register_element":
+                    this.logger.info("Handle register_element");
                     this.handleRegisterElement(caller, payload);
                     break;
 
                 case "unregister_element":
+                    this.logger.info("Handle unregister_element");
                     this.handleUnregisterElement(caller, payload);
                     break;
 
                 case "which_elements":
+                    this.logger.info("Handle which_element");
                     this.handleWhichElements(caller);
                     break;
 
                 case "which_usm_users":
+                    this.logger.info("Handle which_usm_users");
                     this.handleWhichUSMUsers(caller);
                     break;
                 default:
@@ -269,14 +279,13 @@ public class SnmpManager implements Runnable
                 if (registerUSMUser(registerArgs)) {
                     this.snmpmanElements.put(element.getName(), element);
                     SnmpManager.sendReply(caller, atomOk);
-                    break;
                 } else {
                     OtpErlangTuple reply = SnmpManager.buildErrorReply(
                             new OtpErlangString("USM user definition do not match a predefined entry")
                     );
                     SnmpManager.sendReply(caller, reply);
-                    break;
                 }
+                break;
             default:
                 element.setTarget(this.generateTarget(registerArgs));
                 element.setName(registerArgs.elementName);
@@ -521,6 +530,7 @@ public class SnmpManager implements Runnable
             columnOIDs[i] = new OID(val.stringValue());
         }
 
+        // TODO calculate lower and upper bound indexes
         OID lowerBoundIndex = null;
         OID upperBoundIndex = null;
 

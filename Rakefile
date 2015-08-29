@@ -40,6 +40,7 @@ GRADLE    = File.join(JAVA_DIR,  "gradlew")
 # tasks
 #
 task :default => :rel
+task :rel => :release
 
 desc "Build all"
 task :build => [:java, :erl, :pping]
@@ -65,6 +66,7 @@ task :clean do
   cd ERLANG_DIR; sh "#{REBAR} -r clean"
   cd GO_DIR;     sh "go clean pping.go"
   cd ROOT;       sh "#{REBAR} clean"
+  FileUtils.rm_rf("sysmo-worker")
 end
 
 desc "Test erlang and java apps"
@@ -85,12 +87,23 @@ task :doc do
 end
 
 desc "Generate a fresh release in directory ./sysmo"
-task :rel => [:build] do
+task :release => [:build] do
   FileUtils.rm_rf("sysmo/java_apps")
   cd ROOT; sh "#{REBAR} generate"
   install_pping_command()
   generate_all_checks()
   puts "Release ready!"
+end
+
+task :release_worker => [:java, :pping] do
+  cd ROOT
+  FileUtils.rm_rf("sysmo-worker")
+  FileUtils.mv("src/java/sysmo-jworker/build/install/sysmo-jworker",
+               "sysmo-worker")
+  FileUtils.mkdir("sysmo-worker/utils")
+  FileUtils.cp("src/go/pping", "sysmo-worker/utils/")
+  FileUtils.cp_r("src/ruby/checks", "sysmo-worker/ruby")
+  FileUtils.mkdir("sysmo-worker/var")
 end
 
 desc "Run the release in foreground"
