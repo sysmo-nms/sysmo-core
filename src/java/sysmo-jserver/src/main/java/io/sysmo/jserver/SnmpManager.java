@@ -328,6 +328,7 @@ public class SnmpManager implements Runnable
             }
             if (deleteUsm) {
                 this.snmp4jSession.getUSM().removeAllUsers(secUser);
+                // TODO notify server usm name is reusable
             }
         }
 
@@ -1059,7 +1060,7 @@ class GetNextPDUFactory implements PDUFactory
         PDU request;
         if (target.getVersion() == SnmpConstants.version3) {
             request = new ScopedPDU();
-            ScopedPDU scopedPDU = (ScopedPDU)request;
+            //ScopedPDU scopedPDU = (ScopedPDU)request;
         } else {
             request = new PDU();
         }

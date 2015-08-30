@@ -21,13 +21,9 @@
 % @private
 -module(monitor_utils).
 -include("include/monitor.hrl").
--include("include/monitor_snmp.hrl").
 
--export([
-    init_target_snmp/1,
-    init_target_dir/1,
-    walk_ifTable/2
-]).
+-export([init_target_snmp/1,cleanup_target_snmp/1,init_target_dir/1]).
+
 
 init_target_dir(Target) ->
     Dir = proplists:get_value(var_directory, Target#target.sys_properties),
@@ -77,39 +73,6 @@ init_target_snmp(Target) ->
             snmpman:register_element(Target#target.name, SnmpArgs)
     end.
 
-walk_ifTable(Props,SProps) ->
-    PortString      = proplists:get_value("snmp_port",      SProps),
-    TimeoutString   = proplists:get_value("snmp_timeout",   SProps),
-    SnmpVer         = proplists:get_value("snmp_version",   SProps),
-    Community       = proplists:get_value("snmp_community", SProps, "public"),
-    SecLevel        = proplists:get_value("snmp_seclevel",  SProps, "noAuthNoPriv"),
-    SecName         = proplists:get_value("snmp_usm_user",  SProps, "undefined"),
-    AuthProto       = proplists:get_value("snmp_authproto", SProps, "MD5"),
-    AuthKey         = proplists:get_value("snmp_authkey",   SProps, "undefined"),
-    PrivProto       = proplists:get_value("snmp_privproto", SProps, "DES"),
-    PrivKey         = proplists:get_value("snmp_privkey",   SProps, "undefined"),
-    Host            = proplists:get_value("host",           Props),
-    Port    = erlang:list_to_integer(PortString),
-    Timeout = erlang:list_to_integer(TimeoutString),
 
-    case snmpman:register_element(?TMP_AGENT,
-        [
-            {host,          Host},
-            {snmp_version,  SnmpVer},
-            {security_level,SecLevel},
-            {port,          Port},
-            {timeout,       Timeout},
-            {community,     Community},
-            {priv_proto,    PrivProto},
-            {priv_key,      PrivKey},
-            {auth_proto,    AuthProto},
-            {auth_key,      AuthKey},
-            {security_name, SecName}
-        ]) of
-        ok ->
-            R = snmpman:walk_table(?TMP_AGENT, ?IF_INFO),
-            snmpman:unregister_element(?TMP_AGENT),
-            R;
-        {error, Error} ->
-            {error, Error}
-    end.
+cleanup_target_snmp(Target) ->
+    spawn(fun() -> snmpman:unregister_element(Target) end).

@@ -20,11 +20,7 @@
 % @private
 -module(snmpman_guard).
 -include("include/snmpman.hrl").
--export([
-    validate_discovery_conf/4,
-    validate_register_conf/1,
-    validate_oids/1
-]).
+-export([validate_discovery_conf/4,validate_register_conf/1,validate_oids/1]).
 
 validate_oids(_) -> true.
 

@@ -30,23 +30,10 @@
 % utils
 -export([start_link/0]).
 
-
 % API
--export([
-    get/2,
-    walk_tree/2,
-    walk_table/2,
-
-    discovery/4,
-
-    register_element/2,
-    which_elements/0,
-    unregister_element/1,
-
-    element_registered/1,
-
-    which_usm_users/0
-]).
+-export([get/2,walk_tree/2,walk_table/2,discovery/4,
+         register_element/2,which_elements/0,unregister_element/1,
+         element_registered/1,which_usm_users/0]).
 
 -record(state, {java_pid}).
 
@@ -111,7 +98,7 @@ which_elements() ->
 % Remove the specified element.
 % @end
 unregister_element(ElementName) ->
-    gen_server:call(?MODULE, {call_snmp4j, 
+    gen_server:call(?MODULE, {call_snmp4j,
                    {unregister_element, {ElementName}}}, ?CALL_TIMEOUT).
 
 
@@ -204,7 +191,7 @@ walk_table(Target, Oids) ->
     Cfg = {Target, Oids},
     case snmpman_guard:validate_oids(Oids) of
         true ->
-            gen_server:call(?MODULE, 
+            gen_server:call(?MODULE,
                             {call_snmp4j, {walk_table, Cfg}}, ?CALL_TIMEOUT);
         false ->
             {error, "Bad OID value"}
@@ -265,7 +252,8 @@ handle_call({call_snmp4j, {Command, Payload}}, From, S) ->
     {noreply, S}.
 
 % @private
-handle_cast(_,S) ->
+handle_cast(Cast,S) ->
+    ?LOG_INFO("received handle cast:", Cast),
     {noreply, S}.
 
 

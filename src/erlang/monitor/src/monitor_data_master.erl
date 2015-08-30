@@ -24,37 +24,16 @@
 -include_lib("common_hrl/include/logs.hrl").
 
 % GEN_SERVER
--export([
-    init/1,
-    handle_call/3,
-    handle_cast/2,
-    handle_info/2,
-    terminate/2,
-    code_change/3
-]).
+-export([init/1,handle_call/3,handle_cast/2,handle_info/2,
+         terminate/2,code_change/3]).
 
--export([
-    start_link/0
-]).
+-export([start_link/0]).
 
 % API
--export([
-    new/2,
-    get/2,
-    update/2,
-    delete/2,
-    iterate/2,
+-export([new/2,get/2,update/2,delete/2,iterate/2,get_jobs/1,
+         get_probes/1,which/1]).
 
-    get_jobs/1,
-    get_probes/1,
-
-    which/1,
-
-    % probe state
-    get_probe_state/1,
-    set_probe_state/1,
-    del_probe_state/1
-]).
+-export([get_probe_state/1,set_probe_state/1,del_probe_state/1]).
 
 %%----------------------------------------------------------------------------
 %% API
@@ -157,6 +136,7 @@ delete(Table, Key) ->
 do_delete(target, Key) ->
     lists:foreach(fun(J) -> do_delete(job,   J) end, do_get_jobs(Key)),
     lists:foreach(fun(P) -> do_delete(probe, P) end, do_get_probes(Key)),
+    monitor_utils:cleanup_target_snmp(Key),
     mnesia:dirty_delete({target,Key});
 do_delete(probe, Key) ->
     shutdown_probe(Key),
