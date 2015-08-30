@@ -42,7 +42,7 @@ public class CheckViaJRuby implements NChecksInterface //, NHelperInterface
             rbScript = query.get("check_id").asString();
             script = NChecksJRuby.getInstance().getScript(rbScript);
         } catch (Exception e) {
-            CheckViaJRuby.logger.error(e.toString());
+            CheckViaJRuby.logger.error(e.getMessage(), e);
             return CheckViaJRuby.handleError(
                     "Script not found: " + rbScript, e);
         }
@@ -53,7 +53,7 @@ public class CheckViaJRuby implements NChecksInterface //, NHelperInterface
         try {
             rep = container.callMethod(receiver,"check",query,Reply.class);
         } catch(Exception e) {
-            CheckViaJRuby.logger.error(e.toString());
+            CheckViaJRuby.logger.error(e.getMessage(), e);
             return CheckViaJRuby.handleError(
                     "Script execution failure: " + rbScript, e);
         }
@@ -69,7 +69,7 @@ public class CheckViaJRuby implements NChecksInterface //, NHelperInterface
 
     private static Reply handleError(String txt, Exception e) {
         String msg = e.getMessage();
-        CheckViaJRuby.logger.error(e.toString());
+        CheckViaJRuby.logger.error(e.getMessage(), e);
         Reply reply = new Reply();
         reply.setStatus(Reply.STATUS_ERROR);
         reply.setReply("CheckViaJRuby ERROR: " + txt + msg);

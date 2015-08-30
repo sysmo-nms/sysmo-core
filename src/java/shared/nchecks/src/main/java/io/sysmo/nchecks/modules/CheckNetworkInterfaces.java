@@ -53,7 +53,7 @@ import org.slf4j.LoggerFactory;
 
 public class CheckNetworkInterfaces implements NChecksInterface, NHelperInterface
 {
-    private static Logger logger =
+    static Logger logger =
             LoggerFactory.getLogger(CheckNetworkInterfaces.class);
     private static String IF_INDEX = "1.3.6.1.2.1.2.2.1.1";
     private static String IF_IN_OCTETS = "1.3.6.1.2.1.2.2.1.10";
@@ -88,7 +88,7 @@ public class CheckNetworkInterfaces implements NChecksInterface, NHelperInterfac
         try {
             ifSelection = query.get("if_selection").asString();
         } catch (Exception|Error e) {
-            CheckNetworkInterfaces.logger.error(e.toString());
+            CheckNetworkInterfaces.logger.error(e.getMessage(), e);
             reply.setStatus(Reply.STATUS_ERROR);
             reply.setReply("Missing or wrong argument: " + e);
             return reply;
@@ -152,7 +152,7 @@ public class CheckNetworkInterfaces implements NChecksInterface, NHelperInterfac
             reply.setReply("IfPerTableTest success fetch for: " + ifSelection);
             return reply;
         } catch (Exception|Error e) {
-            CheckNetworkInterfaces.logger.error(e.toString());
+            CheckNetworkInterfaces.logger.error(e.getMessage(), e);
             reply.setStatus(Reply.STATUS_ERROR);
             reply.setReply("Error: " + error);
             return reply;
@@ -266,6 +266,7 @@ class GetIfTableHelper
             return table;
 
         } catch (Exception|Error e) {
+            CheckNetworkInterfaces.logger.error(e.getMessage(), e);
             NHelperSimpleReply simple = new NHelperSimpleReply();
             simple.setId("SelectNetworkInterfaces");
             simple.setStatus(NHelperReply.FAILURE);

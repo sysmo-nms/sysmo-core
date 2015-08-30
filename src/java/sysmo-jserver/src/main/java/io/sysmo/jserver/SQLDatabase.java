@@ -76,7 +76,7 @@ public class SQLDatabase implements Runnable
             Class.forName("org.apache.derby.jdbc.EmbeddedDriver").newInstance();
             this.logger.info("Loaded the appropriate driver");
         } catch (Exception e) {
-            this.logger.error(e.toString());
+            this.logger.error(e.getMessage(), e);
         }
 
         String protocol = "jdbc:derby:";
@@ -246,18 +246,18 @@ public class SQLDatabase implements Runnable
         while (true) try {
             this.mbox.receive();
         } catch (OtpErlangExit |OtpErlangDecodeException e) {
-            this.logger.warn(e.toString());
+            this.logger.warn(e.getMessage(), e);
             try {
                 DriverManager.getConnection("jdbc:derby:;shutdown=true");
                 this.conn.close();
             } catch (SQLException se) {
                 if (    se.getErrorCode() == 50000 &&
                         se.getSQLState().equals("XJ015") ) {
-                    this.logger.info("Derby shutdown ok");
+                    this.logger.info("Derby shutdown ok", se);
                 }
-                this.logger.warn("Shutdown exception: " + se.toString());
+                this.logger.warn("Shutdown exception: ", se);
             } catch (Exception other) {
-                this.logger.warn("Shutdown exception: " + other.toString());
+                this.logger.warn("Shutdown exception: ", other);
             }
             break;
         }

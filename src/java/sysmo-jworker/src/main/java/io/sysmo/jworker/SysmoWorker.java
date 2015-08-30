@@ -115,7 +115,7 @@ public class SysmoWorker {
                     continue;
                 }
             } catch (IOException e) {
-                logger.error(e.toString());
+                logger.error(e.getMessage(), e);
                 continue;
             }
 
@@ -155,7 +155,7 @@ public class SysmoWorker {
                 if (!atom.toString().equals("worker_ack"))
                     throw new JworkerInitException();
             } catch (Exception e) {
-                logger.error("Ack timed out:" + e.toString());
+                logger.error("Ack timed out:" + e.getMessage(), e);
                 logger.info("Closing mbox");
                 mainMbox.exit("normal");
                 logger.info("Closing node");
@@ -168,10 +168,10 @@ public class SysmoWorker {
                 if (!active) throw new JworkerShutdownException();
                 Thread.sleep(1000);
             } catch (InterruptedException e) {
-                logger.error(e.toString());
+                logger.error(e.getMessage(), e);
                 break;
             } catch (JworkerShutdownException e) {
-                logger.info(e.toString());
+                logger.info(e.getMessage(), e);
                 break;
             }
 
@@ -184,7 +184,7 @@ public class SysmoWorker {
             nchecksThread.join();
             logger.info("Ncheck thread joined");
         } catch (Exception e) {
-            logger.error(e.toString());
+            logger.error(e.getMessage(), e);
             System.err.println(e.toString());
             System.exit(1);
         }

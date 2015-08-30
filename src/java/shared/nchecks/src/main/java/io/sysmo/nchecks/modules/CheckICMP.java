@@ -34,9 +34,13 @@ import java.nio.file.FileSystems;
 
 import java.net.InetAddress;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class CheckICMP implements NChecksInterface
 {
+    static Logger logger = LoggerFactory.getLogger(CheckICMP.class);
+
     private String  host        = "";
     private int     pktsNumber  = 5;
     private int     pktsSize    = 56;
@@ -114,6 +118,7 @@ public class CheckICMP implements NChecksInterface
             if (intervalArg != null) { this.msInterval  = intervalArg.asInteger(); }
             if (useV6Arg    != null) { this.useIpv6     = useV6Arg.asString(); }
         } catch (Exception|Error e) {
+            CheckICMP.logger.error(e.getMessage(), e);
             reply.setStatus(Reply.STATUS_ERROR);
             reply.setReply("Missing argument or argument type is wrong: " + e);
             return reply;
@@ -133,6 +138,7 @@ public class CheckICMP implements NChecksInterface
             addr = InetAddress.getByName(host);
             this.host = addr.getHostAddress();
         } catch (Exception e) {
+            CheckICMP.logger.error(e.getMessage(), e);
             reply.setStatus(Reply.STATUS_DOWN);
             reply.setReply("Host lookup fail for: " + host);
             return reply;
@@ -188,7 +194,7 @@ public class CheckICMP implements NChecksInterface
             stderrConsumer.join();
 
         } catch (Exception e) {
-            e.printStackTrace();
+            CheckICMP.logger.error(e.getMessage(), e);
             reply.setStatus(Reply.STATUS_ERROR);
             String errorMsg = e + e.getMessage();
             reply.setReply(errorMsg);
@@ -268,12 +274,13 @@ class StreamConsumer extends Thread {
             }
             this.parent.setReturnString(replyString.toString(), type);
         } catch (IOException e) {
+            CheckICMP.logger.error(e.getMessage(), e);
             e.printStackTrace();
         } finally {
             if(buff != null) {
                 try { buff.close(); }
                 catch(Exception ignore) {
-                    System.out.println("failed to close the buffer for ICMP");
+                    CheckICMP.logger.error("failed to close the buffer for ICMP");
                 }
             }
         }

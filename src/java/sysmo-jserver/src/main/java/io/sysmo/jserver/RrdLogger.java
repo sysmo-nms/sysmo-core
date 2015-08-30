@@ -100,7 +100,7 @@ public class RrdLogger implements Runnable
             this.rraPrecise = decodeRRADef(prop.getProperty("rra_precise"));
         } catch (Exception | Error e) {
             this.logger.error(
-                    "Fail to load property file: " + e.getMessage() + e);
+                    "Fail to load property file: " + e.getMessage(), e);
             return;
         }
 
@@ -124,8 +124,9 @@ public class RrdLogger implements Runnable
             call = this.mbox.receive();
             this.threadPool.execute(new RrdRunnable(call));
         } catch (OtpErlangExit|OtpErlangDecodeException e) {
-            this.logger.error(e.toString());
+            this.logger.error(e.getMessage(), e);
             this.threadPool.shutdown();
+            this.mbox.exit("crash");
             break;
         }
     }
@@ -201,7 +202,7 @@ public class RrdLogger implements Runnable
             }
             sample.update();
         } catch (Exception e) {
-            rrdObj.logger.warn("Fail to update rrd: " + e.getMessage() + e);
+            rrdObj.logger.warn("Fail to update rrd: " + e.getMessage(), e);
             rrdObj.rrdDbPool.release(rrdDb);
             throw e;
         }
@@ -333,7 +334,7 @@ class RrdRunnable implements Runnable
         catch (Exception|Error e)
         {
             RrdRunnable.logger.warn(
-                    "RrdRunnable fail to decode tuple: " + e.getMessage() + e);
+                    "RrdRunnable fail to decode tuple: " + e.getMessage(), e);
             return;
         }
 
@@ -363,7 +364,7 @@ class RrdRunnable implements Runnable
         catch (Exception|Error e)
         {
             RrdRunnable.logger.warn(
-                    "RrdRunnable failure: " + e.getMessage() + e);
+                    "RrdRunnable failure: " + e.getMessage(), e);
             OtpErlangTuple reply = RrdLogger.buildErrorReply(
                     new OtpErlangString("Java CATCH: Failed to honour command "
                             + command.toString() + " -> " + e

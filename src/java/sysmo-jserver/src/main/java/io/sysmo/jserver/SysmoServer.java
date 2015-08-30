@@ -55,7 +55,7 @@ public class SysmoServer {
             foreignNodeName = args[0];
             erlangCookie    = args[1];
         } catch (ArrayIndexOutOfBoundsException e) {
-            logger.error(e.toString());
+            logger.error(e.getMessage(), e);
             return;
         }
 
@@ -70,7 +70,7 @@ public class SysmoServer {
                 return;
             }
         } catch (IOException e) {
-            logger.error(e.toString());
+            logger.error(e.getMessage(), e);
             return;
         }
 
@@ -92,7 +92,7 @@ public class SysmoServer {
             mainMbox.link(nchecksMbox.self());
             mainMbox.link(derbyMbox.self());
         } catch (Exception e) {
-            logger.error("Should not append here!" + e.toString());
+            logger.error("Should not append here!" + e.getMessage(), e);
         }
 
         /*
@@ -132,8 +132,8 @@ public class SysmoServer {
             nchecks = new NChecksErlang(
                     nchecksMbox, foreignNodeName, rubyDir, utilsDir, etcDir);
         } catch (Exception e) {
-            logger.error("NChecks failed to start" + e.toString());
-            System.err.println("NChecks failed to start" + e.toString());
+            logger.error("NChecks failed to start" + e.getMessage(), e);
+            System.err.println("NChecks failed to start" + e.getMessage());
             return;
         }
 
@@ -184,7 +184,7 @@ public class SysmoServer {
             snmp4jThread.join();
             derbyThread.join();
         } catch (Exception e) {
-            logger.error(e.toString());
+            logger.error(e.getMessage(), e);
         }
         System.exit(0);
     }

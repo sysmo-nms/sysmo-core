@@ -68,7 +68,7 @@ public class JettyServer
         try {
             jettyThread.start();
         } catch (Exception e) {
-            logger.error(e.toString());
+            logger.error(e.getMessage(), e);
         }
         return jettyThread;
     }
@@ -85,7 +85,7 @@ public class JettyServer
             return Integer.parseInt(props.getProperty("port"));
         } catch (Exception e) {
             JettyServer.logger.error(
-                    "Can not read property file. " + e.toString());
+                    "Can not read property file. " + e.getMessage(), e);
             return DEFAULT_PORT;
         }
     }

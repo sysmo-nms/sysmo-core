@@ -74,7 +74,7 @@ public class CheckTCP implements NChecksInterface
             if (refuseStateArg  != null) { refuseState = refuseStateArg.asString(); }
             if (acceptStateArg  != null) { acceptState = acceptStateArg.asString(); }
         } catch (Exception|Error e) {
-            CheckTCP.logger.error(e.toString());
+            CheckTCP.logger.error(e.getMessage(), e);
             reply.setStatus(Reply.STATUS_ERROR);
             reply.setReply("Bad or wrong arguments: " + e);
             return reply;
@@ -91,6 +91,7 @@ public class CheckTCP implements NChecksInterface
         try {
             addr = InetAddress.getByName(host);
         } catch (Exception e) {
+            CheckTCP.logger.error(e.getMessage(), e);
             reply.setStatus(Reply.STATUS_ERROR);
             reply.setReply("Host lookup fail for: " + host);
             return reply;
@@ -106,6 +107,7 @@ public class CheckTCP implements NChecksInterface
             stop  = System.nanoTime();
             sock.close();
         } catch (Exception e) {
+            CheckTCP.logger.error(e.getMessage(), e);
             reply.setReply(e.getMessage());
             reply.setStatus(refuseState);
             return reply;

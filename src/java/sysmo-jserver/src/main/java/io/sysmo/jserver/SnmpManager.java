@@ -37,8 +37,6 @@ import org.slf4j.LoggerFactory;
 import com.ericsson.otp.erlang.OtpErlangString;
 import com.ericsson.otp.erlang.OtpErlangList;
 import com.ericsson.otp.erlang.OtpErlangAtom;
-import com.ericsson.otp.erlang.OtpErlangDecodeException;
-import com.ericsson.otp.erlang.OtpErlangExit;
 import com.ericsson.otp.erlang.OtpErlangObject;
 import com.ericsson.otp.erlang.OtpErlangTuple;
 import com.ericsson.otp.erlang.OtpErlangInt;
@@ -120,7 +118,7 @@ public class SnmpManager implements Runnable
             SecurityModels.getInstance().addSecurityModel(usm);
             transport.listen();
         } catch (Exception | Error e) {
-            this.logger.error(e.toString());
+            this.logger.error(e.getMessage(),  e);
             return;
         }
 
@@ -136,10 +134,9 @@ public class SnmpManager implements Runnable
         {
             call = this.mbox.receive();
             this.handleMsg(call);
-        }
-        catch (OtpErlangExit|OtpErlangDecodeException e)
-        {
-            this.logger.error(e.toString());
+        } catch (Exception e) {
+            this.logger.error(e.getMessage(), e);
+            this.mbox.exit("crash");
             break;
         }
     }
@@ -191,7 +188,7 @@ public class SnmpManager implements Runnable
             caller      =                   (tuple.elementAt(1));
             payload     = (OtpErlangTuple)  (tuple.elementAt(2));
         } catch (Exception|Error e) {
-            this.logger.warn(e.toString());
+            this.logger.warn(e.getMessage(), e);
             return;
         }
 
@@ -248,7 +245,7 @@ public class SnmpManager implements Runnable
                     new OtpErlangString("Java CATCH: Failed to honour command "
                             + command.toString() + " -> " + e.getMessage())
             );
-            this.logger.warn(e.toString());
+            this.logger.warn(e.getMessage(), e);
             SnmpManager.sendReply(caller, reply);
         }
     }

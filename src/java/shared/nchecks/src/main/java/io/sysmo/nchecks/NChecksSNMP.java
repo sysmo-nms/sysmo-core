@@ -64,7 +64,7 @@ public class NChecksSNMP
             agents          = new HashMap<>();
             transport.listen();
         } catch (Exception e) {
-            NChecksSNMP.logger.error("SNMP init fail: " + e.getMessage() + e);
+            NChecksSNMP.logger.error("SNMP init fail: " + e.getMessage(), e);
             throw e;
         }
         INSTANCE = this;

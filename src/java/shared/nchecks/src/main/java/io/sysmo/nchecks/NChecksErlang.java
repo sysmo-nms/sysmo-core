@@ -65,7 +65,7 @@ public class NChecksErlang implements Runnable
     private ThreadPoolExecutor threadPool;
 
     static NChecksErlang instance;
-    public Logger logger;
+    static Logger logger = LoggerFactory.getLogger(NChecksErlang.class);
 
     public NChecksErlang(
             final OtpMbox mbox, final String nodeName,
@@ -74,11 +74,8 @@ public class NChecksErlang implements Runnable
         NChecksErlang.instance = this;
         this.nodeName = nodeName;
         this.mbox = mbox;
-        this.logger = LoggerFactory.getLogger(NChecksErlang.class);
 
-
-
-        this.logger.info("ruby dir is: " + rubyDir);
+        NChecksErlang.logger.info("ruby dir is: " + rubyDir);
 
         // if -test
         /*
@@ -97,29 +94,30 @@ public class NChecksErlang implements Runnable
 
         // initialize special CheckICMP class
         CheckICMP.setPping(utilsDir);
-        this.logger.info("CheckICMP init with path: " + utilsDir);
+        NChecksErlang.logger.info("CheckICMP init with path: " + utilsDir);
 
         // initialize .rb script cache
         NChecksJRuby.startJRuby(rubyDir);
-        this.logger.info("JRuby init with path: " + rubyDir);
+        NChecksErlang.logger.info("JRuby init with path: " + rubyDir);
 
         // initialize snmpman
         NChecksSNMP.startSnmp(varDir);
-        this.logger.info("SNMP started");
+        NChecksErlang.logger.info("SNMP started");
     }
 
     @Override
     public void run()
     {
         // loop and wait for calls
-        this.logger.info("begin too loop");
+        NChecksErlang.logger.info("begin too loop");
         OtpErlangObject call;
         while (true) try {
             call = this.mbox.receive();
             this.handleMsg(call);
-        } catch (OtpErlangExit|OtpErlangDecodeException e) {
-            this.logger.warn(e.toString());
+        } catch (Exception e) {
+            NChecksErlang.logger.warn(e.getMessage(), e);
             this.threadPool.shutdownNow();
+            this.mbox.exit("crach");
             break;
         }
     }
@@ -170,7 +168,7 @@ public class NChecksErlang implements Runnable
 
     private void handleInit(OtpErlangTuple initMsg)
     {
-        this.logger.info("init?" + initMsg.toString());
+        NChecksErlang.logger.info("init?" + initMsg.toString());
     }
 
 
@@ -186,7 +184,8 @@ public class NChecksErlang implements Runnable
             caller      =                   (tuple.elementAt(1));
             payload     = (OtpErlangTuple)  (tuple.elementAt(2));
         } catch (Exception|Error e) {
-            this.logger.warn("Fail to decode tuple: " + e.getMessage() + e);
+            NChecksErlang.logger.warn(
+                    "Fail to decode tuple: " + e.getMessage(), e);
             return;
         }
 
@@ -250,6 +249,7 @@ public class NChecksErlang implements Runnable
         }
         catch (Exception|Error e)
         {
+            NChecksErlang.logger.error(e.getMessage(), e);
             OtpErlangTuple reply = buildErrorReply(
                 new OtpErlangString("NChecksErlang error: " + e
                     + " " + command.toString() + " -> " + e.getMessage())

@@ -173,12 +173,12 @@ class PerformanceGroup
 
     public PerformanceGroup()
     {
-        perfValues = new HashMap<String, Long>();
+        perfValues = new HashMap<>();
     }
 
     public void putPerformance(String key, long value)
     {
-        perfValues.put(key, Long.valueOf(value));
+        perfValues.put(key, value);
     }
 
     public OtpErlangList asList() {
@@ -186,8 +186,6 @@ class PerformanceGroup
         int i = 0;
         for (Map.Entry<String, Long> entry: perfValues.entrySet())
         {
-            String key      = entry.getKey();
-            Long value      = entry.getValue();
             OtpErlangObject[] objEntry = new OtpErlangObject[2];
             objEntry[0] = new OtpErlangString(entry.getKey());
             objEntry[1] = new OtpErlangLong(entry.getValue().longValue());
