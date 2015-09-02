@@ -107,10 +107,11 @@ fire_job(JobId) ->
 dependency_new(Probe, Depend) ->
     monitor_data_master:new(dependency, #dependency{a_probe=Probe,his_parent=Depend}).
 
-new_probe({nchecks_probe, Identifier, JavaClass, Args}, Target) ->
+new_probe({nchecks_probe, Identifier, JavaClass, Display, Args}, Target) ->
+    % TODO if !(JavaClass.isSnmp && Target.isSnmp) return error;
     Probe = #probe{
         belong_to   = Target,
-        description = lists:concat(["NCHECKS: ", JavaClass]),
+        description = Display,
         module = nchecks_probe,
         module_config = #nchecks_probe_conf{
             identifier  = Identifier,

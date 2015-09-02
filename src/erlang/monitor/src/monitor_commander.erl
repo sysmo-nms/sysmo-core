@@ -66,7 +66,7 @@ handle_cast({{"createTargetQuery", Contents}, CState}, S) ->
     case monitor:new_target(NSysProp2, NProp2) of
         {error, Error} ->
             ?LOG_ERROR("Create target error: ", Error),
-            ReplyPDU = monitor_pdu:simpleReply(QueryId, true, false, Error);
+            ReplyPDU = monitor_pdu:simpleReply(QueryId, false, true, Error);
         TargetId ->
             ReplyPDU = monitor_pdu:simpleReply(QueryId, true, true, TargetId),
             case snmp_enabled(NProp2) of
@@ -94,8 +94,9 @@ handle_cast({{"createNchecksQuery", Contents}, CState}, S) ->
     Class   = binary_to_list(proplists:get_value(<<"class">>,      Contents2)),
     Id      = binary_to_list(proplists:get_value(<<"identifier">>, Contents2)),
     Target  = binary_to_list(proplists:get_value(<<"target">>,     Contents2)),
+    Display = binary_to_list(proplists:get_value(<<"display">>,    Contents2)),
 
-    ProbeId = monitor:new_probe({nchecks_probe, Id, Class, Prop2}, Target),
+    ProbeId = monitor:new_probe({nchecks_probe, Id, Class, Display, Prop2}, Target),
 
     ReplyPDU = monitor_pdu:simpleReply(QueryId, true, true, ProbeId),
     supercast_channel:unicast(CState, [ReplyPDU]),
