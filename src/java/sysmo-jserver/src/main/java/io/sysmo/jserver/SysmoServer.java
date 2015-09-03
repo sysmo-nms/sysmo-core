@@ -143,9 +143,12 @@ public class SysmoServer {
         /*
          * Create derby thread
          */
+        // TODO init derby and log events
+        /*
         SQLDatabase derbyDb = new SQLDatabase(derbyMbox, foreignNodeName);
         Thread derbyThread = new Thread(derbyDb);
         derbyThread.start();
+        */
 
         /*
          * Create simple http file server
@@ -182,7 +185,7 @@ public class SysmoServer {
             nchecksThread.join();
             rrd4jThread.join();
             snmp4jThread.join();
-            derbyThread.join();
+            //derbyThread.join();
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
         }
