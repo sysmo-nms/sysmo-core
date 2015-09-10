@@ -59,6 +59,10 @@ public class Query
     /**
      * Return the argument identified by key or an empty argument if the key
      * does not exist.
+     * @param key the flag identifying the argument
+     * @return the argument
+     * @see io.sysmo.nchecks.Reply
+     * @see io.sysmo.nchecks.Argument
      */
     public Argument get(String key) {
         if (this.arguments.containsKey(key)) {

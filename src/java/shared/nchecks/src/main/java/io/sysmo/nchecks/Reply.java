@@ -24,9 +24,11 @@ import java.util.HashMap;
 import com.ericsson.otp.erlang.*;
 
 /**
-* The Reply class contain all the values and informations related to the execution of 
-* a module implementing NCheckInterface (a check module).
-*/
+ * The Reply class contain all the values and informations related to the execution of
+ * a module implementing NCheckInterface (a check module).
+ * @see io.sysmo.nchecks.Query
+ */
+
 public class Reply
 {
     public static final String STATUS_OK = "OK";
@@ -58,9 +60,11 @@ public class Reply
     public void setReply(String str) {
         replyMsg = str;
     }
+
     /**
-    * Get the reply string.
-    */
+     * Get the reply string.
+     * @return the reply string
+     */
     public String getReply() {
         return replyMsg;
     }
@@ -97,21 +101,26 @@ public class Reply
     }
 
     /**
-    * Store a performance value. These performances values will be interpreted
-    * by rrd as defined in your module xml definition file. Assume there is
-    * only one rrd file to update.
-    */
+     * Store a performance value. These performances values will be interpreted
+     * by rrd as defined in your module xml definition file. Assume there is
+     * only one rrd file (with multiple databases) to update.
+     * @param key the rrd database name
+     * @param value the value to store
+     */
     public void putPerformance(String key, long value)
     {
         putPerformance("simple", key, value);
     }
 
     /**
-    * Store a performance value. These performances values will be interpreted
-    * by rrd as defined in your module xml definition file.
-    * The "group" String is used to identify one of the rrd files to update.
-    * Assume a setup with multiple rrd files.
-    */
+     * Store a performance value. These performances values will be interpreted
+     * by rrd as defined in your module xml definition file.
+     * The "group" String is used to identify one of the rrd files to update.
+     * Assume a setup with multiple rrd files.
+     * @param group
+     * @param key
+     * @param value
+     */
     public void putPerformance(String group, String key, long value)
     {
         PerformanceGroup groupObj = getPerformanceGroup(group);
@@ -119,8 +128,11 @@ public class Reply
     }
 
     /**
+     * Internal use.
      * Return the PerformanceGroup for key groupKey. Create it if it does not
      * exist.
+     * @param groupKey
+     * @return the performance group
      */
     private PerformanceGroup getPerformanceGroup(String groupKey)
     {
@@ -138,6 +150,7 @@ public class Reply
     }
 
     /**
+     * Internal use.
      * Return the erlang representation of the Reply.
      */
     public OtpErlangTuple asTuple() {
