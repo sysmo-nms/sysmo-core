@@ -54,7 +54,6 @@ project(':sysmo-jserver') {
 
     mainClassName = 'io.sysmo.jserver.SysmoServer'
     applicationDefaultJvmArgs = [
-            "-server",
             "-Duser.language=en", "-Duser.country=US",
             "-Djava.util.logging.config.file=etc/sysmo-log.properties"]
 
