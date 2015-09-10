@@ -43,19 +43,22 @@ public class CheckViaJRuby implements NChecksInterface //, NHelperInterface
             script = NChecksJRuby.getInstance().getScript(rbScript);
         } catch (Exception e) {
             CheckViaJRuby.logger.error(e.getMessage(), e);
-            return CheckViaJRuby.handleError(
+            return CheckViaJRuby.handleException(
                     "Script not found: " + rbScript, e);
         }
 
-        ScriptingContainer container = new ScriptingContainer();
-        Object receiver = container.runScriptlet(script);
         Reply rep;
         try {
+            ScriptingContainer container = new ScriptingContainer();
+            Object receiver = container.runScriptlet(script);
             rep = container.callMethod(receiver,"check",query,Reply.class);
         } catch(Exception e) {
             CheckViaJRuby.logger.error(e.getMessage(), e);
-            return CheckViaJRuby.handleError(
+            return CheckViaJRuby.handleException(
                     "Script execution failure: " + rbScript, e);
+        } catch (Error e) {
+            CheckViaJRuby.logger.error("Jruby exec error");
+            return CheckViaJRuby.handleError("Script execution failure.");
         }
         return rep;
     }
@@ -67,12 +70,19 @@ public class CheckViaJRuby implements NChecksInterface //, NHelperInterface
     }
     */
 
-    private static Reply handleError(String txt, Exception e) {
+    private static Reply handleException(String txt, Exception e) {
         String msg = e.getMessage();
         CheckViaJRuby.logger.error(e.getMessage(), e);
         Reply reply = new Reply();
         reply.setStatus(Reply.STATUS_ERROR);
         reply.setReply("CheckViaJRuby ERROR: " + txt + msg);
+        return reply;
+    }
+
+    private static Reply handleError(String txt) {
+        Reply reply = new Reply();
+        reply.setStatus(Reply.STATUS_ERROR);
+        reply.setReply("CheckViaJRuby ERROR: " + txt);
         return reply;
     }
 }

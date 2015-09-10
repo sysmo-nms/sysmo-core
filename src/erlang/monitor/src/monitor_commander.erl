@@ -197,15 +197,6 @@ build_snmpConf(NSysProp) ->
     Default = ?DEFAULT_SNMP_PROPERTIES,
     build_snmpConf(NSysProp, Default).
 build_snmpConf([], Default) -> Default;
-build_snmpConf([{"snmp_port", Val}|R], Default) ->
-    ?LOG_INFO("SNMP port", Val),
-    Port = erlang:list_to_integer(Val),
-    NDefault = lists:keystore("snmp_port", 1, Default, {"snmp_port", Port}),
-    build_snmpConf(R, NDefault);
-build_snmpConf([{"snmp_timeout", Val}|R], Default) ->
-    Timeout = erlang:list_to_integer(Val),
-    NDefault = lists:keystore("snmp_timeout", 1, Default, {"snmp_timeout", Timeout}),
-    build_snmpConf(R, NDefault);
 build_snmpConf([{Key,Val}|R], Default) ->
     NDefault = lists:keystore(Key, 1, Default, {Key, Val}),
     build_snmpConf(R, NDefault).

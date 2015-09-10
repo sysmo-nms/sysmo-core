@@ -11,7 +11,7 @@
         <UpdatesUrl>http://www.sysmo.io/nchecks/updates/CheckHTTP/</UpdatesUrl>
 
         <Description>Check HTTP service availability on the specified host.</Description>
-        <Overview>Overview and examples here</Overview>
+        <Overview></Overview>
 
 
         <FlagTable>

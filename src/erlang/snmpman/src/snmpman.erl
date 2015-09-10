@@ -63,13 +63,8 @@ which_usm_users() ->
 % IpVersion can be "v4" | "v6"
 % @end
 discovery(Ip, IpVersion, Port, Timeout) ->
-    case snmpman_guard:validate_discovery_conf(Ip, IpVersion, Port, Timeout) of
-        true ->
-            gen_server:call(?MODULE,
-                {call_snmp4j, {discovery, {Ip,IpVersion,Port,Timeout}}}, ?CALL_TIMEOUT);
-        {false, Reason} ->
-            {error, Reason}
-    end.
+    gen_server:call(?MODULE,
+       {call_snmp4j, {discovery, {Ip,IpVersion,Port,Timeout}}}, ?CALL_TIMEOUT).
 
 
 -spec element_registered(ElementName::string()) -> true | false.
@@ -151,13 +146,8 @@ unregister_element(ElementName) ->
 register_element(ElementName, ElementConf) ->
     ElementDef = build_conf(ElementName,ElementConf),
     ?LOG_INFO("Register:", ElementDef),
-    case snmpman_guard:validate_register_conf(ElementDef) of
-        true ->
-            gen_server:call(?MODULE,
-                {call_snmp4j, {register_element, ElementDef}}, ?CALL_TIMEOUT);
-        Error ->
-            Error
-    end.
+    gen_server:call(?MODULE,
+                    {call_snmp4j, {register_element, ElementDef}}, ?CALL_TIMEOUT).
 
 
 
@@ -189,13 +179,8 @@ register_element(ElementName, ElementConf) ->
 % @end
 walk_table(Target, Oids) ->
     Cfg = {Target, Oids},
-    case snmpman_guard:validate_oids(Oids) of
-        true ->
-            gen_server:call(?MODULE,
-                            {call_snmp4j, {walk_table, Cfg}}, ?CALL_TIMEOUT);
-        false ->
-            {error, "Bad OID value"}
-    end.
+    gen_server:call(?MODULE,
+                    {call_snmp4j, {walk_table, Cfg}}, ?CALL_TIMEOUT).
 
 
 -spec walk_tree(Target::string(), Oid::string()) ->
@@ -207,13 +192,8 @@ walk_table(Target, Oids) ->
 % @end
 walk_tree(Target, Oid) ->
     Cfg = {Target, Oid},
-    case snmpman_guard:validate_oids([Oid]) of
-        true ->
-            gen_server:call(?MODULE,
-                            {call_snmp4j, {walk_tree, Cfg}}, ?CALL_TIMEOUT);
-        false ->
-            {error, "Bad OID value"}
-    end.
+    gen_server:call(?MODULE,
+                    {call_snmp4j, {walk_tree, Cfg}}, ?CALL_TIMEOUT).
 
 
 
@@ -228,13 +208,8 @@ walk_tree(Target, Oid) ->
 get(Target, Oids) ->
     % OID validity is make by the snmp4j lib.
     Cfg = {Target, Oids},
-    case snmpman_guard:validate_oids(Oids) of
-        true ->
-            gen_server:call(?MODULE,
-                            {call_snmp4j, {get, Cfg}}, ?CALL_TIMEOUT);
-        false ->
-            {error, "Bad OID value"}
-    end.
+    gen_server:call(?MODULE,
+                    {call_snmp4j, {get, Cfg}}, ?CALL_TIMEOUT).
 
 
 
@@ -292,11 +267,11 @@ build_conf(ElementName, ElementConf) ->
     AuthProto = proplists:get_value(auth_proto, ElementConf, "SHA"),
     AuthKey   = proplists:get_value(auth_key,   ElementConf, "undefined"),
     Host      = proplists:get_value(host,       ElementConf, "undefined"),
-    Port      = proplists:get_value(port,       ElementConf, 161),
+    Port      = proplists:get_value(port,       ElementConf, "161"),
     Version   = proplists:get_value(snmp_version, ElementConf, ""),
     SecLevel  = proplists:get_value(security_level, ElementConf, "noAuthNoPriv"),
-    Retries   = proplists:get_value(retries,    ElementConf, 1),
-    Timeout   = proplists:get_value(timeout,    ElementConf, 2000),
+    Retries   = proplists:get_value(retries,    ElementConf, "1"),
+    Timeout   = proplists:get_value(timeout,    ElementConf, "2000"),
     SecName   = proplists:get_value(security_name, ElementConf, "undefined"),
     Community = proplists:get_value(community,     ElementConf, "public"),
     #element_def{

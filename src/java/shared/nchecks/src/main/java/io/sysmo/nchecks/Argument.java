@@ -22,36 +22,30 @@ package io.sysmo.nchecks;
 
 public class Argument
 {
-    public static final int STRING_VALUE  = 1;
-    public static final int INT_VALUE     = 2;
+    private String argument;
 
-    private String   argumentString;
-    private int      argumentInteger;
-    private int      type;
-
-    public void set(int val) {
-        this.type = Argument.INT_VALUE;
-        this.argumentInteger = val;
+    public Argument() {
+        this.argument = "";
     }
 
-    public void set(String val) {
-        this.type = Argument.STRING_VALUE;
-        this.argumentString = val;
+    /**
+     * Internal use only.
+     * @param val the string value of the argument
+     */
+    public void set(String val) {this.argument = val;}
+
+    /**
+     * Return the integer representation of the argument.
+     * @return integer representation of the argument
+     * @throws NumberFormatException
+     */
+    public int asInteger() throws NumberFormatException {
+        return Integer.parseInt(this.argument);
     }
 
-    public int asInteger() throws Exception,Error {
-        if (type == Argument.STRING_VALUE) {
-            return Integer.parseInt(this.argumentString);
-        } else {
-            return this.argumentInteger;
-        }
-    }
-
-    public String asString() throws Exception, Error {
-        if (type == Argument.INT_VALUE) {
-            return Integer.toString(this.argumentInteger);
-        } else {
-            return this.argumentString;
-        }
-    }
+    /**
+     * Return the string value of argument
+     * @return the original argulent string
+     */
+    public String asString() {return this.argument;}
 }

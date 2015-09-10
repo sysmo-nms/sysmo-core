@@ -19,7 +19,7 @@
 ]).
 
 -define(DEFAULT_SNMP_PROPERTIES, [
-    {"snmp_port",     161},
+    {"snmp_port",     "161"},
     {"snmp_version",  "2c"},
     {"snmp_seclevel", "noAuthNoPriv"},
     {"snmp_community","public"},
@@ -28,8 +28,8 @@
     {"snmp_authproto","MD5"},
     {"snmp_privkey",  "undefined"},
     {"snmp_privproto","DES"},
-    {"snmp_timeout",  2500},
-    {"snmp_retries",  1}
+    {"snmp_timeout",  "2500"},
+    {"snmp_retries",  "1"}
 ]).
 
 -record(dependency, {

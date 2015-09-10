@@ -274,19 +274,8 @@ public class NChecksErlang implements Runnable
                 Argument a = new Argument();
                 a.set(valStr.stringValue());
                 result.put(key.stringValue(), a);
-            }
-            else if (val.getClass() == OtpErlangLong.class)
-            {
-                OtpErlangLong valLong = (OtpErlangLong) (element.elementAt(1));
-                Argument a = new Argument();
-                int uInt;
-                try {
-                    uInt = valLong.uIntValue();
-                } catch (OtpErlangRangeException e) {
-                    uInt = 0;
-                }
-                a.set(uInt);
-                result.put(key.stringValue(), a);
+            } else {
+                // Actualy only string arguments are accepted
             }
         }
         return result;

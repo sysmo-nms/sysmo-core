@@ -18,10 +18,12 @@
 # along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
 require 'net/http'
 require 'benchmark'
+require 'unk/jojo'
 
 require 'java'
 import  'io.sysmo.nchecks.Reply'
 
+# query = io.sysmo.nchecks.Query
 def check(query)
   uri    = URI('http://www.sysmo.ioo/index.html')
   repstr = nil

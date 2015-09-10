@@ -56,9 +56,16 @@ public class Query
     */
     public byte[] getState() {return this.state.clone();}
 
-    /*
-    * Return the argument corresponding to the key.
-    */
-    public Argument get(String key) {return this.arguments.get(key);}
+    /**
+     * Return the argument identified by key or an empty argument if the key
+     * does not exist.
+     */
+    public Argument get(String key) {
+        if (this.arguments.containsKey(key)) {
+            return this.arguments.get(key);
+        } else {
+            return new Argument();
+        }
+    }
 
 }

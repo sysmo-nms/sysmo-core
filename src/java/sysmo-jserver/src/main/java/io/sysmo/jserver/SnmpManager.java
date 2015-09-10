@@ -822,16 +822,16 @@ class RegisterArgs
             (OtpErlangString) (confTuple.elementAt(1));
         OtpErlangString erlHost =
             (OtpErlangString) (confTuple.elementAt(2));
-        OtpErlangLong   erlIpPort  =
-            (OtpErlangLong)   (confTuple.elementAt(3));
+        OtpErlangString   erlIpPort  =
+            (OtpErlangString)   (confTuple.elementAt(3));
         OtpErlangString erlSnmpVersion  =
             (OtpErlangString) (confTuple.elementAt(4));
         OtpErlangString erlSecLevel  =
             (OtpErlangString) (confTuple.elementAt(5));
-        OtpErlangLong   erlRetries  =
-            (OtpErlangLong)   (confTuple.elementAt(6));
-        OtpErlangLong   erlTimeout  =
-            (OtpErlangLong)   (confTuple.elementAt(7));
+        OtpErlangString   erlRetries  =
+            (OtpErlangString)   (confTuple.elementAt(6));
+        OtpErlangString   erlTimeout  =
+            (OtpErlangString)   (confTuple.elementAt(7));
         OtpErlangString erlSecName  =
             (OtpErlangString) (confTuple.elementAt(8));
         OtpErlangString erlCommunity  =
@@ -855,9 +855,9 @@ class RegisterArgs
         this.authKey     = erlAuthKey.stringValue();
         this.privProto   = erlPrivProto.stringValue();
         this.privKey     = erlPrivKey.stringValue();
-        this.ipPort      = erlIpPort.intValue();
-        this.retries     = erlRetries.intValue();
-        this.timeout     = erlTimeout.intValue();
+        this.ipPort      = Integer.parseInt(erlIpPort.stringValue());
+        this.retries     = Integer.parseInt(erlRetries.stringValue());
+        this.timeout     = Integer.parseInt(erlTimeout.stringValue());
     }
 }
 
