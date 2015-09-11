@@ -41,8 +41,7 @@
 start_link() ->
     Ret = gen_server:start_link({local, ?MODULE}, ?MODULE, [], []),
     % clean sync dir every hours
-    %ok = register_job("clean_sync_dir", 3600000, {?MODULE, clean_sync_dir, ""}),
-    ok = register_job("clean_sync_dir", 60000, {?MODULE, clean_sync_dir, ""}),
+    ok = register_job("clean_sync_dir", 3600000, {?MODULE, clean_sync_dir, ""}),
     Ret.
 
 

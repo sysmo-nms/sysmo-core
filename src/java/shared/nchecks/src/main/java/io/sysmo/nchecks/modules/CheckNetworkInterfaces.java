@@ -270,7 +270,7 @@ class GetIfTableHelper
             NHelperSimpleReply simple = new NHelperSimpleReply();
             simple.setId("SelectNetworkInterfaces");
             simple.setStatus(NHelperReply.FAILURE);
-            simple.setMessage(e.toString());
+            simple.setMessage("Error, the SNMP query has failed.");
             return simple;
         }
     }
