@@ -43,7 +43,7 @@ import java.util.Properties;
 public class JettyServer
 {
     private static Logger logger = LoggerFactory.getLogger(JettyServer.class);
-    private static final int DEFAULT_PORT = 9699;
+    private static final int DEFAULT_PORT = 9759;
 
     public static Server startServer()
     {

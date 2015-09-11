@@ -63,6 +63,11 @@
                 <Hint>CRITICAL | WARNING | OK</Hint>
                 <Usage>If the connexion succeed, set the return status to one of CRITICAL|WARNING|OK. OK is the default behaviour. If set to something other than OK, ms_warning and ms_critical are ignored. Usefull if we want the service monitored to be down, and to be alerted when it comes up.</Usage>
             </Flag>
+            <Flag Id="refuse">
+                <Default>CRITICAL</Default>
+                <Hint>CRITICAL | WARNING | OK</Hint>
+                <Usage>If the connexion is refused, set the return status to one of CRITICAL|WARNING|OK. CRITICAL is the default behaviour.</Usage>
+            </Flag>
         </FlagTable>
 
 
