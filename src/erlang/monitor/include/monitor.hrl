@@ -102,5 +102,6 @@
     permissions = ?DEFAULT_PERM_CONF    :: #perm_conf{}
 }).
 
+-define(CRON_EVERYHOURS, 3600000).
 -define(CRON_EVERYDAYS, 86400000).
 -define(CRON_EVERY20S,  20000).

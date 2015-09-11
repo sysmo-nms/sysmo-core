@@ -33,17 +33,23 @@
 -export([test/0,register_job/3,delete_job/1,job_exists/1,
          which_jobs/0,fire_now/1]).
 
-
+-export([
+    clean_sync_dir/1
+]).
 
 % @private
 start_link() ->
-    gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
+    Ret = gen_server:start_link({local, ?MODULE}, ?MODULE, [], []),
+    % clean sync dir every hours
+    %ok = register_job("clean_sync_dir", 3600000, {?MODULE, clean_sync_dir, ""}),
+    ok = register_job("clean_sync_dir", 60000, {?MODULE, clean_sync_dir, ""}),
+    Ret.
 
 
 
 -spec register_job(
         Job::string(),
-        Trigger::string(),
+        Trigger::integer(),
         {Mod::atom(), Func::atom(), Args::string()}
     ) -> ok.
 % @doc
@@ -173,3 +179,53 @@ code_change(_,S,_) ->
 test() ->
     Step = 5000, % every 5 seconds
     register_job("jojojob", Step , {io,format, "hello trigggger"}).
+
+
+% Clean sync dir
+clean_sync_dir(_) ->
+    {ok, DumpDir} = application:get_env(supercast,http_sync_dir),
+    case file:list_dir(DumpDir) of
+        {ok, []} -> ok;
+        {ok, Files} ->
+            clean_sync_dir(DumpDir, Files);
+        _ -> ok
+    end.
+clean_sync_dir(_,[]) -> ok;
+clean_sync_dir(DumpDir, [H|T]) ->
+    % delete all directory older than five minutes
+    Dir   = filename:join(DumpDir,H),
+    Date   = filelib:last_modified(Dir),
+    Local  = calendar:local_time(),
+    Date2  = calendar:datetime_to_gregorian_seconds(Date),
+    Local2 = calendar:datetime_to_gregorian_seconds(Local),
+    Diff = Local2 - Date2,
+    case (Diff > 300) of
+        true ->
+            del_dir(Dir),
+            clean_sync_dir(DumpDir,T);
+        false ->
+            clean_sync_dir(DumpDir,T)
+    end.
+
+del_dir(Dir) ->
+   lists:foreach(fun(D) ->
+                    ok = file:del_dir(D)
+                 end, del_all_files([Dir], [])).
+
+del_all_files([], EmptyDirs) ->
+   EmptyDirs;
+del_all_files([Dir | T], EmptyDirs) ->
+   {ok, FilesInDir} = file:list_dir(Dir),
+   {Files, Dirs} = lists:foldl(fun(F, {Fs, Ds}) ->
+                                  Path = Dir ++ "/" ++ F,
+                                  case filelib:is_dir(Path) of
+                                     true ->
+                                          {Fs, [Path | Ds]};
+                                     false ->
+                                          {[Path | Fs], Ds}
+                                  end
+                               end, {[],[]}, FilesInDir),
+   lists:foreach(fun(F) ->
+                         ok = file:delete(F)
+                 end, Files),
+   del_all_files(T ++ Dirs, [Dir | EmptyDirs]).

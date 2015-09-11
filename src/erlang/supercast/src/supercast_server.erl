@@ -58,6 +58,7 @@ which_auth() ->
     gen_server:call(?MODULE, {get, auth_mod}).
 
 
+
 % API FROM CLIENTS
 client_msg(connect, ClientState) ->
     handle_client_msg(connect, ClientState);
@@ -291,3 +292,7 @@ pdu(unsubscribeErr, {QueryId, Channel}) ->
 
 send(#client_state{module = CMod} = ClientState, Msg) ->
     CMod:send(ClientState, Msg).
+
+
+
+

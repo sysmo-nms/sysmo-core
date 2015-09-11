@@ -77,8 +77,6 @@
             <GraphTable>
                 <Graph
                     Id="OctetsInOut"
-                    Minimum="0"
-                    Maximum=""
                     Rigid="false"
                     Base="1000"
                     Unit=""
@@ -94,9 +92,9 @@
                         Bits per second In
                     </Draw>
                      <Draw
-                        Type="line"
+                        Type="area"
                         DataSource="IfOutOctets"
-                        Calculation="IfOutOctets,8,*"
+                        Calculation="0,IfOutOctets,8,*,-"
                         Consolidation="MAX"
                         Color="#73d216ff" >
                         Bits per second Out
@@ -104,8 +102,6 @@
                 </Graph>
                 <Graph
                     Id="UnicastNonUnicast"
-                    Minimum="0"
-                    Maximum=""
                     Rigid="false"
                     Base="1000"
                     Unit=""
@@ -120,22 +116,24 @@
                         Unicast packets In
                     </Draw>
                     <Draw
-                        Type="area"
+                        Type="stack"
                         DataSource="IfInNucastPkts"
                         Consolidation="MAX"
                         Color="#4e9a06ff" >
                         Non Unicast Packets In
                     </Draw>
                     <Draw
-                        Type="line"
+                        Type="area"
                         DataSource="IfOutUcastPkts"
+                        Calculation="0,IfOutUcastPkts,-"
                         Consolidation="MAX"
                         Color="#c17d11ff" >
                         Unicast packets Out
                     </Draw>
                     <Draw
-                        Type="line"
+                        Type="stack"
                         DataSource="IfOutNucastPkts"
+                        Calculation="0,IfOutUcastPkts,-"
                         Consolidation="MAX"
                         Color="#e9b96eff" >
                         Non Unicast packets Out
@@ -143,8 +141,6 @@
                 </Graph>
                 <Graph
                     Id="ErrorsInOut"
-                    Minimum="0"
-                    Maximum=""
                     Rigid="false"
                     Base="1000"
                     Unit=""
@@ -161,6 +157,7 @@
                      <Draw
                         Type="stack"
                         DataSource="IfOutErrors"
+                        Calculation="0,IfOutErrors,-"
                         Consolidation="MAX"
                         Color="#fce94fff" >
                         Errors out

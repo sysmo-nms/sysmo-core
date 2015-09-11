@@ -30,11 +30,7 @@
 -include_lib("xmerl/include/xmerl.hrl").
 -include_lib("common_hrl/include/logs.hrl").
 
--define(CRASH, "
-OUCH a system error has occured!
-Check the server logs to see more.
-Returning to normal operations.
-").
+-define(CRASH, "CRASH! A system error has occured! Check your sysmo.log and jserver.log to learn more.").
 
 % gen_server
 -export([
@@ -72,7 +68,6 @@ Returning to normal operations.
     prefix,
     base
 }).
-
 
 %
 % monitor

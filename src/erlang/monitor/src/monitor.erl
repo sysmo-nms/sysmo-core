@@ -87,12 +87,11 @@ new_target(SysProp, Props) ->
 new_job(Function, Target) ->
     J = #job{
         belong_to = Target,
-        trigger  = ?CRON_EVERY20S,
-        %trigger  = ?CRON_EVERYDAYS,
+        trigger  = ?CRON_EVERYHOURS,
         module   = monitor_jobs,
         function = Function,
         argument = Target,
-        info     = lists:concat([?CRON_EVERY20S, ",", monitor_jobs, ",", Function, ",", Target])
+        info     = lists:concat([?CRON_EVERYHOURS, ",", monitor_jobs, ",", Function, ",", Target])
     },
     monitor_data_master:new(job, J).
 

@@ -103,7 +103,7 @@ update_snmp_if_aliases(TargetKey) ->
     ]),
 
     case IfNames of
-        {ok, {table, Names}} -> 
+        {ok, {table, Names}} ->
             P = build_if_names(Names);
         _ ->
             P = []
