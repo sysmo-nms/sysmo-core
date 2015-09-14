@@ -149,7 +149,7 @@ public class CheckICMP implements NChecksInterface
         args[0] = pping;
         args[1] = "--host="     + this.host;
         args[2] = "--interval=" + this.msInterval;
-        args[3] = "--ipv6="     + this.useIpv6;
+        //args[3] = "--ipv6="     + this.useIpv6;
         args[4] = "--number="   + this.pktsNumber;
         args[5] = "--size="     + this.pktsSize;
         args[6] = "--timeout="  + this.msTimeout;
@@ -227,7 +227,7 @@ public class CheckICMP implements NChecksInterface
         String st;
         if (percentLoss == 100) {
             st = Reply.STATUS_DOWN;
-        }else if (percentLoss >= plCritical || avgReplyTime >= msCritical) {
+        } else if (percentLoss >= plCritical || avgReplyTime >= msCritical) {
             st = Reply.STATUS_CRITICAL;
         } else if (percentLoss >= plWarning || avgReplyTime >= msWarning) {
             st = Reply.STATUS_WARNING;

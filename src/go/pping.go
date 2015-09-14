@@ -69,7 +69,7 @@ func init() {
                                 "Send packet interval in millisecond")
     flag.IntVar(&SizeFlag, "size", 56,"Size of the icmp body in octets")
     flag.BoolVar(&Ip6Flag, "ipv6", false, "Enable version 6 icmp")
-    flag.StringVar(&Ip6IfFlag, "ipv6-if", "", 
+    flag.StringVar(&Ip6IfFlag, "ipv6-if", "",
                                "Required if host is an ipv6 link-local address")
     flag.BoolVar(&HelpFlag, "help", false, "Arguments description")
 }

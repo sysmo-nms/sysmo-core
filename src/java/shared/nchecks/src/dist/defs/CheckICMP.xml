@@ -79,11 +79,13 @@
                 <Hint>Milliseconds</Hint>
                 <Usage>Interval in milliseconds between request packets</Usage>
             </Flag>
+            <!--
             <Flag Id="use_ipv6">
                 <Default>false</Default>
                 <Hint>"true" or "false"</Hint>
                 <Usage>Force use of the v6 address. Usefull if host arg is an hostname</Usage>
             </Flag>
+            -->
         </FlagTable>
 
 
