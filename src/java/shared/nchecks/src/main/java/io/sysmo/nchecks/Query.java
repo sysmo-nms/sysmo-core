@@ -68,7 +68,7 @@ public class Query
         if (this.arguments.containsKey(key)) {
             return this.arguments.get(key);
         } else {
-            return new Argument();
+            return null;
         }
     }
 
