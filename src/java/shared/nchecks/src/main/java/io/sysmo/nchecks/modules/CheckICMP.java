@@ -145,7 +145,7 @@ public class CheckICMP implements NChecksInterface
         }
 
         String[] cmd;
-        String[] args = new String[7];
+        String[] args = new String[2];
         args[0] = pping;
         args[1] = "--host="     + this.host;
         //args[2] = "--interval=" + this.msInterval;
