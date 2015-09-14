@@ -148,11 +148,11 @@ public class CheckICMP implements NChecksInterface
         String[] args = new String[7];
         args[0] = pping;
         args[1] = "--host="     + this.host;
-        args[2] = "--interval=" + this.msInterval;
-        args[3] = "--ipv6="     + this.useIpv6;
-        args[4] = "--number="   + this.pktsNumber;
-        args[5] = "--size="     + this.pktsSize;
-        args[6] = "--timeout="  + this.msTimeout;
+        //args[2] = "--interval=" + this.msInterval;
+        //args[3] = "--ipv6="     + this.useIpv6;
+        //args[4] = "--number="   + this.pktsNumber;
+        //args[5] = "--size="     + this.pktsSize;
+        //args[6] = "--timeout="  + this.msTimeout;
 
         int returnStatus;
         Process proc;

@@ -39,6 +39,7 @@
                 <Hint>Host or IP</Hint>
                 <Usage>Host target as ip version 4/6 or hostname</Usage>
             </Flag>
+            <!--
             <Flag Id="pkts_number">
                 <Default>5</Default>
                 <Hint>packets number</Hint>
@@ -49,6 +50,7 @@
                 <Hint>Octets</Hint>
                 <Usage>Size of the ICMP body in octets</Usage>
             </Flag>
+            -->
             <Flag Id="pl_warning">
                 <Default>50</Default>
                 <Hint>Milliseconds</Hint>
@@ -74,11 +76,13 @@
                 <Hint>Milliseconds</Hint>
                 <Usage>Stop waiting reply or refuse reply when it exceed the value</Usage>
             </Flag>
+            <!--
             <Flag Id="ms_interval">
                 <Default>100</Default>
                 <Hint>Milliseconds</Hint>
                 <Usage>Interval in milliseconds between request packets</Usage>
             </Flag>
+            -->
             <!--
             <Flag Id="use_ipv6">
                 <Default>false</Default>
