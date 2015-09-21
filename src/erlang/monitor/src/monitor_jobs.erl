@@ -87,8 +87,8 @@ update_snmp_system_info(TargetKey) ->
                     end, OrigP, PF),
                     maybe_update_target(Target, Target#target{properties=ModifP})
             end;
-        {error, Reason} ->
-            ?LOG_INFO("snmp fail", {Reason, TargetKey})
+        {error, _Reason} ->
+            ?LOG_INFO("snmp fail", {_Reason, TargetKey})
     end.
 
 

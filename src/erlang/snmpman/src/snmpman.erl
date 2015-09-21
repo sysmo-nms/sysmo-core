@@ -227,8 +227,8 @@ handle_call({call_snmp4j, {Command, Payload}}, From, S) ->
     {noreply, S}.
 
 % @private
-handle_cast(Cast,S) ->
-    ?LOG_INFO("received handle cast:", Cast),
+handle_cast(_Cast,S) ->
+    ?LOG_INFO("received handle cast:", _Cast),
     {noreply, S}.
 
 
@@ -242,8 +242,8 @@ handle_info({reply, From, Reply}, S) ->
     gen_server:reply(From, Reply),
     {noreply, S};
 
-handle_info(I, S) ->
-    ?LOG_INFO("received handle info:", I),
+handle_info(_I, S) ->
+    ?LOG_INFO("received handle info:", _I),
     {noreply, S}.
 
 

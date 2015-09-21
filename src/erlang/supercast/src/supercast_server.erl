@@ -126,14 +126,14 @@ handle_call({get, auth_mod}, _F, #state{auth_mod = AuthMod} = S) ->
     {reply, AuthMod, S};
 
 % CLIENT RELATED CALLS
-handle_call(Call, _F, S) ->
-    ?LOG_WARNING("Unknown call", Call),
+handle_call(_Call, _F, S) ->
+    ?LOG_WARNING("Unknown call", _Call),
     {noreply, S}.
 
 % CAST
 % @private
-handle_cast(Cast, S) ->
-    ?LOG_WARNING("Unknown cast", Cast),
+handle_cast(_Cast, S) ->
+    ?LOG_WARNING("Unknown cast", _Cast),
     {noreply, S}.
 
 % OTHER

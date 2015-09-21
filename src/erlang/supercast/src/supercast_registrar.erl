@@ -122,14 +122,14 @@ handle_call({which_module, Name}, _F, R) ->
             {reply, Mod, R}
     end;
 
-handle_call(Call, _F, S) ->
-    ?LOG_WARNING("Unknown call", Call),
+handle_call(_Call, _F, S) ->
+    ?LOG_WARNING("Unknown call", _Call),
     {noreply, S}.
 
 % CAST
 % @private
-handle_cast(Cast, S) ->
-    ?LOG_WARNING("Unknown cast", Cast),
+handle_cast(_Cast, S) ->
+    ?LOG_WARNING("Unknown cast", _Cast),
     {noreply, S}.
 
 % OTHER

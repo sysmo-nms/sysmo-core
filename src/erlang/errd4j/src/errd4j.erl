@@ -149,8 +149,8 @@ handle_info({'EXIT', Pid, Reason}, #state{java_pid = Pid} = S) ->
     ?LOG_WARNING("rrd4j EXIT with reason:", Reason),
     {stop, Reason, S};
 
-handle_info(I, S) ->
-    ?LOG_INFO("received handle info:", I),
+handle_info(_I, S) ->
+    ?LOG_INFO("received handle info:", _I),
     {noreply, S}.
 
 

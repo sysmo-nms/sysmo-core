@@ -85,8 +85,8 @@ handle_call({call_nchecks, {Command, Payload}}, From,
 
 % CAST
 % @private
-handle_cast(Cast ,S) ->
-    ?LOG_INFO("Received handle cast: ", Cast),
+handle_cast(_Cast ,S) ->
+    ?LOG_INFO("Received handle cast: ", _Cast),
     {noreply, S}.
 
 
@@ -97,8 +97,8 @@ handle_info({reply, From, Reply}, S) ->
     {noreply, S};
 
 handle_info({worker_available, NodeName, MainMbox, NchecksMbox, _Weight} ,S) ->
-    R = erlang:monitor_node(NodeName, true),
-    ?LOG_INFO("Begin to monitor node", {NodeName, R}),
+    _R = erlang:monitor_node(NodeName, true),
+    ?LOG_INFO("Begin to monitor node", {NodeName, _R}),
     L2 = [#java_node{name=NodeName,pid=NchecksMbox} |S#state.java_nodes],
     MainMbox ! worker_ack,
     {noreply, S#state{java_nodes=L2}};
@@ -116,8 +116,8 @@ handle_info({nodedown, NodeName}, S) ->
     L2 = lists:keydelete(NodeName, 2, S#state.java_nodes),
     {noreply, S#state{java_nodes=L2}};
 
-handle_info(I, S) ->
-    ?LOG_INFO("Received handle info:", I),
+handle_info(_I, S) ->
+    ?LOG_INFO("Received handle info:", _I),
     {noreply, S}.
 
 

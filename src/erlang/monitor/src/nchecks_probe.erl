@@ -406,8 +406,8 @@ handle_cast(force, S) ->
     do_force(S),
     {noreply, S};
 
-handle_cast(Cast, S) ->
-    ?LOG_WARNING("Handle unknown cast", Cast),
+handle_cast(_Cast, S) ->
+    ?LOG_WARNING("Handle unknown cast", _Cast),
     {noreply, S}.
 
 
@@ -415,8 +415,8 @@ handle_call(shut_it_down, _F, #state{name=Name} = S) ->
     supercast_channel:delete(Name),
     {stop, shutdown, ok, S};
 
-handle_call(Call, _From, S) ->
-    ?LOG_WARNING("Handle unknown call", Call),
+handle_call(_Call, _From, S) ->
+    ?LOG_WARNING("Handle unknown call", _Call),
     {noreply, S}.
 
 handle_info({probe_return, Ref, PR}, #state{ref=Ref} = S) ->
@@ -428,8 +428,8 @@ handle_info({take_of, Ref}, #state{ref=Ref} = S) ->
     do_take_of(S),
     {noreply, S};
 
-handle_info(I, SData) ->
-    ?LOG_WARNING("Handle unknown info", I),
+handle_info(_I, SData) ->
+    ?LOG_WARNING("Handle unknown info", _I),
     {noreply, SData}.
 
 

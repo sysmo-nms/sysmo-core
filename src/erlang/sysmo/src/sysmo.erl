@@ -73,13 +73,13 @@ handle_call({get_pid, nchecks}, _From, #state{nchecks_pid=Pid} = S) ->
 handle_call(get_http_port, _From, #state{jetty_port=Port} = S) ->
     {reply, Port, S};
 
-handle_call(Call, _, S) ->
-    ?LOG_WARNING("Received unknow call", Call),
+handle_call(_Call, _, S) ->
+    ?LOG_WARNING("Received unknow call", _Call),
     {noreply, S}.
 
 
-handle_cast(Cast, S) ->
-    ?LOG_WARNING("Received unknow cast", Cast),
+handle_cast(_Cast, S) ->
+    ?LOG_WARNING("Received unknow cast", _Cast),
     {noreply, S}.
 
 
@@ -108,8 +108,8 @@ handle_info({_Port, {exit_status, Status}}, S) ->
     {noreply, S};
     %{stop, "Java node has crashed", S};
 
-handle_info(Info, S) ->
-    ?LOG_WARNING("Received unknow info", Info),
+handle_info(_Info, S) ->
+    ?LOG_WARNING("Received unknow info", _Info),
     {noreply, S}.
 
 

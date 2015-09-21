@@ -153,9 +153,9 @@ init([Encoder, {Key, Cert, CACert}]) ->
         state           = 'AUTHENTICATED'},
     {next_state, 'AUTHENTICATED', NextState};
 
-'WAIT_FOR_CLIENT_AUTH'({auth_fail, Ref, User},
+'WAIT_FOR_CLIENT_AUTH'({auth_fail, Ref, _User},
         #client_state{ref = Ref} = State) ->
-    ?LOG_INFO("failed to register with user:", User),
+    ?LOG_INFO("failed to register with user:", _User),
     {next_state, 'WAIT_FOR_CLIENT_AUTH', State, ?TIMEOUT};
 
 'WAIT_FOR_CLIENT_AUTH'(timeout,
@@ -168,8 +168,8 @@ init([Encoder, {Key, Cert, CACert}]) ->
     supercast_server:client_msg(connect, NextState),
     {next_state, 'WAIT_FOR_CLIENT_AUTH', NextState, ?TIMEOUT};
 
-'WAIT_FOR_CLIENT_AUTH'(Data, State) ->
-    ?LOG_WARNING("Ignoring data: ", {self(), Data}),
+'WAIT_FOR_CLIENT_AUTH'(_Data, State) ->
+    ?LOG_WARNING("Ignoring data: ", {self(), _Data}),
     {next_state, 'WAIT_FOR_CLIENT_AUTH', State}.
 
 %%-------------------------------------------------------------------------
@@ -204,8 +204,8 @@ init([Encoder, {Key, Cert, CACert}]) ->
     error_logger:error_msg("~p Timeout - closing.\n", [self()]),
     {stop, normal, State};
 
-'AUTHENTICATED'(Data, State) ->
-    ?LOG_INFO("Running Ignoring data:", {self(), Data}),
+'AUTHENTICATED'(_Data, State) ->
+    ?LOG_INFO("Running Ignoring data:", {self(), _Data}),
     {next_state, 'AUTHENTICATED', State}.
 
 
@@ -245,8 +245,8 @@ handle_event(Event, StateName, StateData) ->
 
 
 
-handle_sync_event(Event, From, StateName, StateData) ->
-    ?LOG_ERROR("Handle unknown event", {Event, From, StateData}),
+handle_sync_event(Event, _From, StateName, StateData) ->
+    ?LOG_ERROR("Handle unknown event", {Event, _From, StateData}),
     {stop, {StateName, undefined_event, Event}, StateData}.
 
 
@@ -261,14 +261,14 @@ handle_info({ssl_closed, Socket}, _StateName,
     error_logger:info_msg("~p Client ~p disconnected.\n", [self(), Addr]),
     {stop, normal, StateData};
 
-handle_info(Info, StateName, StateData) ->
-    ?LOG_WARNING("Unknown info", {StateName,Info,StateData}),
+handle_info(_Info, StateName, StateData) ->
+    ?LOG_WARNING("Unknown info", {StateName,_Info,StateData}),
     {noreply, StateName, StateData}.
 
 
 
-terminate(Reason, StateName, #client_state{socket=Socket} = State) ->
-    ?LOG_INFO("Terminate:", {self(), Reason, StateName, State}),
+terminate(_Reason, _StateName, #client_state{socket=Socket} = State) ->
+    ?LOG_INFO("Terminate:", {self(), _Reason, _StateName, State}),
     (catch ssl:close(Socket)),
     supercast_server:client_msg(disconnect, State),
     ok.

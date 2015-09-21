@@ -117,7 +117,7 @@ handle_cast({sync_request, CState}, S) ->
         end
     end),
 
-    {ok, Jobs} = monitor_data_master:iterate(job, fun(J,Acc) ->
+    {ok, _Jobs} = monitor_data_master:iterate(job, fun(J,Acc) ->
         #job{permissions=Perm} = J,
         case supercast:satisfy(CState, Perm) of
             true    ->
@@ -127,7 +127,7 @@ handle_cast({sync_request, CState}, S) ->
         end
     end),
 
-    ?LOG_INFO("Should_send_jobs", Jobs),
+    ?LOG_INFO("Should_send_jobs", _Jobs),
 
     {noreply, S};
 
@@ -174,8 +174,8 @@ handle_info({mnesia_table_event, {delete, _Table, What, [OldRecord], _ActivityId
     handle_delete(What, OldRecord),
     {noreply, S};
 
-handle_info(I, S) ->
-    ?LOG_WARNING({"Received handle info: ", I}),
+handle_info(_I, S) ->
+    ?LOG_WARNING({"Received handle info: ", _I}),
     {noreply, S}.
 
 terminate(_R, _) ->
@@ -204,17 +204,17 @@ handle_probe_update(#probe{permissions=Perm} = Probe,_) ->
     supercast_channel:emit(?MASTER_CHANNEL, {Perm, Pdu}).
 
 
-handle_job_create(#job{permissions=_Perm} = Job) ->
-    ?LOG_INFO("Create job", Job).
+handle_job_create(#job{permissions=_Perm} = _Job) ->
+    ?LOG_INFO("Create job", _Job).
 
-handle_job_update(#job{permissions=_Perm} = Job, _) ->
-    ?LOG_INFO("Update job", Job).
+handle_job_update(#job{permissions=_Perm} = _Job, _) ->
+    ?LOG_INFO("Update job", _Job).
 
 
-handle_dependency_create(Dep) ->
-    ?LOG_INFO("Create dep", Dep).
-handle_dependency_update(Dep) ->
-    ?LOG_INFO("update dep", Dep).
+handle_dependency_create(_Dep) ->
+    ?LOG_INFO("Create dep", _Dep).
+handle_dependency_update(_Dep) ->
+    ?LOG_INFO("update dep", _Dep).
 
 
 handle_delete({target, Name}, #target{permissions=Perm}) ->
@@ -223,7 +223,7 @@ handle_delete({target, Name}, #target{permissions=Perm}) ->
 handle_delete({probe, _}, #probe{permissions=Perm} = Probe) ->
     Pdu = monitor_pdu:deleteProbe(Probe),
     supercast_channel:emit(?MASTER_CHANNEL, {Perm, Pdu});
-handle_delete({job, Name},_) ->
-    ?LOG_INFO("Delete job", Name);
-handle_delete({dependency, Name},_) ->
-    ?LOG_INFO("Delete dependency", Name).
+handle_delete({job, _Name},_) ->
+    ?LOG_INFO("Delete job", _Name);
+handle_delete({dependency, _Name},_) ->
+    ?LOG_INFO("Delete dependency", _Name).

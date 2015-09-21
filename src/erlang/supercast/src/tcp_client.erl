@@ -143,9 +143,9 @@ init([Encoder]) ->
         state           = 'AUTHENTICATED'},
     {next_state, 'AUTHENTICATED', NextState};
 
-'WAIT_FOR_CLIENT_AUTH'({auth_fail, Ref, User},
+'WAIT_FOR_CLIENT_AUTH'({auth_fail, Ref, _User},
         #client_state{ref = Ref} = State) ->
-    ?LOG_INFO("Failed to register use", User),
+    ?LOG_INFO("Failed to register use", _User),
     {next_state, 'WAIT_FOR_CLIENT_AUTH', State, ?TIMEOUT};
 
 'WAIT_FOR_CLIENT_AUTH'(timeout,
@@ -158,8 +158,8 @@ init([Encoder]) ->
     supercast_server:client_msg(connect, NextState),
     {next_state, 'WAIT_FOR_CLIENT_AUTH', NextState, ?TIMEOUT};
 
-'WAIT_FOR_CLIENT_AUTH'(Data, State) ->
-    ?LOG_WARNING("Ignoring data", {self(), Data}),
+'WAIT_FOR_CLIENT_AUTH'(_Data, State) ->
+    ?LOG_WARNING("Ignoring data", {self(), _Data}),
     {next_state, 'WAIT_FOR_CLIENT_AUTH', State}.
 
 %%-------------------------------------------------------------------------
@@ -194,8 +194,8 @@ init([Encoder]) ->
     error_logger:error_msg("~p Timeout - closing.\n", [self()]),
     {stop, normal, State};
 
-'AUTHENTICATED'(Data, State) ->
-    ?LOG_WARNING("Running Ignoring data:", {self(), Data}),
+'AUTHENTICATED'(_Data, State) ->
+    ?LOG_WARNING("Running Ignoring data:", {self(), _Data}),
     {next_state, 'AUTHENTICATED', State}.
 
 
@@ -251,13 +251,13 @@ handle_info({tcp_closed, Socket}, _StateName,
     error_logger:info_msg("~p Client ~p disconnected.\n", [self(), Addr]),
     {stop, normal, StateData};
 
-handle_info(Info, StateName, StateData) ->
-    ?LOG_WARNING("Unknown info:", {Info,StateName,StateData}),
+handle_info(_Info, StateName, StateData) ->
+    ?LOG_WARNING("Unknown info:", {_Info,StateName,StateData}),
     {noreply, StateName, StateData}.
 
 
 
-terminate(Reason, StateName, #client_state{socket=Socket} = State) ->
+terminate(_Reason, _StateName, #client_state{socket=Socket} = State) ->
     ?LOG_INFO("Terminate", {StateName, Reason, State}),
     (catch gen_tcp:close(Socket)),
     supercast_server:client_msg(disconnect, State),
