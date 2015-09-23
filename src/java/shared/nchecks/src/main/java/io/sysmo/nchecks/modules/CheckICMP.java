@@ -128,7 +128,7 @@ public class CheckICMP implements NChecksInterface
 
 
         if ("".equals(host)) {
-            reply.setStatus(Reply.STATUS_DOWN);
+            reply.setStatus(Reply.STATUS_ERROR);
             reply.setReply("Host must be specified");
             return reply;
         }
@@ -139,7 +139,7 @@ public class CheckICMP implements NChecksInterface
             this.host = addr.getHostAddress();
         } catch (Exception e) {
             CheckICMP.logger.error(e.getMessage(), e);
-            reply.setStatus(Reply.STATUS_DOWN);
+            reply.setStatus(Reply.STATUS_ERROR);
             reply.setReply("Host lookup fail for: " + host);
             return reply;
         }
@@ -213,7 +213,7 @@ public class CheckICMP implements NChecksInterface
             reply.setStatus(Reply.STATUS_DOWN);
             reply.setReply(String.format("CheckICMP ERROR: stdout=%s, stderr=%s", stderrReturn, stdoutReturn));
             return reply;
-        } 
+        }
 
         long percentLoss  = Long.parseLong(ppingReturn[1]);
         long minReplyTime = Long.parseLong(ppingReturn[2]);
@@ -226,7 +226,7 @@ public class CheckICMP implements NChecksInterface
 
         String st;
         if (percentLoss == 100) {
-            st = Reply.STATUS_DOWN;
+            st = Reply.STATUS_CRITICAL;
         } else if (percentLoss >= plCritical || avgReplyTime >= msCritical) {
             st = Reply.STATUS_CRITICAL;
         } else if (percentLoss >= plWarning || avgReplyTime >= msWarning) {
