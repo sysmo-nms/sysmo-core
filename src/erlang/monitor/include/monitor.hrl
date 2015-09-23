@@ -84,7 +84,7 @@
     belong_to           = "undefined"   :: string(),
     description         = ""            :: string(),
     timeout             = 5             :: integer(), % seconds
-    status              = "OK"          :: string(),
+    status              = "DOWN"        :: string(),
     step                = 300           :: integer(), % seconds
     active              = true          :: true | false,
     module              = undefined     :: undefined | module(),
