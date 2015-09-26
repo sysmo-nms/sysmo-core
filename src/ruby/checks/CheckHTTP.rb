@@ -21,7 +21,7 @@ java_import 'io.sysmo.nchecks.Reply'
 
 require 'net/http'
 
-def check(query) # query is io.sysmo.nchecks.Query 
+def check(query) # query is io.sysmo.nchecks.Query
 
   # Extract arguments from java Query -> Argument {asString|asInteger}
   hostname  = query.get("host").asString()
@@ -43,7 +43,9 @@ def check(query) # query is io.sysmo.nchecks.Query
     finish = Time.now
     diff   = (finish - start) * 1000
 
+    # will raise an error if code is not 2**
     value = response.value()
+
     reply.setStatus(Reply::STATUS_OK)
     reply.setReply("HTTP Get successfull response")
     reply.putPerformance("ReplyDuration", diff)
