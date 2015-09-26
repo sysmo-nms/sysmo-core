@@ -54,7 +54,7 @@ public class NChecksJRuby {
 
             String val = this.scriptMap.get(identifier);
 
-            if(val == null) {
+            if (val == null) {
                 String script = identifier + ".rb";
                 byte[] fileBytes =
                         Files.readAllBytes(Paths.get(scriptPath,script));

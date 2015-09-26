@@ -18,33 +18,42 @@
 # along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
 require 'net/http'
 require 'benchmark'
-require 'unk/jojo'
 
 require 'java'
-import  'io.sysmo.nchecks.Reply'
+java_import  'io.sysmo.nchecks.Reply'
 
-# query = io.sysmo.nchecks.Query
-def check(query)
-  uri    = URI('http://www.sysmo.ioo/index.html')
+
+def check(query) # query is io.sysmo.nchecks.Query
+
+  # Extract arguments from java Query -> Argument {asString|asInteger}
+  hostname  = query.get("host").asString()
+  port      = query.get("port").asInteger()
+  mstimeout = query.get("ms_timeout").asInteger()
+
+  uri    = URI("http://#{hostname}:#{port}/")
   repstr = nil
   reply  = Reply.new()
 
   begin
-    delay = Benchmark.measure {
-      repstr = Net::HTTP.get_response(uri)
-    }
+    repstr = Net::HTTP.get_response(uri)
     reply.setStatus(Reply::STATUS_OK)
     reply.setReply("HTTP Get successfull")
     reply.putPerformance("ReplyDuration", 2344)
 
-  rescue Timeout::Error
+  rescue Timeout::Error => ex
     reply.setStatus(Reply::STATUS_CRITICAL)
-    reply.setReply("HTTP Get timeout")
+    reply.setReply(ex.message())
 
-  rescue SocketError
+  rescue Errno::ECONNREFUSED => ex
+    reply.setStatus(Reply::STATUS_CRITICAL)
+    reply.setReply(ex.message())
+
+  rescue SocketError => ex
     reply.setStatus(Reply::STATUS_ERROR)
-    reply.setReply("HTTP Get SocketError")
+    reply.setReply(ex.message())
+
   end
 
   return reply
+
 end
