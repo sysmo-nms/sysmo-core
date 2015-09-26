@@ -50,23 +50,23 @@
                     <Title>HTTP Performances</Title>
                     <VerticalLabel>"Milliseconds"</VerticalLabel>
                     <Draw
-                        Type="line"
+                        Type="area"
                         DataSource="ReplyDuration"
                         Consolidation="MAX"
                         Color="#729FCFFF" >
                         Maximum reply latency"
                     </Draw>
                     <Draw
-                        Type="line"
+                        Type="area"
                         DataSource="ReplyDuration"
-                        Consolidation="MAX"
+                        Consolidation="AVERAGE"
                         Color="#204A87FF" >
                         Average reply latency"
                     </Draw>
                     <Draw
-                        Type="line"
+                        Type="area"
                         DataSource="ReplyDuration"
-                        Consolidation="MAX"
+                        Consolidation="MIN"
                         Color="#3665A4FF" >
                         Minimum reply latency"
                     </Draw>

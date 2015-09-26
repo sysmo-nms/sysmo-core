@@ -16,12 +16,10 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
-require 'net/http'
-require 'benchmark'
-
 require 'java'
-java_import  'io.sysmo.nchecks.Reply'
+java_import 'io.sysmo.nchecks.Reply'
 
+require 'net/http'
 
 def check(query) # query is io.sysmo.nchecks.Query 
 
@@ -40,14 +38,23 @@ def check(query) # query is io.sysmo.nchecks.Query
   reply  = Reply.new()
 
   begin
+    start  = Time.now
     response = http.get("/")
+    finish = Time.now
+    diff   = (finish - start) * 1000
+
+    value = response.value()
     reply.setStatus(Reply::STATUS_OK)
-    reply.setReply("HTTP Get successfull")
-    reply.putPerformance("ReplyDuration", 2344)
+    reply.setReply("HTTP Get successfull response")
+    reply.putPerformance("ReplyDuration", diff)
+
+  rescue Net::HTTPServerException => ex
+    reply.setStatus(Reply::STATUS_CRITICAL)
+    reply.setReply(ex.message())
 
   rescue Timeout::Error => ex
     reply.setStatus(Reply::STATUS_CRITICAL)
-    reply.setReply("#{ex.message}")
+    reply.setReply(ex.message)
 
   rescue Errno::ECONNREFUSED => ex
     reply.setStatus(Reply::STATUS_CRITICAL)
