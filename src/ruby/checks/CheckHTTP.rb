@@ -35,21 +35,14 @@ def check(query) # query is io.sysmo.nchecks.Query
   reply  = Reply.new()
 
   begin
+
     repstr = Net::HTTP.get_response(uri)
     reply.setStatus(Reply::STATUS_OK)
     reply.setReply("HTTP Get successfull")
     reply.putPerformance("ReplyDuration", 2344)
 
-  rescue Timeout::Error => ex
+  rescue Exception => ex
     reply.setStatus(Reply::STATUS_CRITICAL)
-    reply.setReply(ex.message())
-
-  rescue Errno::ECONNREFUSED => ex
-    reply.setStatus(Reply::STATUS_CRITICAL)
-    reply.setReply(ex.message())
-
-  rescue SocketError => ex
-    reply.setStatus(Reply::STATUS_ERROR)
     reply.setReply(ex.message())
 
   end
