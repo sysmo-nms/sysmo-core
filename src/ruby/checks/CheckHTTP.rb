@@ -23,27 +23,39 @@ require 'java'
 java_import  'io.sysmo.nchecks.Reply'
 
 
-def check(query) # query is io.sysmo.nchecks.Query
+def check(query) # query is io.sysmo.nchecks.Query 
 
   # Extract arguments from java Query -> Argument {asString|asInteger}
   hostname  = query.get("host").asString()
   port      = query.get("port").asInteger()
   mstimeout = query.get("ms_timeout").asInteger()
 
-  uri    = URI("http://#{hostname}:#{port}/")
+  url    = URI("http://#{hostname}:#{port}")
+  http   = Net::HTTP.new(url.host, url.port)
+
+  # check MUST reply within 15 seconds
+  http.read_timeout = 5
+  http.open_timeout = 5
   repstr = nil
   reply  = Reply.new()
 
   begin
-
-    repstr = Net::HTTP.get_response(uri)
+    response = http.get("/")
     reply.setStatus(Reply::STATUS_OK)
     reply.setReply("HTTP Get successfull")
     reply.putPerformance("ReplyDuration", 2344)
 
-  rescue Exception => ex
+  rescue Timeout::Error => ex
     reply.setStatus(Reply::STATUS_CRITICAL)
-    reply.setReply(ex.message())
+    reply.setReply("#{ex.message}")
+
+  rescue Errno::ECONNREFUSED => ex
+    reply.setStatus(Reply::STATUS_CRITICAL)
+    reply.setReply("Connection refused")
+
+  rescue Exception => ex
+    reply.setStatus(Reply::STATUS_ERROR)
+    reply.setReply("#{ex.class} #{ex.message}")
 
   end
 
