@@ -23,23 +23,35 @@ require 'net/http'
 
 def check(query) # query is io.sysmo.nchecks.Query
 
-  # Extract arguments from java Query -> Argument {asString|asInteger}
-  hostname  = query.get("host").asString()
-  port      = query.get("port").asInteger()
-  mstimeout = query.get("ms_timeout").asInteger()
+  reply  = Reply.new()
 
-  url    = URI("http://#{hostname}:#{port}")
-  http   = Net::HTTP.new(url.host, url.port)
+  # Extract arguments from java Query -> Argument {asString|asInteger}
+  uristr  = query.get("uri").asString()
+
+  begin
+    uri  = URI(uristr)
+    http = Net::HTTP.new(uri.host, uri.port)
+  rescue Exception => ex
+    reply.setStatus(Reply::STATUS_ERROR)
+    reply.setReply("#{ex.class} #{ex.message}")
+    return reply
+  end
 
   # check MUST reply within 15 seconds
   http.read_timeout = 5
   http.open_timeout = 5
   repstr = nil
-  reply  = Reply.new()
 
   begin
     start  = Time.now
-    response = http.get("/")
+
+    if uri.path.eql? ""
+      path = "/"
+    else
+      path = uri.path
+    end
+
+    response = http.get(path)
     finish = Time.now
     diff   = (finish - start) * 1000
 
