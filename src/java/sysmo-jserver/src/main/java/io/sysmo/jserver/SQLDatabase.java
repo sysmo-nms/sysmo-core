@@ -244,10 +244,10 @@ public class SQLDatabase implements Runnable
     public void run() {
         // begin to loop and wait for calls (select) or casts (insert)
         this.logger.info("begin too loop");
-        OtpErlangObject event;
+        OtpErlangObject call;
         while (true) try {
-            event = this.mbox.receive();
-            this.handleEvent(event);
+            call = this.mbox.receive();
+            this.handleEvent(call);
         } catch (OtpErlangExit |OtpErlangDecodeException e) {
             this.logger.warn(e.getMessage(), e);
             try {

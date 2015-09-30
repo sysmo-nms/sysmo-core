@@ -95,7 +95,7 @@ handle_info({java_connected, Rrd4jPid, Snmp4jPid, NchecksPid, DatabasePid,
                  database_pid = DatabasePid,
                  mail_pid = MailPid,
                  jetty_port = JettyPort}};
-handle_info({java_connected, Rrd4jPid, Snmp4jPid, NchecksPid, DatabasePid, 
+handle_info({java_connected, Rrd4jPid, Snmp4jPid, NchecksPid, DatabasePid,
              MailPid, JettyPort}, #state{assert=From}) ->
     gen_server:reply(From, ok),
     {noreply, #state{
