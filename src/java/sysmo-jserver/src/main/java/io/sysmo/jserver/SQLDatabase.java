@@ -31,6 +31,7 @@ import java.sql.Statement;
 
 import com.ericsson.otp.erlang.OtpErlangDecodeException;
 import com.ericsson.otp.erlang.OtpErlangExit;
+import com.ericsson.otp.erlang.OtpErlangObject;
 import com.ericsson.otp.erlang.OtpMbox;
 
 import org.slf4j.LoggerFactory;
@@ -243,8 +244,10 @@ public class SQLDatabase implements Runnable
     public void run() {
         // begin to loop and wait for calls (select) or casts (insert)
         this.logger.info("begin too loop");
+        OtpErlangObject event;
         while (true) try {
-            this.mbox.receive();
+            event = this.mbox.receive();
+            this.handleEvent(event);
         } catch (OtpErlangExit |OtpErlangDecodeException e) {
             this.logger.warn(e.getMessage(), e);
             try {
@@ -263,6 +266,11 @@ public class SQLDatabase implements Runnable
         }
     }
 
+    private void handleEvent(OtpErlangObject event) {
+        this.logger.info("Should insert event!!! " + event.toString());
+        MailSender.getInstance().sendMail(event);
+    }
+
     private void reportFailure(String message) {
         this.logger.error("Data verification failed:" + message);
     }
@@ -271,10 +279,7 @@ public class SQLDatabase implements Runnable
     {
         while (e != null)
         {
-            this.logger.error("----- SQLException -----");
-            this.logger.error("  SQL State:  " + e.getSQLState());
-            this.logger.error("  Error Code: " + e.getErrorCode());
-            this.logger.error("  Message:    " + e.getMessage());
+            this.logger.error("SQLException ", e);
             e = e.getNextException();
         }
     }

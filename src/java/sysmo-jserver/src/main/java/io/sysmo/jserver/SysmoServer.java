@@ -59,6 +59,26 @@ public class SysmoServer {
             return;
         }
 
+        // generate paths
+        String rubyDir = FileSystems
+                .getDefault()
+                .getPath("ruby")
+                .toString();
+
+        String utilsDir = FileSystems
+                .getDefault()
+                .getPath("utils")
+                .toString();
+
+        String etcDir = FileSystems
+                .getDefault()
+                .getPath("etc")
+                .toString();
+
+        String docrootDir = FileSystems
+                .getDefault()
+                .getPath("docroot")
+                .toString();
         /*
          * Connect to erlang-main node
          */
@@ -80,6 +100,7 @@ public class SysmoServer {
         OtpMbox snmp4jMbox  = node.createMbox();
         OtpMbox nchecksMbox = node.createMbox();
         OtpMbox derbyMbox   = node.createMbox();
+        OtpMbox mailMbox    = node.createMbox();
 
         /*
          * Link to mainMbox.
@@ -91,6 +112,7 @@ public class SysmoServer {
             mainMbox.link(snmp4jMbox.self());
             mainMbox.link(nchecksMbox.self());
             mainMbox.link(derbyMbox.self());
+            mainMbox.link(mailMbox.self());
         } catch (Exception e) {
             logger.error("Should not append here!" + e.getMessage(), e);
         }
@@ -103,6 +125,13 @@ public class SysmoServer {
         rrd4jThread.start();
 
         /*
+         * Create mail thread
+         */
+        MailSender mail = new MailSender(mailMbox, etcDir);
+        Thread mailThread = new Thread(mail);
+        mailThread.start();
+
+        /*
          * Create snmp4j thread
          */
         SnmpManager snmp4j = new SnmpManager(snmp4jMbox, foreignNodeName);
@@ -112,21 +141,6 @@ public class SysmoServer {
         /*
          * Create NChecks thread
          */
-        String rubyDir = FileSystems
-                .getDefault()
-                .getPath("ruby")
-                .toString();
-
-        String utilsDir = FileSystems
-                .getDefault()
-                .getPath("utils")
-                .toString();
-
-        String etcDir = FileSystems
-                .getDefault()
-                .getPath("etc")
-                .toString();
-
         NChecksErlang nchecks;
         try {
             nchecks = new NChecksErlang(
@@ -136,36 +150,33 @@ public class SysmoServer {
             System.err.println("NChecks failed to start" + e.getMessage());
             return;
         }
-
         Thread nchecksThread = new Thread(nchecks);
         nchecksThread.start();
 
         /*
          * Create derby thread
          */
-        // TODO init derby and log events
-        /*
         SQLDatabase derbyDb = new SQLDatabase(derbyMbox, foreignNodeName);
         Thread derbyThread = new Thread(derbyDb);
         derbyThread.start();
-        */
 
         /*
          * Create simple http file server
          */
-        Server jettyThread = JettyServer.startServer();
+        Server jettyThread = JettyServer.startServer(docrootDir, etcDir);
         int jettyPort = JettyServer.getPort();
 
         /*
          * Send acknowledgement to the "sysmo" erlang process
          */
-        OtpErlangObject[] ackObj = new OtpErlangObject[6];
+        OtpErlangObject[] ackObj = new OtpErlangObject[7];
         ackObj[0] = new OtpErlangAtom("java_connected");
         ackObj[1] = rrd4jMbox.self();
         ackObj[2] = snmp4jMbox.self();
         ackObj[3] = nchecksMbox.self();
         ackObj[4] = derbyMbox.self();
-        ackObj[5] = new OtpErlangInt(jettyPort);
+        ackObj[5] = mailMbox.self();
+        ackObj[6] = new OtpErlangInt(jettyPort);
         OtpErlangTuple ackTuple = new OtpErlangTuple(ackObj);
         mainMbox.send("sysmo", foreignNodeName, ackTuple);
 
@@ -185,6 +196,7 @@ public class SysmoServer {
             nchecksThread.join();
             rrd4jThread.join();
             snmp4jThread.join();
+            mailThread.join();
             //derbyThread.join();
         } catch (Exception e) {
             logger.error(e.getMessage(), e);

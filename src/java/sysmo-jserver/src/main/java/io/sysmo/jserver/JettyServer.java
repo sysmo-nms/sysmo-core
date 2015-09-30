@@ -34,7 +34,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.FileInputStream;
 import java.io.InputStream;
-import java.nio.file.FileSystems;
+import java.nio.file.Paths;
 import java.util.Properties;
 
 /**
@@ -44,15 +44,25 @@ public class JettyServer
 {
     private static Logger logger = LoggerFactory.getLogger(JettyServer.class);
     private static final int DEFAULT_PORT = 9759;
+    private static int port;
 
-    public static Server startServer()
+    public static Server startServer(String docroot, String etcDir)
     {
-
-        String docroot = FileSystems.getDefault().getPath("docroot").toString();
+        String propFile = Paths.get(etcDir, "sysmo-web.properties").toString();
+        try {
+            Properties  props = new Properties();
+            InputStream input = new FileInputStream(propFile);
+            props.load(input);
+            JettyServer.port = Integer.parseInt(props.getProperty("port"));
+        } catch (Exception e) {
+            JettyServer.logger.error(
+                    "Can not read property file. " + e.getMessage(), e);
+            JettyServer.port = DEFAULT_PORT;
+        }
 
         Server jettyThread = new Server();
         SelectChannelConnector connector = new SelectChannelConnector();
-        connector.setPort(JettyServer.getPort());
+        connector.setPort(JettyServer.port);
         jettyThread.addConnector(connector);
 
         ResourceHandler resource_handler = new ResourceHandler();
@@ -73,20 +83,7 @@ public class JettyServer
         return jettyThread;
     }
 
-    public static int getPort()
-    {
-        String propFile = FileSystems.getDefault()
-                .getPath("etc", "sysmo-web.properties").toString();
-
-        try {
-            Properties  props = new Properties();
-            InputStream input = new FileInputStream(propFile);
-            props.load(input);
-            return Integer.parseInt(props.getProperty("port"));
-        } catch (Exception e) {
-            JettyServer.logger.error(
-                    "Can not read property file. " + e.getMessage(), e);
-            return DEFAULT_PORT;
-        }
+    public static int getPort() {
+        return JettyServer.port;
     }
 }

@@ -14,7 +14,7 @@
 -export([get_pid/1, get_http_port/0]).
 
 -record(state, {rrd4j_pid, snmp4j_pid, nchecks_pid,
-                derby_pid, jetty_port, assert, ready=false}).
+                database_pid, mail_pid, jetty_port, assert, ready=false}).
 
 get_pid(For) ->
     gen_server:call(?MODULE, {get_pid, For}).
@@ -69,6 +69,8 @@ handle_call({get_pid, snmp4j}, _From, #state{snmp4j_pid=Pid} = S) ->
     {reply, Pid, S};
 handle_call({get_pid, nchecks}, _From, #state{nchecks_pid=Pid} = S) ->
     {reply, Pid, S};
+handle_call({get_pid, database}, _From, #state{database_pid=Pid} = S) ->
+    {reply, Pid, S};
 
 handle_call(get_http_port, _From, #state{jetty_port=Port} = S) ->
     {reply, Port, S};
@@ -83,24 +85,26 @@ handle_cast(_Cast, S) ->
     {noreply, S}.
 
 
-handle_info({java_connected, Rrd4jPid, Snmp4jPid,
-             NchecksPid, DerbyPid, JettyPort}, #state{assert=undefined}) ->
+handle_info({java_connected, Rrd4jPid, Snmp4jPid, NchecksPid, DatabasePid,
+             MailPid, JettyPort}, #state{assert=undefined}) ->
     {noreply, #state{
                  ready = true,
                  rrd4j_pid = Rrd4jPid,
                  snmp4j_pid = Snmp4jPid,
                  nchecks_pid = NchecksPid,
-                 derby_pid = DerbyPid,
+                 database_pid = DatabasePid,
+                 mail_pid = MailPid,
                  jetty_port = JettyPort}};
-handle_info({java_connected, Rrd4jPid, Snmp4jPid,
-             NchecksPid, DerbyPid, JettyPort}, #state{assert=From}) ->
+handle_info({java_connected, Rrd4jPid, Snmp4jPid, NchecksPid, DatabasePid, 
+             MailPid, JettyPort}, #state{assert=From}) ->
     gen_server:reply(From, ok),
     {noreply, #state{
                  ready = true,
                  rrd4j_pid = Rrd4jPid,
                  snmp4j_pid = Snmp4jPid,
                  nchecks_pid = NchecksPid,
-                 derby_pid = DerbyPid,
+                 database_pid = DatabasePid,
+                 mail_pid = MailPid,
                  jetty_port = JettyPort}};
 
 handle_info({_Port, {exit_status, Status}}, S) ->
