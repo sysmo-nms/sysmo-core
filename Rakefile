@@ -45,7 +45,7 @@ task :rel => :debug_release
 desc "Build all"
 task :build => [:java, :erl, :pping]
 
-desc "Debug build"
+desc "Debug build send all levels of erlang error to sysmo.log"
 task :debug_build => [:java, :debug_erl, :pping]
 
 desc "Build pping"
