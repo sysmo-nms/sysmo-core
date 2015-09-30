@@ -39,11 +39,14 @@ GRADLE    = File.join(JAVA_DIR,  "gradlew")
 #
 # tasks
 #
-task :default => :rel
-task :rel => :release
+task :default => :release
+task :rel => :debug_release
 
 desc "Build all"
 task :build => [:java, :erl, :pping]
+
+desc "Debug build"
+task :debug_build => [:java, :debug_erl, :pping]
 
 desc "Build pping"
 task :pping do
@@ -53,6 +56,11 @@ end
 desc "Build erlang"
 task :erl do
   cd ERLANG_DIR; sh "#{REBAR} -r compile"
+end
+
+desc "Debug build for Erlang"
+task :debug_erl do
+  cd ERLANG_DIR; sh "#{REBAR} -D debug -r compile"
 end
 
 desc "Build java"
@@ -86,7 +94,7 @@ task :doc do
   cd JAVA_DIR;   sh "#{GRADLE} doc"
 end
 
-desc "Generate a fresh release in directory ./sysmo"
+desc "Generate a release in directory ./sysmo"
 task :release => [:build] do
   FileUtils.rm_rf("sysmo/java_apps")
   cd ROOT; sh "#{REBAR} generate"
@@ -94,6 +102,16 @@ task :release => [:build] do
   generate_all_checks()
   puts "Release ready!"
 end
+
+desc "Generate a debug release in directory ./sysmo"
+task :debug_release => [:debug_build] do
+  FileUtils.rm_rf("sysmo/java_apps")
+  cd ROOT; sh "#{REBAR} generate"
+  install_pping_command()
+  generate_all_checks()
+  puts "Debug release ready!"
+end
+
 
 task :release_worker => [:java, :pping] do
   cd ROOT

@@ -258,7 +258,7 @@ handle_info(_Info, StateName, StateData) ->
 
 
 terminate(_Reason, _StateName, #client_state{socket=Socket} = State) ->
-    ?LOG_INFO("Terminate", {StateName, Reason, State}),
+    ?LOG_INFO("Terminate", {_StateName, _Reason, State}),
     (catch gen_tcp:close(Socket)),
     supercast_server:client_msg(disconnect, State),
     ok.
