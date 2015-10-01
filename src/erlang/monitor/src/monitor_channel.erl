@@ -112,7 +112,7 @@ handle_cast({sync_request, CState}, S) ->
                 % Dep = do_get(dependency,Name)
                 % Pdu = dep... supercast:unicast...
                 ?LOG_INFO("Should_send_dependencies"),
-                monitor:trigger_probe_return(P#probe.name, CState);
+                monitor:trigger_nchecks_reply(P#probe.name, CState);
             false   -> ok
         end
     end),

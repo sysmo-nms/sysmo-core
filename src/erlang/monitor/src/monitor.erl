@@ -41,7 +41,7 @@
 
     force_probe/1,
 
-    trigger_probe_return/2,
+    trigger_nchecks_reply/2,
 
     % private probe utils
     timestamp/0,
@@ -139,14 +139,14 @@ force_probe(PidName) ->
 %%-----------------------------------------------------------------------------
 %% PRIVATE API
 %%-----------------------------------------------------------------------------
--spec trigger_probe_return(PidName::string(), CState::#client_state{}) -> ok.
+-spec trigger_nchecks_reply(PidName::string(), CState::#client_state{}) -> ok.
 % @private
 % @doc
 % Used by the monitor main channel to initialize clients. This function send
 % a Partial Probe return PDU to the specified client, including the next expected
 % return time. It did not trigger a check.
 % @end
-trigger_probe_return(PidName, CState) ->
+trigger_nchecks_reply(PidName, CState) ->
     case supercast_registrar:whereis_name(PidName) of
         undefined ->
             ?LOG_ERROR("Unknown PidName", PidName),

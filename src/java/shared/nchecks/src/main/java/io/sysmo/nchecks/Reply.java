@@ -71,7 +71,7 @@ public class Reply
      * The default status code is 0
      *
      * Here are the rules concerning "status" ans "statusCode":
-     * - All status move (ie: from OK to DOWN) are logged.
+     * - All status move (ie: from OK to DOWN...) are logged.
      * - If two (or more) consecutive returns have the same status
      * (CRITICAL for example) and the same statusCode, only the first event will
      * be logged.
@@ -79,7 +79,7 @@ public class Reply
      * (CRITICAL for example) and a different statusCode, every event where a
      * statusCode have changed will be logged.
      *
-     * @param statusCode
+     * @param statusCode integer representing the status code
      */
     public void setStatusCode(int statusCode) {
         this.statusCode = statusCode;
@@ -97,7 +97,7 @@ public class Reply
 
     /**
     * Set the reply string of this check. It should be a human readable string.
-    * @param str the string to set.
+    * @param str the string representing the reply.
     */
     public void setReply(String str) {
         replyMsg = str;
@@ -196,27 +196,27 @@ public class Reply
      * Return the erlang representation of the Reply.
      */
     public OtpErlangTuple asTuple() {
-        OtpErlangObject[] perfValuesObj = new OtpErlangObject[perfValues.size()];
+        OtpErlangObject[] perfValuesObj = new OtpErlangObject[this.perfValues.size()];
         int i = 0;
         for (Map.Entry<String, PerformanceGroup> entry: perfValues.entrySet())
         {
-            String              key      = entry.getKey();
-            OtpErlangList value    = entry.getValue().asList();
-            OtpErlangObject[]   objEntry = new OtpErlangObject[2];
-            objEntry[0]      = new OtpErlangString(entry.getKey());
-            objEntry[1]      = value;
+            OtpErlangList value = entry.getValue().asList();
+            OtpErlangObject[] objEntry = new OtpErlangObject[2];
+            objEntry[0] = new OtpErlangString(entry.getKey());
+            objEntry[1] = value;
             perfValuesObj[i] = new OtpErlangTuple(objEntry);
             i++;
         }
         OtpErlangList perfValueList = new OtpErlangList(perfValuesObj);
 
-        OtpErlangObject[] replyRecord = new OtpErlangObject[6];
-        replyRecord[0] = atomNchecksReply;
-        replyRecord[1] = new OtpErlangString(status);
-        replyRecord[2] = perfValueList;
-        replyRecord[3] = new OtpErlangString(replyMsg);
-        replyRecord[4] = new OtpErlangLong(timestamp);
-        replyRecord[5] = new OtpErlangBinary(opaque);
+        OtpErlangObject[] replyRecord = new OtpErlangObject[7];
+        replyRecord[0] = Reply.atomNchecksReply;
+        replyRecord[1] = new OtpErlangString(this.status);
+        replyRecord[2] = new OtpErlangLong(this.statusCode);
+        replyRecord[3] = perfValueList;
+        replyRecord[4] = new OtpErlangString(this.replyMsg);
+        replyRecord[5] = new OtpErlangLong(this.timestamp);
+        replyRecord[6] = new OtpErlangBinary(this.opaque);
 
         return new OtpErlangTuple(replyRecord);
     }

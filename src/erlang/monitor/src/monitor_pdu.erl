@@ -22,6 +22,7 @@
 % PDUS
 -module(monitor_pdu).
 -include("include/monitor.hrl").
+-include_lib("nchecks/include/nchecks.hrl").
 -export([
     probeReturn/4,
     infoProbeCreate/1,
@@ -160,8 +161,6 @@ deleteProbe(Probe) ->
     }.
 
 probeReturn(ProbeReturn, Target, Probe, NextReturn) ->
-    KeyValStr = make_key_values(ProbeReturn#probe_return.key_vals),
-    JKeyVal = [{char_to_binary(Key), char_to_binary(Val)} || {Key, Val} <- KeyValStr],
     {struct,
         [
             {<<"from">>, <<"monitor_main">>},
@@ -169,11 +168,10 @@ probeReturn(ProbeReturn, Target, Probe, NextReturn) ->
             {<<"value">>, {struct, [
                 {<<"target">>,      char_to_binary(Target)},
                 {<<"name">>,        char_to_binary(Probe)},
-                {<<"status">>,      char_to_binary(ProbeReturn#probe_return.status)},
-                {<<"replyString">>, char_to_binary(ProbeReturn#probe_return.reply_string)},
-                {<<"replyCode">>,   ProbeReturn#probe_return.reply_code},
-                {<<"timestamp">>,   ProbeReturn#probe_return.timestamp},
-                {<<"keyVals">>,     {struct, JKeyVal}},
+                {<<"status">>,      char_to_binary(ProbeReturn#nchecks_reply.status)},
+                {<<"statusCode">>,  ProbeReturn#nchecks_reply.status_code},
+                {<<"replyString">>, char_to_binary(ProbeReturn#nchecks_reply.reply_string)},
+                {<<"timestamp">>,   ProbeReturn#nchecks_reply.timestamp},
                 {<<"nextReturn">>,  NextReturn}
             ]}}
         ]
@@ -235,19 +233,6 @@ infoProbe(Probe, InfoType) ->
 
 
 % UTILS
-
-make_key_values(K) ->
-    make_key_values(K, []).
-make_key_values([], S) ->
-    S;
-make_key_values([{K,V} | T], S) when is_list(V) ->
-    make_key_values(T, [{K, V} | S]);
-make_key_values([{K,V} | T], S) when is_integer(V) ->
-    make_key_values(T, [{K, integer_to_list(V)} | S]);
-make_key_values([{K,V} | T], S) when is_float(V) ->
-    make_key_values(T, [{K, float_to_list(V, [{decimals, 10}])} | S]);
-make_key_values([{K,V} | T], S) when is_atom(V) ->
-    make_key_values(T, [{K, atom_to_list(V)} | S]).
 
 char_to_binary(V) ->
     unicode:characters_to_binary(V).

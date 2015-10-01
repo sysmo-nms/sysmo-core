@@ -44,6 +44,7 @@
     tref,
     current_status_from,
     current_status,
+    current_status_code,
     local_state,
     last_return = ""
 }).
@@ -54,19 +55,16 @@
     args        = []            :: [{string(), any()}]
 }).
 
--record(probe_return, {
-    status          = "DOWN"        :: string(),
-    % "OK" | "DOWN" | "WARNING" | "CRITICAL",
-    reply_string    = ""            :: string(),
-    reply_code      = 0             :: integer(),
-    timestamp       = 0             :: integer(),
-    key_vals        = []            :: [{string(), any()}],
-    perfs           = []            :: [{string(), integer()}],
-    % used by inspector property set/get 
-    reply_tuple     = undefined     :: any(),
-    % used by the rrd logger/walk table
-    opaque          = <<>>          :: any()
-}).
+% from nchecks/include/nchecks.hrl
+% -record(nchecks_reply, {
+%     % status = "OK" | "DOWN" | "WARNING" | "CRITICAL",
+%     status          = "DOWN"        :: string(),
+%     status_code     = 0             :: integer(),
+%     reply_string    = ""            :: string(),
+%     timestamp       = 0             :: integer(),
+%     performances    = []            :: [{string(), integer()}],
+%     opaque          = <<>>          :: any()
+% }).
 
 -record(job, {
     name        = undefined             :: string(),
@@ -84,12 +82,12 @@
     belong_to           = "undefined"   :: string(),
     description         = ""            :: string(),
     timeout             = 5             :: integer(), % seconds
+    % status = "OK" | "DOWN" | "WARNING" | "CRITICAL",
     status              = "DOWN"        :: string(),
     step                = 300           :: integer(), % seconds
     active              = true          :: true | false,
     module              = undefined     :: undefined | module(),
     module_config       = undefined     :: [any()],
-
     permissions         = ?DEFAULT_PERM_CONF :: #perm_conf{}
 }).
 

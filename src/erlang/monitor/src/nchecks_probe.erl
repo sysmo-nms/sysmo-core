@@ -82,6 +82,11 @@ start_link(#probe{name=Name} = Probe) ->
     gen_server:start_link({via, supercast_registrar,
                                     {?MODULE, Name}}, ?MODULE, Probe, []).
 
+init(Probe) ->
+    % to let multiple probes initialize in the same time, init is delayed.
+    gen_server:cast(self(), do_init),
+    {ok, Probe}.
+
 do_init(Probe) ->
     Ref = make_ref(),
     random:seed(erlang:now()),
@@ -110,7 +115,7 @@ do_init(Probe) ->
     monitor_data_master:set_probe_state(ES),
 
     % partial return for clients allready connected
-    PartialReturn = #probe_return{
+    PartialReturn = #nchecks_reply{
         status       = ES#ets_state.current_status,
         reply_string = ES#ets_state.last_return},
     MilliRem = monitor:read_timer(ES#ets_state.tref),
@@ -203,7 +208,7 @@ do_sync_request(CState, S) ->
 do_trigger_return(CState, S) ->
     ES = monitor_data_master:get_probe_state(S#state.name),
 
-    PartialPR = #probe_return{
+    PartialPR = #nchecks_reply{
         status       = ES#ets_state.current_status,
         reply_string = ES#ets_state.last_return
     },
@@ -227,7 +232,7 @@ do_force(#state{ref=Ref} = S) ->
             monitor_data_master:set_probe_state(ES#ets_state{tref=TRef}),
 
             % build and send PDU for client with new TRef info (TRef = now)
-            PartialReturn = #probe_return{
+            PartialReturn = #nchecks_reply{
                 status       = ES#ets_state.current_status,
                 reply_string = ES#ets_state.last_return
             },
@@ -251,7 +256,7 @@ do_force(#state{ref=Ref} = S) ->
 %%----------------------------------------------------------------------------
 %% INTERNALS
 %%----------------------------------------------------------------------------
-do_handle_probe_return(PR, #state{ref=Ref} = S) ->
+do_handle_nchecks_reply(PR, #state{ref=Ref} = S) ->
     % get the probe state
     ES  = monitor_data_master:get_probe_state(S#state.name),
 
@@ -259,7 +264,7 @@ do_handle_probe_return(PR, #state{ref=Ref} = S) ->
     % set status and update monitor_events and data_master if required
     [Probe]   = monitor_data_master:get(probe, S#state.name),
     OldStatus = Probe#probe.status,
-    NewStatus = PR#probe_return.status,
+    NewStatus = PR#nchecks_reply.status,
 
     case NewStatus of
         OldStatus ->
@@ -272,8 +277,8 @@ do_handle_probe_return(PR, #state{ref=Ref} = S) ->
 
 
     % errd4j update
-    Ts  = PR#probe_return.timestamp,
-    Pfs = PR#probe_return.perfs,
+    Ts  = PR#nchecks_reply.timestamp,
+    Pfs = PR#nchecks_reply.performances,
 
     case ES#ets_state.local_state#nchecks_state.rrd_config of
         {simple, RrdFile} ->
@@ -281,12 +286,12 @@ do_handle_probe_return(PR, #state{ref=Ref} = S) ->
             case Pfs of
                 [] ->
                     UpdatePdu = monitor_pdu:nchecksSimpleUpdateMessage(
-                        S#state.name,PR#probe_return.timestamp, []);
+                        S#state.name,PR#nchecks_reply.timestamp, []);
 
                 [{"simple",Perfs}] ->
                     (catch  errd4j:update(RrdFile, Perfs, Ts)),
                     UpdatePdu = monitor_pdu:nchecksSimpleUpdateMessage(
-                        S#state.name,PR#probe_return.timestamp,Perfs)
+                        S#state.name,PR#nchecks_reply.timestamp,Perfs)
             end;
 
         {table, Record} ->
@@ -296,7 +301,7 @@ do_handle_probe_return(PR, #state{ref=Ref} = S) ->
                     || {XE,XP} <- Pfs],
             (catch errd4j:multi_update(RrdMultiUpdates)),
             UpdatePdu = monitor_pdu:nchecksTableUpdateMessage(
-                                     S#state.name,PR#probe_return.timestamp,Pfs)
+                                     S#state.name,PR#nchecks_reply.timestamp,Pfs)
     end,
 
 
@@ -324,8 +329,8 @@ do_handle_probe_return(PR, #state{ref=Ref} = S) ->
         ES#ets_state{
             tref                =TRef,
             current_status_from = erlang:now(),
-            current_status      = PR#probe_return.status,
-            last_return         = PR#probe_return.reply_string
+            current_status      = PR#nchecks_reply.status,
+            last_return         = PR#nchecks_reply.reply_string
         }
     ).
 
@@ -337,33 +342,18 @@ do_take_of(#state{ref=Ref,name=PName}) ->
     ToPid   = self(),
     erlang:spawn(fun() ->
         {ok, Return} = ?MODULE:exec_nchecks(Class, Args, Opaque),
-        erlang:send(ToPid, {probe_return, Ref, Return})
+        erlang:send(ToPid, {nchecks_reply, Ref, Return})
     end).
 
 exec_nchecks(Class, Args, Opaque) ->
     case (catch(nchecks:check(Class,Args,Opaque))) of
-        {ok, Reply} ->
-            #nchecks_reply{
-               status=Status,
-                performances=Perfs,
-                reply_string=Str,
-                timestamp=Ts,
-                opaque=Opaque
-            } = Reply,
-            ProbeReturn = #probe_return{
-                status          = Status,
-                reply_string    = Str,
-                timestamp       = Ts,
-                perfs           = Perfs,
-                opaque          = Opaque
-            };
-
+         {ok, Reply} -> ProbeReturn = Reply;
          Error ->
             % An error occured.
             % TODO should I modify the probe state or set it to 'ERROR'?
             % It is most a sysmo state than a probe state.
             ?LOG_ERROR("", Error),
-            ProbeReturn = #probe_return{
+            ProbeReturn = #nchecks_reply{
                 status          = "ERROR",
                 reply_string    = ?CRASH,
                 opaque          = Opaque
@@ -384,10 +374,6 @@ exec_nchecks(Class, Args, Opaque) ->
 %%----------------------------------------------------------------------------
 %% GEN_SERVER
 %%----------------------------------------------------------------------------
-init(Probe) ->
-    % to let multiple probes initialize in the same time, init is delayed.
-    gen_server:cast(self(), do_init),
-    {ok, Probe}.
 
 
 handle_cast(do_init, #probe{name=PName} = Probe) ->
@@ -419,9 +405,9 @@ handle_call(_Call, _From, S) ->
     ?LOG_WARNING("Handle unknown call", _Call),
     {noreply, S}.
 
-handle_info({probe_return, Ref, PR}, #state{ref=Ref} = S) ->
+handle_info({nchecks_reply, Ref, PR}, #state{ref=Ref} = S) ->
     ?LOG_INFO("Probe return", PR),
-    do_handle_probe_return(PR, S),
+    do_handle_nchecks_reply(PR, S),
     {noreply, S};
 
 handle_info({take_of, Ref}, #state{ref=Ref} = S) ->
