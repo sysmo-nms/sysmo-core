@@ -30,17 +30,11 @@
 -include_lib("xmerl/include/xmerl.hrl").
 -include_lib("common_hrl/include/logs.hrl").
 
--define(CRASH, "CRASH! A system error has occured! Check your sysmo.log and jserver.log to learn more.").
+-define(CRASH, "The module call has timed out. Check the server log for details").
 
 % gen_server
--export([
-    start_link/1,
-    init/1,
-    handle_call/3,
-    handle_cast/2,
-    handle_info/2,
-    terminate/2,
-    code_change/3]).
+-export([start_link/1, init/1, handle_call/3, handle_cast/2, handle_info/2,
+         terminate/2, code_change/3]).
 
 % supercast
 -export([get_perms/1,sync_request/2]).
@@ -261,10 +255,16 @@ do_handle_nchecks_reply(PR, #state{ref=Ref} = S) ->
     ES  = monitor_data_master:get_probe_state(S#state.name),
 
 
+
     % set status and update monitor_events and data_master if required
     [Probe]   = monitor_data_master:get(probe, S#state.name),
     OldStatus = Probe#probe.status,
     NewStatus = PR#nchecks_reply.status,
+
+    % TODO TODO TODO: compare status AND status_code
+    % TODO TODO TODO: compare status AND status_code
+    % TODO TODO TODO: compare status AND status_code
+    % TODO TODO TODO: compare status AND status_code
 
     case NewStatus of
         OldStatus ->
@@ -350,8 +350,8 @@ exec_nchecks(Class, Args, Opaque) ->
          {ok, Reply} -> ProbeReturn = Reply;
          Error ->
             % An error occured.
-            % TODO should I modify the probe state or set it to 'ERROR'?
             % It is most a sysmo state than a probe state.
+            % TODO Should I log ERROR ?
             ?LOG_ERROR("", Error),
             ProbeReturn = #nchecks_reply{
                 status          = "ERROR",
