@@ -21,25 +21,49 @@
 
 package io.sysmo.nchecks;
 
-import java.util.*;
-import java.nio.file.*;
-
-import org.snmp4j.*;
-import org.snmp4j.mp.*;
-import org.snmp4j.security.*;
-import org.snmp4j.smi.*;
-import org.snmp4j.transport.*;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-// AES192_3DES AES256_3DES
-import org.snmp4j.security.nonstandard.*;
+import org.snmp4j.AbstractTarget;
+import org.snmp4j.CommunityTarget;
+import org.snmp4j.Snmp;
+import org.snmp4j.UserTarget;
+import org.snmp4j.mp.MPv3;
+import org.snmp4j.mp.SnmpConstants;
+import org.snmp4j.security.AuthMD5;
+import org.snmp4j.security.AuthSHA;
+import org.snmp4j.security.Priv3DES;
+import org.snmp4j.security.PrivAES128;
+import org.snmp4j.security.PrivAES192;
+import org.snmp4j.security.PrivAES256;
+import org.snmp4j.security.PrivDES;
+import org.snmp4j.security.SecurityLevel;
+import org.snmp4j.security.SecurityModel;
+import org.snmp4j.security.SecurityModels;
+import org.snmp4j.security.SecurityProtocols;
+import org.snmp4j.security.USM;
+import org.snmp4j.security.UsmUser;
+import org.snmp4j.security.UsmUserEntry;
+import org.snmp4j.smi.Address;
+import org.snmp4j.smi.GenericAddress;
+import org.snmp4j.smi.OID;
+import org.snmp4j.smi.OctetString;
+import org.snmp4j.transport.DefaultUdpTransportMapping;
+import org.snmp4j.transport.UdpTransportMapping;
+import org.snmp4j.security.nonstandard.PrivAES192With3DESKeyExtension;
+import org.snmp4j.security.nonstandard.PrivAES256With3DESKeyExtension;
+
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.Map;
 
 // TODO handle snmp v3 usm user modification;
 public class NChecksSNMP
 {
-    public  Snmp snmp4jSession;
+    public Snmp snmp4jSession;
     private Map<String, AbstractTarget> agents;
     private static NChecksSNMP INSTANCE;
     private static Logger logger = LoggerFactory.getLogger(NChecksSNMP.class);
@@ -97,7 +121,7 @@ public class NChecksSNMP
             agents.put(targetid, target);
             return target;
         } else {
-            UsmUser     user     = generateUser(query);
+            UsmUser user     = generateUser(query);
             OctetString username = user.getSecurityName();
             UsmUserEntry oldUser =
                     snmp4jSession.getUSM().getUserTable().getUser(username);

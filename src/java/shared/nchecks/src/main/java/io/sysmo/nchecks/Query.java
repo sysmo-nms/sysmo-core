@@ -42,25 +42,26 @@ public class Query
         this.arguments = new HashMap<>(args);
     }
 
-
-    /*
-    * Retrieve the state set by the previous check call.
-    * (see Reply.setState)
-    * Deserializtaion example:
-    * DESERIALIZATION EXAMPLE
-    *       ByteArrayInputStream b = new ByteArrayInputStream(opaqueData);
-    *       ObjectInputStream o = new ObjectInputStream(b);
-    *       Object myObject = o.readObject();
-    *       or beter
-    *       MyObjectClass = (MyObjectClass) o.readObject();
-    */
+    /**
+     * Retrieve the state set by the previous check call.
+     * (see Reply.setState)
+     * Deserialization example:
+     * DESERIALIZATION EXAMPLE
+     *       ByteArrayInputStream b = new ByteArrayInputStream(opaqueData);
+     *       ObjectInputStream o = new ObjectInputStream(b);
+     *       Object myObject = o.readObject();
+     *       or beter
+     *       MyObjectClass = (MyObjectClass) o.readObject();
+     *
+     * @return the byte array state set with Reply.setState
+     */
     public byte[] getState() {return this.state.clone();}
 
     /**
-     * Return the argument identified by key or an empty argument if the key
+     * Return the argument identified by key or null if the key
      * does not exist.
      * @param key the flag identifying the argument
-     * @return the argument
+     * @return the argument or null
      * @see io.sysmo.nchecks.Reply
      * @see io.sysmo.nchecks.Argument
      */

@@ -19,9 +19,17 @@
  * along with Sysmo.  If not, see <http://www.gnu.org/licenses/>.
  */
 package io.sysmo.nchecks;
+
+import com.ericsson.otp.erlang.OtpErlangAtom;
+import com.ericsson.otp.erlang.OtpErlangBinary;
+import com.ericsson.otp.erlang.OtpErlangList;
+import com.ericsson.otp.erlang.OtpErlangLong;
+import com.ericsson.otp.erlang.OtpErlangObject;
+import com.ericsson.otp.erlang.OtpErlangString;
+import com.ericsson.otp.erlang.OtpErlangTuple;
+
 import java.util.Map;
 import java.util.HashMap;
-import com.ericsson.otp.erlang.*;
 
 /**
  * The Reply class contain all the values and informations related to the execution of
@@ -43,14 +51,48 @@ public class Reply
     private byte[] opaque;
     private long   timestamp;
     private Map<String,PerformanceGroup> perfValues;
+    private int statusCode;
 
 
     public Reply() {
-        replyMsg = "";
-        status   = "DOWN";
-        timestamp = System.currentTimeMillis() / 1000;
-        perfValues = new HashMap<>();
-        opaque = new byte[0];
+        this.statusCode = 0;
+        this.replyMsg = "";
+        this.status   = "DOWN";
+        this.timestamp = System.currentTimeMillis() / 1000;
+        this.perfValues = new HashMap<>();
+        this.opaque = new byte[0];
+    }
+
+    /**
+     * The status code is used to determine if the event should be logged to
+     * the event database when two subsequent checks have the same status
+     * (see setStatus()).
+     *
+     * The default status code is 0
+     *
+     * Here are the rules concerning "status" ans "statusCode":
+     * - All status move (ie: from OK to DOWN) are logged.
+     * - If two (or more) consecutive returns have the same status
+     * (CRITICAL for example) and the same statusCode, only the first event will
+     * be logged.
+     * - If two (or more) consecutive returns have the same status
+     * (CRITICAL for example) and a different statusCode, every event where a
+     * statusCode have changed will be logged.
+     *
+     * @param statusCode
+     */
+    public void setStatusCode(int statusCode) {
+        this.statusCode = statusCode;
+    }
+
+    /**
+     * Set the status code for this reply (see setStatusCode). The default value
+     * is 0.
+     *
+     * @return the actual status code.
+     */
+    public int getStatusCode() {
+        return this.statusCode;
     }
 
     /**
@@ -70,32 +112,32 @@ public class Reply
     }
 
     /**
-    * Set an opaque object in the reply. This data will stored
-    * and returned on the next call of the check. This mechanism is actualy used
-    * to store and compare COUNTER type values, but can be used as your wish.
-    * Here is a serialization example:
-    *
-    *       ByteArrayOutputStream b = new ByteArrayOutputStream();
-    *       ObjectOutputStream    o = new ObjectOutputStream(b);
-    *       o.writeObject(myObject);
-    *       state = b.toByteArray();
-    *       myreply.setState(state);
-    */
+     * Set an opaque object in the reply. This data will stored
+     * and returned on the next call of the check. This mechanism is used
+     * to store and compare COUNTER type values, but can be used as your wish.
+     * Here is a serialization example:
+     *
+     *       ByteArrayOutputStream b = new ByteArrayOutputStream();
+     *       ObjectOutputStream    o = new ObjectOutputStream(b);
+     *       o.writeObject(myObject);
+     *       state = b.toByteArray();
+     *       myreply.setState(state);
+     */
     public void setState(byte[] value) {
         opaque = value.clone();
     }
 
     /**
-    * Set the return status.
-    * @param str A return status (Reply.STATUS_{ERROR|OK|WARNING|CRITICAL})
-    */
+     * Set the return status. (see setStatusCode)
+     * @param str A return status (Reply.STATUS_{ERROR|OK|WARNING|CRITICAL})
+     */
     public void setStatus(String str) {
         status = str;
     }
 
     /**
-    * Get the return status.
-    */
+     * Get the return status.
+     */
     public String getStatus() {
         return status;
     }
@@ -150,7 +192,7 @@ public class Reply
     }
 
     /**
-     * Internal use.
+     * Internal use only for NChecksErlang.
      * Return the erlang representation of the Reply.
      */
     public OtpErlangTuple asTuple() {
@@ -159,7 +201,7 @@ public class Reply
         for (Map.Entry<String, PerformanceGroup> entry: perfValues.entrySet())
         {
             String              key      = entry.getKey();
-            OtpErlangList       value    = entry.getValue().asList();
+            OtpErlangList value    = entry.getValue().asList();
             OtpErlangObject[]   objEntry = new OtpErlangObject[2];
             objEntry[0]      = new OtpErlangString(entry.getKey());
             objEntry[1]      = value;

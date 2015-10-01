@@ -72,11 +72,11 @@ public class MailSender implements Runnable {
             this.logger.info("No config file found....", e);
         }
 
-        String fromString = props.getProperty("host", "sysmo@localhost");
+        String fromString = props.getProperty("from", "sysmo@localhost");
         String toString   = props.getProperty("to");
         try {
             this.from = new InternetAddress(fromString);
-            if (this.to != null)
+            if (toString != null)
                 this.to = new InternetAddress(toString);
             else
                this.active = false;

@@ -21,7 +21,7 @@
 
 package io.sysmo.jserver;
 
-import java.nio.file.FileSystems;
+import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -52,7 +52,7 @@ public class SQLDatabase implements Runnable
     private String foreignNodeName;
     private Connection conn;
 
-    SQLDatabase(OtpMbox mbox, String foreignNodeName)
+    SQLDatabase(OtpMbox mbox, String foreignNodeName, String dataDir)
     {
         this.mbox = mbox;
         this.foreignNodeName = foreignNodeName;
@@ -61,10 +61,7 @@ public class SQLDatabase implements Runnable
         /*
          * Initialize derby.system.home
          */
-        String derbySysmoHome = FileSystems
-            .getDefault()
-            .getPath("data", "derby")
-            .toString();
+        String derbySysmoHome = Paths.get(dataDir, "events").toString();
 
         Properties p = System.getProperties();
         p.setProperty("derby.system.home", derbySysmoHome);
@@ -248,7 +245,7 @@ public class SQLDatabase implements Runnable
         while (true) try {
             call = this.mbox.receive();
             this.handleEvent(call);
-        } catch (OtpErlangExit |OtpErlangDecodeException e) {
+        } catch (OtpErlangExit|OtpErlangDecodeException e) {
             this.logger.warn(e.getMessage(), e);
             try {
                 DriverManager.getConnection("jdbc:derby:;shutdown=true");

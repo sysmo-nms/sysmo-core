@@ -23,7 +23,7 @@ package io.sysmo.jserver;
 
 import java.io.FileInputStream;
 import java.io.InputStream;
-import java.nio.file.FileSystems;
+import java.nio.file.Paths;
 import java.util.Iterator;
 import java.util.Properties;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -81,16 +81,14 @@ public class RrdLogger implements Runnable
     // logging
     private Logger logger;
 
-    public RrdLogger(final OtpMbox mbox, final String nodeName) {
+    public RrdLogger(final OtpMbox mbox, final String nodeName,
+                     final String etcDir) {
         RrdLogger.instance = this;
         this.nodeName = nodeName;
         this.mbox = mbox;
         this.logger = LoggerFactory.getLogger(RrdLogger.class);
 
-        String propFile = FileSystems
-                .getDefault()
-                .getPath("etc", "sysmo-rrd.properties")
-                .toString();
+        String propFile = Paths.get(etcDir, "sysmo-rrd.properties").toString();
 
         try {
             Properties prop = new Properties();

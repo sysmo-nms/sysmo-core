@@ -21,7 +21,6 @@
 
 package io.sysmo.jserver;
 
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -93,17 +92,15 @@ public class SnmpManager implements Runnable
 
     // TODO: crash when configuring a USM user with the same name but not the same
     // TODO: auth/priv method. Should return an error.
-    public SnmpManager(final OtpMbox mbox, final String nodeName) {
+    public SnmpManager(final OtpMbox mbox, final String nodeName,
+                       final String etcDir) {
         SnmpManager.instance = this;
         this.snmpmanElements = new HashMap<>();
         this.nodeName = nodeName;
         this.mbox = mbox;
         this.logger = LoggerFactory.getLogger(SnmpManager.class);
 
-        String engineIdFile = FileSystems
-                .getDefault()
-                .getPath("etc", "engine.id")
-                .toString();
+        String engineIdFile = Paths.get(etcDir, "engine.id").toString();
 
         // may take a wile? /dev/random ?
         this.logger.info("build engine id " + this.nodeName);

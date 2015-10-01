@@ -36,6 +36,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 
 public class SysmoServer {
@@ -60,25 +61,13 @@ public class SysmoServer {
         }
 
         // generate paths
-        String rubyDir = FileSystems
-                .getDefault()
-                .getPath("ruby")
-                .toString();
+        FileSystem fs = FileSystems.getDefault();
+        String rubyDir    = fs.getPath("ruby").toString();
+        String utilsDir   = fs.getPath("utils").toString();
+        String etcDir     = fs.getPath("etc").toString();
+        String docrootDir = fs.getPath("docroot").toString();
+        String dataDir    = fs.getPath("data").toString();
 
-        String utilsDir = FileSystems
-                .getDefault()
-                .getPath("utils")
-                .toString();
-
-        String etcDir = FileSystems
-                .getDefault()
-                .getPath("etc")
-                .toString();
-
-        String docrootDir = FileSystems
-                .getDefault()
-                .getPath("docroot")
-                .toString();
         /*
          * Connect to erlang-main node
          */
@@ -120,7 +109,7 @@ public class SysmoServer {
         /*
          * Create rrd4j thread
          */
-        RrdLogger rrd4j = new RrdLogger(rrd4jMbox, foreignNodeName);
+        RrdLogger rrd4j = new RrdLogger(rrd4jMbox, foreignNodeName, etcDir);
         Thread rrd4jThread = new Thread(rrd4j);
         rrd4jThread.start();
 
@@ -134,7 +123,8 @@ public class SysmoServer {
         /*
          * Create snmp4j thread
          */
-        SnmpManager snmp4j = new SnmpManager(snmp4jMbox, foreignNodeName);
+        SnmpManager snmp4j = new SnmpManager(snmp4jMbox,
+                                                foreignNodeName, etcDir);
         Thread snmp4jThread = new Thread(snmp4j);
         snmp4jThread.start();
 
@@ -156,7 +146,8 @@ public class SysmoServer {
         /*
          * Create derby thread
          */
-        SQLDatabase derbyDb = new SQLDatabase(derbyMbox, foreignNodeName);
+        SQLDatabase derbyDb = new SQLDatabase(derbyMbox,
+                                                    foreignNodeName, dataDir);
         Thread derbyThread = new Thread(derbyDb);
         derbyThread.start();
 
@@ -197,7 +188,7 @@ public class SysmoServer {
             rrd4jThread.join();
             snmp4jThread.join();
             mailThread.join();
-            //derbyThread.join();
+            derbyThread.join();
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
         }
