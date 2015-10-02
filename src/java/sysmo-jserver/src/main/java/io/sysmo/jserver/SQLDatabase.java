@@ -113,7 +113,7 @@ public class SQLDatabase implements Runnable
              * TODO TODO  TODO TODO TODO TODO TODO TODO TODO
              * TODO TODO  TODO TODO TODO TODO TODO TODO TODO
              * TODO TODO  TODO TODO TODO TODO TODO TODO TODO
-             * Maybe use month number in place of date_created
+             * Maybe use year/month number in place of date_created
              *  s.execute("CREATE TABLE NCHECKS_EVENTS(
              *      ID              int          NOT NULL AUTO_INCREMENT,
              *      DATE_CREATED    DATE         NOT_NULL DEFAULT(GETDATE()),
@@ -121,7 +121,7 @@ public class SQLDatabase implements Runnable
              *      NCHECKS_ID      varchar(40)  NOT_NULL,
              *      STATUS          varchar(20)  NOT_NULL,
              *      STATUS_CODE     int          NOT_NULL,
-             *      TIMESTAMP       int          NOT_NULL,
+             *      TIMESTAMP       int          NOT_NULL, // TIMESTAMP type?
              *      STRING          varchar(255) NOT_NULL,
              *      PRIMARY KEY (ID))");
              *
@@ -135,8 +135,17 @@ public class SQLDatabase implements Runnable
              *  s.execute("CREATE INDEX DATE_CREATED_INDEX
              *      ON NCHECKS_EVENTS (DATE_CREATED))");
              * 1 - select all events from now to 4 weeks back,
-             * 2 - select all probes latest event (in case latest events is out
-             * of 4 weeks range),
+             * 2 - select all probes latest event,
+             * Contain duplicate but known as the latest event for all probes
+             *  s.execute("CREATE TABLE NCHECKS_LATEST_EVENTS(
+             *      PROBE_ID        varchar(40)  NOT_NULL,
+             *      NCHECKS_ID      varchar(40)  NOT_NULL,
+             *      STATUS          varchar(20)  NOT_NULL,
+             *      STATUS_CODE     int          NOT_NULL,
+             *      TIMESTAMP       int          NOT_NULL,
+             *      STRING          varchar(255) NOT_NULL,
+             *      PRIMARY KEY (PROBE_ID))");
+             *  );
              * 3 - merge and return
              *
              */
