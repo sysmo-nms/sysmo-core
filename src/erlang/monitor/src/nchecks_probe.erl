@@ -33,8 +33,8 @@
 -define(CRASH, "The module call has timed out. Check the server log for details").
 
 % gen_server
--export([start_link/1, init/1, handle_call/3, handle_cast/2, handle_info/2,
-         terminate/2, code_change/3]).
+-export([start_link/1,init/1,handle_call/3,handle_cast/2,handle_info/2,
+         terminate/2,code_change/3]).
 
 % supercast
 -export([get_perms/1,sync_request/2]).
@@ -43,10 +43,10 @@
 -export([exec_nchecks/3]).
 
 % monitor
--export([force/1, trigger_return/2, pause/1, resume/1]).
+-export([force/1,trigger_return/2,pause/1,resume/1]).
 
 
--record(state, {name,ref}).
+-record(state, {name,ref,check_id}).
 -record(nchecks_state, {
     class,
     args,
@@ -84,10 +84,9 @@ init(Probe) ->
 do_init(Probe) ->
     Ref = make_ref(),
     random:seed(erlang:now()),
-    {ok, DumpDir}              = application:get_env(supercast, http_sync_dir),
-    {{Class, Args}, RrdConfig} = init_nchecks(Probe),
-    TRef                       = monitor:send_after_rand(
-                                              Probe#probe.step, {take_of, Ref}),
+    {ok, DumpDir} = application:get_env(supercast, http_sync_dir),
+    {{Class, Args}, RrdConfig, CheckId} = init_nchecks(Probe),
+    TRef = monitor:send_after_rand(Probe#probe.step, {take_of, Ref}),
 
     NS = #nchecks_state{
         class      = Class,
@@ -121,10 +120,7 @@ do_init(Probe) ->
         MilliRem
     ),
     supercast_channel:emit(?MASTER_CHANNEL, {ES#ets_state.permissions, Pdu}),
-    Ref.
-
-
-
+    {CheckId, Ref}.
 
 
 %%----------------------------------------------------------------------------
@@ -256,21 +252,30 @@ do_handle_nchecks_reply(PR, #state{ref=Ref} = S) ->
 
 
 
-    % set status and update monitor_events and data_master if required
+    % set status and update monitor_events and data_master if
+    % status or status_code does not match
+
+    % get the probe from data master
     [Probe]   = monitor_data_master:get(probe, S#state.name),
+
+    % get old status and status_code
     OldStatus = Probe#probe.status,
     NewStatus = PR#nchecks_reply.status,
 
-    % TODO TODO TODO: compare status AND status_code
-    % TODO TODO TODO: compare status AND status_code
-    % TODO TODO TODO: compare status AND status_code
-    % TODO TODO TODO: compare status AND status_code
+    % get new status and status code
+    OldStatusCode = Probe#probe.status_code,
+    NewStatusCode = PR#nchecks_reply.status_code,
 
-    case NewStatus of
-        OldStatus ->
+    % compare
+    case {NewStatus, NewStatusCode} of
+        {OldStatus, OldStatusCode} ->
+            % are the same no insert in db, no alert
             monitor_events:notify(S#state.name, OldStatus);
         _ ->
-            monitor_events:notify_move(S#state.name, NewStatus),
+            % are differents, insert in db, and alert
+            monitor_events:notify_move(S#state.name, S#state.check_id,
+                                       NewStatus, NewStatusCode,
+                                       PR#nchecks_reply.reply_string),
             NewProbe = Probe#probe{status = NewStatus},
             monitor_data_master:update(probe, NewProbe)
     end,
@@ -377,8 +382,8 @@ exec_nchecks(Class, Args, Opaque) ->
 
 
 handle_cast(do_init, #probe{name=PName} = Probe) ->
-    Ref = do_init(Probe),
-    {noreply, #state{name=PName,ref=Ref}};
+    {CheckId, Ref} = do_init(Probe),
+    {noreply, #state{name=PName,ref=Ref,check_id=CheckId}};
 
 handle_cast({sync_request, CState}, S) ->
     do_sync_request(CState, S),
@@ -484,7 +489,7 @@ init_nchecks(#probe{belong_to=TargetName,module_config=NCheck} = Probe) ->
     {ok, RrdState} = rrd4j_init(ProbeName, Step, Args4, TargetDir, XCheck_Content),
 
     % return
-    {{Class, Args4}, RrdState}.
+    {{Class, Args4}, RrdState, Identifier}.
 
 
 build_snmp_args(Args,TargetSysProp,TargetName) ->

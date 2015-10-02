@@ -23,20 +23,31 @@
 -include("include/monitor.hrl").
 
 % GEN_SERVER
--export([init/1, handle_call/3, handle_cast/2, handle_info/2,
-         terminate/2, code_change/3]).
+-export([init/1,handle_call/3,handle_cast/2,handle_info/2,
+         terminate/2,code_change/3]).
 
-% SRV
 -export([start_link/0]).
 
--export([notify/2, notify_move/2, notify_init/2]).
+% API
+-export([notify/2,notify_move/5,notify_init/2,select/1]).
 
--record(state, {last_notif, last_move, db_pid}).
-
--record(notif, {probe, status, time}).
+-record(state, {
+          last_notif,
+          last_move,
+          db_pid}).
 
 start_link() ->
     gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
+
+select(_Any) ->
+    % TODO select latest entries,
+    % TODO select all events from probe id,
+    %
+    % TODO WARNING WARNING WARNING
+    % SELECT from nchecks_probe synchronize must pass from this
+    % gen_server to keep data consistency (SQLDb mailbox message order).
+    % See snmpman,nchecks,errd4j for java calls.
+    ok.
 
 notify(Name, Status) ->
     Ts = get_ts(),
@@ -46,9 +57,10 @@ notify_init(Name, Status) ->
     Ts = get_ts(),
     gen_server:cast(?MODULE, {notify_init, Name, Status, Ts}).
 
-notify_move(Name, Status) ->
+notify_move(Name, CheckId, Status, StatusCode, ReplyString) ->
     Ts = get_ts(),
-    gen_server:cast(?MODULE, {notify_move, Name, Status, Ts}).
+    gen_server:cast(?MODULE, {notify_move, Name, CheckId,
+                              Status, StatusCode, ReplyString, Ts}).
 
 
 %%----------------------------------------------------------------------------
@@ -64,7 +76,7 @@ handle_call(_R,_F,S) ->
     {noreply, S}.
 
 handle_cast({notify, Name, Status, Time}, #state{last_notif=Nt} = S) ->
-    ets:insert(Nt, #notif{probe=Name,status=Status,time=Time}),
+    ets:insert(Nt, #notification{probe=Name,status=Status,time=Time}),
     {noreply, S};
 
 % It is a move of status, insert in last_move table, and log to db.
@@ -75,9 +87,15 @@ handle_cast({notify, Name, Status, Time}, #state{last_notif=Nt} = S) ->
 % move to OK occur between.
 % Keep a state of all this.
 % Emit info for supercast.
-handle_cast({notify_move, Name, Status, Time},
+handle_cast({notify_move, Name, CheckId, Status, StatusCode, String, Time},
             #state{last_notif=Nt,last_move=Mv,db_pid=Db} = S) ->
-    Notif = #notif{probe=Name,status=Status,time=Time},
+    Notif = #notification{
+               probe=Name,
+               check_id=CheckId,
+               status=Status,
+               status_code=StatusCode,
+               time=Time,
+               string=String},
     ets:insert(Nt, Notif),
     ets:insert(Mv, Notif),
     Db ! Notif,
@@ -85,8 +103,9 @@ handle_cast({notify_move, Name, Status, Time},
 
 
 % called at probe startup, do not need to update db
-handle_cast({notify_init, Name, Status, Time}, #state{last_notif=Nt,last_move=Mv} = S) ->
-    Notif = #notif{probe=Name,status=Status,time=Time},
+handle_cast({notify_init, Name, Status, Time},
+            #state{last_notif=Nt,last_move=Mv} = S) ->
+    Notif = #notification{probe=Name,status=Status,time=Time},
     ets:insert(Nt, Notif),
     ets:insert(Mv, Notif),
     {noreply, S};

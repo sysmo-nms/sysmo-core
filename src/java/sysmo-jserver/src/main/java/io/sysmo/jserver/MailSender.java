@@ -120,9 +120,10 @@ public class MailSender implements Runnable {
 
     public void sendMail(OtpErlangObject mail)
     {
+        this.logger.info("Should send mail: " + mail.toString());
+
         if (!this.active) return;
 
-        this.logger.info("Should send mail: " + mail.toString());
         Session session = Session.getDefaultInstance(this.properties);
         try {
             MimeMessage message = new MimeMessage(session);

@@ -86,6 +86,7 @@ public class SQLDatabase implements Runnable
         Statement s;
         ResultSet rs = null;
 
+
         /*
          * Boot database
          */
@@ -106,6 +107,39 @@ public class SQLDatabase implements Runnable
 
             s = conn.createStatement();
             statements.add(s);
+
+            /* TODO TODO  TODO TODO TODO TODO TODO TODO TODO
+             * TODO TODO  TODO TODO TODO TODO TODO TODO TODO
+             * TODO TODO  TODO TODO TODO TODO TODO TODO TODO
+             * TODO TODO  TODO TODO TODO TODO TODO TODO TODO
+             * TODO TODO  TODO TODO TODO TODO TODO TODO TODO
+             * Maybe use month number in place of date_created
+             *  s.execute("CREATE TABLE NCHECKS_EVENTS(
+             *      ID              int          NOT NULL AUTO_INCREMENT,
+             *      DATE_CREATED    DATE         NOT_NULL DEFAULT(GETDATE()),
+             *      PROBE_ID        varchar(40)  NOT_NULL,
+             *      NCHECKS_ID      varchar(40)  NOT_NULL,
+             *      STATUS          varchar(20)  NOT_NULL,
+             *      STATUS_CODE     int          NOT_NULL,
+             *      TIMESTAMP       int          NOT_NULL,
+             *      STRING          varchar(255) NOT_NULL,
+             *      PRIMARY KEY (ID))");
+             *
+             *
+             * For probe synchronization event SELECT
+             *  s.execute("CREATE INDEX PROBE_ID_INDEX
+             *      ON NCHECKS_EVENTS (PROBE_ID))");
+             *
+             *
+             * For master_channel synchronisation event SELECT
+             *  s.execute("CREATE INDEX DATE_CREATED_INDEX
+             *      ON NCHECKS_EVENTS (DATE_CREATED))");
+             * 1 - select all events from now to 4 weeks back,
+             * 2 - select all probes latest event (in case latest events is out
+             * of 4 weeks range),
+             * 3 - merge and return
+             *
+             */
 
             s.execute("CREATE TABLE LOCATION(NUM INT, ADDR VARCHAR(40))");
             System.out.println("Created table location");

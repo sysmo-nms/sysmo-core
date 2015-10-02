@@ -84,6 +84,7 @@
     timeout             = 5             :: integer(), % seconds
     % status = "OK" | "DOWN" | "WARNING" | "CRITICAL",
     status              = "DOWN"        :: string(),
+    status_code         = 0             :: integer(),
     step                = 300           :: integer(), % seconds
     active              = true          :: true | false,
     module              = undefined     :: undefined | module(),
@@ -98,6 +99,16 @@
     % properties accessible to all users having read access
     properties  = ?DEFAULT_TARGET_PROPERTIES :: [{string(), string()}],
     permissions = ?DEFAULT_PERM_CONF    :: #perm_conf{}
+}).
+
+% used in monitor_events AND java SQLDatabase class
+-record(notification, {
+    probe,
+    check_id,
+    status,
+    status_code,
+    time,
+    string
 }).
 
 -define(CRON_EVERYHOURS, 3600000).
