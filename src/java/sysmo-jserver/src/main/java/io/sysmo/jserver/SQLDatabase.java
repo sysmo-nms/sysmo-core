@@ -40,19 +40,16 @@ import org.slf4j.Logger;
 import java.util.ArrayList;
 import java.util.Properties;
 
-/*
- * See http://db.apache.org/derby/papers/DerbyTut/embedded_intro.html
- * and
- * db-derby-10.10.2.0-src/java/demo/workingwithderby/WwdEmbedded.java
- */
 public class SQLDatabase implements Runnable
 {
     private Logger logger;
     private OtpMbox mbox;
     private String foreignNodeName;
     private Connection conn;
+    private PreparedStatement psInsert;
 
-    SQLDatabase(OtpMbox mbox, String foreignNodeName, String dataDir)
+    SQLDatabase(final OtpMbox mbox, final String foreignNodeName,
+                final String dataDir)
     {
         this.mbox = mbox;
         this.foreignNodeName = foreignNodeName;
@@ -78,14 +75,12 @@ public class SQLDatabase implements Runnable
         }
 
         String protocol = "jdbc:derby:";
-        conn = null;
+        this.conn = null;
 
         ArrayList<Statement> statements = new ArrayList<>();
-        PreparedStatement psInsert;
         PreparedStatement psUpdate;
         Statement s;
         ResultSet rs = null;
-
 
         /*
          * Boot database
@@ -98,57 +93,57 @@ public class SQLDatabase implements Runnable
             String dbName = "sysmoDB";
 
             // Create (if needed) and connect to the database
-            conn = DriverManager.getConnection(protocol + dbName
+            this.conn = DriverManager.getConnection(protocol + dbName
                     + ";create=true", props);
 
-            System.out.println("Connected to and created database " + dbName);
+            this.logger.info("Connected to and created database " + dbName);
 
-            conn.setAutoCommit(false);
+            this.conn.setAutoCommit(false);
 
-            s = conn.createStatement();
+            s = this.conn.createStatement();
             statements.add(s);
 
-            /* TODO TODO  TODO TODO TODO TODO TODO TODO TODO
-             * TODO TODO  TODO TODO TODO TODO TODO TODO TODO
-             * TODO TODO  TODO TODO TODO TODO TODO TODO TODO
-             * TODO TODO  TODO TODO TODO TODO TODO TODO TODO
-             * TODO TODO  TODO TODO TODO TODO TODO TODO TODO
-             * Maybe use year/month number in place of date_created
-             *  s.execute("CREATE TABLE NCHECKS_EVENTS(
-             *      ID              int          NOT NULL AUTO_INCREMENT,
-             *      DATE_CREATED    DATE         NOT_NULL DEFAULT(GETDATE()),
-             *      PROBE_ID        varchar(40)  NOT_NULL,
-             *      NCHECKS_ID      varchar(40)  NOT_NULL,
-             *      STATUS          varchar(20)  NOT_NULL,
-             *      STATUS_CODE     int          NOT_NULL,
-             *      TIMESTAMP       int          NOT_NULL, // TIMESTAMP type?
-             *      STRING          varchar(255) NOT_NULL,
-             *      PRIMARY KEY (ID))");
-             *
-             *
-             * For probe synchronization event SELECT
-             *  s.execute("CREATE INDEX PROBE_ID_INDEX
-             *      ON NCHECKS_EVENTS (PROBE_ID))");
-             *
-             *
-             * For master_channel synchronisation event SELECT
-             *  s.execute("CREATE INDEX DATE_CREATED_INDEX
-             *      ON NCHECKS_EVENTS (DATE_CREATED))");
-             * 1 - select all events from now to 4 weeks back,
-             * 2 - select all probes latest event,
-             * Contain duplicate but known as the latest event for all probes
-             *  s.execute("CREATE TABLE NCHECKS_LATEST_EVENTS(
-             *      PROBE_ID        varchar(40)  NOT_NULL,
-             *      NCHECKS_ID      varchar(40)  NOT_NULL,
-             *      STATUS          varchar(20)  NOT_NULL,
-             *      STATUS_CODE     int          NOT_NULL,
-             *      TIMESTAMP       int          NOT_NULL,
-             *      STRING          varchar(255) NOT_NULL,
-             *      PRIMARY KEY (PROBE_ID))");
-             *  );
-             * 3 - merge and return
-             *
-             */
+            try {
+                s.execute("CREATE TABLE NCHECKS_EVENTS("
+                        + "EVENT_ID INT NOT NULL "
+                            + "GENERATED ALWAYS AS IDENTITY "
+                                + "(START WITH 1, INCREMENT BY 1),"
+                        + "PROBE_ID      VARCHAR(40)  NOT NULL,"
+                        + "MONTH_CREATED INT          NOT NULL," // for master sync ie: 201509
+                        + "DATE_CREATED  TIMESTAMP    NOT NULL," // from notif ts
+                        + "NCHECKS_ID    VARCHAR(40)  NOT NULL,"
+                        + "STATUS        VARCHAR(20)  NOT NULL,"
+                        + "STATUS_CODE   INT          NOT NULL,"
+                        + "STRING        VARCHAR(255) NOT NULL,"
+                        + "PRIMARY KEY (EVENT_ID))");
+
+                s.execute("CREATE INDEX PROBE_ID_INDEX "
+                        + "ON NCHECKS_EVENTS (PROBE_ID)");
+
+                s.execute("CREATE INDEX MONTH_CREATED_INDEX "
+                        + "ON NCHECKS_EVENTS (MONTH_CREATED)");
+
+                s.execute("CREATE TABLE NCHECKS_LATEST_EVENTS("
+                        + "PROBE_ID        VARCHAR(40)  NOT NULL,"
+                        + "DATE_CREATED    TIMESTAMP    NOT NULL," // from notif ts
+                        + "NCHECKS_ID      VARCHAR(40)  NOT NULL,"
+                        + "STATUS          VARCHAR(20)  NOT NULL,"
+                        + "STATUS_CODE     INT          NOT NULL,"
+                        + "STRING          VARCHAR(255) NOT NULL,"
+                        + "PRIMARY KEY (PROBE_ID))");
+                this.conn.commit();
+                //this.conn.setAutoCommit(true);
+                this.logger.info("Database successfully initialized");
+
+            } catch (SQLException e) {
+                if (e.getSQLState().equals("X0Y32")) {
+                    //this.conn.setAutoCommit(true);
+                    this.logger.info("Database already initialized.");
+                } else {
+                    this.logger.error("Error in database initialization");
+                    throw e;
+                }
+            }
 
             s.execute("CREATE TABLE LOCATION(NUM INT, ADDR VARCHAR(40))");
             System.out.println("Created table location");
@@ -229,6 +224,11 @@ public class SQLDatabase implements Runnable
             // delete the table
             s.execute("drop table location");
             System.out.println("Dropped table location");
+
+            //s.execute("drop table NCHECKS_EVENTS");
+            //s.execute("drop table NCHECKS_LATEST_EVENTS");
+
+            System.out.println("Dropped table nechecks_event");
 
             conn.commit();
             System.out.println("Committed the transaction");

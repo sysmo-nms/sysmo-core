@@ -114,7 +114,7 @@ public class Reply
     /**
      * Set an opaque object in the reply. This data will stored
      * and returned on the next call of the check. This mechanism is used
-     * to store and compare COUNTER type values, but can be used as your wish.
+     * to store and compare COUNTER type values, but can be used as you wish.
      * Here is a serialization example:
      *
      *       ByteArrayOutputStream b = new ByteArrayOutputStream();

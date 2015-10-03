@@ -106,6 +106,43 @@ public class SysmoServer {
             logger.error("Should not append here!" + e.getMessage(), e);
         }
 
+
+        /*
+         * Create derby thread
+         */
+        SQLDatabase derbyDb;
+        try {
+            derbyDb = new SQLDatabase(derbyMbox, foreignNodeName, dataDir);
+        } catch (Exception e) {
+            logger.error("SQLDatabase failed to start" + e.getMessage(), e);
+            System.err.println("SQLDatabase failed to start" + e.getMessage());
+            return;
+        }
+        Thread derbyThread = new Thread(derbyDb);
+        derbyThread.start();
+
+        /*
+         * Create NChecks thread
+         */
+        NChecksErlang nchecks;
+        try {
+            nchecks = new NChecksErlang(
+                    nchecksMbox, foreignNodeName, rubyDir, utilsDir, etcDir);
+        } catch (Exception e) {
+            logger.error("NChecks failed to start" + e.getMessage(), e);
+            System.err.println("NChecks failed to start" + e.getMessage());
+            mainMbox.exit("error");
+            try {
+                derbyThread.join();
+            } catch (Exception inner) {
+                logger.error("Fail to shutdown derby: ", inner);
+            }
+            return;
+        }
+        Thread nchecksThread = new Thread(nchecks);
+        nchecksThread.start();
+
+
         /*
          * Create rrd4j thread
          */
@@ -127,29 +164,6 @@ public class SysmoServer {
                                                 foreignNodeName, etcDir);
         Thread snmp4jThread = new Thread(snmp4j);
         snmp4jThread.start();
-
-        /*
-         * Create NChecks thread
-         */
-        NChecksErlang nchecks;
-        try {
-            nchecks = new NChecksErlang(
-                    nchecksMbox, foreignNodeName, rubyDir, utilsDir, etcDir);
-        } catch (Exception e) {
-            logger.error("NChecks failed to start" + e.getMessage(), e);
-            System.err.println("NChecks failed to start" + e.getMessage());
-            return;
-        }
-        Thread nchecksThread = new Thread(nchecks);
-        nchecksThread.start();
-
-        /*
-         * Create derby thread
-         */
-        SQLDatabase derbyDb = new SQLDatabase(derbyMbox,
-                                                    foreignNodeName, dataDir);
-        Thread derbyThread = new Thread(derbyDb);
-        derbyThread.start();
 
         /*
          * Create simple http file server
@@ -177,11 +191,10 @@ public class SysmoServer {
             break;
         }
 
-        /*
-         * Will raise OtpErlangExit exception on other threads and cause them
+        mainMbox.exit("normal");
+        /* Will raise OtpErlangExit exception on other threads and cause them
          * to terminate.
          */
-        mainMbox.exit("normal");
         try {
             jettyThread.stop();
             nchecksThread.join();
