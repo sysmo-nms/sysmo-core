@@ -46,7 +46,7 @@
 -export([force/1,trigger_return/2,pause/1,resume/1]).
 
 
--record(state, {name,ref,check_id}).
+-record(state, {name,ref}).
 -record(nchecks_state, {
     class,
     args,
@@ -95,14 +95,23 @@ do_init(Probe) ->
         rrd_config = RrdConfig
     },
 
+    #probe{
+       name        = PName,
+       permissions = PPermissions,
+       belong_to   = PBelongTo,
+       status      = PStatus,
+       description = PDescription} = Probe,
+
     ES = #ets_state{
-        name                = Probe#probe.name,
-        permissions         = Probe#probe.permissions,
-        belong_to           = Probe#probe.belong_to,
+        name                = PName,
+        permissions         = PPermissions,
+        belong_to           = PBelongTo,
         tref                = TRef,
         current_status_from = erlang:now(),
-        current_status      = Probe#probe.status,
-        local_state         = NS
+        current_status      = PStatus,
+        local_state         = NS,
+        description         = PDescription,
+        check_id            = CheckId
     },
 
     monitor_data_master:set_probe_state(ES),
@@ -120,7 +129,7 @@ do_init(Probe) ->
         MilliRem
     ),
     supercast_channel:emit(?MASTER_CHANNEL, {ES#ets_state.permissions, Pdu}),
-    {CheckId, Ref}.
+    Ref.
 
 
 %%----------------------------------------------------------------------------
@@ -246,9 +255,9 @@ do_force(#state{ref=Ref} = S) ->
 %%----------------------------------------------------------------------------
 %% INTERNALS
 %%----------------------------------------------------------------------------
-do_handle_nchecks_reply(PR, #state{ref=Ref} = S) ->
+do_handle_nchecks_reply(PR, #state{name=Name,ref=Ref} = S) ->
     % get the probe state
-    ES  = monitor_data_master:get_probe_state(S#state.name),
+    ES  = monitor_data_master:get_probe_state(Name),
 
 
 
@@ -256,7 +265,7 @@ do_handle_nchecks_reply(PR, #state{ref=Ref} = S) ->
     % status or status_code does not match
 
     % get the probe from data master
-    [Probe]   = monitor_data_master:get(probe, S#state.name),
+    [Probe]   = monitor_data_master:get(probe, Name),
 
     % get old status and status_code
     OldStatus = Probe#probe.status,
@@ -270,12 +279,15 @@ do_handle_nchecks_reply(PR, #state{ref=Ref} = S) ->
     case {NewStatus, NewStatusCode} of
         {OldStatus, OldStatusCode} ->
             % are the same no insert in db, no alert
-            monitor_events:notify(S#state.name, OldStatus);
+            monitor_events:notify(Name, OldStatus);
         _ ->
             % are differents, insert in db, and alert
-            monitor_events:notify_move(S#state.name, S#state.check_id,
+            monitor_events:notify_move(Name, 
+                                       ES#ets_state.check_id,
+                                       ES#ets_state.description,
                                        NewStatus, NewStatusCode,
-                                       PR#nchecks_reply.reply_string),
+                                       PR#nchecks_reply.reply_string,
+                                       ES#ets_state.belong_to),
             NewProbe = Probe#probe{status = NewStatus},
             monitor_data_master:update(probe, NewProbe)
     end,
@@ -382,8 +394,8 @@ exec_nchecks(Class, Args, Opaque) ->
 
 
 handle_cast(do_init, #probe{name=PName} = Probe) ->
-    {CheckId, Ref} = do_init(Probe),
-    {noreply, #state{name=PName,ref=Ref,check_id=CheckId}};
+    Ref = do_init(Probe),
+    {noreply, #state{name=PName,ref=Ref}};
 
 handle_cast({sync_request, CState}, S) ->
     do_sync_request(CState, S),

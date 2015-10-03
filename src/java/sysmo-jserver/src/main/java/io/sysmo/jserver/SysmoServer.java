@@ -110,16 +110,16 @@ public class SysmoServer {
         /*
          * Create derby thread
          */
-        SQLDatabase derbyDb;
+        EventDb eventDb;
         try {
-            derbyDb = new SQLDatabase(derbyMbox, foreignNodeName, dataDir);
+            eventDb = new EventDb(derbyMbox, foreignNodeName, dataDir);
         } catch (Exception e) {
-            logger.error("SQLDatabase failed to start" + e.getMessage(), e);
-            System.err.println("SQLDatabase failed to start" + e.getMessage());
+            logger.error("EventDb failed to start" + e.getMessage(), e);
+            System.err.println("EventDb failed to start" + e.getMessage());
             return;
         }
-        Thread derbyThread = new Thread(derbyDb);
-        derbyThread.start();
+        Thread eventDbThread = new Thread(eventDb);
+        eventDbThread.start();
 
         /*
          * Create NChecks thread
@@ -133,7 +133,7 @@ public class SysmoServer {
             System.err.println("NChecks failed to start" + e.getMessage());
             mainMbox.exit("error");
             try {
-                derbyThread.join();
+                eventDbThread.join();
             } catch (Exception inner) {
                 logger.error("Fail to shutdown derby: ", inner);
             }
@@ -201,7 +201,7 @@ public class SysmoServer {
             rrd4jThread.join();
             snmp4jThread.join();
             mailThread.join();
-            derbyThread.join();
+            eventDbThread.join();
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
         }

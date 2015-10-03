@@ -39,6 +39,8 @@
 
 -record(ets_state, {
     name,
+    description,
+    check_id,
     permissions,
     belong_to,
     tref,
@@ -101,14 +103,18 @@
     permissions = ?DEFAULT_PERM_CONF    :: #perm_conf{}
 }).
 
-% used in monitor_events AND java SQLDatabase class
+% used in monitor_events, java EventDb and MailSender classes
 -record(notification, {
     probe,
     check_id,
     status,
     status_code,
     time,
-    string
+    return_string,
+    description,
+    target_display,
+    target_location,
+    target_contact
 }).
 
 -define(CRON_EVERYHOURS, 3600000).

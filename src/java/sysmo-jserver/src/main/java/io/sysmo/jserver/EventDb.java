@@ -25,7 +25,7 @@ import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
+//import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
@@ -37,23 +37,31 @@ import com.ericsson.otp.erlang.OtpMbox;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
-import java.util.ArrayList;
+//import java.util.ArrayList;
 import java.util.Properties;
 
-public class SQLDatabase implements Runnable
+public class EventDb implements Runnable
 {
     private Logger logger;
     private OtpMbox mbox;
     private String foreignNodeName;
     private Connection conn;
-    private PreparedStatement psInsert;
 
-    SQLDatabase(final OtpMbox mbox, final String foreignNodeName,
-                final String dataDir) throws SQLException
-    {
+    private static final int PROBE_ID      = 1;
+    private static final int DATE_CREATED  = 2;
+    private static final int NCHECKS_ID    = 3;
+    private static final int STATUS        = 4;
+    private static final int STATUS_CODE   = 5;
+    private static final int RETURN_STRING = 6;
+    private static final int MONTH_CREATED = 7;
+    private PreparedStatement psInsert;
+    private PreparedStatement psInsertLast;
+
+    EventDb(final OtpMbox mbox, final String foreignNodeName,
+            final String dataDir) throws SQLException {
         this.mbox = mbox;
         this.foreignNodeName = foreignNodeName;
-        this.logger = LoggerFactory.getLogger(SQLDatabase.class);
+        this.logger = LoggerFactory.getLogger(EventDb.class);
 
         /*
          * Initialize derby.system.home
@@ -76,11 +84,11 @@ public class SQLDatabase implements Runnable
 
         String protocol = "jdbc:derby:";
         this.conn = null;
+        //Statement s;
 
-        ArrayList<Statement> statements = new ArrayList<>();
-        PreparedStatement psUpdate;
-        Statement s;
-        ResultSet rs = null;
+        //ArrayList<Statement> statements = new ArrayList<>();
+        //PreparedStatement psUpdate;
+        //ResultSet rs = null;
 
         /*
          * Boot database
@@ -100,8 +108,8 @@ public class SQLDatabase implements Runnable
 
             this.conn.setAutoCommit(false);
 
-            s = this.conn.createStatement();
-            statements.add(s);
+            Statement s = this.conn.createStatement();
+            //statements.add(s);
 
             try {
                 s.execute("CREATE TABLE NCHECKS_EVENTS("
@@ -114,7 +122,7 @@ public class SQLDatabase implements Runnable
                         + "NCHECKS_ID    VARCHAR(40)  NOT NULL,"
                         + "STATUS        VARCHAR(20)  NOT NULL,"
                         + "STATUS_CODE   INT          NOT NULL,"
-                        + "STRING        VARCHAR(255) NOT NULL,"
+                        + "RETURN_STRING VARCHAR(255) NOT NULL,"
                         + "PRIMARY KEY (EVENT_ID))");
 
                 s.execute("CREATE INDEX PROBE_ID_INDEX "
@@ -129,7 +137,7 @@ public class SQLDatabase implements Runnable
                         + "NCHECKS_ID      VARCHAR(40)  NOT NULL,"
                         + "STATUS          VARCHAR(20)  NOT NULL,"
                         + "STATUS_CODE     INT          NOT NULL,"
-                        + "STRING          VARCHAR(255) NOT NULL,"
+                        + "RETURN_STRING   VARCHAR(255) NOT NULL,"
                         + "PRIMARY KEY (PROBE_ID))");
                 this.conn.commit();
                 this.logger.info("Database successfully initialized");
@@ -144,9 +152,28 @@ public class SQLDatabase implements Runnable
                 }
             }
 
-            //this.conn.setAutoCommit(true);
+            this.conn.setAutoCommit(true);
+
+            this.psInsert = conn.prepareStatement(
+                    "INSERT INTO NCHECKS_EVENTS "
+                            + "(PROBE_ID,DATE_CREATED,NCHECKS_ID,"
+                            + "STATUS,STATUS_CODE,RETURN_STRING,"
+                            + "MONTH_CREATED) "
+                            + "VALUES (?,?,?,?,?,?,?)");
+            this.psInsertLast = conn.prepareStatement(
+                    "INSERT INTO NCHECKS_LATEST_EVENTS "
+                            + "(PROBE_ID,DATE_CREATED,NCHECKS_ID,"
+                            + "STATUS,STATUS_CODE,RETURN_STRING) "
+                            + "VALUES (?,?,?,?,?,?)");
+
+        } catch (SQLException e) {
+            printSQLException(e);
+            throw e;
+        }
+    }
             // END OF INIT
 
+            /*
             s.execute("CREATE TABLE LOCATION(NUM INT, ADDR VARCHAR(40))");
             System.out.println("Created table location");
 
@@ -283,6 +310,7 @@ public class SQLDatabase implements Runnable
             }
         }
     }
+    */
 
     public void run() {
         // begin to loop and wait for calls (select) or casts (insert)
@@ -295,46 +323,38 @@ public class SQLDatabase implements Runnable
             this.handleEvent(call);
 
         } catch (OtpErlangExit e) {
-
             this.logger.info(e.getMessage(), e);
             break;
-
         } catch (OtpErlangDecodeException e) {
-
             this.mbox.exit("erlang_decode_exception");
             this.logger.info(e.getMessage(), e);
             break;
-
         } catch (SQLException e) {
-
             this.mbox.exit("sql_exception");
             this.printSQLException(e);
             break;
-
-        } finally {
-
-            try {
-                DriverManager.getConnection("jdbc:derby:;shutdown=true");
-            } catch (SQLException se) {
-
-                if (se.getErrorCode() == 50000 &&
-                        se.getSQLState().equals("XJ015")) {
-                    this.logger.info("Derby shut down normally");
-                } else {
-                    this.logger.error("Derby did not shut down normally");
-                    this.printSQLException(se);
-                }
-            }
-
-            try {
-                if (this.conn != null) {
-                    this.conn.close();
-                }
-            } catch (SQLException e) {
-                this.printSQLException(e);
-            }
-
         }
+
+        try {
+            DriverManager.getConnection("jdbc:derby:;shutdown=true");
+        } catch (SQLException se) {
+            if (se.getErrorCode() == 50000 &&
+                    se.getSQLState().equals("XJ015")) {
+                this.logger.info("Derby shut down normally");
+            } else {
+                this.logger.error("Derby did not shut down normally");
+                this.printSQLException(se);
+            }
+        }
+
+        try {
+            if (this.conn != null) {
+                this.conn.close();
+            }
+        } catch (SQLException e) {
+            this.printSQLException(e);
+        }
+
     }
 
     private void handleEvent(OtpErlangObject event) throws SQLException {
@@ -342,9 +362,11 @@ public class SQLDatabase implements Runnable
         MailSender.getInstance().sendMail(event);
     }
 
+    /*
     private void reportFailure(String message) {
         this.logger.error("Data verification failed:" + message);
     }
+    */
 
     public void printSQLException(SQLException e)
     {

@@ -29,7 +29,7 @@
 -export([start_link/0]).
 
 % API
--export([notify/2,notify_move/5,notify_init/2,select/1]).
+-export([notify/2,notify_move/7,notify_init/2,select/1]).
 
 -record(state, {
           last_notif,
@@ -57,10 +57,11 @@ notify_init(Name, Status) ->
     Ts = get_ts(),
     gen_server:cast(?MODULE, {notify_init, Name, Status, Ts}).
 
-notify_move(Name, CheckId, Status, StatusCode, ReplyString) ->
+notify_move(Name, CheckId, Descr, Status, StatusCode,
+            ReplyString, BelongTo) ->
     Ts = get_ts(),
-    gen_server:cast(?MODULE, {notify_move, Name, CheckId,
-                              Status, StatusCode, ReplyString, Ts}).
+    gen_server:call(?MODULE, {notify_move, Name, CheckId, Descr,
+                              Status, StatusCode, ReplyString, BelongTo, Ts}).
 
 
 %%----------------------------------------------------------------------------
@@ -72,13 +73,6 @@ init([]) ->
     Pid      = sysmo:get_pid(database),
     {ok, #state{last_notif=Notifs,last_move=LastMove, db_pid=Pid}}.
 
-handle_call(_R,_F,S) ->
-    {noreply, S}.
-
-handle_cast({notify, Name, Status, Time}, #state{last_notif=Nt} = S) ->
-    ets:insert(Nt, #notification{probe=Name,status=Status,time=Time}),
-    {noreply, S};
-
 % It is a move of status, insert in last_move table, and log to db.
 % Trigger some actions to define if we should trigger a mail alert based on
 % the dependency table. Maybe trigger some parents probe to complete informations
@@ -87,20 +81,32 @@ handle_cast({notify, Name, Status, Time}, #state{last_notif=Nt} = S) ->
 % move to OK occur between.
 % Keep a state of all this.
 % Emit info for supercast.
-handle_cast({notify_move, Name, CheckId, Status, StatusCode, String, Time},
+handle_call({notify_move, Name, CheckId, Descr, Status,
+             StatusCode, String, BelongTo, Time}, _From,
             #state{last_notif=Nt,last_move=Mv,db_pid=Db} = S) ->
+    {TargetDisplay,TargetLocation,TargetContact} = get_target_infos(BelongTo),
     Notif = #notification{
                probe=Name,
                check_id=CheckId,
                status=Status,
                status_code=StatusCode,
                time=Time,
-               string=String},
+               return_string=String,
+               description=Descr,
+               target_display=TargetDisplay,
+               target_location=TargetLocation,
+               target_contact=TargetContact},
     ets:insert(Nt, Notif),
     ets:insert(Mv, Notif),
     Db ! Notif,
-    {noreply, S};
+    {reply, ok, S};
 
+handle_call(_R,_F,S) ->
+    {noreply, S}.
+
+handle_cast({notify, Name, Status, Time}, #state{last_notif=Nt} = S) ->
+    ets:insert(Nt, #notification{probe=Name,status=Status,time=Time}),
+    {noreply, S};
 
 % called at probe startup, do not need to update db
 handle_cast({notify_init, Name, Status, Time},
@@ -125,3 +131,31 @@ code_change(_O, S, _E) -> {ok, S}.
 get_ts() ->
     {Meg,Sec,_} = erlang:now(),
     1000000 * Meg + Sec.
+
+get_target_infos(Target) ->
+    case monitor_data_master:get(target, Target) of
+        [#target{properties=Props}] ->
+            Host    = proplists:get_value("host",    Props),
+            SysName = proplists:get_value("sysName", Props),
+            Name    = proplists:get_value("name",    Props),
+
+            case SysName of
+                "undefined" ->
+                    case Name of
+                        "undefined" ->
+                            DisplayName = Host;
+                        "" ->
+                            DisplayName = Host;
+                        _ ->
+                            DisplayName = Name ++ "(" ++ Host ++ ")"
+                    end;
+                _ ->
+                    DisplayName = SysName ++ "(" ++ Host ++ ")"
+            end,
+
+            SysLocation = proplists:get_value("sysLocation", Props, "undefined"),
+            SysContact  = proplists:get_value("sysContact", Props, "undefined"),
+            {DisplayName, SysLocation, SysContact};
+        _ ->
+            {"undefined", "undefined", "undefined"}
+    end.
