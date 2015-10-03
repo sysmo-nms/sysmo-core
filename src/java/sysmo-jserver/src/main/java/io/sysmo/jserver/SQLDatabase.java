@@ -49,7 +49,7 @@ public class SQLDatabase implements Runnable
     private PreparedStatement psInsert;
 
     SQLDatabase(final OtpMbox mbox, final String foreignNodeName,
-                final String dataDir)
+                final String dataDir) throws SQLException
     {
         this.mbox = mbox;
         this.foreignNodeName = foreignNodeName;
@@ -132,18 +132,20 @@ public class SQLDatabase implements Runnable
                         + "STRING          VARCHAR(255) NOT NULL,"
                         + "PRIMARY KEY (PROBE_ID))");
                 this.conn.commit();
-                //this.conn.setAutoCommit(true);
                 this.logger.info("Database successfully initialized");
 
             } catch (SQLException e) {
                 if (e.getSQLState().equals("X0Y32")) {
-                    //this.conn.setAutoCommit(true);
                     this.logger.info("Database already initialized.");
                 } else {
                     this.logger.error("Error in database initialization");
+                    this.printSQLException(e);
                     throw e;
                 }
             }
+
+            //this.conn.setAutoCommit(true);
+            // END OF INIT
 
             s.execute("CREATE TABLE LOCATION(NUM INT, ADDR VARCHAR(40))");
             System.out.println("Created table location");
@@ -244,8 +246,9 @@ public class SQLDatabase implements Runnable
                     printSQLException(se);
                 }
             }
-        } catch (SQLException sqle) {
-            printSQLException(sqle);
+        } catch (SQLException e) {
+            printSQLException(e);
+            throw e;
         } finally {
             try {
                 if (rs != null) {
@@ -283,30 +286,58 @@ public class SQLDatabase implements Runnable
 
     public void run() {
         // begin to loop and wait for calls (select) or casts (insert)
-        this.logger.info("begin too loop");
+        this.logger.info("begin to loop");
+
         OtpErlangObject call;
         while (true) try {
+
             call = this.mbox.receive();
             this.handleEvent(call);
-        } catch (OtpErlangExit|OtpErlangDecodeException e) {
-            this.logger.warn(e.getMessage(), e);
+
+        } catch (OtpErlangExit e) {
+
+            this.logger.info(e.getMessage(), e);
+            break;
+
+        } catch (OtpErlangDecodeException e) {
+
+            this.mbox.exit("erlang_decode_exception");
+            this.logger.info(e.getMessage(), e);
+            break;
+
+        } catch (SQLException e) {
+
+            this.mbox.exit("sql_exception");
+            this.printSQLException(e);
+            break;
+
+        } finally {
+
             try {
                 DriverManager.getConnection("jdbc:derby:;shutdown=true");
-                this.conn.close();
             } catch (SQLException se) {
-                if (    se.getErrorCode() == 50000 &&
-                        se.getSQLState().equals("XJ015") ) {
-                    this.logger.info("Derby shutdown ok", se);
+
+                if (se.getErrorCode() == 50000 &&
+                        se.getSQLState().equals("XJ015")) {
+                    this.logger.info("Derby shut down normally");
+                } else {
+                    this.logger.error("Derby did not shut down normally");
+                    this.printSQLException(se);
                 }
-                this.logger.warn("Shutdown exception: ", se);
-            } catch (Exception other) {
-                this.logger.warn("Shutdown exception: ", other);
             }
-            break;
+
+            try {
+                if (this.conn != null) {
+                    this.conn.close();
+                }
+            } catch (SQLException e) {
+                this.printSQLException(e);
+            }
+
         }
     }
 
-    private void handleEvent(OtpErlangObject event) {
+    private void handleEvent(OtpErlangObject event) throws SQLException {
         this.logger.info("Should insert event!!! " + event.toString());
         MailSender.getInstance().sendMail(event);
     }
@@ -317,10 +348,15 @@ public class SQLDatabase implements Runnable
 
     public void printSQLException(SQLException e)
     {
+        this.logger.error("SQLException ========================= BEGIN");
         while (e != null)
         {
-            this.logger.error("SQLException ", e);
+            this.logger.error("SQLState:  " + e.getSQLState());
+            this.logger.error("Severity:  " + e.getErrorCode());
+            this.logger.error("Message:  "  + e.getMessage());
+            this.logger.error("Trace: ", e);
             e = e.getNextException();
         }
+        this.logger.error("SQLException ========================= END");
     }
 }
