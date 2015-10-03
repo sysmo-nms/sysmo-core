@@ -413,7 +413,6 @@ handle_cast(_Cast, S) ->
     ?LOG_WARNING("Handle unknown cast", _Cast),
     {noreply, S}.
 
-
 handle_call(shut_it_down, _F, #state{name=Name} = S) ->
     supercast_channel:delete(Name),
     {stop, shutdown, ok, S};
