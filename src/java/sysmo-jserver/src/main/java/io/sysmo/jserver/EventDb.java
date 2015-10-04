@@ -25,19 +25,23 @@ import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
-//import java.sql.ResultSet;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 
 import com.ericsson.otp.erlang.OtpErlangDecodeException;
 import com.ericsson.otp.erlang.OtpErlangExit;
+import com.ericsson.otp.erlang.OtpErlangLong;
 import com.ericsson.otp.erlang.OtpErlangObject;
+import com.ericsson.otp.erlang.OtpErlangString;
+import com.ericsson.otp.erlang.OtpErlangTuple;
 import com.ericsson.otp.erlang.OtpMbox;
 
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
-//import java.util.ArrayList;
+import java.sql.Timestamp;
 import java.util.Properties;
 
 public class EventDb implements Runnable
@@ -47,6 +51,7 @@ public class EventDb implements Runnable
     private String foreignNodeName;
     private Connection conn;
 
+    // NCHECKS_EVENTS table prepared statement
     private static final int PROBE_ID      = 1;
     private static final int DATE_CREATED  = 2;
     private static final int NCHECKS_ID    = 3;
@@ -54,7 +59,21 @@ public class EventDb implements Runnable
     private static final int STATUS_CODE   = 5;
     private static final int RETURN_STRING = 6;
     private static final int MONTH_CREATED = 7;
+
+    // NCHECKS_LATEST_EVENTS table prepared statement
+    private static final int LATEST_PROBE_ID      = 1;
+    private static final int LATEST_DATE_CREATED  = 2;
+    private static final int LATEST_NCHECKS_ID    = 3;
+    private static final int LATEST_STATUS        = 4;
+    private static final int LATEST_STATUS_CODE   = 5;
+    private static final int LATEST_RETURN_STRING = 6;
+    private static final int LATEST_HOST_DISPLAY  = 7;
+    private static final int LATEST_HOST_LOCATION = 8;
+    private static final int LATEST_HOST_CONTACT  = 9;
+    private static final int LATEST_PROBE_DISPLAY = 10;
+
     private PreparedStatement psInsert;
+    private PreparedStatement psDeleteLast;
     private PreparedStatement psInsertLast;
 
     EventDb(final OtpMbox mbox, final String foreignNodeName,
@@ -108,11 +127,11 @@ public class EventDb implements Runnable
 
             this.conn.setAutoCommit(false);
 
-            Statement s = this.conn.createStatement();
+            Statement statement = this.conn.createStatement();
             //statements.add(s);
 
             try {
-                s.execute("CREATE TABLE NCHECKS_EVENTS("
+                statement.execute("CREATE TABLE NCHECKS_EVENTS("
                         + "EVENT_ID INT NOT NULL "
                             + "GENERATED ALWAYS AS IDENTITY "
                                 + "(START WITH 1, INCREMENT BY 1),"
@@ -125,19 +144,23 @@ public class EventDb implements Runnable
                         + "RETURN_STRING VARCHAR(255) NOT NULL,"
                         + "PRIMARY KEY (EVENT_ID))");
 
-                s.execute("CREATE INDEX PROBE_ID_INDEX "
+                statement.execute("CREATE INDEX PROBE_ID_INDEX "
                         + "ON NCHECKS_EVENTS (PROBE_ID)");
 
-                s.execute("CREATE INDEX MONTH_CREATED_INDEX "
+                statement.execute("CREATE INDEX MONTH_CREATED_INDEX "
                         + "ON NCHECKS_EVENTS (MONTH_CREATED)");
 
-                s.execute("CREATE TABLE NCHECKS_LATEST_EVENTS("
+                statement.execute("CREATE TABLE NCHECKS_LATEST_EVENTS("
                         + "PROBE_ID        VARCHAR(40)  NOT NULL,"
                         + "DATE_CREATED    TIMESTAMP    NOT NULL," // from notif ts
                         + "NCHECKS_ID      VARCHAR(40)  NOT NULL,"
                         + "STATUS          VARCHAR(20)  NOT NULL,"
                         + "STATUS_CODE     INT          NOT NULL,"
                         + "RETURN_STRING   VARCHAR(255) NOT NULL,"
+                        + "HOST_DISPLAY    VARCHAR(255) NOT NULL,"
+                        + "HOST_LOCATION   VARCHAR(255) NOT NULL,"
+                        + "HOST_CONTACT    VARCHAR(255) NOT NULL,"
+                        + "PROBE_DISPLAY   VARCHAR(255) NOT NULL,"
                         + "PRIMARY KEY (PROBE_ID))");
                 this.conn.commit();
                 this.logger.info("Database successfully initialized");
@@ -150,6 +173,14 @@ public class EventDb implements Runnable
                     this.printSQLException(e);
                     throw e;
                 }
+            } finally {
+                try {
+                    if (statement != null) {
+                        statement.close();
+                    }
+                } catch (SQLException e) {
+                    // ignore
+                }
             }
 
             this.conn.setAutoCommit(true);
@@ -160,157 +191,25 @@ public class EventDb implements Runnable
                             + "STATUS,STATUS_CODE,RETURN_STRING,"
                             + "MONTH_CREATED) "
                             + "VALUES (?,?,?,?,?,?,?)");
+
+            this.psDeleteLast = conn.prepareStatement(
+                    "DELETE FROM NCHECKS_LATEST_EVENTS "
+                            + "WHERE PROBE_ID = ?");
+
             this.psInsertLast = conn.prepareStatement(
                     "INSERT INTO NCHECKS_LATEST_EVENTS "
                             + "(PROBE_ID,DATE_CREATED,NCHECKS_ID,"
-                            + "STATUS,STATUS_CODE,RETURN_STRING) "
-                            + "VALUES (?,?,?,?,?,?)");
+                            + "STATUS,STATUS_CODE,RETURN_STRING,"
+                            + "HOST_DISPLAY,HOST_LOCATION,HOST_CONTACT,"
+                            + "PROBE_DISPLAY) "
+                            + "VALUES (?,?,?,?,?,?,?,?,?,?)");
 
         } catch (SQLException e) {
             printSQLException(e);
             throw e;
         }
     }
-            // END OF INIT
 
-            /*
-            s.execute("CREATE TABLE LOCATION(NUM INT, ADDR VARCHAR(40))");
-            System.out.println("Created table location");
-
-            psInsert = conn.prepareStatement(
-                        "INSERT INTO LOCATION VALUES (?, ?)");
-
-            statements.add(psInsert);
-
-            psInsert.setInt(1, 1956);
-            psInsert.setString(2, "Webster St.");
-            psInsert.executeUpdate();
-            System.out.println("Inserted 1956 Webster");
-
-            psInsert.setInt(1, 1910);
-            psInsert.setString(2, "Union St.");
-            psInsert.executeUpdate();
-            System.out.println("Inserted 1910 Union");
-
-            psUpdate = conn.prepareStatement(
-                        "update location set num=?, addr=? where num=?");
-            statements.add(psUpdate);
-
-            psUpdate.setInt(1, 180);
-            psUpdate.setString(2, "Grand Ave.");
-            psUpdate.setInt(3, 1956);
-            psUpdate.executeUpdate();
-            System.out.println("Updated 1956 Webster to 180 Grand");
-
-            psUpdate.setInt(1, 300);
-            psUpdate.setString(2, "Lakeshore Ave.");
-            psUpdate.setInt(3, 180);
-            psUpdate.executeUpdate();
-            System.out.println("Updated 180 Grand to 300 Lakeshore");
-
-
-            rs = s.executeQuery(
-                    "SELECT num, addr FROM location ORDER BY num");
-
-            int number; // street number retrieved from the database
-            boolean failure = false;
-            if (!rs.next())
-            {
-                failure = true;
-                reportFailure("No rows in ResultSet");
-            }
-
-            if ((number = rs.getInt(1)) != 300)
-            {
-                failure = true;
-                reportFailure(
-                        "Wrong row returned, expected num=300, got " + number);
-            }
-
-            if (!rs.next())
-            {
-                failure = true;
-                reportFailure("Too few rows");
-            }
-
-            if ((number = rs.getInt(1)) != 1910)
-            {
-                failure = true;
-                reportFailure(
-                        "Wrong row returned, expected num=1910, got " + number);
-            }
-
-            if (rs.next())
-            {
-                failure = true;
-                reportFailure("Too many rows");
-            }
-
-            if (!failure) {
-                System.out.println("Verified the rows");
-            }
-
-            // delete the table
-            s.execute("drop table location");
-            System.out.println("Dropped table location");
-
-            //s.execute("drop table NCHECKS_EVENTS");
-            //s.execute("drop table NCHECKS_LATEST_EVENTS");
-
-            System.out.println("Dropped table nechecks_event");
-
-            conn.commit();
-            System.out.println("Committed the transaction");
-
-            try {
-                DriverManager.getConnection("jdbc:derby:;shutdown=true");
-            } catch (SQLException se) {
-                if (( (se.getErrorCode() == 50000)
-                        && ("XJ015".equals(se.getSQLState()) ))) {
-                    System.out.println("Derby shut down normally");
-                } else {
-                    System.err.println("Derby did not shut down normally");
-                    printSQLException(se);
-                }
-            }
-        } catch (SQLException e) {
-            printSQLException(e);
-            throw e;
-        } finally {
-            try {
-                if (rs != null) {
-                    rs.close();
-                    rs = null;
-                }
-            } catch (SQLException sqle) {
-                printSQLException(sqle);
-            }
-
-            int i = 0;
-            while (!statements.isEmpty()) {
-                Statement st = (Statement)statements.remove(i);
-                try {
-                    if (st != null) {
-                        st.close();
-                        st = null;
-                    }
-                } catch (SQLException sqle) {
-                    printSQLException(sqle);
-                }
-            }
-
-            //Connection
-            try {
-                if (conn != null) {
-                    conn.close();
-                    conn = null;
-                }
-            } catch (SQLException sqle) {
-                printSQLException(sqle);
-            }
-        }
-    }
-    */
 
     public void run() {
         // begin to loop and wait for calls (select) or casts (insert)
@@ -347,6 +246,32 @@ public class EventDb implements Runnable
             }
         }
 
+        // CLEANUP close statements
+        try {
+            if (this.psDeleteLast != null) {
+                this.psDeleteLast.close();
+            }
+        } catch (SQLException e) {
+            this.printSQLException(e);
+        }
+
+        try {
+            if (this.psInsertLast != null) {
+                this.psInsertLast.close();
+            }
+        } catch (SQLException e) {
+            this.printSQLException(e);
+        }
+
+        try {
+            if (this.psInsert != null) {
+                this.psInsert.close();
+            }
+        } catch (SQLException e) {
+            this.printSQLException(e);
+        }
+
+        // CLEANUP close connection
         try {
             if (this.conn != null) {
                 this.conn.close();
@@ -354,31 +279,130 @@ public class EventDb implements Runnable
         } catch (SQLException e) {
             this.printSQLException(e);
         }
-
     }
 
     private void handleEvent(OtpErlangObject event) throws SQLException {
-        this.logger.info("Should insert event!!! " + event.toString());
+        OtpErlangTuple tuple = (OtpErlangTuple) event;
+        OtpErlangString      probeId = (OtpErlangString) tuple.elementAt(1);
+        OtpErlangString      checkId = (OtpErlangString) tuple.elementAt(2);
+        OtpErlangString       status = (OtpErlangString) tuple.elementAt(3);
+        OtpErlangLong     statusCode = (OtpErlangLong)   tuple.elementAt(4);
+        OtpErlangLong      timestamp = (OtpErlangLong)   tuple.elementAt(5);
+        OtpErlangString returnString = (OtpErlangString) tuple.elementAt(6);
+        OtpErlangString probeDisplay = (OtpErlangString) tuple.elementAt(7);
+        OtpErlangString  hostDisplay = (OtpErlangString) tuple.elementAt(8);
+        OtpErlangString hostLocation = (OtpErlangString) tuple.elementAt(9);
+        OtpErlangString  hostContact = (OtpErlangString) tuple.elementAt(10);
+
+        Timestamp ts = new Timestamp(timestamp.longValue() * 1000);
+
+        this.psInsert.setString(EventDb.PROBE_ID, probeId.stringValue());
+        this.psInsert.setString(EventDb.NCHECKS_ID, checkId.stringValue());
+        this.psInsert.setInt(EventDb.MONTH_CREATED, 201509);
+        this.psInsert.setTimestamp(EventDb.DATE_CREATED, ts);
+        this.psInsert.setString(EventDb.STATUS, status.stringValue());
+        this.psInsert.setInt(EventDb.STATUS_CODE, (int) statusCode.longValue());
+        this.psInsert.setString(EventDb.RETURN_STRING, returnString.stringValue());
+        this.psInsert.executeUpdate();
+
+        try {
+            this.psDeleteLast.setString(EventDb.PROBE_ID, probeId.stringValue());
+            this.psDeleteLast.executeUpdate();
+        } catch (SQLException e) {
+            // key does not exist
+        }
+
+        this.psInsertLast.setString(
+                EventDb.LATEST_PROBE_ID, probeId.stringValue());
+        this.psInsertLast.setTimestamp(
+                EventDb.LATEST_DATE_CREATED, ts);
+        this.psInsertLast.setString(
+                EventDb.LATEST_NCHECKS_ID, checkId.stringValue());
+        this.psInsertLast.setString(
+                EventDb.LATEST_STATUS, status.stringValue());
+        this.psInsertLast.setInt(
+                EventDb.LATEST_STATUS_CODE, (int) statusCode.longValue());
+        this.psInsertLast.setString(
+                EventDb.LATEST_RETURN_STRING, returnString.stringValue());
+        this.psInsertLast.setString(
+                EventDb.LATEST_HOST_DISPLAY, hostDisplay.stringValue());
+        this.psInsertLast.setString(
+                EventDb.LATEST_PROBE_DISPLAY, probeDisplay.stringValue());
+        this.psInsertLast.setString(
+                EventDb.LATEST_HOST_LOCATION, hostLocation.stringValue());
+        this.psInsertLast.setString(
+                EventDb.LATEST_HOST_CONTACT, hostContact.stringValue());
+        this.psInsertLast.executeUpdate();
+
+        //this.printTables();
+
         MailSender.getInstance().sendMail(event);
     }
 
-    /*
-    private void reportFailure(String message) {
-        this.logger.error("Data verification failed:" + message);
-    }
-    */
-
-    public void printSQLException(SQLException e)
+    private void printSQLException(SQLException e)
     {
-        this.logger.error("SQLException ========================= BEGIN");
         while (e != null)
         {
-            this.logger.error("SQLState:  " + e.getSQLState());
-            this.logger.error("Severity:  " + e.getErrorCode());
-            this.logger.error("Message:  "  + e.getMessage());
-            this.logger.error("Trace: ", e);
+            String errorOutput = "\n\n";
+            errorOutput += "SQLException ========================= BEGIN\n";
+            errorOutput += "SQLState:\t" + e.getSQLState() + "\n";
+            errorOutput += "Severity:\t" + e.getErrorCode() + "\n";
+            errorOutput += "Message:\t"  + e.getMessage() + "\n";
+            this.logger.warn(errorOutput, e);
+            this.logger.warn("SQLException ========================= END\n\n");
             e = e.getNextException();
         }
-        this.logger.error("SQLException ========================= END");
+    }
+
+    public void printTables() {
+
+        Statement s = null;
+        Statement s2 = null;
+        try {
+            s = this.conn.createStatement();
+            s2 = this.conn.createStatement();
+            ResultSet rs = s.executeQuery("SELECT * FROM NCHECKS_EVENTS");
+            ResultSet rs2 = s2.executeQuery("SELECT * FROM NCHECKS_LATEST_EVENTS");
+            this.logger.info("Result set event: ");
+            this.logger.info(this.tableToString(rs));
+            this.logger.info("Result set latest events: ");
+            this.logger.info(this.tableToString(rs2));
+        } catch (SQLException e) {
+            this.printSQLException(e);
+        } finally {
+            try {
+                if (s != null) {
+                    s.close();
+                }
+            } catch (SQLException e) {
+                //ignore
+            }
+            try {
+                if (s2 != null) {
+                    s2.close();
+                }
+            } catch (SQLException e) {
+                //ignore
+            }
+        }
+    }
+
+    private String tableToString(ResultSet rs) {
+        String str = "\n\n";
+        try {
+            ResultSetMetaData rsmd = rs.getMetaData();
+            int columnsNumber = rsmd.getColumnCount();
+
+            while (rs.next()) {
+                for (int i=1; i<=columnsNumber; i++) {
+                    str = str + rs.getString(i) + "\t";
+
+                }
+                str = str + "\n";
+            }
+        } catch (SQLException e) {
+            //ignore
+        }
+        return str + "\n\n";
     }
 }
