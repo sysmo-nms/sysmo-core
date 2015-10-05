@@ -1,5 +1,5 @@
 % @private
--module(snmpman_app).
+-module(j_server_app).
 -behaviour(application).
 
 -export([
@@ -8,7 +8,7 @@
 ]).
 
 start(_Type, _Args) ->
-    snmpman_sup:start_link().
+    j_server_sup:start_link().
 
 stop(_State) ->
     ok.

@@ -3,21 +3,13 @@
         {description, "Sysmo management system"},
         {vsn, "0.1.0"},
         {modules, []},
-        {registered,
-            [
-                sysmo_app,
-                sysmo_sup,
-                sysmo
-            ]
-        },
+        {registered,[sysmo_sup]},
         {included_applications,
             [
                 mnesia,
                 monitor,
-                snmpman,
-                errd4j,
                 supercast,
-                nchecks
+                j_server
             ]
         },
         {applications,

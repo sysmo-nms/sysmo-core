@@ -1,0 +1,21 @@
+{application, j_server,
+    [
+        {description, "Erlang to java calls"},
+        {vsn, "0.1.0"},
+        {modules, []},
+        {registered,
+            [
+                nchecks,
+                snmpman,
+                errd4j,
+                j_server_sup,
+                j_server
+            ]
+        },
+        {applications,
+            [kernel, stdlib]
+        },
+        {start_phases, []},
+        {mod, {j_server_app, []}}
+    ]
+}.

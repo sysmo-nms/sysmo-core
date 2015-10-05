@@ -119,7 +119,7 @@ start_link() ->
 % GEN_SERVER
 % @private
 init([]) ->
-    JavaPid = sysmo:get_pid(rrd4j),
+    JavaPid = j_server:get_pid(rrd4j),
     ?LOG_INFO("success pid", JavaPid),
     {ok, #state{java_pid=JavaPid}}.
 

@@ -1,4 +1,4 @@
--module(sysmo).
+-module(j_server).
 -include_lib("common_hrl/include/logs.hrl").
 
 -behaviour(gen_server).

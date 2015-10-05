@@ -22,7 +22,7 @@
 % PDUS
 -module(monitor_pdu).
 -include("include/monitor.hrl").
--include_lib("nchecks/include/nchecks.hrl").
+-include_lib("j_server/include/nchecks.hrl").
 -export([
     probeReturn/4,
     infoProbeCreate/1,

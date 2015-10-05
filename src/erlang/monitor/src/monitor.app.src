@@ -11,7 +11,7 @@
                 probe_nchecks_sup
             ]},
         {applications,
-            [kernel, stdlib, xmerl, mnesia, supercast, errd4j, snmpman]
+            [kernel, stdlib, xmerl, mnesia, supercast, j_server]
         },
         {start_phases, []},
         {mod, {monitor_app, []}}

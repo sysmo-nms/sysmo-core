@@ -88,7 +88,7 @@ init([]) ->
     %% {ok, HttpPort}    = application:get_env(supercast, http_port),
     %% TODO use a configuration store module to avoid dependency
     %% loop sysmo <-> supercast.
-    HttpPort = sysmo:get_http_port(),
+    HttpPort = j_server:get_http_port(),
     ?LOG_INFO("Get http port", {port, HttpPort}),
 
     case HttpUseSSL of

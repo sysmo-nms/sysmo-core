@@ -26,7 +26,7 @@
 -behaviour(gen_server).
 -behaviour(supercast_channel).
 -include("include/monitor.hrl").
--include_lib("nchecks/include/nchecks.hrl").
+-include_lib("j_server/include/nchecks.hrl").
 -include_lib("xmerl/include/xmerl.hrl").
 -include_lib("common_hrl/include/logs.hrl").
 

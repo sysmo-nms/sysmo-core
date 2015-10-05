@@ -70,7 +70,7 @@ notify_move(Name, CheckId, Descr, Status, StatusCode,
 init([]) ->
     Notifs   = ets:new(last_notif, [set,{keypos,2}]),
     LastMove = ets:new(last_move, [set,{keypos,2}]),
-    Pid      = sysmo:get_pid(database),
+    Pid      = j_server:get_pid(database),
     {ok, #state{last_notif=Notifs,last_move=LastMove, db_pid=Pid}}.
 
 % It is a move of status, insert in last_move table, and log to db.

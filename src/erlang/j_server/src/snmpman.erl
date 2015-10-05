@@ -216,7 +216,7 @@ get(Target, Oids) ->
 % GEN_SERVER
 % @private
 init([]) ->
-    JavaPid = sysmo:get_pid(snmp4j),
+    JavaPid = j_server:get_pid(snmp4j),
     ?LOG_INFO("success pid", JavaPid),
     {ok, #state{java_pid=JavaPid}}.
 

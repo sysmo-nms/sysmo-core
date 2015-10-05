@@ -66,7 +66,7 @@ start_link() ->
 % GEN_SERVER
 % @private
 init([]) ->
-    JavaPid = sysmo:get_pid(nchecks),
+    JavaPid = j_server:get_pid(nchecks),
     JavaNode = #java_node{name='local',pid=JavaPid},
     ?LOG_INFO("success pid", JavaNode),
     {ok, #state{java_nodes=[JavaNode]}}.

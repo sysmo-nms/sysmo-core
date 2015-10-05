@@ -183,7 +183,7 @@ public class SysmoServer {
         ackObj[5] = mailMbox.self();
         ackObj[6] = new OtpErlangInt(jettyPort);
         OtpErlangTuple ackTuple = new OtpErlangTuple(ackObj);
-        mainMbox.send("sysmo", foreignNodeName, ackTuple);
+        mainMbox.send("j_server", foreignNodeName, ackTuple);
 
         while(node.ping(foreignNodeName, 2000)) try {
             Thread.sleep(1000);

@@ -20,14 +20,6 @@ init([]) ->
             {one_for_all, 1, 6000},
             [
                 {
-                    sysmo,
-                    {sysmo, start_link, []},
-                    permanent,
-                    2000,
-                    worker,
-                    [sysmo]
-                },
-                {
                     mnesia_sup,
                     {mnesia_sup, start, [normal,[]]},
                     permanent,
@@ -36,28 +28,12 @@ init([]) ->
                     [mnesia_sup]
                 },
                 {
-                    snmpman_app,
-                    {snmpman_app, start, [normal,[]]},
+                    j_server_app,
+                    {j_server_app, start, [normal,[]]},
                     permanent,
                     2000,
                     supervisor,
-                    [snmpman_app]
-                },
-                {
-                    errd4j_app,
-                    {errd4j_app, start, [normal,[]]},
-                    permanent,
-                    2000,
-                    supervisor,
-                    [errd4j_app]
-                },
-                {
-                    nchecks_app,
-                    {nchecks_app, start, [normal,[]]},
-                    permanent,
-                    2000,
-                    supervisor,
-                    [nchecks_app]
+                    [j_server_app]
                 },
                 {
                     supercast_app,
