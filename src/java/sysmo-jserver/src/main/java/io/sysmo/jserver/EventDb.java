@@ -51,7 +51,8 @@ public class EventDb implements Runnable
     private String foreignNodeName;
     private Connection conn;
 
-    // NCHECKS_EVENTS table prepared statement
+    // NCHECKS_EVENTS table insert prepared statement
+    private PreparedStatement psInsert;
     private static final int PROBE_ID      = 1;
     private static final int DATE_CREATED  = 2;
     private static final int NCHECKS_ID    = 3;
@@ -60,7 +61,8 @@ public class EventDb implements Runnable
     private static final int RETURN_STRING = 6;
     private static final int MONTH_CREATED = 7;
 
-    // NCHECKS_LATEST_EVENTS table prepared statement
+    // NCHECKS_LATEST_EVENTS table insert prepared statement
+    private PreparedStatement psInsertLast;
     private static final int LATEST_PROBE_ID      = 1;
     private static final int LATEST_DATE_CREATED  = 2;
     private static final int LATEST_NCHECKS_ID    = 3;
@@ -72,9 +74,9 @@ public class EventDb implements Runnable
     private static final int LATEST_HOST_CONTACT  = 9;
     private static final int LATEST_PROBE_DISPLAY = 10;
 
-    private PreparedStatement psInsert;
+    // NCHECKS_LATEST_EVENTS table delete prepared statement
     private PreparedStatement psDeleteLast;
-    private PreparedStatement psInsertLast;
+    private static final int DELETE_LATEST_PROBE_ID      = 1;
 
     EventDb(final OtpMbox mbox, final String foreignNodeName,
             final String dataDir) throws SQLException {
@@ -283,60 +285,74 @@ public class EventDb implements Runnable
 
     private void handleEvent(OtpErlangObject event) throws SQLException {
         OtpErlangTuple tuple = (OtpErlangTuple) event;
-        OtpErlangString      probeId = (OtpErlangString) tuple.elementAt(1);
-        OtpErlangString      checkId = (OtpErlangString) tuple.elementAt(2);
-        OtpErlangString       status = (OtpErlangString) tuple.elementAt(3);
-        OtpErlangLong     statusCode = (OtpErlangLong)   tuple.elementAt(4);
-        OtpErlangLong      timestamp = (OtpErlangLong)   tuple.elementAt(5);
-        OtpErlangString returnString = (OtpErlangString) tuple.elementAt(6);
-        OtpErlangString probeDisplay = (OtpErlangString) tuple.elementAt(7);
-        OtpErlangString  hostDisplay = (OtpErlangString) tuple.elementAt(8);
-        OtpErlangString hostLocation = (OtpErlangString) tuple.elementAt(9);
-        OtpErlangString  hostContact = (OtpErlangString) tuple.elementAt(10);
+        OtpErlangString      probeIdObj = (OtpErlangString) tuple.elementAt(1);
+        OtpErlangString      checkIdObj = (OtpErlangString) tuple.elementAt(2);
+        OtpErlangString       statusObj = (OtpErlangString) tuple.elementAt(3);
+        OtpErlangLong     statusCodeObj = (OtpErlangLong)   tuple.elementAt(4);
+        OtpErlangLong      timestampObj = (OtpErlangLong)   tuple.elementAt(5);
+        OtpErlangString returnStringObj = (OtpErlangString) tuple.elementAt(6);
+        OtpErlangString probeDisplayObj = (OtpErlangString) tuple.elementAt(7);
+        OtpErlangString  hostDisplayObj = (OtpErlangString) tuple.elementAt(8);
+        OtpErlangString hostLocationObj = (OtpErlangString) tuple.elementAt(9);
+        OtpErlangString  hostContactObj = (OtpErlangString) tuple.elementAt(10);
 
-        Timestamp ts = new Timestamp(timestamp.longValue() * 1000);
+        String probeId = probeIdObj.stringValue();
+        String checkId = checkIdObj.stringValue();
+        String status = statusObj.stringValue();
+        int statusCode = (int) statusCodeObj.longValue();
+        Timestamp timestamp = new Timestamp(timestampObj.longValue() * 1000);
+        String returnString = returnStringObj.stringValue();
+        String probeDisplayName = probeDisplayObj.stringValue();
+        String hostDisplayName = hostDisplayObj.stringValue();
+        String hostLocation = hostLocationObj.stringValue();
+        String hostContact = hostContactObj.stringValue();
 
-        this.psInsert.setString(EventDb.PROBE_ID, probeId.stringValue());
-        this.psInsert.setString(EventDb.NCHECKS_ID, checkId.stringValue());
+        this.psInsert.setString(EventDb.PROBE_ID, probeId);
+        this.psInsert.setString(EventDb.NCHECKS_ID, checkId);
         this.psInsert.setInt(EventDb.MONTH_CREATED, 201509);
-        this.psInsert.setTimestamp(EventDb.DATE_CREATED, ts);
-        this.psInsert.setString(EventDb.STATUS, status.stringValue());
-        this.psInsert.setInt(EventDb.STATUS_CODE, (int) statusCode.longValue());
-        this.psInsert.setString(EventDb.RETURN_STRING, returnString.stringValue());
+        this.psInsert.setTimestamp(EventDb.DATE_CREATED, timestamp);
+        this.psInsert.setString(EventDb.STATUS, status);
+        this.psInsert.setInt(EventDb.STATUS_CODE, statusCode);
+        this.psInsert.setString(EventDb.RETURN_STRING, returnString);
         this.psInsert.executeUpdate();
 
         try {
-            this.psDeleteLast.setString(EventDb.PROBE_ID, probeId.stringValue());
+            this.psDeleteLast.setString(
+                    EventDb.DELETE_LATEST_PROBE_ID, probeId);
             this.psDeleteLast.executeUpdate();
         } catch (SQLException e) {
             // key does not exist
         }
 
         this.psInsertLast.setString(
-                EventDb.LATEST_PROBE_ID, probeId.stringValue());
+                EventDb.LATEST_PROBE_ID, probeId);
         this.psInsertLast.setTimestamp(
-                EventDb.LATEST_DATE_CREATED, ts);
+                EventDb.LATEST_DATE_CREATED, timestamp);
         this.psInsertLast.setString(
-                EventDb.LATEST_NCHECKS_ID, checkId.stringValue());
+                EventDb.LATEST_NCHECKS_ID, checkId);
         this.psInsertLast.setString(
-                EventDb.LATEST_STATUS, status.stringValue());
+                EventDb.LATEST_STATUS, status);
         this.psInsertLast.setInt(
-                EventDb.LATEST_STATUS_CODE, (int) statusCode.longValue());
+                EventDb.LATEST_STATUS_CODE, statusCode);
         this.psInsertLast.setString(
-                EventDb.LATEST_RETURN_STRING, returnString.stringValue());
+                EventDb.LATEST_RETURN_STRING, returnString);
         this.psInsertLast.setString(
-                EventDb.LATEST_HOST_DISPLAY, hostDisplay.stringValue());
+                EventDb.LATEST_HOST_DISPLAY, hostDisplayName);
         this.psInsertLast.setString(
-                EventDb.LATEST_PROBE_DISPLAY, probeDisplay.stringValue());
+                EventDb.LATEST_PROBE_DISPLAY, probeDisplayName);
         this.psInsertLast.setString(
-                EventDb.LATEST_HOST_LOCATION, hostLocation.stringValue());
+                EventDb.LATEST_HOST_LOCATION, hostLocation);
         this.psInsertLast.setString(
-                EventDb.LATEST_HOST_CONTACT, hostContact.stringValue());
+                EventDb.LATEST_HOST_CONTACT, hostContact);
         this.psInsertLast.executeUpdate();
 
         //this.printTables();
+        MailEventMessage message = new MailEventMessage(
+                probeId,checkId,status,statusCode,
+                timestamp,returnString,probeDisplayName,hostDisplayName,
+                hostLocation,hostContact);
 
-        MailSender.getInstance().sendMail(event);
+        MailSender.getInstance().sendMail(message);
     }
 
     private void printSQLException(SQLException e)

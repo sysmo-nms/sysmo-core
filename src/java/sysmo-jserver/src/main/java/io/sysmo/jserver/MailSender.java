@@ -99,7 +99,7 @@ public class MailSender implements Runnable {
         String user_password = props.getProperty("user_password");
         if (user_password != null)
             this.properties.setProperty("mail.password", user_password);
-        this.logger.info("End mailsender init");
+        this.logger.info("End MailSender init");
     }
 
     public static MailSender getInstance() { return MailSender.singleton; }
@@ -118,9 +118,13 @@ public class MailSender implements Runnable {
         }
     }
 
-    public void sendMail(OtpErlangObject mail)
+    public void sendMail(OtpErlangObject event) {
+        // TODO
+    }
+
+    public synchronized void sendMail(MailEventMessage event)
     {
-        this.logger.info("Should send mail: " + mail.toString());
+        this.logger.info("Should send mail: " + event.getProbeId());
 
         if (!this.active) return;
 
@@ -129,8 +133,37 @@ public class MailSender implements Runnable {
             MimeMessage message = new MimeMessage(session);
             message.setFrom(this.from);
             message.addRecipient(Message.RecipientType.TO, this.to);
-            message.setSubject("test message");
-            message.setText("hello world: " + mail.toString());
+
+            // build the subject
+            String subject = "SYSMO " + event.getStatus()
+                    + " for:" + event.getHostDisplayName() + " ; "
+                    + " probe:" + event.getProbeDisplayName();
+            message.setSubject(subject);
+
+            String content = "<h3>" + event.getHostDisplayName() + " "
+                    + event.getProbeDisplayName() + "</h3>"
+                    + "<p><strong>" + event.getReturnString() + "</strong></p>"
+                    + "<ul>"
+                    + "<li> check ID: <strong>"
+                    + event.getCheckId() + "</strong></li>"
+                    + "<li> status: <strong>"
+                    + event.getStatus() + "</strong></li>"
+                    + "<li> statusCode: <strong>"
+                    + String.valueOf(event.getStatusCode()) + "</strong></li>"
+                    + "<li> timestamp: <strong>"
+                    + event.getTimestamp().toString() + "</strong></li>"
+                    + "</ul>"
+                    + "<h4>Host info</h4>"
+                    + "<ul>"
+                    + "<li> name: <strong>" + event.getHostDisplayName()
+                    + "</strong></li>"
+                    + "<li> location: <strong>" + event.getHostLocation()
+                    + "</strong></li>"
+                    + "<li> contact: <strong>" + event.getHostContact()
+                    + "</strong></li>"
+                    + "</ul>";
+            message.setContent(content, "text/html");
+
             Transport.send(message);
         } catch (MessagingException e) {
             this.logger.error("fail to send message", e);
