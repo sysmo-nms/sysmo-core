@@ -40,7 +40,7 @@ public class CheckViaJRuby implements NChecksInterface //, NHelperInterface
         String script;
         try {
             rbScript = query.get("check_id").asString();
-            script = NChecksJRuby.getInstance().getScript(rbScript);
+            script = NChecksJRuby.getScript(rbScript);
         } catch (Exception e) {
             CheckViaJRuby.logger.error(e.getMessage(), e);
             return CheckViaJRuby.handleException(

@@ -66,7 +66,7 @@ public class NChecksErlang implements Runnable
     public NChecksErlang(
             final OtpMbox mbox, final String nodeName,
             final String rubyDir, final String utilsDir,
-            final String varDir) throws Exception {
+            final String etcDir) throws Exception {
         NChecksErlang.instance = this;
         this.nodeName = nodeName;
         this.mbox = mbox;
@@ -93,11 +93,11 @@ public class NChecksErlang implements Runnable
         NChecksErlang.logger.info("CheckICMP init with path: " + utilsDir);
 
         // initialize .rb script cache
-        NChecksJRuby.startJRuby(rubyDir);
+        NChecksJRuby.startJRubyCache(rubyDir, etcDir);
         NChecksErlang.logger.info("JRuby init with path: " + rubyDir);
 
         // initialize snmpman
-        NChecksSNMP.startSnmp(varDir);
+        NChecksSNMP.startSnmp(etcDir);
         NChecksErlang.logger.info("SNMP started");
     }
 

@@ -58,7 +58,7 @@ public class SysmoWorker {
         String masterNode;
         String masterCookie;
         String utilsDir;
-        String varDir;
+        String etcDir;
         String rubyDir;
         int weight;
 
@@ -77,7 +77,7 @@ public class SysmoWorker {
             masterNode = prop.getProperty("master_node");
             masterCookie = prop.getProperty("master_cookie");
             utilsDir = prop.getProperty("utils_dir");
-            varDir = prop.getProperty("var_dir");
+            etcDir = prop.getProperty("etc_dir");
             rubyDir = prop.getProperty("ruby_dir");
             weight = Integer.parseInt(prop.getProperty("node_weight"));
         } catch (Exception e) {
@@ -130,7 +130,7 @@ public class SysmoWorker {
              */
             NChecksErlang nchecks =
                     new NChecksErlang(nchecksMbox, masterNode,
-                            rubyDir, utilsDir, varDir);
+                            rubyDir, utilsDir, etcDir);
 
             Thread nchecksThread = new Thread(nchecks);
             nchecksThread.start();

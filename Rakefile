@@ -121,7 +121,7 @@ task :release_worker => [:java, :pping] do
   FileUtils.mkdir("sysmo-worker/utils")
   FileUtils.cp("src/go/pping", "sysmo-worker/utils/")
   FileUtils.cp_r("src/ruby/checks", "sysmo-worker/ruby")
-  FileUtils.mkdir("sysmo-worker/var")
+  FileUtils.mkdir("sysmo-worker/etc")
 end
 
 desc "Run the release in foreground"

@@ -68,15 +68,15 @@ public class NChecksSNMP
     private static NChecksSNMP INSTANCE;
     private static Logger logger = LoggerFactory.getLogger(NChecksSNMP.class);
 
-    public static void startSnmp(final String varDir) throws Exception {
-        new NChecksSNMP(varDir);
+    public static void startSnmp(final String etcDir) throws Exception {
+        new NChecksSNMP(etcDir);
     }
-    private NChecksSNMP(final String varDir) throws Exception
+    private NChecksSNMP(final String etcDir) throws Exception
     {
         try {
             String eidFile = FileSystems
                     .getDefault()
-                    .getPath(varDir, "engine.id")
+                    .getPath(etcDir, "engine.id")
                     .toString();
 
             byte[] engineId = SNMPUtils.getEngineId(eidFile);
