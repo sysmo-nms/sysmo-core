@@ -42,6 +42,7 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
 import java.sql.Timestamp;
+import java.util.Calendar;
 import java.util.Properties;
 
 public class EventDb implements Runnable
@@ -76,7 +77,7 @@ public class EventDb implements Runnable
 
     // NCHECKS_LATEST_EVENTS table delete prepared statement
     private PreparedStatement psDeleteLast;
-    private static final int DELETE_LATEST_PROBE_ID      = 1;
+    private static final int DELETE_LATEST_PROBE_ID = 1;
 
     EventDb(final OtpMbox mbox, final String foreignNodeName,
             final String dataDir) throws SQLException {
@@ -138,7 +139,7 @@ public class EventDb implements Runnable
                             + "GENERATED ALWAYS AS IDENTITY "
                                 + "(START WITH 1, INCREMENT BY 1),"
                         + "PROBE_ID      VARCHAR(40)  NOT NULL,"
-                        + "MONTH_CREATED INT          NOT NULL," // for master sync ie: 201509
+                        + "MONTH_CREATED VARCHAR(6)   NOT NULL," // for master sync ie: 201509
                         + "DATE_CREATED  TIMESTAMP    NOT NULL," // from notif ts
                         + "NCHECKS_ID    VARCHAR(40)  NOT NULL,"
                         + "STATUS        VARCHAR(20)  NOT NULL,"
@@ -307,9 +308,14 @@ public class EventDb implements Runnable
         String hostLocation = hostLocationObj.stringValue();
         String hostContact = hostContactObj.stringValue();
 
+        Calendar now = Calendar.getInstance();
+        int month = now.get(Calendar.MONTH);
+        int year = now.get(Calendar.YEAR);
+        String dateRow = String.valueOf(year) + String.valueOf(month);
+
         this.psInsert.setString(EventDb.PROBE_ID, probeId);
         this.psInsert.setString(EventDb.NCHECKS_ID, checkId);
-        this.psInsert.setInt(EventDb.MONTH_CREATED, 201509);
+        this.psInsert.setString(EventDb.MONTH_CREATED, dateRow);
         this.psInsert.setTimestamp(EventDb.DATE_CREATED, timestamp);
         this.psInsert.setString(EventDb.STATUS, status);
         this.psInsert.setInt(EventDb.STATUS_CODE, statusCode);
