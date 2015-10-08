@@ -21,6 +21,7 @@
 -module(monitor_events).
 -behaviour(gen_server).
 -include("include/monitor.hrl").
+-include_lib("j_server/include/eventdb.hrl").
 
 % GEN_SERVER
 -export([init/1,handle_call/3,handle_cast/2,handle_info/2,
@@ -33,8 +34,7 @@
 
 -record(state, {
           last_notif,
-          last_move,
-          db_pid}).
+          last_move}).
 
 start_link() ->
     gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
@@ -70,8 +70,7 @@ notify_move(Name, CheckId, Descr, Status, StatusCode,
 init([]) ->
     Notifs   = ets:new(last_notif, [set,{keypos,2}]),
     LastMove = ets:new(last_move, [set,{keypos,2}]),
-    Pid      = j_server:get_pid(database),
-    {ok, #state{last_notif=Notifs,last_move=LastMove, db_pid=Pid}}.
+    {ok, #state{last_notif=Notifs,last_move=LastMove}}.
 
 % It is a move of status, insert in last_move table, and log to db.
 % Trigger some actions to define if we should trigger a mail alert based on
@@ -83,7 +82,7 @@ init([]) ->
 % Emit info for supercast.
 handle_call({notify_move, Name, CheckId, Descr, Status,
              StatusCode, String, BelongTo, Time}, _From,
-            #state{last_notif=Nt,last_move=Mv,db_pid=Db} = S) ->
+            #state{last_notif=Nt,last_move=Mv} = S) ->
     {TargetDisplay,TargetLocation,TargetContact} = get_target_infos(BelongTo),
     Notif = #notification{
                probe=Name,
@@ -98,7 +97,7 @@ handle_call({notify_move, Name, CheckId, Descr, Status,
                target_contact=TargetContact},
     ets:insert(Nt, Notif),
     ets:insert(Mv, Notif),
-    Db ! Notif,
+    eventdb:notify(Notif),
     {reply, ok, S};
 
 handle_call(_R,_F,S) ->

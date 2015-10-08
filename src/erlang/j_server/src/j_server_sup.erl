@@ -46,6 +46,14 @@ init([]) ->
                     2000,
                     worker,
                     [snmpman]
+                },
+                {
+                    eventdb,
+                    {eventdb, start_link, []},
+                    permanent,
+                    2000,
+                    worker,
+                    [eventdb]
                 }
             ]
         }

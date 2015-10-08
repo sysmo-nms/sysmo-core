@@ -30,6 +30,7 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 
+import com.ericsson.otp.erlang.OtpErlangAtom;
 import com.ericsson.otp.erlang.OtpErlangDecodeException;
 import com.ericsson.otp.erlang.OtpErlangExit;
 import com.ericsson.otp.erlang.OtpErlangLong;
@@ -286,6 +287,17 @@ public class EventDb implements Runnable
 
     private void handleEvent(OtpErlangObject event) throws SQLException {
         OtpErlangTuple tuple = (OtpErlangTuple) event;
+        OtpErlangAtom command = (OtpErlangAtom) tuple.elementAt(0);
+
+        if (command.toString().equals("notify")) {
+            this.handleNotification(tuple.elementAt(1));
+        } else {
+            this.logger.info("Unknown command " + command.toString());
+        }
+    }
+
+    private void handleNotification(OtpErlangObject notif) throws SQLException {
+        OtpErlangTuple tuple = (OtpErlangTuple) notif;
         OtpErlangString      probeIdObj = (OtpErlangString) tuple.elementAt(1);
         OtpErlangString      checkIdObj = (OtpErlangString) tuple.elementAt(2);
         OtpErlangString       statusObj = (OtpErlangString) tuple.elementAt(3);
@@ -352,7 +364,7 @@ public class EventDb implements Runnable
                 EventDb.LATEST_HOST_CONTACT, hostContact);
         this.psInsertLast.executeUpdate();
 
-        //this.printTables();
+        this.printTables();
         MailEventMessage message = new MailEventMessage(
                 probeId,checkId,status,statusCode,
                 timestamp,returnString,probeDisplayName,hostDisplayName,
