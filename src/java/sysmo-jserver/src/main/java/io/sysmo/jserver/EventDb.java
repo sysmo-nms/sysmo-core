@@ -52,6 +52,7 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
 import java.sql.Timestamp;
+import java.sql.Types;
 import java.util.Calendar;
 import java.util.Properties;
 
@@ -322,6 +323,7 @@ public class EventDb implements Runnable
     private void handleSelectLatestEvents(OtpErlangTuple call)
     {
         // TODO should be a view of NCHECKS_EVENTS and NCHECKS_LATEST_EVENTS
+        // and use MONTH_CREATED index
         OtpErlangObject caller = call.elementAt(1);
 
         Statement s;
@@ -334,6 +336,9 @@ public class EventDb implements Runnable
             this.buildErrorReply(new OtpErlangString(e.getMessage()));
             return;
         }
+
+        // TODO write to file and return the path to the file
+        // must know http dump dir
 
         OtpErlangList jsonCharList = this.buildErlangCharList(json);
         OtpErlangObject replyMsg = this.buildOkReply(jsonCharList);
@@ -357,6 +362,9 @@ public class EventDb implements Runnable
             this.logger.error("Select probe error: " + probe.stringValue(), e);
             reply = this.buildErrorReply(new OtpErlangString(e.getMessage()));
         }
+
+        // TODO write to filesystem and return the path to the file
+        // must know http dump dir
 
         this.sendReply(caller, reply);
     }
@@ -541,10 +549,19 @@ public class EventDb implements Runnable
             int total_rows = resultSet.getMetaData().getColumnCount();
             JsonObjectBuilder obj = factory.createObjectBuilder();
             for (int i = 0; i < total_rows; i++) {
-                obj.add(resultSet.getMetaData()
-                                .getColumnLabel(i + 1)
-                                .toLowerCase(),
-                        resultSet.getObject(i + 1).toString());
+                int rowType = resultSet.getMetaData().getColumnType(i + 1);
+                if (rowType == Types.TIMESTAMP) {
+                    Timestamp tsObj = resultSet.getTimestamp(i + 1);
+                    obj.add(resultSet.getMetaData().getColumnLabel(i + 1),
+                            tsObj.getTime() / 1000);
+                } else if (rowType == Types.INTEGER) {
+                    Integer tsObj = resultSet.getInt(i + 1);
+                    obj.add(resultSet.getMetaData().getColumnLabel(i + 1),
+                            tsObj);
+                } else {
+                    obj.add(resultSet.getMetaData().getColumnLabel(i + 1),
+                            resultSet.getObject(i + 1).toString());
+                }
             }
             arrayBuilder.add(obj);
         }
