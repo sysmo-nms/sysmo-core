@@ -111,8 +111,8 @@ public class NHelperTableReply implements NHelperReply
         CharArrayWriter     buffer          = new CharArrayWriter();
         JsonBuilderFactory  factory         = Json.createBuilderFactory(null);
         JsonWriter          jsonWriter      = Json.createWriter(buffer);
-        JsonObjectBuilder   objectbuilder   = factory.createObjectBuilder();
-        JsonArrayBuilder    arraybuilder    = factory.createArrayBuilder();
+        JsonObjectBuilder   objectBuilder   = factory.createObjectBuilder();
+        JsonArrayBuilder    arrayBuilder    = factory.createArrayBuilder();
 
         Iterator<NHelperTableRow> it = rows.iterator();
 
@@ -127,20 +127,20 @@ public class NHelperTableReply implements NHelperReply
                 String           value = item.getValue();
                 rowObj.add(item.getColumn(), item.getValue());
             }
-            arraybuilder.add(rowObj);
+            arrayBuilder.add(rowObj);
         }
 
-        objectbuilder.add("type",          "table");
-        objectbuilder.add("treeRoot",      treeRoot);
-        objectbuilder.add("select",        select);
-        objectbuilder.add("selectionType", selectionType);
-        objectbuilder.add("listSeparator", listSeparator);
+        objectBuilder.add("type",          "table");
+        objectBuilder.add("treeRoot",      treeRoot);
+        objectBuilder.add("select",        select);
+        objectBuilder.add("selectionType", selectionType);
+        objectBuilder.add("listSeparator", listSeparator);
 
-        objectbuilder.add("status",  status);
-        objectbuilder.add("message", message);
-        objectbuilder.add("id",      messageId);
-        objectbuilder.add("rows",    arraybuilder);
-        jsonWriter.writeObject(objectbuilder.build());
+        objectBuilder.add("status",  status);
+        objectBuilder.add("message", message);
+        objectBuilder.add("id",      messageId);
+        objectBuilder.add("rows",    arrayBuilder);
+        jsonWriter.writeObject(objectBuilder.build());
         return buffer.toCharArray();
     }
 }

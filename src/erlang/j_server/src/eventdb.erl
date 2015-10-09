@@ -39,7 +39,9 @@
 
 
 -export([
-    notify/1
+    notify/1,
+    select_latest_events/0,
+    select_probe_events/1
 ]).
 
 -record(state, {java_pid}).
@@ -47,9 +49,30 @@
 -define(ASSERT_TIMEOUT, 5000).
 -define(CALL_TIMEOUT,   10000).
 
+
 -spec notify(Notif::#notification{}) -> ok.
 notify(Notif) ->
     gen_server:cast(?MODULE, {notify, Notif}).
+
+
+-spec select_latest_events() ->
+                    {ok, Json::list()} | {error, Error::string()}.
+% @doc
+% return two latests months of events in json format.
+% @end
+select_latest_events() ->
+    gen_server:call(?MODULE,
+         {call_eventdb, {select_latest_events, []}}, ?CALL_TIMEOUT).
+
+
+-spec select_probe_events(Probe::string()) ->
+                    {ok, Json::list()} | {error, Error::string()}.
+% @doc
+% return all events for probe Probe in json format.
+% @end
+select_probe_events(Probe) ->
+    gen_server:call(?MODULE,
+         {call_eventdb, {select_probe_events, Probe}}, ?CALL_TIMEOUT).
 
 % @private
 start_link() ->

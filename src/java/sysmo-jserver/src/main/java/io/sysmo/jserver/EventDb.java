@@ -21,6 +21,7 @@
 
 package io.sysmo.jserver;
 
+import java.io.CharArrayWriter;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -30,9 +31,17 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 
+import javax.json.Json;
+import javax.json.JsonArrayBuilder;
+import javax.json.JsonBuilderFactory;
+import javax.json.JsonObjectBuilder;
+import javax.json.JsonWriter;
+
 import com.ericsson.otp.erlang.OtpErlangAtom;
+import com.ericsson.otp.erlang.OtpErlangChar;
 import com.ericsson.otp.erlang.OtpErlangDecodeException;
 import com.ericsson.otp.erlang.OtpErlangExit;
+import com.ericsson.otp.erlang.OtpErlangList;
 import com.ericsson.otp.erlang.OtpErlangLong;
 import com.ericsson.otp.erlang.OtpErlangObject;
 import com.ericsson.otp.erlang.OtpErlangString;
@@ -52,6 +61,10 @@ public class EventDb implements Runnable
     private OtpMbox mbox;
     private String foreignNodeName;
     private Connection conn;
+
+    private static OtpErlangAtom atomReply = new OtpErlangAtom("reply");
+    private static OtpErlangAtom atomOk = new OtpErlangAtom("ok");
+    private static OtpErlangAtom atomError = new OtpErlangAtom("error");
 
     // NCHECKS_EVENTS table insert prepared statement
     private PreparedStatement psInsert;
@@ -79,6 +92,9 @@ public class EventDb implements Runnable
     // NCHECKS_LATEST_EVENTS table delete prepared statement
     private PreparedStatement psDeleteLast;
     private static final int DELETE_LATEST_PROBE_ID = 1;
+
+    // SELECTS
+    private PreparedStatement psSelectProbeEvents;
 
     EventDb(final OtpMbox mbox, final String foreignNodeName,
             final String dataDir) throws SQLException {
@@ -208,6 +224,8 @@ public class EventDb implements Runnable
                             + "PROBE_DISPLAY) "
                             + "VALUES (?,?,?,?,?,?,?,?,?,?)");
 
+            this.psSelectProbeEvents = conn.prepareStatement(
+                    "SELECT * FROM NCHECKS_EVENTS WHERE PROBE_ID = ?");
         } catch (SQLException e) {
             printSQLException(e);
             throw e;
@@ -288,12 +306,59 @@ public class EventDb implements Runnable
     private void handleEvent(OtpErlangObject event) throws SQLException {
         OtpErlangTuple tuple = (OtpErlangTuple) event;
         OtpErlangAtom command = (OtpErlangAtom) tuple.elementAt(0);
+        String cmdStr = command.toString();
 
-        if (command.toString().equals("notify")) {
+        if (cmdStr.equals("notify")) {
             this.handleNotification(tuple.elementAt(1));
+        } else if (cmdStr.equals("select_latest_events")) {
+            this.handleSelectLatestEvents(tuple);
+        } else if (cmdStr.equals("select_probe_events")) {
+            this.handleSelectProbeEvents(tuple);
         } else {
             this.logger.info("Unknown command " + command.toString());
         }
+    }
+
+    private void handleSelectLatestEvents(OtpErlangTuple call)
+    {
+        // TODO should be a view of NCHECKS_EVENTS and NCHECKS_LATEST_EVENTS
+        OtpErlangObject caller = call.elementAt(1);
+
+        Statement s;
+        char[] json;
+        try {
+            s = this.conn.createStatement();
+            ResultSet rs = s.executeQuery("SELECT * FROM NCHECKS_EVENTS");
+            json = this.convertToJson(rs);
+        } catch (Exception e) {
+            this.buildErrorReply(new OtpErlangString(e.getMessage()));
+            return;
+        }
+
+        OtpErlangList jsonCharList = this.buildErlangCharList(json);
+        OtpErlangObject replyMsg = this.buildOkReply(jsonCharList);
+        this.sendReply(caller, replyMsg);
+    }
+
+
+    private void handleSelectProbeEvents(OtpErlangTuple call)
+    {
+        OtpErlangObject caller = call.elementAt(1);
+        OtpErlangString probe = (OtpErlangString) call.elementAt(2);
+        char[] json;
+        OtpErlangObject reply;
+        try {
+            this.psSelectProbeEvents.setString(1, probe.stringValue());
+            ResultSet rs = this.psSelectProbeEvents.executeQuery();
+            json = this.convertToJson(rs);
+            OtpErlangList jsonCharList = this.buildErlangCharList(json);
+            reply = this.buildOkReply(jsonCharList);
+        } catch (Exception e) {
+            this.logger.error("Select probe error: " + probe.stringValue(), e);
+            reply = this.buildErrorReply(new OtpErlangString(e.getMessage()));
+        }
+
+        this.sendReply(caller, reply);
     }
 
     private void handleNotification(OtpErlangObject notif) throws SQLException {
@@ -364,7 +429,7 @@ public class EventDb implements Runnable
                 EventDb.LATEST_HOST_CONTACT, hostContact);
         this.psInsertLast.executeUpdate();
 
-        this.printTables();
+        //this.printTables();
         MailEventMessage message = new MailEventMessage(
                 probeId,checkId,status,statusCode,
                 timestamp,returnString,probeDisplayName,hostDisplayName,
@@ -438,5 +503,64 @@ public class EventDb implements Runnable
             //ignore
         }
         return str + "\n\n";
+    }
+
+    private void sendReply(
+            final OtpErlangObject to, final OtpErlangObject msg)
+    {
+        OtpErlangObject[] obj = new OtpErlangObject[3];
+        obj[0] = EventDb.atomReply;
+        obj[1] = to;
+        obj[2] = msg;
+        OtpErlangTuple tuple = new OtpErlangTuple(obj);
+        this.mbox.send("eventdb", this.foreignNodeName, tuple);
+    }
+
+    private OtpErlangTuple buildErrorReply(OtpErlangObject msg)
+    {
+        OtpErlangObject[] valObj = new OtpErlangObject[2];
+        valObj[0] = EventDb.atomError;
+        valObj[1] = msg;
+        return new OtpErlangTuple(valObj);
+    }
+
+    private OtpErlangTuple buildOkReply(OtpErlangObject msg)
+    {
+        OtpErlangObject[] valObj = new OtpErlangObject[2];
+        valObj[0] = EventDb.atomOk;
+        valObj[1] = msg;
+        return new OtpErlangTuple(valObj);
+    }
+
+    public char[] convertToJson(ResultSet resultSet) throws Exception
+    {
+        JsonBuilderFactory factory = Json.createBuilderFactory(null);
+        JsonArrayBuilder arrayBuilder = factory.createArrayBuilder();
+
+        while (resultSet.next()) {
+            int total_rows = resultSet.getMetaData().getColumnCount();
+            JsonObjectBuilder obj = factory.createObjectBuilder();
+            for (int i = 0; i < total_rows; i++) {
+                obj.add(resultSet.getMetaData()
+                                .getColumnLabel(i + 1)
+                                .toLowerCase(),
+                        resultSet.getObject(i + 1).toString());
+            }
+            arrayBuilder.add(obj);
+        }
+
+        CharArrayWriter buffer = new CharArrayWriter();
+        JsonWriter jsonWriter = Json.createWriter(buffer);
+        jsonWriter.writeArray(arrayBuilder.build());
+        return buffer.toCharArray();
+    }
+
+    private OtpErlangList buildErlangCharList(char[] charList) {
+        OtpErlangObject[] objList = new OtpErlangObject[charList.length];
+        for (int i = 0; i < charList.length; i++)
+        {
+            objList[i] = new OtpErlangChar(charList[i]);
+        }
+        return new OtpErlangList(objList);
     }
 }
