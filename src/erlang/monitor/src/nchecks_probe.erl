@@ -143,13 +143,15 @@ sync_request(PidName, CState) ->
     gen_server:cast({via, supercast_registrar, PidName}, {sync_request, CState}).
 
 do_sync_request(CState, S) ->
-    ES       = monitor_data_master:get_probe_state(S#state.name),
+    ES = monitor_data_master:get_probe_state(S#state.name),
 
-    % generate tmp dir in dump dir
-    % TODO cleanup dirs
+    % Generate tmp dir in dump dir
     DumpDir  = ES#ets_state.local_state#nchecks_state.dump_dir,
     TmpDir   = monitor:generate_temp_dir(),
     DumpPath = filename:join(DumpDir, TmpDir),
+
+    % TODO eventdb:select_probe_events/1
+    % ...
 
     % generate the rrd file
     {Type, RrdCfg}  = ES#ets_state.local_state#nchecks_state.rrd_config,

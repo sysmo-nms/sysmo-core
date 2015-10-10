@@ -33,6 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Paths;
 import java.util.Properties;
@@ -46,18 +47,29 @@ public class JettyServer
     private static final int DEFAULT_PORT = 9759;
     private static int port;
 
-    public static Server startServer(String docroot, String etcDir)
+    public static Server startServer(
+            final String docroot,
+            final String etcDir)
     {
         String propFile = Paths.get(etcDir, "sysmo-web.properties").toString();
+        InputStream input = null;
         try {
             Properties  props = new Properties();
-            InputStream input = new FileInputStream(propFile);
+            input = new FileInputStream(propFile);
             props.load(input);
             JettyServer.port = Integer.parseInt(props.getProperty("port"));
         } catch (Exception e) {
             JettyServer.logger.error(
                     "Can not read property file. " + e.getMessage(), e);
             JettyServer.port = DEFAULT_PORT;
+        } finally {
+            try {
+                if (input != null) {
+                    input.close();
+                }
+            } catch (IOException ignore) {
+                //ignore
+            }
         }
 
         Server jettyThread = new Server();

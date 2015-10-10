@@ -65,7 +65,9 @@ public class MailEventMessage {
     public String getCheckId() {return this.checkId;}
     public String getStatus() {return this.status;}
     public int getStatusCode() {return this.statusCode;}
-    public Timestamp getTimestamp() {return this.timestamp;}
+    public Timestamp getTimestamp() {
+        return (Timestamp) this.timestamp.clone();
+    }
     public String getReturnString() {return this.returnString;}
     public String getProbeDisplayName() {return this.probeDisplayName;}
     public String getHostDisplayName() {return this.hostDisplayName;}

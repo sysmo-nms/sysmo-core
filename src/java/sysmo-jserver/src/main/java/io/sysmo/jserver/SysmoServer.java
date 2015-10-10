@@ -112,7 +112,7 @@ public class SysmoServer {
          */
         EventDb eventDb;
         try {
-            eventDb = new EventDb(derbyMbox, foreignNodeName, dataDir);
+            eventDb = EventDb.getInstance(derbyMbox, foreignNodeName, dataDir);
         } catch (Exception e) {
             logger.error("EventDb failed to start" + e.getMessage(), e);
             System.err.println("EventDb failed to start" + e.getMessage());
@@ -146,21 +146,21 @@ public class SysmoServer {
         /*
          * Create rrd4j thread
          */
-        RrdLogger rrd4j = new RrdLogger(rrd4jMbox, foreignNodeName, etcDir);
+        RrdLogger rrd4j = RrdLogger.getInstance(rrd4jMbox, foreignNodeName, etcDir);
         Thread rrd4jThread = new Thread(rrd4j);
         rrd4jThread.start();
 
         /*
          * Create mail thread
          */
-        MailSender mail = new MailSender(mailMbox, etcDir);
+        MailSender mail = MailSender.getInstance(mailMbox, etcDir);
         Thread mailThread = new Thread(mail);
         mailThread.start();
 
         /*
          * Create snmp4j thread
          */
-        SnmpManager snmp4j = new SnmpManager(snmp4jMbox,
+        SnmpManager snmp4j = SnmpManager.getInstance(snmp4jMbox,
                                                 foreignNodeName, etcDir);
         Thread snmp4jThread = new Thread(snmp4j);
         snmp4jThread.start();

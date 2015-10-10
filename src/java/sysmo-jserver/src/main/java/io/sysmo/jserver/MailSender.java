@@ -38,6 +38,7 @@ import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 
 import java.nio.file.Paths;
@@ -56,20 +57,37 @@ public class MailSender implements Runnable {
     private Properties properties;
     private boolean active = true;
 
-    public MailSender(OtpMbox mbox, String etcDir)
+    public static MailSender getInstance(
+            final OtpMbox mbox,
+            final String etcDir)
     {
-        MailSender.singleton = this;
+        MailSender.singleton = new MailSender(mbox, etcDir);
+        return MailSender.singleton;
+    }
 
+    private MailSender(
+            final OtpMbox mbox,
+            final String etcDir)
+    {
         this.logger = LoggerFactory.getLogger(MailSender.class);
         this.mbox = mbox;
 
         String confFile = Paths.get(etcDir, "sysmo-mail.properties").toString();
         Properties props = new Properties();
+        InputStream input = null;
         try {
-            InputStream input = new FileInputStream(confFile);
+            input = new FileInputStream(confFile);
             props.load(input);
         } catch (Exception e) {
             this.logger.info("No config file found....", e);
+        } finally {
+            try {
+                if (input != null) {
+                    input.close();
+                }
+            } catch (IOException ignore) {
+                //ignore
+            }
         }
 
         String fromString = props.getProperty("from", "sysmo@localhost");
@@ -102,7 +120,6 @@ public class MailSender implements Runnable {
         this.logger.info("End MailSender init");
     }
 
-    public static MailSender getInstance() { return MailSender.singleton; }
 
     @Override
     public void run() {
@@ -122,7 +139,11 @@ public class MailSender implements Runnable {
         // TODO
     }
 
-    public synchronized void sendMail(MailEventMessage event)
+    public static void sendMail(MailEventMessage event) {
+        MailSender.singleton.sendMailEvent(event);
+    }
+
+    public synchronized void sendMailEvent(MailEventMessage event)
     {
         this.logger.info("Should send mail: " + event.getProbeId());
 

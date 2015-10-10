@@ -90,11 +90,19 @@ public class SnmpManager implements Runnable
     private Map<String, SnmpmanElement> snmpmanElements;
     private Logger logger;
 
+    public static SnmpManager getInstance(
+                final OtpMbox mbox,
+                final String nodeName,
+                final String etcDir) {
+        SnmpManager.instance = new SnmpManager(mbox,nodeName,etcDir);
+        return SnmpManager.instance;
+    }
     // TODO: crash when configuring a USM user with the same name but not the same
     // TODO: auth/priv method. Should return an error.
-    public SnmpManager(final OtpMbox mbox, final String nodeName,
-                       final String etcDir) {
-        SnmpManager.instance = this;
+    private SnmpManager(
+            final OtpMbox mbox,
+            final String nodeName,
+            final String etcDir) {
         this.snmpmanElements = new HashMap<>();
         this.nodeName = nodeName;
         this.mbox = mbox;

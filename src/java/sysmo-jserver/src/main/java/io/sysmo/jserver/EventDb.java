@@ -63,6 +63,8 @@ public class EventDb implements Runnable
     private String foreignNodeName;
     private Connection conn;
 
+    private static EventDb instance;
+
     private static OtpErlangAtom atomReply = new OtpErlangAtom("reply");
     private static OtpErlangAtom atomOk = new OtpErlangAtom("ok");
     private static OtpErlangAtom atomError = new OtpErlangAtom("error");
@@ -97,7 +99,17 @@ public class EventDb implements Runnable
     // SELECTS
     private PreparedStatement psSelectProbeEvents;
 
-    EventDb(final OtpMbox mbox, final String foreignNodeName,
+    public static EventDb getInstance(
+            final OtpMbox mbox,
+            final String foreignNodeName,
+            final String dataDir) throws SQLException {
+
+        EventDb.instance = new EventDb(mbox,foreignNodeName,dataDir);
+        return EventDb.instance;
+    }
+    private EventDb(
+            final OtpMbox mbox,
+            final String foreignNodeName,
             final String dataDir) throws SQLException {
         this.mbox = mbox;
         this.foreignNodeName = foreignNodeName;
@@ -257,8 +269,9 @@ public class EventDb implements Runnable
             break;
         }
 
+        Connection con = null;
         try {
-            DriverManager.getConnection("jdbc:derby:;shutdown=true");
+            con = DriverManager.getConnection("jdbc:derby:;shutdown=true");
         } catch (SQLException se) {
             if (se.getErrorCode() == 50000 &&
                     se.getSQLState().equals("XJ015")) {
@@ -266,6 +279,14 @@ public class EventDb implements Runnable
             } else {
                 this.logger.error("Derby did not shut down normally");
                 this.printSQLException(se);
+            }
+        } finally {
+            if (con != null) {
+                try {
+                    con.close();
+                } catch (SQLException ignore) {
+                    //ignore
+                }
             }
         }
 
@@ -326,15 +347,27 @@ public class EventDb implements Runnable
         // and use MONTH_CREATED index
         OtpErlangObject caller = call.elementAt(1);
 
-        Statement s;
         char[] json;
+        Statement s = null;
+        ResultSet rs = null;
         try {
             s = this.conn.createStatement();
-            ResultSet rs = s.executeQuery("SELECT * FROM NCHECKS_EVENTS");
+            rs = s.executeQuery("SELECT * FROM NCHECKS_EVENTS");
             json = this.convertToJson(rs);
         } catch (Exception e) {
             this.buildErrorReply(new OtpErlangString(e.getMessage()));
             return;
+        } finally {
+            try {
+                if (s != null) {
+                    s.close();
+                }
+                if (rs != null) {
+                    rs.close();
+                }
+            } catch (SQLException ignore) {
+                // ignore
+            }
         }
 
         // TODO write to file and return the path to the file
@@ -352,15 +385,24 @@ public class EventDb implements Runnable
         OtpErlangString probe = (OtpErlangString) call.elementAt(2);
         char[] json;
         OtpErlangObject reply;
+        ResultSet rs = null;
         try {
             this.psSelectProbeEvents.setString(1, probe.stringValue());
-            ResultSet rs = this.psSelectProbeEvents.executeQuery();
+            rs = this.psSelectProbeEvents.executeQuery();
             json = this.convertToJson(rs);
             OtpErlangList jsonCharList = this.buildErlangCharList(json);
             reply = this.buildOkReply(jsonCharList);
         } catch (Exception e) {
             this.logger.error("Select probe error: " + probe.stringValue(), e);
             reply = this.buildErrorReply(new OtpErlangString(e.getMessage()));
+        } finally {
+            try {
+                if (rs != null) {
+                    rs.close();
+                }
+            } catch (SQLException ignore) {
+                //ignore
+            }
         }
 
         // TODO write to filesystem and return the path to the file
@@ -443,7 +485,7 @@ public class EventDb implements Runnable
                 timestamp,returnString,probeDisplayName,hostDisplayName,
                 hostLocation,hostContact);
 
-        MailSender.getInstance().sendMail(message);
+        MailSender.sendMail(message);
     }
 
     private void printSQLException(SQLException e)
@@ -465,11 +507,13 @@ public class EventDb implements Runnable
 
         Statement s = null;
         Statement s2 = null;
+        ResultSet rs = null;
+        ResultSet rs2 = null;
         try {
             s = this.conn.createStatement();
             s2 = this.conn.createStatement();
-            ResultSet rs = s.executeQuery("SELECT * FROM NCHECKS_EVENTS");
-            ResultSet rs2 = s2.executeQuery("SELECT * FROM NCHECKS_LATEST_EVENTS");
+            rs = s.executeQuery("SELECT * FROM NCHECKS_EVENTS");
+            rs2 = s2.executeQuery("SELECT * FROM NCHECKS_LATEST_EVENTS");
             this.logger.info("Result set event: ");
             this.logger.info(this.tableToString(rs));
             this.logger.info("Result set latest events: ");
@@ -491,26 +535,43 @@ public class EventDb implements Runnable
             } catch (SQLException e) {
                 //ignore
             }
+            try {
+                if (rs != null) {
+                    rs.close();
+                }
+            } catch (SQLException e) {
+                //ignore
+            }
+            try {
+                if (rs2 != null) {
+                    rs2.close();
+                }
+            } catch (SQLException e) {
+                //ignore
+            }
         }
     }
 
     private String tableToString(ResultSet rs) {
-        String str = "\n\n";
+        StringBuilder buff = new StringBuilder();
+        buff.append("\n\n");
         try {
             ResultSetMetaData rsmd = rs.getMetaData();
             int columnsNumber = rsmd.getColumnCount();
 
             while (rs.next()) {
                 for (int i=1; i<=columnsNumber; i++) {
-                    str = str + rs.getString(i) + "\t";
+                    buff.append(rs.getString(i));
+                    buff.append("\t");
 
                 }
-                str = str + "\n";
+                buff.append("\n");
             }
         } catch (SQLException e) {
             //ignore
         }
-        return str + "\n\n";
+        buff.append("\n\n");
+        return buff.toString();
     }
 
     private void sendReply(

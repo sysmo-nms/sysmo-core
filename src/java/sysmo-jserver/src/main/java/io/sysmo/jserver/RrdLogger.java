@@ -22,6 +22,7 @@
 package io.sysmo.jserver;
 
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Paths;
 import java.util.Iterator;
@@ -81,18 +82,28 @@ public class RrdLogger implements Runnable
     // logging
     private Logger logger;
 
-    public RrdLogger(final OtpMbox mbox, final String nodeName,
-                     final String etcDir) {
-        RrdLogger.instance = this;
+    public static RrdLogger getInstance(
+            final OtpMbox mbox,
+            final String nodeName,
+            final String etcDir) {
+        RrdLogger.instance = new RrdLogger(mbox,nodeName,etcDir);
+        return RrdLogger.instance;
+    }
+
+    private RrdLogger(
+            final OtpMbox mbox,
+            final String nodeName,
+            final String etcDir) {
         this.nodeName = nodeName;
         this.mbox = mbox;
         this.logger = LoggerFactory.getLogger(RrdLogger.class);
 
         String propFile = Paths.get(etcDir, "sysmo-rrd.properties").toString();
 
+        InputStream input = null;
         try {
             Properties prop = new Properties();
-            InputStream input = new FileInputStream(propFile);
+            input = new FileInputStream(propFile);
             prop.load(input);
             this.rraDefault = decodeRRADef(prop.getProperty("rra_default"));
             this.rraPrecise = decodeRRADef(prop.getProperty("rra_precise"));
@@ -100,6 +111,14 @@ public class RrdLogger implements Runnable
             this.logger.error(
                     "Fail to load property file: " + e.getMessage(), e);
             return;
+        } finally {
+            try {
+                if (input != null) {
+                    input.close();
+                }
+            } catch (IOException ignore) {
+                //ignore
+            }
         }
 
         // set up the threads

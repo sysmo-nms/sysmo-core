@@ -128,6 +128,8 @@ handle_cast({sync_request, CState}, S) ->
     end),
 
     ?LOG_INFO("Should_send_jobs", _Jobs),
+    % TODO eventdb:select_latest_events/0
+    %...
 
     {noreply, S};
 
