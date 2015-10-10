@@ -362,6 +362,10 @@ public class EventDb implements Runnable
                 if (s != null) {
                     s.close();
                 }
+            } catch (SQLException ignore) {
+                //ignore
+            }
+            try {
                 if (rs != null) {
                     rs.close();
                 }
