@@ -142,22 +142,22 @@ get_perms(PidName) ->
 sync_request(PidName, CState) ->
     gen_server:cast({via, supercast_registrar, PidName}, {sync_request, CState}).
 
-do_sync_request(CState, S) ->
-    ES = monitor_data_master:get_probe_state(S#state.name),
+do_sync_request(CState, #state{name=Name}) ->
+    ES = monitor_data_master:get_probe_state(Name),
 
     % Generate tmp dir in dump dir
     DumpDir  = ES#ets_state.local_state#nchecks_state.dump_dir,
     TmpDir   = monitor:generate_temp_dir(),
     DumpPath = filename:join(DumpDir, TmpDir),
+    file:make_dir(DumpPath),
 
-    % TODO eventdb:select_probe_events/1
-    % ...
+    % probe events table
+    {ok, EventFile} = eventdb:dump_probe_events(DumpPath, Name),
 
     % generate the rrd file
     {Type, RrdCfg}  = ES#ets_state.local_state#nchecks_state.rrd_config,
     case Type of
         simple ->
-            file:make_dir(DumpPath),
             RrdFile     = RrdCfg,
             RrdFileBase = filename:basename(RrdFile),
 
@@ -167,12 +167,11 @@ do_sync_request(CState, S) ->
 
             % build the PDU
             Pdu = monitor_pdu:nchecksSimpleDumpMessage(
-                                            S#state.name, TmpDir, RrdFileBase),
+                                            Name, TmpDir, RrdFileBase, EventFile),
             supercast_channel:subscribe(ES#ets_state.name, CState),
             supercast_channel:unicast(CState, [Pdu]);
 
         table ->
-            file:make_dir(DumpPath),
             #rrd_table{
                elements = Elements,
                suffix   = Suffix,
@@ -188,13 +187,15 @@ do_sync_request(CState, S) ->
             end, Elements),
 
             Pdu = monitor_pdu:nchecksTableDumpMessage(
-                                        S#state.name, TmpDir, ElementToFile),
+                                        Name, TmpDir, ElementToFile, EventFile),
             supercast_channel:subscribe(ES#ets_state.name, CState),
             supercast_channel:unicast(CState, [Pdu]);
 
         _ ->
             ok
     end.
+
+
 %%----------------------------------------------------------------------------
 %% supercast channel behaviour API END
 %%----------------------------------------------------------------------------
@@ -284,7 +285,7 @@ do_handle_nchecks_reply(PR, #state{name=Name,ref=Ref} = S) ->
             monitor_events:notify(Name, OldStatus);
         _ ->
             % are differents, insert in db, and alert
-            monitor_events:notify_move(Name, 
+            monitor_events:notify_move(Name,
                                        ES#ets_state.check_id,
                                        ES#ets_state.description,
                                        NewStatus, NewStatusCode,

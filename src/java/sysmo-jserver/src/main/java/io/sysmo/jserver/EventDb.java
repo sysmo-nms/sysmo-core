@@ -21,7 +21,8 @@
 
 package io.sysmo.jserver;
 
-import java.io.CharArrayWriter;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -29,6 +30,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
 import java.sql.Statement;
 
 import javax.json.Json;
@@ -38,10 +40,8 @@ import javax.json.JsonObjectBuilder;
 import javax.json.JsonWriter;
 
 import com.ericsson.otp.erlang.OtpErlangAtom;
-import com.ericsson.otp.erlang.OtpErlangChar;
 import com.ericsson.otp.erlang.OtpErlangDecodeException;
 import com.ericsson.otp.erlang.OtpErlangExit;
-import com.ericsson.otp.erlang.OtpErlangList;
 import com.ericsson.otp.erlang.OtpErlangLong;
 import com.ericsson.otp.erlang.OtpErlangObject;
 import com.ericsson.otp.erlang.OtpErlangString;
@@ -81,16 +81,17 @@ public class EventDb implements Runnable
 
     // NCHECKS_LATEST_EVENTS table insert prepared statement
     private PreparedStatement psInsertLast;
-    private static final int LATEST_PROBE_ID      = 1;
-    private static final int LATEST_DATE_CREATED  = 2;
-    private static final int LATEST_NCHECKS_ID    = 3;
-    private static final int LATEST_STATUS        = 4;
-    private static final int LATEST_STATUS_CODE   = 5;
-    private static final int LATEST_RETURN_STRING = 6;
-    private static final int LATEST_HOST_DISPLAY  = 7;
-    private static final int LATEST_HOST_LOCATION = 8;
-    private static final int LATEST_HOST_CONTACT  = 9;
-    private static final int LATEST_PROBE_DISPLAY = 10;
+    private static final int LATEST_EVENT_ID      = 1;
+    private static final int LATEST_PROBE_ID      = 2;
+    private static final int LATEST_DATE_CREATED  = 3;
+    private static final int LATEST_NCHECKS_ID    = 4;
+    private static final int LATEST_STATUS        = 5;
+    private static final int LATEST_STATUS_CODE   = 6;
+    private static final int LATEST_RETURN_STRING = 7;
+    private static final int LATEST_HOST_DISPLAY  = 8;
+    private static final int LATEST_HOST_LOCATION = 9;
+    private static final int LATEST_HOST_CONTACT  = 10;
+    private static final int LATEST_PROBE_DISPLAY = 11;
 
     // NCHECKS_LATEST_EVENTS table delete prepared statement
     private PreparedStatement psDeleteLast;
@@ -102,7 +103,7 @@ public class EventDb implements Runnable
     public static EventDb getInstance(
             final OtpMbox mbox,
             final String foreignNodeName,
-            final String dataDir) throws SQLException {
+            final String dataDir) throws Exception {
 
         EventDb.instance = new EventDb(mbox,foreignNodeName,dataDir);
         return EventDb.instance;
@@ -110,7 +111,7 @@ public class EventDb implements Runnable
     private EventDb(
             final OtpMbox mbox,
             final String foreignNodeName,
-            final String dataDir) throws SQLException {
+            final String dataDir) throws Exception {
         this.mbox = mbox;
         this.foreignNodeName = foreignNodeName;
         this.logger = LoggerFactory.getLogger(EventDb.class);
@@ -132,15 +133,11 @@ public class EventDb implements Runnable
             this.logger.info("Loaded the appropriate driver");
         } catch (Exception e) {
             this.logger.error(e.getMessage(), e);
+            throw e;
         }
 
         String protocol = "jdbc:derby:";
         this.conn = null;
-        //Statement s;
-
-        //ArrayList<Statement> statements = new ArrayList<>();
-        //PreparedStatement psUpdate;
-        //ResultSet rs = null;
 
         /*
          * Boot database
@@ -184,6 +181,7 @@ public class EventDb implements Runnable
                         + "ON NCHECKS_EVENTS (MONTH_CREATED)");
 
                 statement.execute("CREATE TABLE NCHECKS_LATEST_EVENTS("
+                        + "EVENT_ID        INT          NOT NULL,"
                         + "PROBE_ID        VARCHAR(40)  NOT NULL,"
                         + "DATE_CREATED    TIMESTAMP    NOT NULL," // from notif ts
                         + "NCHECKS_ID      VARCHAR(40)  NOT NULL,"
@@ -223,7 +221,8 @@ public class EventDb implements Runnable
                             + "(PROBE_ID,DATE_CREATED,NCHECKS_ID,"
                             + "STATUS,STATUS_CODE,RETURN_STRING,"
                             + "MONTH_CREATED) "
-                            + "VALUES (?,?,?,?,?,?,?)");
+                            + "VALUES (?,?,?,?,?,?,?)",
+                    Statement.RETURN_GENERATED_KEYS);
 
             this.psDeleteLast = conn.prepareStatement(
                     "DELETE FROM NCHECKS_LATEST_EVENTS "
@@ -231,11 +230,11 @@ public class EventDb implements Runnable
 
             this.psInsertLast = conn.prepareStatement(
                     "INSERT INTO NCHECKS_LATEST_EVENTS "
-                            + "(PROBE_ID,DATE_CREATED,NCHECKS_ID,"
+                            + "(EVENT_ID,PROBE_ID,DATE_CREATED,NCHECKS_ID,"
                             + "STATUS,STATUS_CODE,RETURN_STRING,"
                             + "HOST_DISPLAY,HOST_LOCATION,HOST_CONTACT,"
                             + "PROBE_DISPLAY) "
-                            + "VALUES (?,?,?,?,?,?,?,?,?,?)");
+                            + "VALUES (?,?,?,?,?,?,?,?,?,?,?)");
 
             this.psSelectProbeEvents = conn.prepareStatement(
                     "SELECT * FROM NCHECKS_EVENTS WHERE PROBE_ID = ?");
@@ -332,9 +331,9 @@ public class EventDb implements Runnable
 
         if (cmdStr.equals("notify")) {
             this.handleNotification(tuple.elementAt(1));
-        } else if (cmdStr.equals("select_latest_events")) {
+        } else if (cmdStr.equals("dump_latest_events")) {
             this.handleSelectLatestEvents(tuple);
-        } else if (cmdStr.equals("select_probe_events")) {
+        } else if (cmdStr.equals("dump_probe_events")) {
             this.handleSelectProbeEvents(tuple);
         } else {
             this.logger.info("Unknown command " + command.toString());
@@ -345,15 +344,18 @@ public class EventDb implements Runnable
     {
         // TODO should be a view of NCHECKS_EVENTS and NCHECKS_LATEST_EVENTS
         // and use MONTH_CREATED index
-        OtpErlangObject caller = call.elementAt(1);
+        OtpErlangObject caller  = call.elementAt(1);
+        OtpErlangString dumpDir = (OtpErlangString) call.elementAt(2);
 
-        char[] json;
+        String file = "latest.json";
+        String filePath = Paths.get(dumpDir.stringValue(), file).toString();
+
         Statement s = null;
         ResultSet rs = null;
         try {
             s = this.conn.createStatement();
             rs = s.executeQuery("SELECT * FROM NCHECKS_EVENTS");
-            json = this.convertToJson(rs);
+            this.writeToJsonFile(rs, filePath);
         } catch (Exception e) {
             this.buildErrorReply(new OtpErlangString(e.getMessage()));
             return;
@@ -374,28 +376,29 @@ public class EventDb implements Runnable
             }
         }
 
-        // TODO write to file and return the path to the file
-        // must know http dump dir
-
-        OtpErlangList jsonCharList = this.buildErlangCharList(json);
-        OtpErlangObject replyMsg = this.buildOkReply(jsonCharList);
+        OtpErlangObject replyMsg = this.buildOkReply(new OtpErlangString(file));
         this.sendReply(caller, replyMsg);
     }
 
 
     private void handleSelectProbeEvents(OtpErlangTuple call)
     {
-        OtpErlangObject caller = call.elementAt(1);
-        OtpErlangString probe = (OtpErlangString) call.elementAt(2);
-        char[] json;
+        OtpErlangObject caller  = call.elementAt(1);
+        OtpErlangTuple payload  = (OtpErlangTuple)  call.elementAt(2);
+
+        OtpErlangString probe   = (OtpErlangString) payload.elementAt(0);
+        OtpErlangString dumpDir = (OtpErlangString) payload.elementAt(1);
+
+        String file = probe.stringValue() + ".json";
+        String filePath = Paths.get(dumpDir.stringValue(), file).toString();
+
         OtpErlangObject reply;
         ResultSet rs = null;
         try {
             this.psSelectProbeEvents.setString(1, probe.stringValue());
             rs = this.psSelectProbeEvents.executeQuery();
-            json = this.convertToJson(rs);
-            OtpErlangList jsonCharList = this.buildErlangCharList(json);
-            reply = this.buildOkReply(jsonCharList);
+            this.writeToJsonFile(rs, filePath);
+            reply = this.buildOkReply(new OtpErlangString(file));
         } catch (Exception e) {
             this.logger.error("Select probe error: " + probe.stringValue(), e);
             reply = this.buildErrorReply(new OtpErlangString(e.getMessage()));
@@ -453,6 +456,15 @@ public class EventDb implements Runnable
         this.psInsert.setString(EventDb.RETURN_STRING, returnString);
         this.psInsert.executeUpdate();
 
+        int key = 0;
+        try {
+            ResultSet keyRs = this.psInsert.getGeneratedKeys();
+            keyRs.next();
+            key = keyRs.getInt(1);
+        } catch (SQLFeatureNotSupportedException|NullPointerException e) {
+            this.logger.error("getGeneratedKeys fail: " + e);
+        }
+
         try {
             this.psDeleteLast.setString(
                     EventDb.DELETE_LATEST_PROBE_ID, probeId);
@@ -461,6 +473,8 @@ public class EventDb implements Runnable
             // key does not exist
         }
 
+        this.psInsertLast.setInt(
+                EventDb.LATEST_EVENT_ID, key);
         this.psInsertLast.setString(
                 EventDb.LATEST_PROBE_ID, probeId);
         this.psInsertLast.setTimestamp(
@@ -605,7 +619,8 @@ public class EventDb implements Runnable
         return new OtpErlangTuple(valObj);
     }
 
-    public char[] convertToJson(ResultSet resultSet) throws Exception
+    public void writeToJsonFile(ResultSet resultSet, String file)
+            throws SQLException
     {
         JsonBuilderFactory factory = Json.createBuilderFactory(null);
         JsonArrayBuilder arrayBuilder = factory.createArrayBuilder();
@@ -631,18 +646,15 @@ public class EventDb implements Runnable
             arrayBuilder.add(obj);
         }
 
-        CharArrayWriter buffer = new CharArrayWriter();
-        JsonWriter jsonWriter = Json.createWriter(buffer);
-        jsonWriter.writeArray(arrayBuilder.build());
-        return buffer.toCharArray();
-    }
-
-    private OtpErlangList buildErlangCharList(char[] charList) {
-        OtpErlangObject[] objList = new OtpErlangObject[charList.length];
-        for (int i = 0; i < charList.length; i++)
-        {
-            objList[i] = new OtpErlangChar(charList[i]);
+        FileOutputStream output;
+        try {
+            output = new FileOutputStream(file);
+        } catch (FileNotFoundException e) {
+            this.logger.error("Can't create dump file", e);
+            return;
         }
-        return new OtpErlangList(objList);
+
+        JsonWriter jsonWriter = Json.createWriter(output);
+        jsonWriter.writeArray(arrayBuilder.build());
     }
 }

@@ -34,10 +34,13 @@
     simpleReply/4,
     nchecksHelperReply/3,
 
+    masterSyncBegin/2,
+    masterSyncEnd/0,
+
     nchecksSimpleUpdateMessage/3,
-    nchecksSimpleDumpMessage/3,
+    nchecksSimpleDumpMessage/4,
     nchecksTableUpdateMessage/3,
-    nchecksTableDumpMessage/3
+    nchecksTableDumpMessage/4
 ]).
 
 nchecksSimpleUpdateMessage(Probe, Ts, Updates) ->
@@ -56,7 +59,7 @@ nchecksSimpleUpdateMessage(Probe, Ts, Updates) ->
         ]
     }.
 
-nchecksSimpleDumpMessage(Probe, DumpDir, RrdFile) ->
+nchecksSimpleDumpMessage(Probe, DumpDir, RrdFile, EventsFile) ->
     {struct,
         [
             {<<"from">>, char_to_binary(Probe)},
@@ -65,7 +68,8 @@ nchecksSimpleDumpMessage(Probe, DumpDir, RrdFile) ->
                 {struct, [
                     {<<"name">>,        char_to_binary(Probe)},
                     {<<"httpDumpDir">>, char_to_binary(DumpDir)},
-                    {<<"rrdFile">>,     char_to_binary(RrdFile)}
+                    {<<"rrdFile">>,     char_to_binary(RrdFile)},
+                    {<<"eventsFile">>,  char_to_binary(EventsFile)}
                 ]}
             }
         ]
@@ -95,7 +99,7 @@ nchecksTableUpdateMessage(Probe, Ts, Updates) ->
     }.
 
 
-nchecksTableDumpMessage(Probe, DumpDir, ElemToFile) ->
+nchecksTableDumpMessage(Probe, DumpDir, ElemToFile, EventsFile) ->
     ElToFile = [{char_to_binary(A), char_to_binary(B)} || {A,B} <- ElemToFile],
     {struct,
         [
@@ -105,7 +109,8 @@ nchecksTableDumpMessage(Probe, DumpDir, ElemToFile) ->
                 {struct, [
                     {<<"name">>,          char_to_binary(Probe)},
                     {<<"httpDumpDir">>,   char_to_binary(DumpDir)},
-                    {<<"elementToFile">>, {struct, ElToFile}}
+                    {<<"elementToFile">>, {struct, ElToFile}},
+                    {<<"eventsFile">>,   char_to_binary(EventsFile)}
                 ]}
             }
         ]
@@ -157,6 +162,27 @@ deleteProbe(Probe) ->
             {<<"value">>, {struct, [
                 {<<"name">>,   char_to_binary(Name)},
                 {<<"target">>, char_to_binary(Target)}]}}
+        ]
+    }.
+
+masterSyncBegin(DumpDir, LatestEventsFile) ->
+    {struct,
+        [
+            {<<"from">>, <<"monitor_main">>},
+            {<<"type">>, <<"syncBegin">>},
+            {<<"value">>, {struct, [
+                {<<"dumpDir">>,          char_to_binary(DumpDir)},
+                {<<"latestEventsFile">>, char_to_binary(LatestEventsFile)}
+            ]}}
+        ]
+    }.
+
+masterSyncEnd() ->
+    {struct,
+        [
+            {<<"from">>, <<"monitor_main">>},
+            {<<"type">>, <<"syncEnd">>},
+            {<<"value">>, {struct, []}}
         ]
     }.
 

@@ -93,6 +93,15 @@ handle_call(get_perms, _F, #state{perm = P} = S) ->
 handle_cast({sync_request, CState}, S) ->
     supercast_channel:subscribe(?MASTER_CHANNEL, CState),
 
+    {ok, DumpDir} = application:get_env(supercast, http_sync_dir),
+    TmpDir = monitor:generate_temp_dir(),
+    DumpPath = filename:join(DumpDir,TmpDir),
+    file:make_dir(DumpPath),
+    {ok, LatestEventsFile} = eventdb:dump_latest_events(DumpPath),
+
+    BeginPdu = monitor_pdu:masterSyncBegin(TmpDir,LatestEventsFile),
+    supercast_channel:unicast(CState, [BeginPdu]),
+
     {ok, _} = monitor_data_master:iterate(target, fun(T,_) ->
         #target{permissions=Perm} = T,
         case supercast:satisfy(CState, Perm) of
@@ -128,9 +137,9 @@ handle_cast({sync_request, CState}, S) ->
     end),
 
     ?LOG_INFO("Should_send_jobs", _Jobs),
-    % TODO eventdb:select_latest_events/0
-    %...
 
+    EndPdu = monitor_pdu:masterSyncEnd(),
+    supercast_channel:unicast(CState, [EndPdu]),
     {noreply, S};
 
 handle_cast(_R, S) ->

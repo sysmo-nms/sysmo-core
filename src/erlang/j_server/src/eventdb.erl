@@ -40,8 +40,8 @@
 
 -export([
     notify/1,
-    select_latest_events/0,
-    select_probe_events/1
+    dump_latest_events/1,
+    dump_probe_events/2
 ]).
 
 -record(state, {java_pid}).
@@ -55,24 +55,24 @@ notify(Notif) ->
     gen_server:cast(?MODULE, {notify, Notif}).
 
 
--spec select_latest_events() ->
-                    {ok, Json::list()} | {error, Error::string()}.
+-spec dump_latest_events(DumpDir::string()) ->
+                    {ok, FileName::string()} | {error, Error::string()}.
 % @doc
-% return two latests months of events in json format.
+% return two latests months of events in json file.
 % @end
-select_latest_events() ->
+dump_latest_events(DumpDir) ->
     gen_server:call(?MODULE,
-         {call_eventdb, {select_latest_events, []}}, ?CALL_TIMEOUT).
+         {call_eventdb, {dump_latest_events, DumpDir}}, ?CALL_TIMEOUT).
 
 
--spec select_probe_events(Probe::string()) ->
-                    {ok, Json::list()} | {error, Error::string()}.
+-spec dump_probe_events(DumpDir::string(), Probe::string()) ->
+                    {ok, FileName::string()} | {error, Error::string()}.
 % @doc
-% return all events for probe Probe in json format.
+% return all events for probe Probe in json file.
 % @end
-select_probe_events(Probe) ->
+dump_probe_events(DumpDir, Probe) ->
     gen_server:call(?MODULE,
-         {call_eventdb, {select_probe_events, Probe}}, ?CALL_TIMEOUT).
+         {call_eventdb, {dump_probe_events, {Probe, DumpDir}}}, ?CALL_TIMEOUT).
 
 % @private
 start_link() ->
