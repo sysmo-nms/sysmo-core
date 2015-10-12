@@ -69,8 +69,9 @@ public class EventDb implements Runnable
     private static OtpErlangAtom atomOk = new OtpErlangAtom("ok");
     private static OtpErlangAtom atomError = new OtpErlangAtom("error");
 
-    // NCHECKS_EVENTS table insert prepared statement
+    // NCHECKS_EVENTS and NCHECKS_LATEST_EVENTS table insert prepared statement
     private PreparedStatement psInsert;
+    private PreparedStatement psInsertLast;
     private static final int PROBE_ID      = 1;
     private static final int DATE_CREATED  = 2;
     private static final int NCHECKS_ID    = 3;
@@ -78,27 +79,22 @@ public class EventDb implements Runnable
     private static final int STATUS_CODE   = 5;
     private static final int RETURN_STRING = 6;
     private static final int MONTH_CREATED = 7;
-
-    // NCHECKS_LATEST_EVENTS table insert prepared statement
-    private PreparedStatement psInsertLast;
-    private static final int LATEST_EVENT_ID      = 1;
-    private static final int LATEST_PROBE_ID      = 2;
-    private static final int LATEST_DATE_CREATED  = 3;
-    private static final int LATEST_NCHECKS_ID    = 4;
-    private static final int LATEST_STATUS        = 5;
-    private static final int LATEST_STATUS_CODE   = 6;
-    private static final int LATEST_RETURN_STRING = 7;
-    private static final int LATEST_HOST_DISPLAY  = 8;
-    private static final int LATEST_HOST_LOCATION = 9;
-    private static final int LATEST_HOST_CONTACT  = 10;
-    private static final int LATEST_PROBE_DISPLAY = 11;
+    private static final int HOST_DISPLAY  = 8;
+    private static final int HOST_LOCATION = 9;
+    private static final int HOST_CONTACT  = 10;
+    private static final int PROBE_DISPLAY = 11;
+    private static final int EVENT_ID      = 12;
 
     // NCHECKS_LATEST_EVENTS table delete prepared statement
-    private PreparedStatement psDeleteLast;
-    private static final int DELETE_LATEST_PROBE_ID = 1;
+    private PreparedStatement psDeletePrevious;
+    private static final int PREVIOUS_PROBE_EVENT = 1;
 
     // SELECTS
     private PreparedStatement psSelectProbeEvents;
+
+    private PreparedStatement psSelectLatestEvents;
+    private static final int CURRENT_MONTH  = 1;
+    private static final int PREVIOUS_MONTH = 2;
 
     public static EventDb getInstance(
             final OtpMbox mbox,
@@ -108,6 +104,7 @@ public class EventDb implements Runnable
         EventDb.instance = new EventDb(mbox,foreignNodeName,dataDir);
         return EventDb.instance;
     }
+
     private EventDb(
             final OtpMbox mbox,
             final String foreignNodeName,
@@ -172,6 +169,10 @@ public class EventDb implements Runnable
                         + "STATUS        VARCHAR(20)  NOT NULL,"
                         + "STATUS_CODE   INT          NOT NULL,"
                         + "RETURN_STRING VARCHAR(255) NOT NULL,"
+                        + "HOST_DISPLAY  VARCHAR(255) NOT NULL,"
+                        + "HOST_LOCATION VARCHAR(255) NOT NULL,"
+                        + "HOST_CONTACT  VARCHAR(255) NOT NULL,"
+                        + "PROBE_DISPLAY VARCHAR(255) NOT NULL,"
                         + "PRIMARY KEY (EVENT_ID))");
 
                 statement.execute("CREATE INDEX PROBE_ID_INDEX "
@@ -183,6 +184,7 @@ public class EventDb implements Runnable
                 statement.execute("CREATE TABLE NCHECKS_LATEST_EVENTS("
                         + "EVENT_ID        INT          NOT NULL,"
                         + "PROBE_ID        VARCHAR(40)  NOT NULL,"
+                        + "MONTH_CREATED   VARCHAR(6)   NOT NULL,"
                         + "DATE_CREATED    TIMESTAMP    NOT NULL," // from notif ts
                         + "NCHECKS_ID      VARCHAR(40)  NOT NULL,"
                         + "STATUS          VARCHAR(20)  NOT NULL,"
@@ -192,7 +194,7 @@ public class EventDb implements Runnable
                         + "HOST_LOCATION   VARCHAR(255) NOT NULL,"
                         + "HOST_CONTACT    VARCHAR(255) NOT NULL,"
                         + "PROBE_DISPLAY   VARCHAR(255) NOT NULL,"
-                        + "PRIMARY KEY (PROBE_ID))");
+                        + "PRIMARY KEY (EVENT_ID))");
                 this.conn.commit();
                 this.logger.info("Database successfully initialized");
 
@@ -216,28 +218,39 @@ public class EventDb implements Runnable
 
             this.conn.setAutoCommit(true);
 
+
             this.psInsert = conn.prepareStatement(
                     "INSERT INTO NCHECKS_EVENTS "
                             + "(PROBE_ID,DATE_CREATED,NCHECKS_ID,"
-                            + "STATUS,STATUS_CODE,RETURN_STRING,"
-                            + "MONTH_CREATED) "
-                            + "VALUES (?,?,?,?,?,?,?)",
+                            + "STATUS,STATUS_CODE,RETURN_STRING,MONTH_CREATED,"
+                            + "HOST_DISPLAY,HOST_LOCATION,HOST_CONTACT,"
+                            + "PROBE_DISPLAY) "
+                            + "VALUES (?,?,?,?,?,?,?,?,?,?,?)",
                     Statement.RETURN_GENERATED_KEYS);
-
-            this.psDeleteLast = conn.prepareStatement(
-                    "DELETE FROM NCHECKS_LATEST_EVENTS "
-                            + "WHERE PROBE_ID = ?");
 
             this.psInsertLast = conn.prepareStatement(
                     "INSERT INTO NCHECKS_LATEST_EVENTS "
-                            + "(EVENT_ID,PROBE_ID,DATE_CREATED,NCHECKS_ID,"
-                            + "STATUS,STATUS_CODE,RETURN_STRING,"
+                            + "(PROBE_ID,DATE_CREATED,NCHECKS_ID,"
+                            + "STATUS,STATUS_CODE,RETURN_STRING,MONTH_CREATED,"
                             + "HOST_DISPLAY,HOST_LOCATION,HOST_CONTACT,"
-                            + "PROBE_DISPLAY) "
-                            + "VALUES (?,?,?,?,?,?,?,?,?,?,?)");
+                            + "PROBE_DISPLAY,EVENT_ID) "
+                            + "VALUES (?,?,?,?,?,?,?,?,?,?,?,?)");
+
+
+            this.psDeletePrevious = conn.prepareStatement(
+                    "DELETE FROM NCHECKS_LATEST_EVENTS "
+                            + "WHERE PROBE_ID = ?");
+
 
             this.psSelectProbeEvents = conn.prepareStatement(
                     "SELECT * FROM NCHECKS_EVENTS WHERE PROBE_ID = ?");
+
+            this.psSelectLatestEvents = conn.prepareStatement(
+                    "SELECT * FROM NCHECKS_EVENTS "
+                            + "WHERE MONTH_CREATED = ? OR MONTH_CREATED = ? "
+                            + "UNION "
+                            + "SELECT * FROM NCHECKS_LATEST_EVENTS");
+
         } catch (SQLException e) {
             printSQLException(e);
             throw e;
@@ -291,8 +304,8 @@ public class EventDb implements Runnable
 
         // CLEANUP close statements
         try {
-            if (this.psDeleteLast != null) {
-                this.psDeleteLast.close();
+            if (this.psDeletePrevious != null) {
+                this.psDeletePrevious.close();
             }
         } catch (SQLException e) {
             this.printSQLException(e);
@@ -327,46 +340,43 @@ public class EventDb implements Runnable
     private void handleEvent(OtpErlangObject event) throws SQLException {
         OtpErlangTuple tuple = (OtpErlangTuple) event;
         OtpErlangAtom command = (OtpErlangAtom) tuple.elementAt(0);
-        String cmdStr = command.toString();
 
-        if (cmdStr.equals("notify")) {
-            this.handleNotification(tuple.elementAt(1));
-        } else if (cmdStr.equals("dump_latest_events")) {
-            this.handleSelectLatestEvents(tuple);
-        } else if (cmdStr.equals("dump_probe_events")) {
-            this.handleSelectProbeEvents(tuple);
-        } else {
-            this.logger.info("Unknown command " + command.toString());
+        switch (command.toString()) {
+            case "notify":
+                this.handleNotification(tuple.elementAt(1));
+                break;
+            case "dump_latest_events":
+                this.handleSelectLatestEvents(tuple);
+                break;
+            case "dump_probe_events":
+                this.handleSelectProbeEvents(tuple);
+                break;
+            default:
+                this.logger.info("Unknown command " + command.toString());
         }
     }
 
     private void handleSelectLatestEvents(OtpErlangTuple call)
     {
-        // TODO should be a view of NCHECKS_EVENTS and NCHECKS_LATEST_EVENTS
-        // and use MONTH_CREATED index
         OtpErlangObject caller  = call.elementAt(1);
         OtpErlangString dumpDir = (OtpErlangString) call.elementAt(2);
 
         String file = "latest.json";
         String filePath = Paths.get(dumpDir.stringValue(), file).toString();
 
-        Statement s = null;
         ResultSet rs = null;
+
+        String currentMonth = this.getCurrentMonth();
+        String previousMonth = this.getPreviousMonth();
         try {
-            s = this.conn.createStatement();
-            rs = s.executeQuery("SELECT * FROM NCHECKS_EVENTS");
+            this.psSelectLatestEvents.setString(EventDb.CURRENT_MONTH, currentMonth);
+            this.psSelectLatestEvents.setString(EventDb.PREVIOUS_MONTH, previousMonth);
+            rs = this.psSelectLatestEvents.executeQuery();
             this.writeToJsonFile(rs, filePath);
         } catch (Exception e) {
             this.buildErrorReply(new OtpErlangString(e.getMessage()));
             return;
         } finally {
-            try {
-                if (s != null) {
-                    s.close();
-                }
-            } catch (SQLException ignore) {
-                //ignore
-            }
             try {
                 if (rs != null) {
                     rs.close();
@@ -389,7 +399,7 @@ public class EventDb implements Runnable
         OtpErlangString probe   = (OtpErlangString) payload.elementAt(0);
         OtpErlangString dumpDir = (OtpErlangString) payload.elementAt(1);
 
-        String file = probe.stringValue() + ".json";
+        String file = "allProbeEvents.json";
         String filePath = Paths.get(dumpDir.stringValue(), file).toString();
 
         OtpErlangObject reply;
@@ -411,9 +421,6 @@ public class EventDb implements Runnable
                 //ignore
             }
         }
-
-        // TODO write to filesystem and return the path to the file
-        // must know http dump dir
 
         this.sendReply(caller, reply);
     }
@@ -441,19 +448,20 @@ public class EventDb implements Runnable
         String hostDisplayName = hostDisplayObj.stringValue();
         String hostLocation = hostLocationObj.stringValue();
         String hostContact = hostContactObj.stringValue();
-
-        Calendar now = Calendar.getInstance();
-        int month = now.get(Calendar.MONTH);
-        int year = now.get(Calendar.YEAR);
-        String dateRow = String.valueOf(year) + String.valueOf(month);
+        String monthRow = this.getCurrentMonth();
 
         this.psInsert.setString(EventDb.PROBE_ID, probeId);
         this.psInsert.setString(EventDb.NCHECKS_ID, checkId);
-        this.psInsert.setString(EventDb.MONTH_CREATED, dateRow);
+        this.psInsert.setString(EventDb.MONTH_CREATED, monthRow);
         this.psInsert.setTimestamp(EventDb.DATE_CREATED, timestamp);
         this.psInsert.setString(EventDb.STATUS, status);
         this.psInsert.setInt(EventDb.STATUS_CODE, statusCode);
         this.psInsert.setString(EventDb.RETURN_STRING, returnString);
+        this.psInsert.setString(EventDb.PROBE_DISPLAY, probeDisplayName);
+        this.psInsert.setString(EventDb.HOST_DISPLAY, hostDisplayName);
+        this.psInsert.setString(EventDb.HOST_LOCATION, hostLocation);
+        this.psInsert.setString(EventDb.HOST_CONTACT, hostContact);
+
         this.psInsert.executeUpdate();
 
         int key = 0;
@@ -466,35 +474,25 @@ public class EventDb implements Runnable
         }
 
         try {
-            this.psDeleteLast.setString(
-                    EventDb.DELETE_LATEST_PROBE_ID, probeId);
-            this.psDeleteLast.executeUpdate();
+            this.psDeletePrevious.setString(
+                    EventDb.PREVIOUS_PROBE_EVENT, probeId);
+            this.psDeletePrevious.executeUpdate();
         } catch (SQLException e) {
             // key does not exist
         }
 
-        this.psInsertLast.setInt(
-                EventDb.LATEST_EVENT_ID, key);
-        this.psInsertLast.setString(
-                EventDb.LATEST_PROBE_ID, probeId);
-        this.psInsertLast.setTimestamp(
-                EventDb.LATEST_DATE_CREATED, timestamp);
-        this.psInsertLast.setString(
-                EventDb.LATEST_NCHECKS_ID, checkId);
-        this.psInsertLast.setString(
-                EventDb.LATEST_STATUS, status);
-        this.psInsertLast.setInt(
-                EventDb.LATEST_STATUS_CODE, statusCode);
-        this.psInsertLast.setString(
-                EventDb.LATEST_RETURN_STRING, returnString);
-        this.psInsertLast.setString(
-                EventDb.LATEST_HOST_DISPLAY, hostDisplayName);
-        this.psInsertLast.setString(
-                EventDb.LATEST_PROBE_DISPLAY, probeDisplayName);
-        this.psInsertLast.setString(
-                EventDb.LATEST_HOST_LOCATION, hostLocation);
-        this.psInsertLast.setString(
-                EventDb.LATEST_HOST_CONTACT, hostContact);
+        this.psInsertLast.setInt(EventDb.EVENT_ID, key);
+        this.psInsertLast.setString(EventDb.PROBE_ID, probeId);
+        this.psInsertLast.setString(EventDb.NCHECKS_ID, checkId);
+        this.psInsertLast.setString(EventDb.MONTH_CREATED, monthRow);
+        this.psInsertLast.setTimestamp(EventDb.DATE_CREATED, timestamp);
+        this.psInsertLast.setString(EventDb.STATUS, status);
+        this.psInsertLast.setInt(EventDb.STATUS_CODE, statusCode);
+        this.psInsertLast.setString(EventDb.RETURN_STRING, returnString);
+        this.psInsertLast.setString(EventDb.PROBE_DISPLAY, probeDisplayName);
+        this.psInsertLast.setString(EventDb.HOST_DISPLAY, hostDisplayName);
+        this.psInsertLast.setString(EventDb.HOST_LOCATION, hostLocation);
+        this.psInsertLast.setString(EventDb.HOST_CONTACT, hostContact);
         this.psInsertLast.executeUpdate();
 
         //this.printTables();
@@ -656,5 +654,20 @@ public class EventDb implements Runnable
 
         JsonWriter jsonWriter = Json.createWriter(output);
         jsonWriter.writeArray(arrayBuilder.build());
+    }
+
+    private String getCurrentMonth() {
+        Calendar now = Calendar.getInstance();
+        int month = now.get(Calendar.MONTH);
+        int year = now.get(Calendar.YEAR);
+        return String.valueOf(year) + String.valueOf(month);
+    }
+
+    private String getPreviousMonth() {
+        Calendar notNow = Calendar.getInstance();
+        notNow.add(Calendar.MONTH, -1);
+        int month = notNow.get(Calendar.MONTH);
+        int year = notNow.get(Calendar.YEAR);
+        return String.valueOf(year) + String.valueOf(month);
     }
 }
