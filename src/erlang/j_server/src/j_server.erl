@@ -87,6 +87,7 @@ handle_cast(_Cast, S) ->
 
 handle_info({java_connected, Rrd4jPid, Snmp4jPid, NchecksPid, EventdbPid,
              MailPid, JettyPort}, #state{assert=undefined}) ->
+    application:set_env(supercast, http_port, JettyPort),
     {noreply, #state{
                  ready = true,
                  rrd4j_pid = Rrd4jPid,
@@ -98,6 +99,7 @@ handle_info({java_connected, Rrd4jPid, Snmp4jPid, NchecksPid, EventdbPid,
 handle_info({java_connected, Rrd4jPid, Snmp4jPid, NchecksPid, EventdbPid,
              MailPid, JettyPort}, #state{assert=From}) ->
     gen_server:reply(From, ok),
+    application:set_env(supercast, http_port, JettyPort),
     {noreply, #state{
                  ready = true,
                  rrd4j_pid = Rrd4jPid,
