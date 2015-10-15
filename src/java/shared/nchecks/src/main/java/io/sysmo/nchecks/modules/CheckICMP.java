@@ -275,7 +275,6 @@ class StreamConsumer extends Thread {
             this.parent.setReturnString(replyString.toString(), type);
         } catch (IOException e) {
             CheckICMP.logger.error(e.getMessage(), e);
-            e.printStackTrace();
         } finally {
             if(buff != null) {
                 try { buff.close(); }
