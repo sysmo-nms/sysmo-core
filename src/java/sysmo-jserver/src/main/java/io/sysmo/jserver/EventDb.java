@@ -364,6 +364,7 @@ public class EventDb implements Runnable
         String file = "latest.json";
         String filePath = Paths.get(dumpDir.stringValue(), file).toString();
 
+        OtpErlangObject reply;
         ResultSet rs = null;
 
         String currentMonth = this.getCurrentMonth();
@@ -373,9 +374,9 @@ public class EventDb implements Runnable
             this.psSelectLatestEvents.setString(EventDb.PREVIOUS_MONTH, previousMonth);
             rs = this.psSelectLatestEvents.executeQuery();
             this.writeToJsonFile(rs, filePath);
+            reply = this.buildOkReply(new OtpErlangString(file));
         } catch (Exception e) {
-            this.buildErrorReply(new OtpErlangString(e.getMessage()));
-            return;
+            reply = this.buildErrorReply(new OtpErlangString(e.getMessage()));
         } finally {
             try {
                 if (rs != null) {
@@ -386,8 +387,7 @@ public class EventDb implements Runnable
             }
         }
 
-        OtpErlangObject replyMsg = this.buildOkReply(new OtpErlangString(file));
-        this.sendReply(caller, replyMsg);
+        this.sendReply(caller, reply);
     }
 
 
@@ -464,13 +464,14 @@ public class EventDb implements Runnable
 
         this.psInsert.executeUpdate();
 
-        int key = 0;
+        int key;
         try {
             ResultSet keyRs = this.psInsert.getGeneratedKeys();
             keyRs.next();
             key = keyRs.getInt(1);
         } catch (SQLFeatureNotSupportedException|NullPointerException e) {
             this.logger.error("getGeneratedKeys fail: " + e);
+            throw e;
         }
 
         try {
