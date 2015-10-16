@@ -6,6 +6,9 @@
 \#*\#
 *~
 
+# supercast repository
+/src/erlang/sysmo/deps/supercast
+
 # erlang crashs/builds
 *.dump
 .rebar/
