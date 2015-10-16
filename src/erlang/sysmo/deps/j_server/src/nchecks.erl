@@ -19,7 +19,7 @@
 % THE SOFTWARE.
 
 -module(nchecks).
--include("include/nchecks.hrl").
+-include("nchecks.hrl").
 -include_lib("common_hrl/include/logs.hrl").
 -behaviour(gen_server).
 

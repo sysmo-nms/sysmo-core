@@ -20,7 +20,7 @@
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 % @private
 -module(monitor_commander).
--include("include/monitor.hrl").
+-include("monitor.hrl").
 -include_lib("common_hrl/include/logs.hrl").
 -behaviour(supercast_commander).
 -behaviour(gen_server).

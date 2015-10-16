@@ -20,7 +20,7 @@
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 -module(monitor_data_master).
 -behaviour(gen_server).
--include("include/monitor.hrl").
+-include("monitor.hrl").
 -include_lib("common_hrl/include/logs.hrl").
 
 % GEN_SERVER

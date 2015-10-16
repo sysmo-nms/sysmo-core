@@ -20,7 +20,7 @@
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 % @private
 -module(monitor).
--include("include/monitor.hrl").
+-include("monitor.hrl").
 -include_lib("common_hrl/include/logs.hrl").
 
 -export([

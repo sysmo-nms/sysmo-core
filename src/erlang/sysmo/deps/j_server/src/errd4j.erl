@@ -19,7 +19,7 @@
 % THE SOFTWARE.
 
 -module(errd4j).
--include("include/errd4j.hrl").
+-include("errd4j.hrl").
 -include_lib("common_hrl/include/logs.hrl").
 -behaviour(gen_server).
 

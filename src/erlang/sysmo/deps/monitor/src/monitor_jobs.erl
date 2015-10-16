@@ -20,8 +20,8 @@
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 % @private
 -module(monitor_jobs).
--include("include/monitor.hrl").
--include("include/monitor_snmp.hrl").
+-include("monitor.hrl").
+-include("monitor_snmp.hrl").
 -include_lib("common_hrl/include/logs.hrl").
 
 -export([

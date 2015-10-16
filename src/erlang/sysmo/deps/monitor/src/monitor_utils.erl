@@ -20,7 +20,7 @@
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 % @private
 -module(monitor_utils).
--include("include/monitor.hrl").
+-include("monitor.hrl").
 
 -export([init_target_snmp/1,cleanup_target_snmp/1,init_target_dir/1]).
 

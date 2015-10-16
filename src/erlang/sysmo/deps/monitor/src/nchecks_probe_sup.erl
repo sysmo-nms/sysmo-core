@@ -21,7 +21,7 @@
 % @private
 -module(nchecks_probe_sup).
 -behaviour(supervisor).
--include("include/monitor.hrl").
+-include("monitor.hrl").
 
 -export([
     start_link/0,

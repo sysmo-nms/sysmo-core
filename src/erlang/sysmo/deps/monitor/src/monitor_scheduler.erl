@@ -19,7 +19,7 @@
 % THE SOFTWARE.
 
 -module(monitor_scheduler).
--include("include/monitor.hrl").
+-include("monitor.hrl").
 -include_lib("common_hrl/include/logs.hrl").
 -behaviour(gen_server).
 

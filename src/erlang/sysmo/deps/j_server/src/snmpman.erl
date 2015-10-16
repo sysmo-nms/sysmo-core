@@ -19,7 +19,7 @@
 % THE SOFTWARE.
 
 -module(snmpman).
--include("include/snmpman.hrl").
+-include("snmpman.hrl").
 -include_lib("common_hrl/include/logs.hrl").
 -behaviour(gen_server).
 

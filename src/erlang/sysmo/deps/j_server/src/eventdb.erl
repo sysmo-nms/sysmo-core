@@ -19,7 +19,7 @@
 % THE SOFTWARE.
 
 -module(eventdb).
--include("include/eventdb.hrl").
+-include("eventdb.hrl").
 -include_lib("common_hrl/include/logs.hrl").
 -behaviour(gen_server).
 
