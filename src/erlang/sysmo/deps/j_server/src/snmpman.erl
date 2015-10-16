@@ -24,16 +24,16 @@
 -behaviour(gen_server).
 
 % gen_server
--export([init/1, handle_call/3, handle_cast/2,
-         handle_info/2, terminate/2, code_change/3]).
+-export([init/1, handle_call/3, handle_cast/2, handle_info/2,
+    terminate/2, code_change/3]).
 
 % utils
 -export([start_link/0]).
 
 % API
--export([get/2,walk_tree/2,walk_table/2,discovery/4,
-         register_element/2,which_elements/0,unregister_element/1,
-         element_registered/1,which_usm_users/0]).
+-export([get/2, walk_tree/2, walk_table/2, discovery/4, register_element/2,
+    which_elements/0, unregister_element/1, element_registered/1,
+    which_usm_users/0]).
 
 -record(state, {java_pid}).
 

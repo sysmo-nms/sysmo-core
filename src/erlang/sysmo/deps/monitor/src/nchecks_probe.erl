@@ -33,17 +33,17 @@
 -define(CRASH, "The module call has timed out. Check the server log for details").
 
 % gen_server
--export([start_link/1,init/1,handle_call/3,handle_cast/2,handle_info/2,
-         terminate/2,code_change/3]).
+-export([start_link/1, init/1, handle_call/3, handle_cast/2, handle_info/2,
+    terminate/2, code_change/3]).
 
 % supercast
--export([get_perms/1,sync_request/2]).
+-export([get_perms/1, sync_request/2]).
 
 % spawned
 -export([exec_nchecks/3]).
 
 % monitor
--export([force/1,trigger_return/2,pause/1,resume/1]).
+-export([force/1, trigger_return/2, pause/1, resume/1]).
 
 
 -record(state, {name,ref}).

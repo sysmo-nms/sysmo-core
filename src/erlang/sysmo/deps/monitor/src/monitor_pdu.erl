@@ -23,28 +23,16 @@
 -module(monitor_pdu).
 -include("monitor.hrl").
 -include_lib("j_server/include/nchecks.hrl").
--export([
-    probeReturn/4,
-    infoProbeCreate/1,
-    infoProbeUpdate/1,
-    deleteTarget/1,
-    deleteProbe/1,
-    infoTargetCreate/1,
-    infoTargetUpdate/1,
-    simpleReply/4,
-    nchecksHelperReply/3,
 
-    masterSyncBegin/2,
-    masterSyncEnd/0,
-    masterTargetCount/1,
-    masterProbeCount/1,
+-export([probeReturn/4, infoProbeCreate/1, infoProbeUpdate/1, deleteTarget/1,
+    deleteProbe/1, infoTargetCreate/1, infoTargetUpdate/1, simpleReply/4]).
 
+-export([masterSyncBegin/2, masterSyncEnd/0, masterTargetCount/1,
+    masterProbeCount/1]).
 
-    nchecksSimpleUpdateMessage/3,
-    nchecksSimpleDumpMessage/4,
-    nchecksTableUpdateMessage/3,
-    nchecksTableDumpMessage/4
-]).
+-export([nchecksSimpleUpdateMessage/3, nchecksSimpleDumpMessage/4,
+    nchecksTableUpdateMessage/3, nchecksTableDumpMessage/4,
+    nchecksHelperReply/3]).
 
 nchecksSimpleUpdateMessage(Probe, Ts, Updates) ->
     Up = [{char_to_binary(K), V} || {K,V} <- Updates],

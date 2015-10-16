@@ -22,7 +22,7 @@
 -module(monitor_utils).
 -include("monitor.hrl").
 
--export([init_target_snmp/1,cleanup_target_snmp/1,init_target_dir/1]).
+-export([init_target_snmp/1, cleanup_target_snmp/1, init_target_dir/1]).
 
 
 init_target_dir(Target) ->

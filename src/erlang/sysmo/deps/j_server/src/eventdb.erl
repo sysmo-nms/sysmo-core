@@ -24,25 +24,12 @@
 -behaviour(gen_server).
 
 % gen_server
--export([
-    init/1,
-    handle_call/3,
-    handle_cast/2,
-    handle_info/2,
-    terminate/2,
-    code_change/3
-]).
+-export([init/1, handle_call/3, handle_cast/2, handle_info/2,
+    terminate/2, code_change/3]).
 
--export([
-    start_link/0
-]).
+-export([start_link/0]).
 
-
--export([
-    notify/1,
-    dump_latest_events/1,
-    dump_probe_events/2
-]).
+-export([notify/1, dump_latest_events/1, dump_probe_events/2]).
 
 -record(state, {java_pid}).
 

@@ -2,9 +2,7 @@
 -module(j_server_sup).
 -behaviour(supervisor).
 
--export([
-    start_link/0
-]).
+-export([start_link/0]).
 -export([init/1]).
 
 start_link() ->

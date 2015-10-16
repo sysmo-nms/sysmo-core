@@ -24,32 +24,15 @@
 -behaviour(gen_server).
 
 % gen_server
--export([
-    init/1,
-    handle_call/3,
-    handle_cast/2,
-    handle_info/2,
-    terminate/2,
-    code_change/3
-]).
+-export([init/1, handle_call/3, handle_cast/2, handle_info/2,
+    terminate/2, code_change/3]).
 
--export([
-    start_link/0
-]).
+-export([start_link/0]).
 
-
--export([
-    create/3,
-    create/4,
-    multi_create/1,
-
-    update/3,
-    multi_update/1
-
-    % MAYBE
-    %update_fetch/0,
-    %updates_fetch/0,
-]).
+-export([create/3, create/4, multi_create/1, update/3, multi_update/1]).
+% MAYBE export
+%update_fetch/0,
+%updates_fetch/0,
 
 -record(state, {java_pid}).
 

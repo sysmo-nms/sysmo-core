@@ -24,10 +24,7 @@
 -include("monitor_snmp.hrl").
 -include_lib("common_hrl/include/logs.hrl").
 
--export([
-    update_snmp_system_info/1,
-    update_snmp_if_aliases/1
-]).
+-export([update_snmp_system_info/1, update_snmp_if_aliases/1]).
 
 update_snmp_system_info(TargetKey) ->
     case snmpman:get(TargetKey, [

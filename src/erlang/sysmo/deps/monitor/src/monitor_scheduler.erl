@@ -24,18 +24,16 @@
 -behaviour(gen_server).
 
 % gen_server
--export([init/1,handle_call/3,handle_cast/2,handle_info/2,
-         terminate/2,code_change/3]).
+-export([init/1, handle_call/3, handle_cast/2, handle_info/2,
+    terminate/2, code_change/3]).
 
 -export([start_link/0]).
 
 % API
--export([test/0,register_job/3,delete_job/1,job_exists/1,
-         which_jobs/0,fire_now/1]).
+-export([test/0, register_job/3, delete_job/1, job_exists/1,
+         which_jobs/0, fire_now/1]).
 
--export([
-    clean_sync_dir/1
-]).
+-export([clean_sync_dir/1]).
 
 % @private
 start_link() ->

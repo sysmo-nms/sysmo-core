@@ -23,11 +23,7 @@
 -behaviour(supervisor).
 -include("monitor.hrl").
 
--export([
-    start_link/0,
-    launch/1
-]).
-
+-export([start_link/0, launch/1]).
 -export([init/1]).
 
 start_link() ->

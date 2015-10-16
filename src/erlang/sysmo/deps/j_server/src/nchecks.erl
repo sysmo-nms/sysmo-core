@@ -24,24 +24,13 @@
 -behaviour(gen_server).
 
 % gen_server
--export([
-    init/1,
-    handle_call/3,
-    handle_cast/2,
-    handle_info/2,
-    terminate/2,
-    code_change/3
-]).
+-export([init/1, handle_call/3, handle_cast/2, handle_info/2,
+    terminate/2, code_change/3]).
 
--export([
-    start_link/0
-]).
+-export([start_link/0]).
 
 % API
--export([
-    check/3,
-    helper/3
-]).
+-export([check/3, helper/3]).
 
 -record(java_node, {name, pid}).
 -record(state, {java_nodes=[]}).
