@@ -25,15 +25,15 @@
 
 % GEN_SERVER
 -export([init/1,handle_call/3,handle_cast/2,handle_info/2,
-         terminate/2,code_change/3]).
+         terminate/2, code_change/3]).
 
 -export([start_link/0]).
 
 % API
--export([new/2,get/2,update/2,delete/2,iterate/2,get_jobs/1,
-         get_probes/1,which/1]).
+-export([new/2, get/2, update/2, delete/2, iterate/2, get_jobs/1,
+    get_probes/1, which/1]).
 
--export([get_probe_state/1,set_probe_state/1,del_probe_state/1]).
+-export([get_probe_state/1, set_probe_state/1, del_probe_state/1]).
 
 %%----------------------------------------------------------------------------
 %% API

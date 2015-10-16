@@ -36,6 +36,9 @@
 
     masterSyncBegin/2,
     masterSyncEnd/0,
+    masterTargetCount/1,
+    masterProbeCount/1,
+
 
     nchecksSimpleUpdateMessage/3,
     nchecksSimpleDumpMessage/4,
@@ -183,6 +186,24 @@ masterSyncEnd() ->
             {<<"from">>, <<"monitor_main">>},
             {<<"type">>, <<"syncEnd">>},
             {<<"value">>, {struct, []}}
+        ]
+    }.
+
+masterTargetCount(Count) ->
+    {struct,
+        [
+            {<<"from">>, <<"monitor_main">>},
+            {<<"type">>, <<"targetCount">>},
+            {<<"value">>, Count}
+        ]
+    }.
+
+masterProbeCount(Count) ->
+    {struct,
+        [
+            {<<"from">>, <<"monitor_main">>},
+            {<<"type">>, <<"probeCount">>},
+            {<<"value">>, Count}
         ]
     }.
 

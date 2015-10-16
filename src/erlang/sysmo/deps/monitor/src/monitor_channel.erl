@@ -25,37 +25,20 @@
 -include_lib("common_hrl/include/logs.hrl").
 
 % GEN_SERVER
--export([
-    init/1,
-    handle_call/3,
-    handle_cast/2,
-    handle_info/2,
-    terminate/2,
-    code_change/3
-]).
+-export([init/1, handle_call/3, handle_cast/2, handle_info/2,
+    terminate/2, code_change/3]).
 
 % GEN_CHANNEL
--export([
-    get_perms/1,
-    sync_request/2
-]).
+-export([get_perms/1, sync_request/2]).
 
 % SRV
--export([
-    start_link/0
-]).
+-export([start_link/0]).
 
--record(state, {
-    perm
-}).
-
-
+-record(state, {perm}).
 
 start_link() ->
     gen_server:start_link(
       {via, supercast_registrar, {?MODULE, ?MASTER_CHANNEL}}, ?MODULE, [], []).
-
-
 
 %%----------------------------------------------------------------------------
 %% supercast_channel API
@@ -66,7 +49,8 @@ get_perms(PidName) ->
 
 -spec sync_request(PidName::atom(), CState::tuple()) ->  ok.
 sync_request(PidName, CState) ->
-    gen_server:cast({via, supercast_registrar, PidName}, {sync_request, CState}).
+    gen_server:cast(
+        {via, supercast_registrar, PidName}, {sync_request, CState}).
 
 
 %%----------------------------------------------------------------------------
@@ -93,50 +77,73 @@ handle_call(get_perms, _F, #state{perm = P} = S) ->
 handle_cast({sync_request, CState}, S) ->
     supercast_channel:subscribe(?MASTER_CHANNEL, CState),
 
+    % get supercast sync dir generate temporary dir
     {ok, DumpDir} = application:get_env(supercast, http_sync_dir),
     TmpDir = monitor:generate_temp_dir(),
     DumpPath = filename:join(DumpDir,TmpDir),
     file:make_dir(DumpPath),
+
+    % dump latest SQL events to dump path
     {ok, LatestEventsFile} = eventdb:dump_latest_events(DumpPath),
 
+    % build and send pdu for client
     BeginPdu = monitor_pdu:masterSyncBegin(TmpDir,LatestEventsFile),
     supercast_channel:unicast(CState, [BeginPdu]),
 
-    {ok, _} = monitor_data_master:iterate(target, fun(T,_) ->
+    % filter and build target pdus
+    {ok, TState} = monitor_data_master:iterate(target, fun(T,Acc) ->
         #target{permissions=Perm} = T,
         case supercast:satisfy(CState, Perm) of
             true    ->
                 Pdu = monitor_pdu:infoTargetCreate(T),
-                ok  = supercast_channel:unicast(CState, [Pdu]);
-            false   -> ok
+                [Pdu|Acc];
+            false   -> [Acc]
         end
     end),
 
-    {ok, _} = monitor_data_master:iterate(probe, fun(P,_) ->
-        #probe{name=_Name,permissions=Perm} = P,
+    % send the target count to the client
+    TStateCount = length(TState),
+    TStateCountPdu = monitor_pdu:masterTargetCount(TStateCount),
+    supercast_channel:unicast(CState, [TStateCountPdu]),
+
+    % send target state pdus
+    lists:foreach(fun(Pdu) ->
+        supercast_channel:unicast(CState, [Pdu])
+    end, TState),
+
+    % filter and build probes pdus
+    {ok, PState} = monitor_data_master:iterate(probe, fun(P,Acc) ->
+        #probe{name=Name,permissions=Perm} = P,
         case supercast:satisfy(CState, Perm) of
             true    ->
                 Pdu = monitor_pdu:infoProbeCreate(P),
-                ok  = supercast_channel:unicast(CState, [Pdu]),
-                % Dep = do_get(dependency,Name)
-                % Pdu = dep... supercast:unicast...
-                ?LOG_INFO("Should_send_dependencies"),
-                monitor:trigger_nchecks_reply(P#probe.name, CState);
+                [{Name, Pdu} | Acc];
             false   -> ok
         end
     end),
 
-    {ok, _Jobs} = monitor_data_master:iterate(job, fun(J,Acc) ->
-        #job{permissions=Perm} = J,
-        case supercast:satisfy(CState, Perm) of
-            true    ->
-                [J|Acc];
-            false   ->
-                Acc
-        end
-    end),
+    % send the probe count to the client
+    PStateCount = length(PState),
+    PStateCountPdu = monitor_pdu:masterProbeCount(PStateCount),
+    supercast_channel:unicast(CState, [PStateCountPdu]),
 
-    ?LOG_INFO("Should_send_jobs", _Jobs),
+    % send probe state pdus and trigger factice nchecks_reply
+    lists:foreach(fun({PName,PPdu}) ->
+        supercast_channel:unicast(CState, [PPdu]),
+        monitor:trigger_nchecks_reply(PName, CState)
+    end, PState),
+
+    % is this realy needed?
+    % {ok, _Jobs} = monitor_data_master:iterate(job, fun(J,Acc) ->
+    %     #job{permissions=Perm} = J,
+    %     case supercast:satisfy(CState, Perm) of
+    %         true    ->
+    %             [J|Acc];
+    %         false   ->
+    %             Acc
+    %     end
+    % end),
+    %?LOG_INFO("Should_send_jobs", _Jobs),
 
     EndPdu = monitor_pdu:masterSyncEnd(),
     supercast_channel:unicast(CState, [EndPdu]),
@@ -145,43 +152,54 @@ handle_cast({sync_request, CState}, S) ->
 handle_cast(_R, S) ->
     {noreply, S}.
 
-handle_info({mnesia_table_event, {write, target, Target, [], _ActivityId}}, S) ->
+handle_info({mnesia_table_event,
+        {write, target, Target, [], _ActivityId}}, S) ->
     handle_target_create(Target),
     {noreply, S};
-handle_info({mnesia_table_event, {write, target, Target, [Target], _ActivityId}}, S) ->
+handle_info({mnesia_table_event,
+        {write, target, Target, [Target], _ActivityId}}, S) ->
     % same thing do nothing
     {noreply, S};
-handle_info({mnesia_table_event, {write, target, NewTarget, OldTarget, _ActivityId}}, S) ->
+handle_info({mnesia_table_event,
+        {write, target, NewTarget, OldTarget, _ActivityId}}, S) ->
     handle_target_update(NewTarget, OldTarget),
     {noreply, S};
 
-handle_info({mnesia_table_event, {write, probe, Probe, [], _ActivityId}}, S) ->
+handle_info({mnesia_table_event,
+        {write, probe, Probe, [], _ActivityId}}, S) ->
     handle_probe_create(Probe),
     {noreply, S};
-handle_info({mnesia_table_event, {write, probe, NewProbe, [OldProbe], _ActivityId}}, S) ->
+handle_info({mnesia_table_event,
+        {write, probe, NewProbe, [OldProbe], _ActivityId}}, S) ->
     handle_probe_update(NewProbe, OldProbe),
     {noreply, S};
 
-handle_info({mnesia_table_event, {write, job, Job, [], _ActivityId}}, S) ->
+handle_info({mnesia_table_event,
+        {write, job, Job, [], _ActivityId}}, S) ->
     handle_job_create(Job),
     {noreply, S};
-handle_info({mnesia_table_event, {write, job, Job, [Job], _ActivityId}}, S) ->
+handle_info({mnesia_table_event,
+        {write, job, Job, [Job], _ActivityId}}, S) ->
     % same thing do nothing
     {noreply, S};
-handle_info({mnesia_table_event, {write, job, NewJob, [OldJob], _ActivityId}}, S) ->
+handle_info({mnesia_table_event,
+        {write, job, NewJob, [OldJob], _ActivityId}}, S) ->
     handle_job_update(NewJob, OldJob),
     {noreply, S};
 
 
-handle_info({mnesia_table_event, {write, dependency, Dep, [], _ActivityId}}, S) ->
+handle_info({mnesia_table_event,
+        {write, dependency, Dep, [], _ActivityId}}, S) ->
     handle_dependency_create(Dep),
     {noreply, S};
-handle_info({mnesia_table_event, {write, dependency, Dep, [_OldDep], _ActivityId}}, S) ->
+handle_info({mnesia_table_event,
+        {write, dependency, Dep, [_OldDep], _ActivityId}}, S) ->
     handle_dependency_update(Dep),
     {noreply, S};
 
 
-handle_info({mnesia_table_event, {delete, _Table, What, [OldRecord], _ActivityId}}, S) ->
+handle_info({mnesia_table_event,
+        {delete, _Table, What, [OldRecord], _ActivityId}}, S) ->
     handle_delete(What, OldRecord),
     {noreply, S};
 
