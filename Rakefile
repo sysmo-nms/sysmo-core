@@ -61,6 +61,7 @@ end
 
 desc "Debug build for Erlang"
 task :debug_erl do
+  cd ERLANG_DIR; sh "#{REBAR} get-deps"
   cd ERLANG_DIR; sh "#{REBAR} -D debug -r compile"
 end
 
