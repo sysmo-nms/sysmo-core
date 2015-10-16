@@ -108,11 +108,10 @@ public class CheckNetworkInterfaces implements NChecksInterface, NHelperInterfac
 
 
             // TODO set lower and upper bound indexes
+            OID lowerBoundIndex = null;
+            OID upperBoundIndex = null;
             List<TableEvent> snmpReply = tablewalker.getTable(
-                    target,
-                    columns,
-                    null,
-                    null);
+                    target, columns, lowerBoundIndex, upperBoundIndex);
 
             // TODO degrade to PDU.GETNEXT if some vb(s) == null
             // TODO check if reply is valid. Whereis is the error status?

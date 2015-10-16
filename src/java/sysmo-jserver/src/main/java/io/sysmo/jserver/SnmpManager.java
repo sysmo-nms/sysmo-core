@@ -52,6 +52,7 @@ import org.snmp4j.util.*;
 // AES192_3DES AES256_3DES
 import org.snmp4j.security.nonstandard.*;
 
+// TODO rewrite simplify and comment
 
 public class SnmpManager implements Runnable
 {
@@ -1071,6 +1072,7 @@ class GetNextPDUFactory implements PDUFactory
     }
 
     public PDU createPDU(MessageProcessingModel messageProcessingModel) {
+        // TODO fix check error "unconditional null"
         return createPDU((Target)null);
     }
 }
