@@ -24,15 +24,14 @@ require 'pathname'
 # set dirs
 #
 ROOT       = Dir.pwd
-REBAR_DIR  = File.join(ROOT, "src", "erlang")
-ERLANG_DIR = File.join(ROOT, "src", "erlang", "sysmo")
+ERLANG_DIR = File.join(ROOT, "src", "sysmo")
 JAVA_DIR   = File.join(ROOT, "src", "java")
-GO_DIR     = File.join(ROOT, "src", "go")
+GO_DIR     = File.join(ROOT, "src", "pping")
 
 #
 # set wrappers
 #
-REBAR     = File.join(REBAR_DIR, "rebar")
+REBAR     = File.join(ERLANG_DIR, "rebar")
 GRADLE    = File.join(JAVA_DIR,  "gradlew")
 
 
@@ -121,7 +120,7 @@ task :release_worker => [:java, :pping] do
   FileUtils.mv("src/java/sysmo-jworker/build/install/sysmo-jworker",
                "sysmo-worker")
   FileUtils.mkdir("sysmo-worker/utils")
-  FileUtils.cp("src/go/pping", "sysmo-worker/utils/")
+  FileUtils.cp("src/pping/pping", "sysmo-worker/utils/")
   FileUtils.cp_r("src/ruby/checks", "sysmo-worker/ruby")
   FileUtils.mkdir("sysmo-worker/etc")
 end
