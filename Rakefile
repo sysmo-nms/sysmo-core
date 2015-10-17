@@ -116,13 +116,14 @@ end
 
 task :release_worker => [:java, :pping] do
   cd ROOT
-  jworker_dir = File.join(JAVA_DIR, "sysmo-jworker/build/install/sysmo-jworker")
+  worker_dir = File.join(JAVA_DIR, "sysmo-worker/build/install/sysmo-worker")
   pping_exe = File.join(GO_DIR, "pping")
+  ruby_dir = File.join(JAVA_DIR, "shared/nchecks/ruby")
   FileUtils.rm_rf("sysmo-worker")
-  FileUtils.mv(jworker_dir, "sysmo-worker")
+  FileUtils.mv(worker_dir, "sysmo-worker")
   FileUtils.mkdir("sysmo-worker/utils")
   FileUtils.cp(pping_exe, "sysmo-worker/utils/")
-  FileUtils.cp_r("src/ruby/checks", "sysmo-worker/ruby")
+  FileUtils.cp_r(ruby_dir, "sysmo-worker/ruby")
   FileUtils.mkdir("sysmo-worker/etc")
 end
 

@@ -72,10 +72,10 @@ project(':sysmo-jserver') {
     }
 }
 
-project(':sysmo-jworker') {
+project(':sysmo-worker') {
     apply plugin: 'application'
 
-    mainClassName = 'io.sysmo.jworker.SysmoWorker'
+    mainClassName = 'io.sysmo.worker.SysmoWorker'
     applicationDefaultJvmArgs = [
             "-server",
             "-Duser.language=en", "-Duser.country=US"]

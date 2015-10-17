@@ -19,7 +19,7 @@
  * along with Sysmo.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package io.sysmo.jworker;
+package io.sysmo.worker;
 
 import com.ericsson.otp.erlang.OtpErlangAtom;
 import com.ericsson.otp.erlang.OtpErlangInt;
@@ -48,7 +48,7 @@ import java.util.Properties;
 public class SysmoWorker {
 
     static boolean active = true;
-    static final String selfShortName = "jworker";
+    static final String selfShortName = "worker";
     static final int ACK_TIMEOUT = 5000;
     static final int PING_TIMEOUT = 2000;
     static final int RETRY_TIMEOUT = 2000;
@@ -67,7 +67,7 @@ public class SysmoWorker {
             configFile = args[0];
         } catch (ArrayIndexOutOfBoundsException e) {
             // try default config file location
-            configFile = "/etc/sysmo-jworker.properties";
+            configFile = "/etc/sysmo-worker.properties";
         }
 
         try {
@@ -87,7 +87,7 @@ public class SysmoWorker {
             return;
         }
         Logger logger = LoggerFactory.getLogger(SysmoWorker.class);
-        logger.info("jworker started");
+        logger.info("worker started");
 
         Runtime.getRuntime().addShutdownHook(
                 new Thread() {

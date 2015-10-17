@@ -31,14 +31,6 @@ pping.exe
 # local TODO files
 *TODO*
 
-# eclipse
-/src/java/*/.project
-/src/java/*/.metadata
-/src/java/*/.classpath
-/src/java/*/.settings
-/src/java/*/bin
-/src/java/*.log
-
 # intellij
 *.iml
 .idea

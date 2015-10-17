@@ -1,3 +1,3 @@
 include 'shared:nchecks'
 include 'sysmo-jserver'
-include 'sysmo-jworker'
+include 'sysmo-worker'
