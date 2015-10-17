@@ -84,7 +84,7 @@ handle_cast({sync_request, CState}, S) ->
     file:make_dir(DumpPath),
 
     % dump latest SQL events to dump path
-    {ok, LatestEventsFile} = eventdb:dump_latest_events(DumpPath),
+    {ok, LatestEventsFile} = j_server_eventdb:dump_latest_events(DumpPath),
 
     % build and send pdu for client
     BeginPdu = monitor_pdu:masterSyncBegin(TmpDir,LatestEventsFile),

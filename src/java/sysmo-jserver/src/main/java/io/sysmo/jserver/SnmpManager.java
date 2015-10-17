@@ -178,7 +178,7 @@ public class SnmpManager implements Runnable
         synchronized(SnmpManager.lock)
         {
             SnmpManager.instance.mbox.send(
-                    "snmpman", SnmpManager.instance.nodeName, tuple);
+                    "j_server_snmpman", SnmpManager.instance.nodeName, tuple);
         }
     }
 

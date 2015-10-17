@@ -98,7 +98,7 @@ handle_call({notify_move, Name, CheckId, Descr, Status,
                target_contact=TargetContact},
     ets:insert(Nt, Notif),
     ets:insert(Mv, Notif),
-    eventdb:notify(Notif),
+    j_server_eventdb:notify(Notif),
     {reply, ok, S};
 
 handle_call(_R,_F,S) ->

@@ -599,7 +599,7 @@ public class EventDb implements Runnable
         obj[1] = to;
         obj[2] = msg;
         OtpErlangTuple tuple = new OtpErlangTuple(obj);
-        this.mbox.send("eventdb", this.foreignNodeName, tuple);
+        this.mbox.send("j_server_eventdb", this.foreignNodeName, tuple);
     }
 
     private OtpErlangTuple buildErrorReply(OtpErlangObject msg)

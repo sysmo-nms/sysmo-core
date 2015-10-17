@@ -27,7 +27,7 @@
 -export([update_snmp_system_info/1, update_snmp_if_aliases/1]).
 
 update_snmp_system_info(TargetKey) ->
-    case snmpman:get(TargetKey, [
+    case j_server_snmpman:get(TargetKey, [
         ?SYS_DESCR,
         ?SYS_OBJECTID,
         ?SYS_CONTACT,
@@ -90,11 +90,11 @@ update_snmp_system_info(TargetKey) ->
 
 
 update_snmp_if_aliases(TargetKey) ->
-    IfNames = snmpman:walk_table(TargetKey, [
+    IfNames = j_server_snmpman:walk_table(TargetKey, [
         "1.3.6.1.2.1.2.2.1.1",
         "1.3.6.1.2.1.2.2.1.2"
     ]),
-    IfAliases = snmpman:walk_table(TargetKey, [
+    IfAliases = j_server_snmpman:walk_table(TargetKey, [
         "1.3.6.1.2.1.31.1.1.1.1",
         "1.3.6.1.2.1.31.1.1.1.18"
     ]),

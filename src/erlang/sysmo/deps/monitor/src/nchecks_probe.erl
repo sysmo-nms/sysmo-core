@@ -152,7 +152,7 @@ do_sync_request(CState, #state{name=Name}) ->
     file:make_dir(DumpPath),
 
     % probe events table
-    {ok, EventFile} = eventdb:dump_probe_events(DumpPath, Name),
+    {ok, EventFile} = j_server_eventdb:dump_probe_events(DumpPath, Name),
 
     % generate the rrd file
     {Type, RrdCfg}  = ES#ets_state.local_state#nchecks_state.rrd_config,
@@ -309,7 +309,7 @@ do_handle_nchecks_reply(PR, #state{name=Name,ref=Ref} = S) ->
                         S#state.name,PR#nchecks_reply.timestamp, []);
 
                 [{"simple",Perfs}] ->
-                    (catch  errd4j:update(RrdFile, Perfs, Ts)),
+                    (catch  j_server_errd4j:update(RrdFile, Perfs, Ts)),
                     UpdatePdu = monitor_pdu:nchecksSimpleUpdateMessage(
                         S#state.name,PR#nchecks_reply.timestamp,Perfs)
             end;
@@ -319,7 +319,7 @@ do_handle_nchecks_reply(PR, #state{name=Name,ref=Ref} = S) ->
             RrdMultiUpdates = [
                 {lists:flatten([BasePrefix, XE, Suffix]), XP, Ts}
                     || {XE,XP} <- Pfs],
-            (catch errd4j:multi_update(RrdMultiUpdates)),
+            (catch j_server_errd4j:multi_update(RrdMultiUpdates)),
             UpdatePdu = monitor_pdu:nchecksTableUpdateMessage(
                                      S#state.name,PR#nchecks_reply.timestamp,Pfs)
     end,
@@ -366,7 +366,7 @@ do_take_of(#state{ref=Ref,name=PName}) ->
     end).
 
 exec_nchecks(Class, Args, Opaque) ->
-    case (catch(nchecks:check(Class,Args,Opaque))) of
+    case (catch(j_server_nchecks:check(Class,Args,Opaque))) of
          {ok, Reply} -> ProbeReturn = Reply;
          Error ->
             % An error occured.
@@ -608,7 +608,7 @@ rrd4j_init(ProbeName, Step, Args, TargetDir, XCheck_Content) ->
                 case filelib:is_regular(FilePath) of
                     true  -> ok;
                     false ->
-                        case (catch errd4j:create(
+                        case (catch j_server_errd4j:create(
                                   FilePath, Step, DSDefinitions, "default")) of
                             ok    -> ok;
                             Error ->
@@ -641,7 +641,7 @@ rrd4j_init(ProbeName, Step, Args, TargetDir, XCheck_Content) ->
                     DSDefinitions = build_DS_Def(XPerformances_Content, Step),
                     % Create rrd file.
 
-                    case (catch errd4j:create(
+                    case (catch j_server_errd4j:create(
                                   RrdFilePath,Step, DSDefinitions,"default")) of
                         ok    -> ok;
                         Error ->

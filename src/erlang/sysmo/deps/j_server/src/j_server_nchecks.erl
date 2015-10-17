@@ -18,7 +18,7 @@
 % OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 % THE SOFTWARE.
 
--module(nchecks).
+-module(j_server_nchecks).
 -include("nchecks.hrl").
 -include_lib("common_hrl/include/logs.hrl").
 -behaviour(gen_server).

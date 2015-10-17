@@ -139,7 +139,7 @@ handle_cast({{"ncheckHelperQuery", Contents}, CState}, S) ->
     Class  = binary_to_list(proplists:get_value(<<"class">>,  Contents2)),
     HId    = binary_to_list(proplists:get_value(<<"id">>,     Contents2)),
     Props  = get_snmp_args(Target),
-    case (catch nchecks:helper(Class, HId, Props)) of
+    case (catch j_server_nchecks:helper(Class, HId, Props)) of
         {ok, Reply} ->
             ReplyPDU = monitor_pdu:nchecksHelperReply(QueryId, Class, Reply),
             supercast_channel:unicast(CState, [ReplyPDU]);

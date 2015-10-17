@@ -159,7 +159,7 @@ public class RrdLogger implements Runnable
         synchronized(RrdLogger.instance.lock)
         {
             RrdLogger.instance.mbox.send(
-                    "errd4j", RrdLogger.instance.nodeName, tuple);
+                    "j_server_errd4j", RrdLogger.instance.nodeName, tuple);
         }
     }
 

@@ -18,8 +18,8 @@
 % OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 % THE SOFTWARE.
 
--module(errd4j).
--include("errd4j.hrl").
+-module(j_server_eventdb).
+-include("eventdb.hrl").
 -include_lib("common_hrl/include/logs.hrl").
 -behaviour(gen_server).
 
@@ -29,10 +29,7 @@
 
 -export([start_link/0]).
 
--export([create/3, create/4, multi_create/1, update/3, multi_update/1]).
-% MAYBE export
-%update_fetch/0,
-%updates_fetch/0,
+-export([notify/1, dump_latest_events/1, dump_probe_events/2]).
 
 -record(state, {java_pid}).
 
@@ -40,59 +37,29 @@
 -define(CALL_TIMEOUT,   10000).
 
 
--spec multi_update(Updates::[tuple()]) -> ok.
+-spec notify(Notif::#notification{}) -> ok.
+notify(Notif) ->
+    gen_server:cast(?MODULE, {notify, Notif}).
+
+
+-spec dump_latest_events(DumpDir::string()) ->
+                    {ok, FileName::string()} | {error, Error::string()}.
 % @doc
-% Send multiple update/3 in one call. Arg is a list of tuple.
-% Each tuple have the same content as update/3.
+% return two latests months of events in json file.
 % @end
-multi_update([]) -> ok;
-multi_update(Updates) ->
-    gen_server:call(?MODULE, {call_errd4j, {multi_update, {Updates}}},
-                    ?CALL_TIMEOUT).
+dump_latest_events(DumpDir) ->
+    gen_server:call(?MODULE,
+         {call_eventdb, {dump_latest_events, DumpDir}}, ?CALL_TIMEOUT).
 
--spec update(File::string(), Updates::{string(), integer()},
-             Timstamp::integer()) -> ok.
+
+-spec dump_probe_events(DumpDir::string(), Probe::string()) ->
+                    {ok, FileName::string()} | {error, Error::string()}.
 % @doc
-% Execute an update to a single rrdfile.
-% example: Updates = [{"MaxRoundTrip", 3000}, {"MinRoundTrip", 399}],
+% return all events for probe Probe in json file.
 % @end
-update(File, Updates, Timestamp) ->
-    Args = {File, Updates, Timestamp},
-    gen_server:call(?MODULE, {call_errd4j, {update, Args}}, ?CALL_TIMEOUT).
-
-
--spec multi_create(Args::list()) -> ok.
-% @doc
-% Send multiple create command in one call. Args is a list of tuples with the
-% same elements as in create/4 call.
-% Example = [{"jojo.rrd",300,
-%   [{"speed", "COUNTER", 600, 0, 'Nan'}],"default"}...]
-% @end
-multi_create(Args) ->
-    gen_server:call(?MODULE, 
-                    {call_errd4j, {multi_create, {Args}}}, ?CALL_TIMEOUT).
-
-
--spec create(File::string(), Step::integer(), DDs::[]) -> ok.
-% @doc
-% Same as create(File,Step,DDs,"default")
-% @end
-create(File,Step, DSs) ->
-    create(File,Step,DSs,"default").
-
--spec create(File::string(), Step::integer(), DSs::[], RRAType::string()) -> ok.
-% @doc
-% Where RRAType is "default" or "precise"
-% File: a string represnting the rrd file created
-% Step: an integer
-% DSs: [{DsName::string(), DsType::string(), HeartBeat::integer(), Min::integer(), Max::integer()}]
-%   example: [{"speed", "COUNTER", 600, 0, 'Nan'}]
-% @end
-create(File, Step, DSs, RRAType) ->
-    Args = {File,Step,DSs,RRAType},
-    gen_server:call(?MODULE, {call_errd4j, {create, Args}}).
-
-
+dump_probe_events(DumpDir, Probe) ->
+    gen_server:call(?MODULE,
+         {call_eventdb, {dump_probe_events, {Probe, DumpDir}}}, ?CALL_TIMEOUT).
 
 % @private
 start_link() ->
@@ -102,20 +69,25 @@ start_link() ->
 % GEN_SERVER
 % @private
 init([]) ->
-    JavaPid = j_server:get_pid(rrd4j),
+    JavaPid = j_server:get_pid(eventdb),
     ?LOG_INFO("success pid", JavaPid),
     {ok, #state{java_pid=JavaPid}}.
 
 % CALL
 % @private
-handle_call({call_errd4j, {Command, Payload}}, From, S) ->
+handle_call({call_eventdb, {Command, Payload}}, From, S) ->
     S#state.java_pid ! {Command, From, Payload},
     {noreply, S}.
 
 
 % CAST
 % @private
-handle_cast(_,S) ->
+handle_cast(Msg, #state{java_pid=Pid} = S) ->
+    Pid ! Msg,
+    {noreply, S};
+
+handle_cast(_C,S) ->
+    ?LOG_INFO("Unknown cast", _C),
     {noreply, S}.
 
 
@@ -129,7 +101,7 @@ handle_info({reply, From, Reply}, S) ->
     {noreply, S};
 
 handle_info({'EXIT', Pid, Reason}, #state{java_pid = Pid} = S) ->
-    ?LOG_WARNING("rrd4j EXIT with reason:", Reason),
+    ?LOG_WARNING("eventdb EXIT with reason:", Reason),
     {stop, Reason, S};
 
 handle_info(_I, S) ->

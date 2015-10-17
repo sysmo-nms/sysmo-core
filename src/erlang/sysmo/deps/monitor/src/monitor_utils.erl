@@ -70,9 +70,9 @@ init_target_snmp(Target) ->
                 {retries,           SnmpRetries},
                 {security_name,     SnmpUsmUser}
             ],
-            snmpman:register_element(Target#target.name, SnmpArgs)
+            j_server_snmpman:register_element(Target#target.name, SnmpArgs)
     end.
 
 
 cleanup_target_snmp(Target) ->
-    spawn(fun() -> snmpman:unregister_element(Target) end).
+    spawn(fun() -> j_server_snmpman:unregister_element(Target) end).

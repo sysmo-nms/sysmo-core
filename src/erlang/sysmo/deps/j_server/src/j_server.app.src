@@ -5,9 +5,9 @@
         {modules, []},
         {registered,
             [
-                nchecks,
-                snmpman,
-                errd4j,
+                j_server_nchecks,
+                j_server_snmpman,
+                j_server_errd4j,
                 j_server_sup,
                 j_server
             ]

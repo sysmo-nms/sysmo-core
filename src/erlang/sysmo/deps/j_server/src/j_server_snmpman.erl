@@ -18,7 +18,7 @@
 % OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 % THE SOFTWARE.
 
--module(snmpman).
+-module(j_server_snmpman).
 -include("snmpman.hrl").
 -include_lib("common_hrl/include/logs.hrl").
 -behaviour(gen_server).

@@ -18,7 +18,7 @@
 % OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 % THE SOFTWARE.
 % @private
--module(snmpman_guard).
+-module(j_server_snmpman_guard).
 -include("snmpman.hrl").
 -export([validate_discovery_conf/4, validate_register_conf/1, validate_oids/1]).
 

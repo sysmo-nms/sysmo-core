@@ -22,36 +22,36 @@ init([]) ->
                     [j_server]
                 },
                 {
-                    nchecks,
-                    {nchecks, start_link, []},
+                    j_server_nchecks,
+                    {j_server_nchecks, start_link, []},
                     permanent,
                     2000,
                     worker,
-                    [nchecks]
+                    [j_server_nchecks]
                 },
                 {
-                    errd4j,
-                    {errd4j, start_link, []},
+                    j_server_errd4j,
+                    {j_server_errd4j, start_link, []},
                     permanent,
                     2000,
                     worker,
-                    [errd4j]
+                    [j_server_errd4j]
                 },
                 {
-                    snmpman,
-                    {snmpman, start_link, []},
+                    j_server_snmpman,
+                    {j_server_snmpman, start_link, []},
                     permanent,
                     2000,
                     worker,
-                    [snmpman]
+                    [j_server_snmpman]
                 },
                 {
-                    eventdb,
-                    {eventdb, start_link, []},
+                    j_server_eventdb,
+                    {j_server_eventdb, start_link, []},
                     permanent,
                     2000,
                     worker,
-                    [eventdb]
+                    [j_server_eventdb]
                 }
             ]
         }

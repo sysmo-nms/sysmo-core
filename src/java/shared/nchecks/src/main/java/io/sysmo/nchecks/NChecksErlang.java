@@ -134,7 +134,7 @@ public class NChecksErlang implements Runnable
         synchronized(NChecksErlang.lock)
         {
             NChecksErlang.instance.mbox.send(
-                    "nchecks", NChecksErlang.instance.nodeName, tuple);
+                    "j_server_nchecks", NChecksErlang.instance.nodeName, tuple);
         }
     }
 

@@ -146,7 +146,7 @@ public class SysmoWorker {
             readyObj[3] = nchecksMbox.self();
             readyObj[4] = new OtpErlangInt(weight);
             OtpErlangTuple ackTuple = new OtpErlangTuple(readyObj);
-            mainMbox.send("nchecks", masterNode, ackTuple);
+            mainMbox.send("j_server_nchecks", masterNode, ackTuple);
             logger.info("availability object sent, waiting for ack");
 
             try {
