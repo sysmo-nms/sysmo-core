@@ -7,7 +7,7 @@
 *~
 
 # supercast repository
-/src/erlang/sysmo/deps/supercast
+/src/sysmo/deps/supercast
 
 # erlang crashs/builds
 *.dump
