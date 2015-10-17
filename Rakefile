@@ -25,7 +25,7 @@ require 'pathname'
 #
 ROOT       = Dir.pwd
 ERLANG_DIR = File.join(ROOT, "src", "sysmo")
-JAVA_DIR   = File.join(ROOT, "src", "java")
+JAVA_DIR   = File.join(ROOT, "src", "sysmo-java")
 GO_DIR     = File.join(ROOT, "src", "pping")
 
 #
@@ -116,11 +116,12 @@ end
 
 task :release_worker => [:java, :pping] do
   cd ROOT
+  jworker_dir = File.join(JAVA_DIR, "sysmo-jworker/build/install/sysmo-jworker")
+  pping_exe = File.join(GO_DIR, "pping")
   FileUtils.rm_rf("sysmo-worker")
-  FileUtils.mv("src/java/sysmo-jworker/build/install/sysmo-jworker",
-               "sysmo-worker")
+  FileUtils.mv(jworker_dir, "sysmo-worker")
   FileUtils.mkdir("sysmo-worker/utils")
-  FileUtils.cp("src/pping/pping", "sysmo-worker/utils/")
+  FileUtils.cp(pping_exe, "sysmo-worker/utils/")
   FileUtils.cp_r("src/ruby/checks", "sysmo-worker/ruby")
   FileUtils.mkdir("sysmo-worker/etc")
 end
