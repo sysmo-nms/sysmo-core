@@ -20,7 +20,7 @@
  */
 package io.sysmo.nchecks;
 
-public interface NHelperInterface
+public interface HelperInterface
 {
-    NHelperReply callHelper(Query query, String id);
+    HelperReply callHelper(Query query, String id);
 }

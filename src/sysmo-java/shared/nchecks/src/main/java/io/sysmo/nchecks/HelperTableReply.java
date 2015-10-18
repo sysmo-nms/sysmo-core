@@ -39,21 +39,21 @@ import javax.json.JsonObjectBuilder;
  * to "value". See tutorials for more informations
  */
 
-public class NHelperTableReply implements NHelperReply
+public class HelperTableReply implements HelperReply
 {
 
     public static final String SELECT_SINGLE   = "single";
     public static final String SELECT_MULTIPLE = "multiple";
     private String messageId = "";
     private String message   = "";
-    private String status    = NHelperReply.SUCCESS;
+    private String status    = HelperReply.SUCCESS;
     private String treeRoot  = "";
     private String select    = "";
     private String selectionType = "";
     private String listSeparator = "";
 
-    private ArrayList<NHelperTableRow> rows;
-    public NHelperTableReply() {
+    private ArrayList<HelperTableRow> rows;
+    public HelperTableReply() {
         rows = new ArrayList<>();
     }
 
@@ -61,7 +61,7 @@ public class NHelperTableReply implements NHelperReply
     /*
     *  Add a HelperTableRow to the table.
     */
-    public void addRow(NHelperTableRow row) {
+    public void addRow(HelperTableRow row) {
         rows.add(row);
     }
 
@@ -74,7 +74,7 @@ public class NHelperTableReply implements NHelperReply
 
     /*
     *  Set the status
-    * (NHelperReply.SUCCESS | NHelperReply.FAILURE)
+    * (HelperReply.SUCCESS | HelperReply.FAILURE)
     */
     public void setStatus(String val) { status = val; }
 
@@ -95,7 +95,7 @@ public class NHelperTableReply implements NHelperReply
 
     /*
      * Set the selectType
-    * (NHelperReply.SINGLE | NHelperReply.MULTIPLE)
+    * (HelperReply.SINGLE | HelperReply.MULTIPLE)
      */
     public void setSelectType(String val) {selectionType = val; }
 
@@ -114,15 +114,15 @@ public class NHelperTableReply implements NHelperReply
         JsonObjectBuilder   objectBuilder   = factory.createObjectBuilder();
         JsonArrayBuilder    arrayBuilder    = factory.createArrayBuilder();
 
-        Iterator<NHelperTableRow> it = rows.iterator();
+        Iterator<HelperTableRow> it = rows.iterator();
 
         while (it.hasNext()) {
-            NHelperTableRow              row     = it.next();
+            HelperTableRow row     = it.next();
             JsonObjectBuilder            rowObj  = factory.createObjectBuilder();
-            List<NHelperTableItem>       items   = row.getItems();
-            Iterator<NHelperTableItem>   tit     = items.iterator();
+            List<HelperTableItem>       items   = row.getItems();
+            Iterator<HelperTableItem>   tit     = items.iterator();
             while(tit.hasNext()) {
-                NHelperTableItem item  = tit.next();
+                HelperTableItem item  = tit.next();
                 String           key   = item.getColumn();
                 String           value = item.getValue();
                 rowObj.add(item.getColumn(), item.getValue());

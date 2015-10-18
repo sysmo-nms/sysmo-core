@@ -21,15 +21,28 @@
 
 package io.sysmo.nchecks;
 
-public class NHelperTableItem
+import java.util.List;
+import java.util.ArrayList;
+
+public class HelperTableRow
 {
-    public String key;
-    public String val;
-    public NHelperTableItem(String key, String val) {
-        this.key = key;
-        this.val = val;
+    private ArrayList<HelperTableItem> items;
+
+    public HelperTableRow() {
+        items = new ArrayList<>();
     }
 
-    public String getColumn() { return this.key; }
-    public String getValue() { return this.val; }
+    /*
+    * Add the string value "value" to the column "column".
+    */
+    public void addItem(String column, String value) {
+        items.add(new HelperTableItem(column, value));
+    }
+
+    /*
+    * Return the list of HelperTableItem for the row.
+    */
+    public List<HelperTableItem> getItems() {
+        return items;
+    }
 }

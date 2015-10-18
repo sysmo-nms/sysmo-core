@@ -18,31 +18,12 @@
  * You should have received a copy of the GNU General Public License
  * along with Sysmo.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package io.sysmo.nchecks;
 
-import java.util.List;
-import java.util.ArrayList;
-
-public class NHelperTableRow
+public interface HelperReply
 {
-    private ArrayList<NHelperTableItem> items;
+    String SUCCESS = "success";
+    String FAILURE = "failure";
 
-    public NHelperTableRow() {
-        items = new ArrayList<>();
-    }
-
-    /*
-    * Add the string value "value" to the column "column".
-    */
-    public void addItem(String column, String value) {
-        items.add(new NHelperTableItem(column, value));
-    }
-
-    /*
-    * Return the list of NHelperTableItem for the row.
-    */
-    public List<NHelperTableItem> getItems() {
-        return items;
-    }
+    char[] toCharArray();
 }

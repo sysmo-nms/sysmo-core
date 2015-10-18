@@ -257,7 +257,7 @@ public class EventDb implements Runnable
         }
     }
 
-
+    @Override
     public void run() {
         // begin to loop and wait for calls (select) or casts (insert)
         this.logger.info("begin to loop");

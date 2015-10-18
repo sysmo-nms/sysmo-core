@@ -30,7 +30,7 @@ import org.jruby.embed.ScriptingContainer;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
-public class CheckViaJRuby implements NChecksInterface //, NHelperInterface
+public class CheckViaJRuby implements NChecksInterface //, HelperInterface
 {
     private static Logger logger = LoggerFactory.getLogger(CheckViaJRuby.class);
 
@@ -64,7 +64,7 @@ public class CheckViaJRuby implements NChecksInterface //, NHelperInterface
     }
 
     /*
-    public NHelperReply callHelper(Query query, String id)
+    public HelperReply callHelper(Query query, String id)
     {
         // TODO implement helper for ruby
     }

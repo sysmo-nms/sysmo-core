@@ -18,12 +18,18 @@
  * You should have received a copy of the GNU General Public License
  * along with Sysmo.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package io.sysmo.nchecks;
 
-public interface NHelperReply
+public class HelperTableItem
 {
-    String SUCCESS = "success";
-    String FAILURE = "failure";
+    public String key;
+    public String val;
+    public HelperTableItem(String key, String val) {
+        this.key = key;
+        this.val = val;
+    }
 
-    char[] toCharArray();
+    public String getColumn() { return this.key; }
+    public String getValue() { return this.val; }
 }

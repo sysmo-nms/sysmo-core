@@ -388,7 +388,7 @@ class NChecksRunnable implements Runnable, CheckCaller
 
 class NHelperRunnable implements Runnable, CheckCaller
 {
-    private NHelperInterface helper;
+    private HelperInterface helper;
     private String            helper_id;
     private OtpErlangObject   caller;
     private OtpErlangList     args;
@@ -399,7 +399,7 @@ class NHelperRunnable implements Runnable, CheckCaller
             final OtpErlangObject callerObj,
             final OtpErlangList argsList)
     {
-        this.helper    = (NHelperInterface) helpObj;
+        this.helper    = (HelperInterface) helpObj;
         this.helper_id = id;
         this.caller    = callerObj;
         this.args      = argsList;
@@ -409,7 +409,7 @@ class NHelperRunnable implements Runnable, CheckCaller
     public void run()
     {
         Query query = new Query(NChecksErlang.decodeArgs(this.args));
-        NHelperReply helperReply = helper.callHelper(query, this.helper_id);
+        HelperReply helperReply = helper.callHelper(query, this.helper_id);
         OtpErlangList jsonCharList =
                 this.buildErlangCharList(helperReply.toCharArray());
         OtpErlangObject replyMsg = NChecksErlang.buildOkReply(jsonCharList);

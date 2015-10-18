@@ -33,23 +33,23 @@ import javax.json.JsonObjectBuilder;
 * to "value". See tutorials on Nchecks Helpers xml for more informations
 */
 
-public class NHelperSimpleReply implements NHelperReply
+public class HelperSimpleReply implements HelperReply
 {
 
     private String  messageId   = "";
     private String  message     = "";
     private String  value       = "";
-    private String  status      = NHelperReply.SUCCESS;
+    private String  status      = HelperReply.SUCCESS;
 
-    public NHelperSimpleReply() {}
+    public HelperSimpleReply() {}
 
     /*
     * Set the identifier of the reply
     */
     public void setId(String val)  { this.messageId = val; }
 
-    /* set the status of the reply. Must be NHelperReply.SUCCESS or
-    * NHelperReply.FAILURE.
+    /* set the status of the reply. Must be HelperReply.SUCCESS or
+    * HelperReply.FAILURE.
     */
     public void setStatus(String val) { this.status = val; }
 
