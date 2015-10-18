@@ -101,7 +101,7 @@ public class CheckNetworkInterfaces implements NChecksInterface, NHelperInterfac
 
             // TODO try PDU.GETBULK then PDU.GETNEXT to degrade....
             // TODO keep degrade state in reply.setOpaqueData(v)
-            TableUtils tablewalker =
+            TableUtils tableWalker =
                 new TableUtils(
                         session,
                         new DefaultPDUFactory(PDU.GETNEXT));
@@ -110,7 +110,7 @@ public class CheckNetworkInterfaces implements NChecksInterface, NHelperInterfac
             // TODO set lower and upper bound indexes
             OID lowerBoundIndex = null;
             OID upperBoundIndex = null;
-            List<TableEvent> snmpReply = tablewalker.getTable(
+            List<TableEvent> snmpReply = tableWalker.getTable(
                     target, columns, lowerBoundIndex, upperBoundIndex);
 
             // TODO degrade to PDU.GETNEXT if some vb(s) == null
@@ -230,12 +230,12 @@ class GetIfTableHelper
             AbstractTarget target = NChecksSNMP.getInstance().getTarget(query);
 
             Snmp session = NChecksSNMP.getInstance().getSnmpSession();
-            TableUtils tablewalker =
+            TableUtils tableWalker =
                 new TableUtils(
                         session,
                         new DefaultPDUFactory(PDU.GETNEXT));
 
-            List<TableEvent> snmpReply = tablewalker.getTable(
+            List<TableEvent> snmpReply = tableWalker.getTable(
                     target,
                     columns,
                     null,
