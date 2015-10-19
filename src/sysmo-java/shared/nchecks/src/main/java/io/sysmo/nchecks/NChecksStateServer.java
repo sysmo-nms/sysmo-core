@@ -39,7 +39,8 @@ import java.net.Socket;
  * TODO Provide berkley db store for NChecks modules state.
  */
 public class NChecksStateServer {
-    private static Database db;
+    private static NChecksStateServer instance;
+    private Database db;
 
     public static synchronized void getState(String key) {
 
@@ -49,13 +50,19 @@ public class NChecksStateServer {
 
     }
     public static void startStateServer() {
+        if (NChecksStateServer.instance == null) {
+            NChecksStateServer.instance = new NChecksStateServer();
+        }
+    }
+
+    private NChecksStateServer() {
         // init db
         File home = new File("./states");
         Environment env = new Environment(home, null);
         DatabaseConfig dbConfig = new DatabaseConfig();
         dbConfig.setAllowCreate(true);
         dbConfig.setTemporary(true);
-        NChecksStateServer.db = env.openDatabase(null, "nchecks_states", dbConfig);
+        this.db = env.openDatabase(null, "nchecks_states", dbConfig);
 
         // populate test
         String aKey = "key";
@@ -63,7 +70,7 @@ public class NChecksStateServer {
         try {
             DatabaseEntry theKey = new DatabaseEntry(aKey.getBytes("UTF-8"));
             DatabaseEntry theData = new DatabaseEntry(aData.getBytes("UTF-8"));
-            NChecksStateServer.db.put(null, theKey, theData);
+            this.db.put(null, theKey, theData);
         } catch (UnsupportedEncodingException e) {
             // exception
         }
@@ -72,7 +79,7 @@ public class NChecksStateServer {
         try {
             DatabaseEntry theKey = new DatabaseEntry("key".getBytes("UTF-8"));
             DatabaseEntry theData = new DatabaseEntry();
-            if (NChecksStateServer.db.get(null, theKey, theData, LockMode.DEFAULT) ==
+            if (this.db.get(null, theKey, theData, LockMode.DEFAULT) ==
                     OperationStatus.SUCCESS) {
                 byte[] originalData = theData.getData();
                 String strData = new String(originalData, "UTF-8");
@@ -106,17 +113,18 @@ public class NChecksStateServer {
 
         // close
     }
-}
 
-class StateStoreClient implements Runnable {
+    // utility classes
+    class StateStoreClient implements Runnable {
 
-    StateStoreClient(Socket client) {
+        StateStoreClient(Socket client) {
 
-    }
+        }
 
-    @Override
-    public void run() {
-        // handle client socket read write
+        @Override
+        public void run() {
+            // handle client socket read write
 
+        }
     }
 }

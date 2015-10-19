@@ -247,8 +247,8 @@ public class NChecksErlang implements Runnable
         {
             NChecksErlang.logger.error(e.getMessage(), e);
             OtpErlangTuple reply = buildErrorReply(
-                new OtpErlangString("NChecksErlang error: " + e
-                    + " " + command.toString() + " -> " + e.getMessage())
+                    new OtpErlangString("NChecksErlang error: " + e
+                            + " " + command.toString() + " -> " + e.getMessage())
             );
             NChecksErlang.sendReply(caller, reply);
         }
@@ -264,14 +264,14 @@ public class NChecksErlang implements Runnable
             element             = (OtpErlangTuple) (itr.next());
             OtpErlangString key = (OtpErlangString) (element.elementAt(0));
             OtpErlangObject val = element.elementAt(1);
-            if (val.getClass() == OtpErlangString.class)
-            {
+            if (val.getClass() == OtpErlangString.class) {
                 OtpErlangString valStr = (OtpErlangString) (element.elementAt(1));
                 Argument a = new Argument();
                 a.set(valStr.stringValue());
                 result.put(key.stringValue(), a);
             } else {
                 // Actualy only string arguments are accepted
+                NChecksErlang.logger.info("Unknown arg type: " + val);
             }
         }
         return result;
@@ -332,99 +332,98 @@ public class NChecksErlang implements Runnable
     }
     */
 
-}
 
-interface CheckCaller
-{
-    OtpErlangObject getCaller();
-}
-
-
-class NChecksPoolReject implements RejectedExecutionHandler
-{
-    private static OtpErlangString errMsg =
-            new OtpErlangString("NChecksErlang thread queue is full");
-
-    public void rejectedExecution(Runnable r, ThreadPoolExecutor executor)
+    interface CheckCaller
     {
-        CheckCaller ncheckRun = (CheckCaller) r;
-        OtpErlangObject caller = ncheckRun.getCaller();
-        OtpErlangObject reply = NChecksErlang.buildQueueFullReply(errMsg);
-        NChecksErlang.sendReply(caller, reply);
-    }
-}
-
-class NChecksRunnable implements Runnable, CheckCaller
-{
-    private NChecksInterface check;
-    private OtpErlangObject  caller;
-    private OtpErlangList    args;
-    private OtpErlangBinary  opaqueData;
-
-    public NChecksRunnable(
-            Object          checkObj,
-            OtpErlangObject callerObj,
-            OtpErlangList   argsList,
-            OtpErlangBinary opaque)
-    {
-        this.check   = (NChecksInterface) checkObj;
-        this.caller  = callerObj;
-        this.args    = argsList;
-        this.opaqueData = opaque;
+        OtpErlangObject getCaller();
     }
 
-    @Override
-    public void run()
+
+    class NChecksPoolReject implements RejectedExecutionHandler
     {
-        Query query = new Query(NChecksErlang.decodeArgs(
-                this.args), this.opaqueData.binaryValue());
-        Reply reply = this.check.execute(query);
-        OtpErlangObject replyMsg = NChecksErlang.buildOkReply(reply.asTuple());
-        NChecksErlang.sendReply(this.caller, replyMsg);
-    }
-
-    public OtpErlangObject getCaller() {return this.caller;}
-}
-
-class NHelperRunnable implements Runnable, CheckCaller
-{
-    private HelperInterface helper;
-    private String            helper_id;
-    private OtpErlangObject   caller;
-    private OtpErlangList     args;
-
-    public NHelperRunnable(
-            final Object helpObj,
-            final String id,
-            final OtpErlangObject callerObj,
-            final OtpErlangList argsList)
-    {
-        this.helper    = (HelperInterface) helpObj;
-        this.helper_id = id;
-        this.caller    = callerObj;
-        this.args      = argsList;
-    }
-
-    @Override
-    public void run()
-    {
-        Query query = new Query(NChecksErlang.decodeArgs(this.args));
-        HelperReply helperReply = helper.callHelper(query, this.helper_id);
-        OtpErlangList jsonCharList =
-                this.buildErlangCharList(helperReply.toCharArray());
-        OtpErlangObject replyMsg = NChecksErlang.buildOkReply(jsonCharList);
-        NChecksErlang.sendReply(this.caller, replyMsg);
-    }
-
-    public OtpErlangObject getCaller() {return this.caller;}
-
-    private OtpErlangList buildErlangCharList(char[] charList)
-    {
-        OtpErlangObject[] objList = new OtpErlangObject[charList.length];
-        for (int i = 0; i < charList.length; i++)
+        public void rejectedExecution(Runnable r, ThreadPoolExecutor executor)
         {
-            objList[i] = new OtpErlangChar(charList[i]);
+            OtpErlangString errMsg =
+                    new OtpErlangString("NChecksErlang thread queue is full");
+            CheckCaller ncheckRun = (CheckCaller) r;
+            OtpErlangObject caller = ncheckRun.getCaller();
+            OtpErlangObject reply = NChecksErlang.buildQueueFullReply(errMsg);
+            NChecksErlang.sendReply(caller, reply);
         }
-        return new OtpErlangList(objList);
+    }
+
+    class NChecksRunnable implements Runnable, CheckCaller
+    {
+        private NChecksInterface check;
+        private OtpErlangObject  caller;
+        private OtpErlangList    args;
+        private OtpErlangBinary  opaqueData;
+
+        public NChecksRunnable(
+                Object          checkObj,
+                OtpErlangObject callerObj,
+                OtpErlangList   argsList,
+                OtpErlangBinary opaque)
+        {
+            this.check   = (NChecksInterface) checkObj;
+            this.caller  = callerObj;
+            this.args    = argsList;
+            this.opaqueData = opaque;
+        }
+
+        @Override
+        public void run()
+        {
+            Query query = new Query(NChecksErlang.decodeArgs(
+                    this.args), this.opaqueData.binaryValue());
+            Reply reply = this.check.execute(query);
+            OtpErlangObject replyMsg = NChecksErlang.buildOkReply(reply.asTuple());
+            NChecksErlang.sendReply(this.caller, replyMsg);
+        }
+
+        public OtpErlangObject getCaller() {return this.caller;}
+    }
+
+    class NHelperRunnable implements Runnable, CheckCaller
+    {
+        private HelperInterface helper;
+        private String            helper_id;
+        private OtpErlangObject   caller;
+        private OtpErlangList     args;
+
+        public NHelperRunnable(
+                final Object helpObj,
+                final String id,
+                final OtpErlangObject callerObj,
+                final OtpErlangList argsList)
+        {
+            this.helper    = (HelperInterface) helpObj;
+            this.helper_id = id;
+            this.caller    = callerObj;
+            this.args      = argsList;
+        }
+
+        @Override
+        public void run()
+        {
+            Query query = new Query(NChecksErlang.decodeArgs(this.args));
+            HelperReply helperReply = helper.callHelper(query, this.helper_id);
+            OtpErlangList jsonCharList =
+                    this.buildErlangCharList(helperReply.toCharArray());
+            OtpErlangObject replyMsg = NChecksErlang.buildOkReply(jsonCharList);
+            NChecksErlang.sendReply(this.caller, replyMsg);
+        }
+
+        public OtpErlangObject getCaller() {return this.caller;}
+
+        private OtpErlangList buildErlangCharList(char[] charList)
+        {
+            OtpErlangObject[] objList = new OtpErlangObject[charList.length];
+            for (int i = 0; i < charList.length; i++)
+            {
+                objList[i] = new OtpErlangChar(charList[i]);
+            }
+            return new OtpErlangList(objList);
+        }
     }
 }

@@ -32,10 +32,17 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
 public class NChecksJRuby {
-    private static Logger logger = LoggerFactory.getLogger(NChecksJRuby.class);
-    private static JRubyCache cache;
+    private JRubyCache cache;
+    private static NChecksJRuby instance = null;
 
     public static void startJRubyCache(String scriptPath, String etcDir) {
+        if (NChecksJRuby.instance == null) {
+            NChecksJRuby.instance = new NChecksJRuby(scriptPath, etcDir);
+        }
+    }
+
+    private NChecksJRuby(String scriptPath, String etcDir) {
+        Logger logger = LoggerFactory.getLogger(NChecksJRuby.class);
         String nchecksConf = Paths.get(etcDir, "nchecks.properties").toString();
         Boolean should_cache;
         try {
@@ -49,67 +56,67 @@ public class NChecksJRuby {
         }
 
         if (should_cache) {
-            NChecksJRuby.cache = new StandardCache(scriptPath);
+            this.cache = new StandardCache(scriptPath);
         } else {
-            NChecksJRuby.cache = new NoCache(scriptPath);
+            this.cache = new NoCache(scriptPath);
         }
-        NChecksJRuby.logger.info("JRuby script path: " + scriptPath);
-        NChecksJRuby.logger.info("JRuby cache files: " + should_cache.toString());
+        logger.info("JRuby script path: " + scriptPath);
+        logger.info("JRuby cache files: " + should_cache.toString());
     }
 
     public static String getScript(String identifier) throws Exception {
-        return NChecksJRuby.cache.getScript(identifier);
-    }
-}
-
-interface JRubyCache {
-    String getScript(String identifier) throws Exception;
-}
-
-class StandardCache implements JRubyCache
-{
-    private String scriptPath;
-    private HashMap<String,String> scriptMap;
-    private static final Object lock = new Object();
-
-    StandardCache(String scriptPath) {
-        this.scriptPath = scriptPath;
-        this.scriptMap = new HashMap<>();
+        return NChecksJRuby.instance.cache.getScript(identifier);
     }
 
-    public String getScript(String identifier) throws Exception {
-        synchronized (StandardCache.lock) {
+    interface JRubyCache {
+        String getScript(String identifier) throws Exception;
+    }
 
-            String val = this.scriptMap.get(identifier);
+    class StandardCache implements JRubyCache
+    {
+        private String scriptPath;
+        private HashMap<String,String> scriptMap;
+        private final Object lock = new Object();
 
-            if (val == null) {
-                String script = identifier + ".rb";
-                byte[] fileBytes =
-                        Files.readAllBytes(Paths.get(scriptPath,script));
-                val = new String(fileBytes, "UTF-8");
-                this.scriptMap.put(script, val);
+        StandardCache(String scriptPath) {
+            this.scriptPath = scriptPath;
+            this.scriptMap = new HashMap<>();
+        }
+
+        public String getScript(String identifier) throws Exception {
+            synchronized (this.lock) {
+
+                String val = this.scriptMap.get(identifier);
+
+                if (val == null) {
+                    String script = identifier + ".rb";
+                    byte[] fileBytes =
+                            Files.readAllBytes(Paths.get(scriptPath,script));
+                    val = new String(fileBytes, "UTF-8");
+                    this.scriptMap.put(script, val);
+                }
+
+                return val;
             }
-
-            return val;
-        }
-    }
-}
-
-class NoCache implements JRubyCache
-{
-    private String scriptPath;
-    private static final Object lock = new Object();
-
-    NoCache(String scriptPath) {
-        this.scriptPath = scriptPath;
-    }
-
-    public String getScript(String identifier) throws Exception {
-        synchronized (NoCache.lock) {
-            String script = identifier + ".rb";
-            byte[] fileBytes = Files.readAllBytes(Paths.get(scriptPath, script));
-            return new String(fileBytes, "UTF-8");
         }
     }
 
+    class NoCache implements JRubyCache
+    {
+        private String scriptPath;
+        private final Object lock = new Object();
+
+        NoCache(String scriptPath) {
+            this.scriptPath = scriptPath;
+        }
+
+        public String getScript(String identifier) throws Exception {
+            synchronized (this.lock) {
+                String script = identifier + ".rb";
+                byte[] fileBytes = Files.readAllBytes(Paths.get(scriptPath, script));
+                return new String(fileBytes, "UTF-8");
+            }
+        }
+
+    }
 }

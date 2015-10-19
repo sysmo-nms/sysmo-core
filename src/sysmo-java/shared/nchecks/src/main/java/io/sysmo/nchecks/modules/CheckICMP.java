@@ -235,51 +235,52 @@ public class CheckICMP implements NChecksInterface
             st = Reply.STATUS_OK;
         }
         String formated = String.format(
-            "CheckICMP %s: PktsLoss=%d%%, RTMin=%d, RTAverage=%d, RTMax=%d",
-            st, percentLoss, minReplyTime, avgReplyTime, maxReplyTime
+                "CheckICMP %s: PktsLoss=%d%%, RTMin=%d, RTAverage=%d, RTMax=%d",
+                st, percentLoss, minReplyTime, avgReplyTime, maxReplyTime
         );
         reply.setStatus(st);
         reply.setReply(formated);
 
         return reply;
     }
-}
 
-class StreamConsumer extends Thread {
-    private InputStream     is;
-    private String          type;
-    private StringBuffer    replyString;
-    private CheckICMP       parent;
+    // utility classes
+    class StreamConsumer extends Thread {
+        private InputStream     is;
+        private String          type;
+        private StringBuffer    replyString;
+        private CheckICMP       parent;
 
-    public StreamConsumer(
-            InputStream inputStream,
-            String      type,
-            CheckICMP   parent)
-    {
-        this.is     = inputStream;
-        this.type   = type;
-        this.replyString = new StringBuffer();
-        this.parent = parent;
-    }
+        public StreamConsumer(
+                InputStream inputStream,
+                String      type,
+                CheckICMP   parent)
+        {
+            this.is     = inputStream;
+            this.type   = type;
+            this.replyString = new StringBuffer();
+            this.parent = parent;
+        }
 
-    @Override
-    public void run() {
-        BufferedReader buff = null;
-        try {
-            buff = new BufferedReader(new InputStreamReader(is, "UTF-8"));
-            String line;
+        @Override
+        public void run() {
+            BufferedReader buff = null;
+            try {
+                buff = new BufferedReader(new InputStreamReader(is, "UTF-8"));
+                String line;
 
-            while ((line = buff.readLine()) != null) {
-                replyString.append(line);
-            }
-            this.parent.setReturnString(replyString.toString(), type);
-        } catch (IOException e) {
-            CheckICMP.logger.error(e.getMessage(), e);
-        } finally {
-            if(buff != null) {
-                try { buff.close(); }
-                catch(Exception ignore) {
-                    CheckICMP.logger.error("failed to close the buffer for ICMP");
+                while ((line = buff.readLine()) != null) {
+                    replyString.append(line);
+                }
+                this.parent.setReturnString(replyString.toString(), type);
+            } catch (IOException e) {
+                CheckICMP.logger.error(e.getMessage(), e);
+            } finally {
+                if(buff != null) {
+                    try { buff.close(); }
+                    catch(Exception ignore) {
+                        CheckICMP.logger.error("failed to close the buffer for ICMP");
+                    }
                 }
             }
         }

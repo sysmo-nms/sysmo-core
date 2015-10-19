@@ -49,12 +49,20 @@ public class SysmoServer {
 
         // init logger
         LogManager logManager = LogManager.getLogManager();
+        InputStream in = null;
         try {
-            InputStream in = SysmoServer.class
-                    .getResourceAsStream("/logging.properties");
+            in = SysmoServer.class.getResourceAsStream("/logging.properties");
             logManager.readConfiguration(in);
         } catch (IOException e) {
             System.out.println("No logging properties file found");
+        } finally {
+            if (in != null) {
+                try {
+                    in.close();
+                } catch (IOException e) {
+                    // ignore
+                }
+            }
         }
 
         Logger logger = LoggerFactory.getLogger(SysmoServer.class);

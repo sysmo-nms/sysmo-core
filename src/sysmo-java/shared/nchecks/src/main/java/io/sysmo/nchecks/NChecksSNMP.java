@@ -79,7 +79,7 @@ public class NChecksSNMP
                     .getPath(etcDir, "engine.id")
                     .toString();
 
-            byte[] engineId = SNMPUtils.getEngineId(eidFile);
+            byte[] engineId = NChecksSNMP.getEngineId(eidFile);
             UdpTransportMapping transport = new DefaultUdpTransportMapping();
             snmp4jSession   = new Snmp(transport);
             USM usm         = new USM(SecurityProtocols.getInstance(),
@@ -133,7 +133,7 @@ public class NChecksSNMP
             }
             else
             {
-                if (SNMPUtils.usmUsersEquals(oldUser.getUsmUser(),user))
+                if (NChecksSNMP.usmUsersEquals(oldUser.getUsmUser(),user))
                 {
                     // same users conf, ok
                     agents.put(targetid, target);
@@ -156,7 +156,7 @@ public class NChecksSNMP
         
         Address address = GenericAddress.parse("udp:" + host + "/" + port);
 
-        int seclevelConst = SNMPUtils.getSecLevel(seclevel);
+        int seclevelConst = NChecksSNMP.getSecLevel(seclevel);
 
         switch (version)
         {
@@ -191,9 +191,9 @@ public class NChecksSNMP
     {
 
         OID authProtoOid =
-                    SNMPUtils.getAuthProto(query.get("snmp_authproto").asString());
+                    NChecksSNMP.getAuthProto(query.get("snmp_authproto").asString());
         OID privProtoOid =
-                    SNMPUtils.getPrivProto(query.get("snmp_privproto").asString());
+                    NChecksSNMP.getPrivProto(query.get("snmp_privproto").asString());
 
         OctetString uName =
                         new OctetString(query.get("snmp_usm_user").asString());
@@ -204,28 +204,26 @@ public class NChecksSNMP
 
         return new UsmUser(uName,authProtoOid,authkey, privProtoOid,privkey);
     }
-}
 
 
-class SNMPUtils
-{
+    // utilities functions
     private static char[] hexArray = "0123456789ABCDEF".toCharArray();
 
     // TODO test utf8 to byte might not work now
     public static byte[] getEngineId(String stringPath)
-                                                    throws Exception, Error
+            throws Exception, Error
     {
         Path path = Paths.get(stringPath);
         if (Files.isRegularFile(path))
         {
             byte[] engineIdDump = Files.readAllBytes(path);
             String engineIdHex = new String(engineIdDump, "UTF-8");
-            return SNMPUtils.hexStringToBytes(engineIdHex); // return engine Id
+            return NChecksSNMP.hexStringToBytes(engineIdHex); // return engine Id
         }
         else
         {
             byte[] engineId     = MPv3.createLocalEngineID();
-            String engineIdHex  = SNMPUtils.bytesToHexString(engineId);
+            String engineIdHex  = NChecksSNMP.bytesToHexString(engineId);
             byte[] engineIdDump = engineIdHex.getBytes("UTF-8");
             Files.write(path, engineIdDump);
             return engineId;
@@ -254,10 +252,10 @@ class SNMPUtils
         }
         return new String(new String(hexChars).getBytes("UTF-8"), "UTF-8");
     }
-    
+
     public static int getSecLevel(String constString) throws Exception
     {
-        
+
         int seclevel;
         switch (constString)
         {
@@ -272,7 +270,7 @@ class SNMPUtils
         }
         return seclevel;
     }
-    
+
     public static OID getAuthProto(String constString) throws Exception
     {
 
@@ -305,7 +303,7 @@ class SNMPUtils
 
         return privProtoOid;
     }
-    
+
 
     public static boolean usmUsersEquals(UsmUser a, UsmUser b)
     {

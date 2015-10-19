@@ -21,11 +21,8 @@
 
 package io.sysmo.jserver;
 
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Paths;
-import java.util.Iterator;
 import java.util.Properties;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -100,7 +97,6 @@ public class RrdLogger implements Runnable
         try {
             input = this.getClass().getResourceAsStream("/rrd.properties");
             Properties prop = new Properties();
-            //input = new FileInputStream(propFile);
             prop.load(input);
             this.rraDefault = decodeRRADef(prop.getProperty("rra_default"));
             this.rraPrecise = decodeRRADef(prop.getProperty("rra_precise"));
@@ -176,12 +172,10 @@ public class RrdLogger implements Runnable
             final OtpErlangTuple tuple) throws Exception
     {
         OtpErlangList updates = (OtpErlangList) (tuple.elementAt(0));
-        Iterator<OtpErlangObject> updatesIt = updates.iterator();
-        while (updatesIt.hasNext())
-        {
-            OtpErlangTuple updateTuple = (OtpErlangTuple) updatesIt.next();
-            RrdLogger.rrdUpdate(updateTuple);
+        for (OtpErlangObject update : updates) {
+            RrdLogger.rrdUpdate((OtpErlangTuple) update);
         }
+
         RrdLogger.sendReply(caller, atomOk);
     }
 
@@ -206,10 +200,8 @@ public class RrdLogger implements Runnable
         try {
             Sample sample = rrdDb.createSample();
             sample.setTime(timestamp.longValue());
-            Iterator<OtpErlangObject> updatesIt = updates.iterator();
-            while (updatesIt.hasNext())
-            {
-                OtpErlangTuple  up      = (OtpErlangTuple)  updatesIt.next();
+            for (OtpErlangObject update : updates) {
+                OtpErlangTuple  up      = (OtpErlangTuple)  update;
                 OtpErlangString name    = (OtpErlangString) (up.elementAt(0));
                 OtpErlangLong   value   = (OtpErlangLong)   (up.elementAt(1));
                 sample.setValue(name.stringValue(), value.longValue());
@@ -232,11 +224,8 @@ public class RrdLogger implements Runnable
             final OtpErlangTuple tuple) throws Exception
     {
         OtpErlangList creates = (OtpErlangList) (tuple.elementAt(0));
-        Iterator<OtpErlangObject> createsIt = creates.iterator();
-        while (createsIt.hasNext())
-        {
-            OtpErlangTuple createTuple = (OtpErlangTuple) createsIt.next();
-            RrdLogger.rrdCreate(createTuple);
+        for (OtpErlangObject create : creates) {
+            RrdLogger.rrdCreate((OtpErlangTuple) create);
         }
         RrdLogger.sendReply(caller, atomOk);
     }
@@ -264,25 +253,23 @@ public class RrdLogger implements Runnable
             rrdDef.addArchive(RrdLogger.instance.rraDefault);
         }
 
-        Iterator<OtpErlangObject> dssIt  = dss.iterator();
-        while (dssIt.hasNext())
-        {
-            OtpErlangTuple  ds      = (OtpErlangTuple) dssIt.next();
-            OtpErlangString dsName  = (OtpErlangString) (ds.elementAt(0));
-            OtpErlangString dsTypeStr   = (OtpErlangString)   (ds.elementAt(1));
-            OtpErlangLong   dsHbeat = (OtpErlangLong)   (ds.elementAt(2));
+        for (OtpErlangObject ds : dss) {
+            OtpErlangTuple  dst     = (OtpErlangTuple) ds;
+            OtpErlangString dsName  = (OtpErlangString) (dst.elementAt(0));
+            OtpErlangString dsTypeStr = (OtpErlangString) (dst.elementAt(1));
+            OtpErlangLong   dsHbeat = (OtpErlangLong) (dst.elementAt(2));
             DsType dsType = DsType.valueOf(dsTypeStr.stringValue());
 
             Double dsMinVal;
             Double dsMaxVal;
             try {
-                OtpErlangDouble dsMin = (OtpErlangDouble) (ds.elementAt(3));
+                OtpErlangDouble dsMin = (OtpErlangDouble) (dst.elementAt(3));
                 dsMinVal = dsMin.doubleValue();
             } catch (Exception|Error e) {
                 dsMinVal = Double.NaN;
             }
             try {
-                OtpErlangDouble dsMax = (OtpErlangDouble) (ds.elementAt(4));
+                OtpErlangDouble dsMax = (OtpErlangDouble) (dst.elementAt(4));
                 dsMaxVal = dsMax.doubleValue();
             } catch (Exception|Error e) {
                 dsMaxVal = Double.NaN;
@@ -319,88 +306,81 @@ public class RrdLogger implements Runnable
         }
         return archiveDef;
     }
-}
 
-class RrdRunnable implements Runnable
-{
-    private OtpErlangObject caller;
-    private OtpErlangObject msg;
-    private static Logger logger = LoggerFactory.getLogger(RrdRunnable.class);
-
-    public RrdRunnable(final OtpErlangObject message)
+    // Utility classes
+    class RrdRunnable implements Runnable
     {
-        this.msg = message;
-    }
+        private OtpErlangObject caller;
+        private OtpErlangObject msg;
 
-    @Override
-    public void run()
-    {
-        OtpErlangTuple  tuple;
-        OtpErlangAtom   command;
-        OtpErlangTuple  payload;
-        try
+        public RrdRunnable(final OtpErlangObject message)
         {
-            tuple       = (OtpErlangTuple)  this.msg;
-            command     = (OtpErlangAtom)   (tuple.elementAt(0));
-            this.caller =                   (tuple.elementAt(1));
-            payload     = (OtpErlangTuple)  (tuple.elementAt(2));
-        }
-        catch (Exception|Error e)
-        {
-            RrdRunnable.logger.warn(
-                    "RrdRunnable fail to decode tuple: " + e.getMessage(), e);
-            return;
+            this.msg = message;
         }
 
-        try
+        @Override
+        public void run()
         {
-            switch (command.toString())
-            {
-                case "multi_update":
-                    RrdLogger.handleRrdMultiUpdate(caller, payload);
-                    break;
-                case "update":
-                    RrdLogger.handleRrdUpdate(caller, payload);
-                    break;
-                case "multi_create":
-                    RrdLogger.handleRrdMultiCreate(caller, payload);
-                    break;
-                case "create":
-                    RrdLogger.handleRrdCreate(caller, payload);
-                    break;
-                default:
-                    RrdRunnable.logger.warn("unknown command: " + command);
-                    OtpErlangTuple reply = RrdLogger.buildErrorReply(
-                                            new OtpErlangString("undefined"));
-                    RrdLogger.sendReply(caller, reply);
+            OtpErlangTuple  tuple;
+            OtpErlangAtom   command;
+            OtpErlangTuple  payload;
+            try {
+                tuple       = (OtpErlangTuple)  this.msg;
+                command     = (OtpErlangAtom)   (tuple.elementAt(0));
+                this.caller =                   (tuple.elementAt(1));
+                payload     = (OtpErlangTuple)  (tuple.elementAt(2));
+            } catch (Exception|Error e) {
+                RrdLogger.instance.logger.warn(
+                        "RrdRunnable fail to decode tuple: " + e.getMessage(), e);
+                return;
+            }
+
+            try {
+                switch (command.toString()) {
+                    case "multi_update":
+                        RrdLogger.handleRrdMultiUpdate(caller, payload);
+                        break;
+                    case "update":
+                        RrdLogger.handleRrdUpdate(caller, payload);
+                        break;
+                    case "multi_create":
+                        RrdLogger.handleRrdMultiCreate(caller, payload);
+                        break;
+                    case "create":
+                        RrdLogger.handleRrdCreate(caller, payload);
+                        break;
+                    default:
+                        RrdLogger.instance.logger.warn("unknown command: " + command);
+                        OtpErlangTuple reply = RrdLogger.buildErrorReply(
+                                new OtpErlangString("undefined"));
+                        RrdLogger.sendReply(caller, reply);
+                }
+            } catch (Exception|Error e) {
+                RrdLogger.instance.logger.warn(
+                        "RrdRunnable failure: " + e.getMessage(), e);
+                OtpErlangTuple reply = RrdLogger.buildErrorReply(
+                        new OtpErlangString("Java CATCH: Failed to honour command "
+                                + command.toString() + " -> " + e
+                                + " " + e.getMessage())
+                );
+
+                RrdLogger.sendReply(caller, reply);
             }
         }
-        catch (Exception|Error e)
-        {
-            RrdRunnable.logger.warn(
-                    "RrdRunnable failure: " + e.getMessage(), e);
-            OtpErlangTuple reply = RrdLogger.buildErrorReply(
-                    new OtpErlangString("Java CATCH: Failed to honour command "
-                            + command.toString() + " -> " + e
-                            + " " + e.getMessage())
-            );
 
-            RrdLogger.sendReply(caller, reply);
+        public OtpErlangObject getCaller()
+        {
+            return this.caller;
         }
     }
 
-    public OtpErlangObject getCaller()
-    {
-        return this.caller;
-    }
-}
 
-
-class RrdReject implements RejectedExecutionHandler
-{
-    public void rejectedExecution(final Runnable r, final ThreadPoolExecutor e)
+    class RrdReject implements RejectedExecutionHandler
     {
-        RrdRunnable failRunner = (RrdRunnable) r;
-        RrdLogger.sendReply(failRunner.getCaller(), RrdLogger.atomBusy);
+        public void rejectedExecution(final Runnable r, final ThreadPoolExecutor e)
+        {
+            RrdRunnable failRunner = (RrdRunnable) r;
+            RrdLogger.sendReply(failRunner.getCaller(), RrdLogger.atomBusy);
+        }
     }
 }

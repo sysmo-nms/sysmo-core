@@ -23,7 +23,6 @@ package io.sysmo.nchecks;
 
 import java.util.List;
 import java.util.ArrayList;
-import java.util.Iterator;
 
 import java.io.CharArrayWriter;
 import javax.json.Json;
@@ -62,7 +61,7 @@ public class HelperTableReply implements HelperReply
     *  Add a HelperTableRow to the table.
     */
     public void addRow(HelperTableRow row) {
-        rows.add(row);
+        this.rows.add(row);
     }
 
 
@@ -70,40 +69,40 @@ public class HelperTableReply implements HelperReply
     /*
     *  Set the reply id.
     */
-    public void setId(String val)  { messageId = val; }
+    public void setId(String val)  { this.messageId = val; }
 
     /*
     *  Set the status
     * (HelperReply.SUCCESS | HelperReply.FAILURE)
     */
-    public void setStatus(String val) { status = val; }
+    public void setStatus(String val) { this.status = val; }
 
     /*
     *  Set the message string shown on top of the table.
     */
-    public void setMessage(String val) { message = val; }
+    public void setMessage(String val) { this.message = val; }
 
     /*
      * Set the treeroot
      */
-    public void setTreeRoot(String val) {treeRoot = val; }
+    public void setTreeRoot(String val) { this.treeRoot = val; }
 
     /*
      * Set the selectCol
      */
-    public void setSelectColumn(String val) {select = val; }
+    public void setSelectColumn(String val) { this.select = val; }
 
     /*
      * Set the selectType
     * (HelperReply.SINGLE | HelperReply.MULTIPLE)
      */
-    public void setSelectType(String val) {selectionType = val; }
+    public void setSelectType(String val) { this.selectionType = val; }
 
 
     /*
      * Set the list separator
      */
-    public void setListSeparator(String val) {listSeparator = val; }
+    public void setListSeparator(String val) { this.listSeparator = val; }
 
 
     public char[] toCharArray()
@@ -114,18 +113,14 @@ public class HelperTableReply implements HelperReply
         JsonObjectBuilder   objectBuilder   = factory.createObjectBuilder();
         JsonArrayBuilder    arrayBuilder    = factory.createArrayBuilder();
 
-        Iterator<HelperTableRow> it = rows.iterator();
+        for (HelperTableRow row : this.rows) {
+            JsonObjectBuilder rowObj = factory.createObjectBuilder();
+            List<HelperTableItem> items = row.getItems();
 
-        while (it.hasNext()) {
-            HelperTableRow row     = it.next();
-            JsonObjectBuilder            rowObj  = factory.createObjectBuilder();
-            List<HelperTableItem>       items   = row.getItems();
-            Iterator<HelperTableItem>   tit     = items.iterator();
-            while(tit.hasNext()) {
-                HelperTableItem item  = tit.next();
-                String           key   = item.getColumn();
-                String           value = item.getValue();
-                rowObj.add(item.getColumn(), item.getValue());
+            for (HelperTableItem item : items) {
+                String key = item.getColumn();
+                String value = item.getValue();
+                rowObj.add(key, value);
             }
             arrayBuilder.add(rowObj);
         }

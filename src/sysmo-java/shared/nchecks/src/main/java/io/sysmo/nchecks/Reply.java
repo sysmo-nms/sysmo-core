@@ -159,9 +159,9 @@ public class Reply
      * by rrd as defined in your module xml definition file.
      * The "group" String is used to identify one of the rrd files to update.
      * Assume a setup with multiple rrd files.
-     * @param group
-     * @param key
-     * @param value
+     * @param group the performance group key
+     * @param key the key
+     * @param value the value
      */
     public void putPerformance(String group, String key, long value)
     {
@@ -173,7 +173,7 @@ public class Reply
      * Internal use.
      * Return the PerformanceGroup for key groupKey. Create it if it does not
      * exist.
-     * @param groupKey
+     * @param groupKey  the performance group key
      * @return the performance group
      */
     private PerformanceGroup getPerformanceGroup(String groupKey)
@@ -220,33 +220,34 @@ public class Reply
 
         return new OtpErlangTuple(replyRecord);
     }
-}
 
-class PerformanceGroup
-{
-    private Map<String,Long> perfValues;
-
-    public PerformanceGroup()
+    // utility classes
+    class PerformanceGroup
     {
-        perfValues = new HashMap<>();
-    }
+        private Map<String,Long> perfValues;
 
-    public void putPerformance(String key, long value)
-    {
-        perfValues.put(key, value);
-    }
-
-    public OtpErlangList asList() {
-        OtpErlangObject[] perfValuesObj = new OtpErlangObject[perfValues.size()];
-        int i = 0;
-        for (Map.Entry<String, Long> entry: perfValues.entrySet())
+        public PerformanceGroup()
         {
-            OtpErlangObject[] objEntry = new OtpErlangObject[2];
-            objEntry[0] = new OtpErlangString(entry.getKey());
-            objEntry[1] = new OtpErlangLong(entry.getValue().longValue());
-            perfValuesObj[i] = new OtpErlangTuple(objEntry);
-            i++;
+            perfValues = new HashMap<>();
         }
-        return new OtpErlangList(perfValuesObj);
+
+        public void putPerformance(String key, long value)
+        {
+            perfValues.put(key, value);
+        }
+
+        public OtpErlangList asList() {
+            OtpErlangObject[] perfValuesObj = new OtpErlangObject[perfValues.size()];
+            int i = 0;
+            for (Map.Entry<String, Long> entry: perfValues.entrySet())
+            {
+                OtpErlangObject[] objEntry = new OtpErlangObject[2];
+                objEntry[0] = new OtpErlangString(entry.getKey());
+                objEntry[1] = new OtpErlangLong(entry.getValue().longValue());
+                perfValuesObj[i] = new OtpErlangTuple(objEntry);
+                i++;
+            }
+            return new OtpErlangList(perfValuesObj);
+        }
     }
 }
