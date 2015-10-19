@@ -92,7 +92,7 @@ public class SysmoWorker {
         Runtime.getRuntime().addShutdownHook(
                 new Thread() {
                     @Override
-                    public void run() {SysmoWorker.active = false;}
+                    public void run() { SysmoWorker.setActive(false); }
                 }
         );
 
@@ -128,9 +128,8 @@ public class SysmoWorker {
             /*
              * Create Nchecks thread
              */
-            NChecksErlang nchecks =
-                    new NChecksErlang(nchecksMbox, masterNode,
-                            rubyDir, utilsDir, etcDir);
+            NChecksErlang nchecks = NChecksErlang.getInstance(
+                    nchecksMbox, masterNode, rubyDir, utilsDir, etcDir);
 
             Thread nchecksThread = new Thread(nchecks);
             nchecksThread.start();
@@ -189,6 +188,10 @@ public class SysmoWorker {
             System.exit(1);
         }
         System.exit(0);
+    }
+
+    static void setActive(boolean active) {
+        SysmoWorker.active = active;
     }
 
     static class JworkerShutdownException extends Exception {

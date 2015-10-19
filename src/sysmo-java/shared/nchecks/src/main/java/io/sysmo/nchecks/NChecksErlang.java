@@ -60,14 +60,24 @@ public class NChecksErlang implements Runnable
     // nchecks vars
     private ThreadPoolExecutor threadPool;
 
-    static NChecksErlang instance;
+    static NChecksErlang instance = null;
     static Logger logger = LoggerFactory.getLogger(NChecksErlang.class);
 
-    public NChecksErlang(
+    public static synchronized NChecksErlang getInstance(
             final OtpMbox mbox, final String nodeName,
             final String rubyDir, final String utilsDir,
             final String etcDir) throws Exception {
-        NChecksErlang.instance = this;
+        if (NChecksErlang.instance == null) {
+            NChecksErlang.instance =
+                    new NChecksErlang(mbox,nodeName,rubyDir,utilsDir,etcDir);
+        }
+        return NChecksErlang.instance;
+    }
+
+    private NChecksErlang(
+            final OtpMbox mbox, final String nodeName,
+            final String rubyDir, final String utilsDir,
+            final String etcDir) throws Exception {
         this.nodeName = nodeName;
         this.mbox = mbox;
 
@@ -177,7 +187,7 @@ public class NChecksErlang implements Runnable
         try {
             tuple       = (OtpErlangTuple)  msg;
             command     = (OtpErlangAtom)   (tuple.elementAt(0));
-            caller      =                   (tuple.elementAt(1));
+            caller      =                    tuple.elementAt(1);
             payload     = (OtpErlangTuple)  (tuple.elementAt(2));
         } catch (Exception|Error e) {
             NChecksErlang.logger.warn(
@@ -339,7 +349,7 @@ public class NChecksErlang implements Runnable
     }
 
 
-    class NChecksPoolReject implements RejectedExecutionHandler
+    static class NChecksPoolReject implements RejectedExecutionHandler
     {
         public void rejectedExecution(Runnable r, ThreadPoolExecutor executor)
         {
@@ -352,7 +362,7 @@ public class NChecksErlang implements Runnable
         }
     }
 
-    class NChecksRunnable implements Runnable, CheckCaller
+    static class NChecksRunnable implements Runnable, CheckCaller
     {
         private NChecksInterface check;
         private OtpErlangObject  caller;
@@ -384,7 +394,7 @@ public class NChecksErlang implements Runnable
         public OtpErlangObject getCaller() {return this.caller;}
     }
 
-    class NHelperRunnable implements Runnable, CheckCaller
+    static class NHelperRunnable implements Runnable, CheckCaller
     {
         private HelperInterface helper;
         private String            helper_id;

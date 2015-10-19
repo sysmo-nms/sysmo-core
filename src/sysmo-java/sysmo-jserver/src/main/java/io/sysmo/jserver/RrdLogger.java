@@ -79,7 +79,7 @@ public class RrdLogger implements Runnable
     // logging
     private Logger logger;
 
-    public static RrdLogger getInstance(
+    public synchronized static RrdLogger getInstance(
             final OtpMbox mbox,
             final String nodeName) {
         if (RrdLogger.instance == null) {
@@ -308,7 +308,7 @@ public class RrdLogger implements Runnable
     }
 
     // Utility classes
-    class RrdRunnable implements Runnable
+    static class RrdRunnable implements Runnable
     {
         private OtpErlangObject caller;
         private OtpErlangObject msg;
@@ -375,7 +375,7 @@ public class RrdLogger implements Runnable
     }
 
 
-    class RrdReject implements RejectedExecutionHandler
+    static class RrdReject implements RejectedExecutionHandler
     {
         public void rejectedExecution(final Runnable r, final ThreadPoolExecutor e)
         {

@@ -45,14 +45,23 @@ public class NChecksJRuby {
         Logger logger = LoggerFactory.getLogger(NChecksJRuby.class);
         String nchecksConf = Paths.get(etcDir, "nchecks.properties").toString();
         Boolean should_cache;
+        InputStream input = null;
         try {
             Properties props = new Properties();
-            InputStream input = new FileInputStream(nchecksConf);
+            input = new FileInputStream(nchecksConf);
             props.load(input);
             should_cache = props.getProperty("cache_ruby_files").equals("true");
         } catch (IOException e) {
             // no config file found
             should_cache = true;
+        } finally {
+            if (input != null) {
+                try {
+                    input.close();
+                } catch (IOException e) {
+                    // ignore
+                }
+            }
         }
 
         if (should_cache) {
@@ -72,7 +81,7 @@ public class NChecksJRuby {
         String getScript(String identifier) throws Exception;
     }
 
-    class StandardCache implements JRubyCache
+    static class StandardCache implements JRubyCache
     {
         private String scriptPath;
         private HashMap<String,String> scriptMap;
@@ -101,7 +110,7 @@ public class NChecksJRuby {
         }
     }
 
-    class NoCache implements JRubyCache
+    static class NoCache implements JRubyCache
     {
         private String scriptPath;
         private final Object lock = new Object();

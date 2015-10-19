@@ -222,7 +222,7 @@ public class Reply
     }
 
     // utility classes
-    class PerformanceGroup
+    static class PerformanceGroup
     {
         private Map<String,Long> perfValues;
 

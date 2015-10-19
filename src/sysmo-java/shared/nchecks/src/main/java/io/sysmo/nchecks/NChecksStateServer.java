@@ -49,7 +49,7 @@ public class NChecksStateServer {
     public static synchronized void setState(String key, String data) {
 
     }
-    public static void startStateServer() {
+    public static synchronized void startStateServer() {
         if (NChecksStateServer.instance == null) {
             NChecksStateServer.instance = new NChecksStateServer();
         }
@@ -115,7 +115,7 @@ public class NChecksStateServer {
     }
 
     // utility classes
-    class StateStoreClient implements Runnable {
+    static class StateStoreClient implements Runnable {
 
         StateStoreClient(Socket client) {
 

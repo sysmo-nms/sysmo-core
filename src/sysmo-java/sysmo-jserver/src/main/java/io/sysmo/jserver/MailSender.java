@@ -90,8 +90,8 @@ public class MailSender implements Runnable {
             }
         }
 
-        String fromString = props.getProperty("from", "sysmo@localhost");
-        String toString   = props.getProperty("to");
+        String fromString = props.getProperty("mail_from", "sysmo@localhost");
+        String toString   = props.getProperty("mail_to");
         try {
             this.from = new InternetAddress(fromString);
             if (toString != null)
@@ -107,14 +107,14 @@ public class MailSender implements Runnable {
 
         this.properties = System.getProperties();
 
-        String host = props.getProperty("host", "localhost");
+        String host = props.getProperty("mail_smtp_server", "localhost");
         this.properties.setProperty("mail.smtp.host", host);
 
-        String user_name = props.getProperty("user_name");
+        String user_name = props.getProperty("mail_user_name");
         if (user_name != null)
             this.properties.setProperty("mail.user", user_name);
 
-        String user_password = props.getProperty("user_password");
+        String user_password = props.getProperty("mail_user_password");
         if (user_password != null)
             this.properties.setProperty("mail.password", user_password);
         this.logger.info("End MailSender init");

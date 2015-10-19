@@ -772,7 +772,7 @@ public class SnmpManager implements Runnable
 
 
     // utility classes
-    class SnmpmanElement
+    static class SnmpmanElement
     {
         private AbstractTarget target;
         private OctetString securityName;
@@ -806,7 +806,7 @@ public class SnmpManager implements Runnable
     }
 
 
-    class RegisterArgs
+    static class RegisterArgs
     {
 
         public String elementName   = null;
@@ -868,7 +868,7 @@ public class SnmpManager implements Runnable
         }
     }
 
-    class SnmpmanResponseListener implements ResponseListener
+    static class SnmpmanResponseListener implements ResponseListener
     {
         private OtpErlangObject to;
 
@@ -917,7 +917,7 @@ public class SnmpManager implements Runnable
         }
     }
 
-    class SnmpmanTreeListener implements TreeListener
+    static class SnmpmanTreeListener implements TreeListener
     {
         private boolean finished;
         private OtpErlangObject to;
@@ -990,7 +990,7 @@ public class SnmpManager implements Runnable
     }
 
 
-    class SnmpmanTableListener implements TableListener
+    static class SnmpmanTableListener implements TableListener
     {
         private boolean finished;
         private OtpErlangObject to;
@@ -1056,7 +1056,7 @@ public class SnmpManager implements Runnable
     }
 
 
-    class GetNextPDUFactory implements PDUFactory
+    static class GetNextPDUFactory implements PDUFactory
     {
         int pduType = PDU.GETNEXT;
 

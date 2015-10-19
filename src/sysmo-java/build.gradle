@@ -25,9 +25,9 @@ subprojects {
         testCompile 'junit:junit:4.2'
     }
 
-    jdepend  { ignoreFailures = false }
-    findbugs { ignoreFailures = false }
-    pmd      { ignoreFailures = false }
+    jdepend  { ignoreFailures = true }
+    findbugs { ignoreFailures = true }
+    pmd      { ignoreFailures = true }
 
     tasks.withType(FindBugs) {
         reports {

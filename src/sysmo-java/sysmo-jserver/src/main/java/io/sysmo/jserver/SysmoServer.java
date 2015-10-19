@@ -145,7 +145,7 @@ public class SysmoServer {
          */
         NChecksErlang nchecks;
         try {
-            nchecks = new NChecksErlang(
+            nchecks = NChecksErlang.getInstance(
                     nchecksMbox, foreignNodeName, rubyDir, utilsDir, etcDir);
         } catch (Exception e) {
             logger.error("NChecks failed to start" + e.getMessage(), e);

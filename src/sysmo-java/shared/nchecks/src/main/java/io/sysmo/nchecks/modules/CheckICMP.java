@@ -245,7 +245,7 @@ public class CheckICMP implements NChecksInterface
     }
 
     // utility classes
-    class StreamConsumer extends Thread {
+    static class StreamConsumer extends Thread {
         private InputStream     is;
         private String          type;
         private StringBuffer    replyString;
