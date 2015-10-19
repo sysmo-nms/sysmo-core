@@ -59,7 +59,7 @@ import org.rrd4j.ConsolFun;
 
 public class RrdLogger implements Runnable
 {
-    private static RrdLogger instance;
+    private static RrdLogger instance = null;
 
     public static final OtpErlangAtom atomReply = new OtpErlangAtom("reply");
     public static final OtpErlangAtom atomOk    = new OtpErlangAtom("ok");
@@ -84,26 +84,23 @@ public class RrdLogger implements Runnable
 
     public static RrdLogger getInstance(
             final OtpMbox mbox,
-            final String nodeName,
-            final String etcDir) {
-        RrdLogger.instance = new RrdLogger(mbox,nodeName,etcDir);
+            final String nodeName) {
+        if (RrdLogger.instance == null) {
+            RrdLogger.instance = new RrdLogger(mbox,nodeName);
+        }
         return RrdLogger.instance;
     }
 
-    private RrdLogger(
-            final OtpMbox mbox,
-            final String nodeName,
-            final String etcDir) {
+    private RrdLogger(final OtpMbox mbox, final String nodeName) {
         this.nodeName = nodeName;
         this.mbox = mbox;
         this.logger = LoggerFactory.getLogger(RrdLogger.class);
 
-        String propFile = Paths.get(etcDir, "sysmo-rrd.properties").toString();
-
         InputStream input = null;
         try {
+            input = this.getClass().getResourceAsStream("/rrd.properties");
             Properties prop = new Properties();
-            input = new FileInputStream(propFile);
+            //input = new FileInputStream(propFile);
             prop.load(input);
             this.rraDefault = decodeRRADef(prop.getProperty("rra_default"));
             this.rraPrecise = decodeRRADef(prop.getProperty("rra_precise"));

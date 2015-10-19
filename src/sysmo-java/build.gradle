@@ -55,8 +55,8 @@ project(':sysmo-jserver') {
 
     mainClassName = 'io.sysmo.jserver.SysmoServer'
     applicationDefaultJvmArgs = [
-            "-Duser.language=en", "-Duser.country=US",
-            "-Djava.util.logging.config.file=etc/sysmo-log.properties"]
+            "-Duser.language=en", "-Duser.country=US"]
+            //"-Djava.util.logging.config.file=etc/sysmo-log.properties"]
 
     dependencies {
         compile project(':shared:nchecks')

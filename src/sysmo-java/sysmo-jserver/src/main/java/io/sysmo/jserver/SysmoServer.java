@@ -36,8 +36,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
+import java.util.logging.LogManager;
 
 public class SysmoServer {
 
@@ -46,6 +48,15 @@ public class SysmoServer {
     public static void main(final String[] args) {
 
         // init logger
+        LogManager logManager = LogManager.getLogManager();
+        try {
+            InputStream in = SysmoServer.class
+                    .getResourceAsStream("/logging.properties");
+            logManager.readConfiguration(in);
+        } catch (IOException e) {
+            System.out.println("No logging properties file found");
+        }
+
         Logger logger = LoggerFactory.getLogger(SysmoServer.class);
         logger.info("Logger started");
 
@@ -146,7 +157,7 @@ public class SysmoServer {
         /*
          * Create rrd4j thread
          */
-        RrdLogger rrd4j = RrdLogger.getInstance(rrd4jMbox, foreignNodeName, etcDir);
+        RrdLogger rrd4j = RrdLogger.getInstance(rrd4jMbox, foreignNodeName);
         Thread rrd4jThread = new Thread(rrd4j);
         rrd4jThread.start();
 

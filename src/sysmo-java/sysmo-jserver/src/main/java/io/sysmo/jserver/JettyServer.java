@@ -51,13 +51,13 @@ public class JettyServer
             final String docroot,
             final String etcDir)
     {
-        String propFile = Paths.get(etcDir, "sysmo-web.properties").toString();
+        String propFile = Paths.get(etcDir, "sysmo.properties").toString();
         InputStream input = null;
         try {
             Properties  props = new Properties();
             input = new FileInputStream(propFile);
             props.load(input);
-            JettyServer.port = Integer.parseInt(props.getProperty("port"));
+            JettyServer.port = Integer.parseInt(props.getProperty("web_server_port"));
         } catch (Exception e) {
             JettyServer.logger.error(
                     "Can not read property file. " + e.getMessage(), e);

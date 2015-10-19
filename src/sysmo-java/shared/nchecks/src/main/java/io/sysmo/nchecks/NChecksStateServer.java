@@ -85,11 +85,12 @@ public class NChecksStateServer {
         }
 
         // server loop
-        ServerSocket server = null;
+        ServerSocket server;
         try {
             server = new ServerSocket(8867);
         } catch (IOException e) {
             // ignore
+            return;
         }
 
         while (true) try {

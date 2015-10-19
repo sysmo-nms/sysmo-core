@@ -72,7 +72,7 @@ public class MailSender implements Runnable {
         this.logger = LoggerFactory.getLogger(MailSender.class);
         this.mbox = mbox;
 
-        String confFile = Paths.get(etcDir, "sysmo-mail.properties").toString();
+        String confFile = Paths.get(etcDir, "sysmo.properties").toString();
         Properties props = new Properties();
         InputStream input = null;
         try {
