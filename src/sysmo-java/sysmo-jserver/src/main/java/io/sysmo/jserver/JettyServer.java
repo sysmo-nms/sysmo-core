@@ -60,7 +60,8 @@ public class JettyServer
             JettyServer.port = Integer.parseInt(props.getProperty("web_server_port"));
         } catch (Exception e) {
             JettyServer.logger.error(
-                    "Can not read property file. " + e.getMessage(), e);
+                    "Can not read property file. Use default port: " +
+                            JettyServer.DEFAULT_PORT);
             JettyServer.port = DEFAULT_PORT;
         } finally {
             try {

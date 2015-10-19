@@ -169,6 +169,11 @@ public class Reply
         groupObj.putPerformance(key, value);
     }
 
+    public void putPerformance(int group, String key, long value)
+    {
+        this.putPerformance(Integer.toString(group), key, value);
+    }
+
     /**
      * Internal use.
      * Return the PerformanceGroup for key groupKey. Create it if it does not
