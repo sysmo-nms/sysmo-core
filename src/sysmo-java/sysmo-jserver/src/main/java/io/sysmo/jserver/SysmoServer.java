@@ -110,6 +110,7 @@ public class SysmoServer {
         OtpMbox nchecksMbox = node.createMbox();
         OtpMbox derbyMbox   = node.createMbox();
         OtpMbox mailMbox    = node.createMbox();
+        OtpMbox stateDummyMbox = node.createMbox();
 
         /*
          * Link to mainMbox.
@@ -122,6 +123,7 @@ public class SysmoServer {
             mainMbox.link(nchecksMbox.self());
             mainMbox.link(derbyMbox.self());
             mainMbox.link(mailMbox.self());
+            mainMbox.link(stateDummyMbox.self());
         } catch (Exception e) {
             logger.error("Should not append here!" + e.getMessage(), e);
         }
@@ -194,7 +196,10 @@ public class SysmoServer {
          */
         NChecksStateServer stateServer;
         try {
-            stateServer = NChecksStateServer.getInstance(dataDir);
+            // dummy mbox only used to notify mainMbox of a failure
+            // and stop the JVM.
+            stateServer = NChecksStateServer.getInstance(
+                    dataDir, stateDummyMbox);
         } catch (Exception e) {
             // ignore
             return;

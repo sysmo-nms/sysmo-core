@@ -21,6 +21,8 @@
 
 package io.sysmo.nchecks;
 
+import com.ericsson.otp.erlang.OtpMbox;
+
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseEntry;
@@ -51,11 +53,13 @@ public class NChecksStateServer implements Runnable {
     private Database db;
     private Environment env;
     private Logger logger;
+    private OtpMbox mbox;
+    private final Object stopLock = new Object();
     private final Object lock = new Object();
 
     public void stop() {
-        synchronized (this.lock) {
-            this.lock.notify();
+        synchronized (this.stopLock) {
+            this.stopLock.notify();
         }
     }
 
@@ -68,16 +72,19 @@ public class NChecksStateServer implements Runnable {
         synchronized (NChecksStateServer.instance.lock) {
         }
     }
-    public static synchronized NChecksStateServer getInstance(String dataDir) {
+    public static synchronized NChecksStateServer getInstance(
+            String dataDir,
+            OtpMbox mbox) {
         if (NChecksStateServer.instance == null) {
-            NChecksStateServer.instance = new NChecksStateServer(dataDir);
+            NChecksStateServer.instance = new NChecksStateServer(dataDir, mbox);
         }
         return NChecksStateServer.instance;
     }
 
-    private NChecksStateServer(String dataDir) {
+    private NChecksStateServer(String dataDir, OtpMbox mbox) {
 
         this.logger = LoggerFactory.getLogger(this.getClass());
+        this.mbox = mbox;
 
         // init db
         String home = Paths.get(dataDir, "states").toString();
@@ -101,9 +108,6 @@ public class NChecksStateServer implements Runnable {
             DatabaseEntry theKey = new DatabaseEntry(aKey.getBytes("UTF-8"));
             DatabaseEntry theData = new DatabaseEntry(aData.getBytes("UTF-8"));
             this.db.put(null, theKey, theData);
-            this.logger.info("data success");
-
-            this.logger.info("will get data");
 
             DatabaseEntry theKey2 = new DatabaseEntry("keyjojo".getBytes("UTF-8"));
             DatabaseEntry theData2 = new DatabaseEntry();
@@ -116,17 +120,17 @@ public class NChecksStateServer implements Runnable {
                 this.logger.info("for key: 'key' found no data");
             }
         } catch (UnsupportedEncodingException e) {
-            this.logger.info("encoding exception");
-            e.printStackTrace();
+            this.logger.error("encoding exception", e);
         }
 
         try {
-            synchronized (this.lock) {
-                this.lock.wait();
+            synchronized (this.stopLock) {
+                this.stopLock.wait();
             }
         } catch (InterruptedException e) {
             this.logger.error(e.getMessage(), e);
-            // ignore
+            // mbox.exit will close SysmoServer thread and all childs.
+            this.mbox.exit("crash");
         } finally {
             this.db.close();
             this.env.close();
@@ -135,34 +139,52 @@ public class NChecksStateServer implements Runnable {
     }
 
 
-    void other() {
+    // utility classes
+    static class StateServerSocket implements Runnable
+    {
         // server loop
-        ServerSocket server;
-        try {
-            server = new ServerSocket(8867);
-        } catch (IOException e) {
-            // ignore
-            return;
+        private ServerSocket server = null;
+
+        StateServerSocket(int port) throws IOException {
+            this.server = new ServerSocket(8867);
         }
 
-        while (true) try {
-
-            Socket client = server.accept();
-            Runnable clientRunnable = new StateStoreClient(client);
-            Thread clientThread = new Thread(clientRunnable);
-            clientThread.start();
-
-        } catch (Exception|Error e) {
-            break;
+        public void stop() {
+            if (this.server != null) {
+                try {
+                    this.server.close();
+                    this.server = null;
+                } catch (IOException e) {
+                    // ignore
+                }
+            }
         }
 
-        // close
+        @Override
+        public void run() {
+            while (true) try {
+
+                Socket client = this.server.accept();
+                Runnable clientRunnable = new StateClient(client);
+                Thread clientThread = new Thread(clientRunnable);
+                clientThread.start();
+
+            } catch (Exception | Error e) {
+                if (this.server != null) {
+                    try {
+                        this.server.close();
+                    } catch (IOException ignore) {
+                        // ignore
+                    }
+                }
+                break;
+            }
+        }
     }
 
-    // utility classes
-    static class StateStoreClient implements Runnable {
+    static class StateClient implements Runnable {
 
-        StateStoreClient(Socket client) {
+        StateClient(Socket client) {
 
         }
 
