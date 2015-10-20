@@ -30,14 +30,13 @@ import com.ericsson.otp.erlang.OtpNode;
 
 import io.sysmo.nchecks.NChecksErlang;
 
-import io.sysmo.nchecks.NChecksStateServer;
+import io.sysmo.nchecks.StateServer;
 import org.eclipse.jetty.server.Server;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.FileSystem;
@@ -54,7 +53,9 @@ public class SysmoServer {
 
         // init logger
         LogManager logManager = LogManager.getLogManager();
+
         InputStream in = null;
+
         try {
             in = SysmoServer.class.getResourceAsStream("/logging.properties");
             logManager.readConfiguration(in);
@@ -64,7 +65,6 @@ public class SysmoServer {
             if (in != null) {
                 try {
                     in.close();
-                    in = null;
                 } catch (IOException e) {
                     // ignore
                 }
@@ -94,6 +94,7 @@ public class SysmoServer {
         String dataDir    = fs.getPath("data").toString();
 
         String confFile = Paths.get(etcDir, "sysmo.properties").toString();
+
         InputStream propIn = null;
         int stateServerPort;
         try  {
@@ -157,11 +158,11 @@ public class SysmoServer {
         /*
          * Create state server thread
          */
-        NChecksStateServer stateServer;
+        StateServer stateServer;
         try {
             // dummy mbox only used to notify mainMbox of a failure
             // and stop the JVM.
-            stateServer = NChecksStateServer.getInstance(
+            stateServer = StateServer.getInstance(
                     dataDir, stateServerPort, stateDummyMbox);
         } catch (Exception e) {
             logger.error(e.getMessage(), e);

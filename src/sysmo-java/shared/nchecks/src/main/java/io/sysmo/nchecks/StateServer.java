@@ -34,31 +34,23 @@ import com.sleepycat.je.OperationStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.json.Json;
-import javax.json.JsonObject;
-import javax.json.JsonReaderFactory;
-import java.io.BufferedOutputStream;
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 
 import java.net.ServerSocket;
 import java.net.Socket;
 
-import java.nio.ByteBuffer;
 import java.nio.file.Paths;
 
 /**
  * Created by seb on 18/10/15.
  * TODO Provide berkley db store for NChecks modules state.
  */
-public class NChecksStateServer implements Runnable {
-    private static NChecksStateServer instance;
+public class StateServer implements Runnable {
+    private static StateServer instance;
     private static final String DB_NAME = "NCHECKS_STATES";
     private static final int DEFAULT_PORT = 9760;
     private Database db;
@@ -76,45 +68,46 @@ public class NChecksStateServer implements Runnable {
     }
 
     public static synchronized byte[] getState(String key) {
-        synchronized (NChecksStateServer.instance.lock) {
+        synchronized (StateServer.instance.lock) {
             try {
                 DatabaseEntry theKey = new DatabaseEntry(key.getBytes("UTF-8"));
                 DatabaseEntry data = new DatabaseEntry();
-                if (NChecksStateServer.instance.db.get(null, theKey, data,
+                if (StateServer.instance.db.get(null, theKey, data,
                         LockMode.DEFAULT) == OperationStatus.SUCCESS) {
                     return data.getData();
                 } else {
                     return new byte[0];
                 }
             } catch (UnsupportedEncodingException e) {
+                StateServer.instance.logger.warn(e.getMessage(), e);
                 return new byte[0];
             }
         }
     }
 
     public static synchronized void setState(String key, byte[] value) {
-        synchronized (NChecksStateServer.instance.lock) {
+        synchronized (StateServer.instance.lock) {
             try {
                 DatabaseEntry theKey = new DatabaseEntry(key.getBytes("UTF-8"));
                 DatabaseEntry theData = new DatabaseEntry(value);
-                NChecksStateServer.instance.db.put(null, theKey, theData);
+                StateServer.instance.db.put(null, theKey, theData);
             } catch (UnsupportedEncodingException e) {
                 // ignore
             }
         }
     }
-    public static synchronized NChecksStateServer getInstance(
+    public static synchronized StateServer getInstance(
             String dataDir,
             int port,
             OtpMbox mbox) throws IOException {
-        if (NChecksStateServer.instance == null) {
-            NChecksStateServer.instance =
-                    new NChecksStateServer(dataDir, port, mbox);
+        if (StateServer.instance == null) {
+            StateServer.instance =
+                    new StateServer(dataDir, port, mbox);
         }
-        return NChecksStateServer.instance;
+        return StateServer.instance;
     }
 
-    private NChecksStateServer(String dataDir, int port, OtpMbox mbox)
+    private StateServer(String dataDir, int port, OtpMbox mbox)
             throws IOException
     {
 
@@ -129,7 +122,8 @@ public class NChecksStateServer implements Runnable {
 
         DatabaseConfig dbConfig = new DatabaseConfig();
         dbConfig.setAllowCreate(true);
-        this.db = this.env.openDatabase(null, NChecksStateServer.DB_NAME, dbConfig);
+        dbConfig.setTemporary(true);
+        this.db = this.env.openDatabase(null, StateServer.DB_NAME, dbConfig);
         this.logger.info("database ok");
 
         this.server = new StateServerSocket(port);
@@ -144,18 +138,19 @@ public class NChecksStateServer implements Runnable {
         // populate test
         String aKey = "keyjojo";
         String aData = "datajojoqsdfqsdfj";
-        this.logger.info("will put data in db");
         try {
+            this.logger.info("will put data in db");
             DatabaseEntry theKey = new DatabaseEntry(aKey.getBytes("UTF-8"));
             DatabaseEntry theData = new DatabaseEntry(aData.getBytes("UTF-8"));
             this.db.put(null, theKey, theData);
 
+            this.logger.info("will get data from db");
             DatabaseEntry theKey2 = new DatabaseEntry("keyjojo".getBytes("UTF-8"));
             DatabaseEntry theData2 = new DatabaseEntry();
             if (this.db.get(null, theKey2, theData2, LockMode.DEFAULT) ==
                     OperationStatus.SUCCESS) {
-                byte[] originalData = theData.getData();
-                String strData = new String(originalData, "UTF-8");
+                byte[] binData = theData2.getData();
+                String strData = new String(binData, "UTF-8");
                 this.logger.info("for key: 'key' found data: " + strData);
             } else {
                 this.logger.info("for key: 'key' found no data");
@@ -190,7 +185,7 @@ public class NChecksStateServer implements Runnable {
 
         StateServerSocket(int port) throws IOException {
             if (port == 0) {
-                port = NChecksStateServer.DEFAULT_PORT;
+                port = StateServer.DEFAULT_PORT;
             }
             this.server = new ServerSocket(port);
         }
@@ -209,7 +204,7 @@ public class NChecksStateServer implements Runnable {
             while (true) try {
 
                 Socket client = this.server.accept();
-                Runnable clientRunnable = new ClientSocket(client);
+                Runnable clientRunnable = new ServerClientSocket(client);
                 Thread clientThread = new Thread(clientRunnable);
                 clientThread.start();
 
@@ -223,14 +218,14 @@ public class NChecksStateServer implements Runnable {
                 }
                 break;
             }
-            NChecksStateServer.instance.stop();
+            StateServer.instance.stop();
         }
     }
 
-    static class ClientSocket implements Runnable {
+    static class ServerClientSocket implements Runnable {
         private Socket socket;
 
-        ClientSocket(Socket socket) {
+        ServerClientSocket(Socket socket) {
             this.socket = socket;
         }
 
@@ -238,12 +233,13 @@ public class NChecksStateServer implements Runnable {
         public void run() {
             ObjectInputStream in = null;
             ObjectOutputStream out = null;
+            Exception ex;
             try {
                 in = new ObjectInputStream(this.socket.getInputStream());
                 out = new ObjectOutputStream(this.socket.getOutputStream());
 
                 String key;
-                byte[] value;
+                byte[] bytes;
 
                 StateMessage message;
                 while (this.socket.isConnected()) try {
@@ -256,22 +252,23 @@ public class NChecksStateServer implements Runnable {
                     switch (message.getAction()) {
                         case "set":
                             key = message.getKey();
-                            value = message.getValue();
-                            NChecksStateServer.setState(key,value);
+                            bytes = message.getBytes();
+                            StateServer.setState(key, bytes);
                             break;
                         case "get":
                             key = message.getKey();
-                            value = NChecksStateServer.getState(key);
-                            message.setValue(value);
+                            bytes = StateServer.getState(key);
+                            message.setBytes(bytes);
                             out.writeObject(message);
                             break;
                     }
 
-                } catch (ClassNotFoundException inner) {
+                } catch (Exception inner) {
                     break;
                 }
 
-            } catch (IOException e) {
+
+            } catch (Exception e) {
                 // ignore
             } finally {
                 try {
