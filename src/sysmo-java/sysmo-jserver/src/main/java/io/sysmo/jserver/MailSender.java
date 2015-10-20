@@ -128,10 +128,14 @@ public class MailSender implements Runnable {
         while (true) try {
             event = this.mbox.receive();
             this.sendMail(event);
-        } catch (OtpErlangExit |OtpErlangDecodeException e) {
-            this.logger.error(e.getMessage(), e);
-            this.mbox.exit("crash");
+        } catch (OtpErlangExit e) {
+            this.logger.info(e.getMessage(), e);
             break;
+        } catch (OtpErlangDecodeException e) {
+            this.logger.error(e.getMessage(), e);
+            break;
+        } finally {
+            this.mbox.exit("crash");
         }
     }
 

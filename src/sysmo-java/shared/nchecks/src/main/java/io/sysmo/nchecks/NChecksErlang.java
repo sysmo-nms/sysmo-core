@@ -21,6 +21,8 @@
 
 package io.sysmo.nchecks;
 
+import com.ericsson.otp.erlang.OtpErlangDecodeException;
+import com.ericsson.otp.erlang.OtpErlangExit;
 import io.sysmo.nchecks.modules.*;
 
 import com.ericsson.otp.erlang.OtpErlangAtom;
@@ -112,19 +114,22 @@ public class NChecksErlang implements Runnable
     }
 
     @Override
-    public void run()
-    {
+    public void run() {
         // loop and wait for calls
         NChecksErlang.logger.info("begin too loop");
         OtpErlangObject call;
         while (true) try {
             call = this.mbox.receive();
             this.handleMsg(call);
-        } catch (Exception e) {
-            NChecksErlang.logger.warn(e.getMessage(), e);
+        } catch (OtpErlangExit e) {
+            NChecksErlang.logger.info(e.getMessage(), e);
+            break;
+        } catch (OtpErlangDecodeException e) {
+            NChecksErlang.logger.error(e.getMessage(), e);
+            break;
+        } finally {
             this.threadPool.shutdownNow();
             this.mbox.exit("crach");
-            break;
         }
     }
 

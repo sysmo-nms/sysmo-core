@@ -16,6 +16,8 @@
 -record(state, {rrd4j_pid, snmp4j_pid, nchecks_pid,
                 eventdb_pid, mail_pid, jetty_port, assert, ready=false}).
 
+-define(JAVA_START_TIMEOUT, 25000).
+
 get_pid(For) ->
     gen_server:call(?MODULE, {get_pid, For}).
 
@@ -23,7 +25,7 @@ get_http_port() ->
     gen_server:call(?MODULE, get_http_port).
 
 assert_init() ->
-    gen_server:call(?MODULE, assert_init, 10000).
+    gen_server:call(?MODULE, assert_init, ?JAVA_START_TIMEOUT).
 
 start_link() ->
     Ret = gen_server:start_link({local, ?MODULE}, ?MODULE, [], []),

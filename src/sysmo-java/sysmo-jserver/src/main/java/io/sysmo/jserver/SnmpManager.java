@@ -30,6 +30,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Vector;
 
+import com.ericsson.otp.erlang.OtpErlangDecodeException;
+import com.ericsson.otp.erlang.OtpErlangExit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -136,14 +138,19 @@ public class SnmpManager implements Runnable
     {
         // then begin to loop and wait for calls
         OtpErlangObject call;
-        while (true) try
-        {
+        while (true) try {
+
             call = this.mbox.receive();
             this.handleMsg(call);
-        } catch (Exception e) {
-            this.logger.error(e.getMessage(), e);
-            this.mbox.exit("crash");
+
+        } catch (OtpErlangExit e) {
+            this.logger.info(e.getMessage(), e);
             break;
+        } catch (OtpErlangDecodeException e) {
+            this.logger.error(e.getMessage(), e);
+            break;
+        } finally {
+            this.mbox.exit("crash");
         }
     }
 

@@ -155,8 +155,6 @@ public class EventDb implements Runnable
             this.conn.setAutoCommit(false);
 
             Statement statement = this.conn.createStatement();
-            //statements.add(s);
-
             try {
                 statement.execute("CREATE TABLE NCHECKS_EVENTS("
                         + "EVENT_ID INT NOT NULL "

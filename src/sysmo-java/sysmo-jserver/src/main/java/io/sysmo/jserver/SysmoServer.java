@@ -30,6 +30,7 @@ import com.ericsson.otp.erlang.OtpNode;
 
 import io.sysmo.nchecks.NChecksErlang;
 
+import io.sysmo.nchecks.NChecksStateServer;
 import org.eclipse.jetty.server.Server;
 
 import org.slf4j.Logger;
@@ -125,7 +126,6 @@ public class SysmoServer {
             logger.error("Should not append here!" + e.getMessage(), e);
         }
 
-
         /*
          * Create derby thread
          */
@@ -161,7 +161,6 @@ public class SysmoServer {
         Thread nchecksThread = new Thread(nchecks);
         nchecksThread.start();
 
-
         /*
          * Create rrd4j thread
          */
@@ -191,6 +190,19 @@ public class SysmoServer {
         int jettyPort = JettyServer.getPort();
 
         /*
+         * Create state server thread
+         */
+        NChecksStateServer stateServer;
+        try {
+            stateServer = NChecksStateServer.getInstance(dataDir);
+        } catch (Exception e) {
+            // ignore
+            return;
+        }
+        Thread stateServerThread = new Thread(stateServer);
+        stateServerThread.start();
+
+        /*
          * Send acknowledgement to the "sysmo" erlang process
          */
         OtpErlangObject[] ackObj = new OtpErlangObject[7];
@@ -215,6 +227,7 @@ public class SysmoServer {
          * to terminate.
          */
         try {
+            stateServer.stop();
             jettyThread.stop();
             nchecksThread.join();
             rrd4jThread.join();

@@ -133,11 +133,15 @@ public class RrdLogger implements Runnable
         while (true) try {
             call = this.mbox.receive();
             this.threadPool.execute(new RrdRunnable(call));
-        } catch (OtpErlangExit|OtpErlangDecodeException e) {
+        } catch (OtpErlangExit e) {
+            this.logger.info(e.getMessage(), e);
+            break;
+        } catch (OtpErlangDecodeException e) {
             this.logger.error(e.getMessage(), e);
+            break;
+        } finally {
             this.threadPool.shutdown();
             this.mbox.exit("crash");
-            break;
         }
     }
 
