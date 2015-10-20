@@ -42,8 +42,10 @@ import javax.json.JsonWriter;
 import com.ericsson.otp.erlang.OtpErlangAtom;
 import com.ericsson.otp.erlang.OtpErlangDecodeException;
 import com.ericsson.otp.erlang.OtpErlangExit;
+import com.ericsson.otp.erlang.OtpErlangInt;
 import com.ericsson.otp.erlang.OtpErlangLong;
 import com.ericsson.otp.erlang.OtpErlangObject;
+import com.ericsson.otp.erlang.OtpErlangRangeException;
 import com.ericsson.otp.erlang.OtpErlangString;
 import com.ericsson.otp.erlang.OtpErlangTuple;
 import com.ericsson.otp.erlang.OtpMbox;
@@ -85,6 +87,13 @@ public class EventDb implements Runnable
     private static final int PROBE_DISPLAY = 11;
     private static final int ACKNOWLEDGED  = 12;
     private static final int EVENT_ID      = 13;
+
+    // NCHECKS_EVENTS and NCHECKS_LATEST_EVENTS update acknowledgement
+    private PreparedStatement psUpdateAck;
+    private PreparedStatement psUpdateLatestAck;
+    private static final int UP_ACK_USER      = 1;
+    private static final int UP_ACK_MESSAGE   = 2;
+    private static final int UP_EVENT_ID      = 3;
 
     // NCHECKS_LATEST_EVENTS table delete prepared statement
     private PreparedStatement psDeletePrevious;
@@ -172,7 +181,9 @@ public class EventDb implements Runnable
                         + "HOST_LOCATION VARCHAR(255) NOT NULL,"
                         + "HOST_CONTACT  VARCHAR(255) NOT NULL,"
                         + "PROBE_DISPLAY VARCHAR(255) NOT NULL,"
-                        + "ACKNOWLEDGED  BOOLEAN NOT NULL,"
+                        + "ACKNOWLEDGED  BOOLEAN      NOT NULL,"
+                        + "ACK_USER     VARCHAR(255),"
+                        + "ACK_MESSAGE  VARCHAR(500),"
                         + "PRIMARY KEY (EVENT_ID))");
 
                 statement.execute("CREATE INDEX PROBE_ID_INDEX "
@@ -197,7 +208,9 @@ public class EventDb implements Runnable
                         + "HOST_LOCATION   VARCHAR(255) NOT NULL,"
                         + "HOST_CONTACT    VARCHAR(255) NOT NULL,"
                         + "PROBE_DISPLAY   VARCHAR(255) NOT NULL,"
-                        + "ACKNOWLEDGED  BOOLEAN NOT NULL,"
+                        + "ACKNOWLEDGED    BOOLEAN NOT NULL,"
+                        + "ACK_USER        VARCHAR(255),"
+                        + "ACK_MESSAGE     VARCHAR(500),"
                         + "PRIMARY KEY (EVENT_ID))");
                 this.conn.commit();
                 this.logger.info("Database successfully initialized");
@@ -254,6 +267,19 @@ public class EventDb implements Runnable
                                 + "OR ACKNOWLEDGED = FALSE "
                             + "UNION "
                             + "SELECT * FROM NCHECKS_LATEST_EVENTS");
+
+            this.psUpdateAck = conn.prepareStatement(
+                    "UPDATE NCHECKS_EVENTS SET "
+                            + "ACKNOWLEDGED = TRUE,"
+                            + "ACK_USER     = ?,"
+                            + "ACK_MESSAGE  = ? "
+                            + "WHERE EVENT_ID = ?");
+            this.psUpdateLatestAck = conn.prepareStatement(
+                    "UPDATE NCHECKS_LATEST_EVENTS SET "
+                            + "ACKNOWLEDGED = TRUE,"
+                            + "ACK_USER     = ?,"
+                            + "ACK_MESSAGE  = ? "
+                            + "WHERE EVENT_ID = ?");
 
         } catch (SQLException e) {
             printSQLException(e);
@@ -355,8 +381,54 @@ public class EventDb implements Runnable
             case "dump_probe_events":
                 this.handleSelectProbeEvents(tuple);
                 break;
+            case "acknowledge":
+                this.handleAcknowledgement(tuple);
+                break;
             default:
                 this.logger.info("Unknown command " + command.toString());
+        }
+    }
+
+    private void handleAcknowledgement(OtpErlangTuple tuple) {
+        /*
+         * TODO Acknowledgement
+         * WARNING Must be called from monitor_channel.erl
+         * WARNING monitor_channel.erl must emit sync pdu to clients
+         */
+        OtpErlangInt eventId = (OtpErlangInt) tuple.elementAt(1);
+        OtpErlangString user = (OtpErlangString) tuple.elementAt(2);
+        OtpErlangString message = (OtpErlangString) tuple.elementAt(3);
+        int eventIdInt;
+        try {
+            eventIdInt = eventId.intValue();
+        } catch (OtpErlangRangeException e) {
+            this.logger.error(e.getMessage(), e);
+            return;
+        }
+
+        try {
+            this.psUpdateLatestAck.setString(
+                    EventDb.UP_ACK_USER, user.stringValue());
+            this.psUpdateLatestAck.setString(
+                    EventDb.UP_ACK_MESSAGE, message.stringValue());
+            this.psUpdateLatestAck.setInt(
+                    EventDb.UP_EVENT_ID, eventIdInt);
+            this.psUpdateLatestAck.executeUpdate();
+        } catch (SQLException e) {
+            // does not exist ok.
+        }
+
+        try {
+            this.psUpdateAck.setString(
+                    EventDb.UP_ACK_USER, user.stringValue());
+            this.psUpdateAck.setString(
+                    EventDb.UP_ACK_MESSAGE, message.stringValue());
+            this.psUpdateAck.setInt(
+                    EventDb.UP_EVENT_ID, eventIdInt);
+            this.psUpdateAck.executeUpdate();
+        } catch (SQLException e) {
+            // should not append!!
+            this.printSQLException(e);
         }
     }
 
