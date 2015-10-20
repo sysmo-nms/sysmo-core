@@ -98,12 +98,12 @@ handle_call({notify_move, Name, CheckId, Descr, Status,
     {reply, ok, S};
 
 handle_call({dump_probe_events, DumpPath, Probe}, _F, S) ->
-    {ok, EventFile} = j_server_eventdb:dump_probe_events(DumpPath, Probe),
-    {reply, EventFile, S};
+    Reply = j_server_eventdb:dump_probe_events(DumpPath, Probe),
+    {reply, Reply, S};
 
 handle_call({dump_latest_events, DumpPath}, _F, S) ->
-    {ok, LatestEvents} = j_server_eventdb:dump_latest_events(DumpPath),
-    {reply, LatestEvents, S};
+    Reply = j_server_eventdb:dump_latest_events(DumpPath),
+    {reply, Reply, S};
 
 handle_call(_R,_F,S) ->
     {noreply, S}.
