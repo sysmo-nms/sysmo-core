@@ -65,6 +65,16 @@ public class NChecksErlang implements Runnable
     static NChecksErlang instance = null;
     static Logger logger = LoggerFactory.getLogger(NChecksErlang.class);
 
+    /**
+     * Start a Nchecks application that communicate with an erlang server.
+     * @param mbox The jserver_nchecks mailbox
+     * @param nodeName The name of the foreign node
+     * @param rubyDir The ruby script dir
+     * @param utilsDir The utils dir
+     * @param etcDir The config dir
+     * @return An NChecksErlang Instance
+     * @throws Exception
+     */
     public static synchronized NChecksErlang getInstance(
             final OtpMbox mbox, final String nodeName,
             final String rubyDir, final String utilsDir,
@@ -290,62 +300,6 @@ public class NChecksErlang implements Runnable
         }
         return result;
     }
-
-    /*
-    private static void testSpace()
-    {
-
-        Map<String,Argument> testArguments = new HashMap<String,Argument>();
-        Argument a = new Argument();
-        a.set(161);
-        testArguments.put("snmp_port", a);
-        a = new Argument();
-        a.set("3");
-        testArguments.put("snmp_version", a);
-        a = new Argument();
-        a.set("authPriv");
-        testArguments.put("snmp_seclevel", a);
-        a = new Argument();
-        a.set("public");
-        testArguments.put("snmp_community", a);
-        a = new Argument();
-        a.set("jojo");
-        testArguments.put("snmp_usm_user", a);
-        a = new Argument();
-        a.set("password123");
-        testArguments.put("snmp_authkey", a);
-        a = new Argument();
-        a.set("MD5");
-        testArguments.put("snmp_authproto", a);
-        a = new Argument();
-        a.set("enckey123");
-        testArguments.put("snmp_privkey", a);
-        a = new Argument();
-        a.set("DES");
-        testArguments.put("snmp_privproto", a);
-        a = new Argument();
-        a.set(2500);
-        testArguments.put("snmp_timeout", a);
-        a = new Argument();
-        a.set(1);
-        testArguments.put("snmp_retries", a);
-        a = new Argument();
-        a.set("1,2,3");
-        testArguments.put("if_selection", a);
-        a = new Argument();
-        a.set("192.168.0.5");
-        testArguments.put("host", a);
-        a = new Argument();
-        a.set("target-234345");
-        testArguments.put("target_id", a);
-
-
-
-        Query query = new Query(testArguments);
-        module.execute(query);
-    }
-    */
-
 
     interface CheckCaller
     {

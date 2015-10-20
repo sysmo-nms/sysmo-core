@@ -34,13 +34,23 @@ import com.sleepycat.je.OperationStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.json.Json;
+import javax.json.JsonObject;
+import javax.json.JsonReaderFactory;
+import java.io.BufferedOutputStream;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 
 import java.net.ServerSocket;
 import java.net.Socket;
 
+import java.nio.ByteBuffer;
 import java.nio.file.Paths;
 
 /**
@@ -50,10 +60,12 @@ import java.nio.file.Paths;
 public class NChecksStateServer implements Runnable {
     private static NChecksStateServer instance;
     private static final String DB_NAME = "NCHECKS_STATES";
+    private static final int DEFAULT_PORT = 9760;
     private Database db;
     private Environment env;
     private Logger logger;
     private OtpMbox mbox;
+    private StateServerSocket server;
     private final Object stopLock = new Object();
     private final Object lock = new Object();
 
@@ -63,25 +75,48 @@ public class NChecksStateServer implements Runnable {
         }
     }
 
-    public static synchronized void getState(String key) {
+    public static synchronized byte[] getState(String key) {
         synchronized (NChecksStateServer.instance.lock) {
+            try {
+                DatabaseEntry theKey = new DatabaseEntry(key.getBytes("UTF-8"));
+                DatabaseEntry data = new DatabaseEntry();
+                if (NChecksStateServer.instance.db.get(null, theKey, data,
+                        LockMode.DEFAULT) == OperationStatus.SUCCESS) {
+                    return data.getData();
+                } else {
+                    return new byte[0];
+                }
+            } catch (UnsupportedEncodingException e) {
+                return new byte[0];
+            }
         }
     }
 
-    public static synchronized void setState(String key, String data) {
+    public static synchronized void setState(String key, byte[] value) {
         synchronized (NChecksStateServer.instance.lock) {
+            try {
+                DatabaseEntry theKey = new DatabaseEntry(key.getBytes("UTF-8"));
+                DatabaseEntry theData = new DatabaseEntry(value);
+                NChecksStateServer.instance.db.put(null, theKey, theData);
+            } catch (UnsupportedEncodingException e) {
+                // ignore
+            }
         }
     }
     public static synchronized NChecksStateServer getInstance(
             String dataDir,
-            OtpMbox mbox) {
+            int port,
+            OtpMbox mbox) throws IOException {
         if (NChecksStateServer.instance == null) {
-            NChecksStateServer.instance = new NChecksStateServer(dataDir, mbox);
+            NChecksStateServer.instance =
+                    new NChecksStateServer(dataDir, port, mbox);
         }
         return NChecksStateServer.instance;
     }
 
-    private NChecksStateServer(String dataDir, OtpMbox mbox) {
+    private NChecksStateServer(String dataDir, int port, OtpMbox mbox)
+            throws IOException
+    {
 
         this.logger = LoggerFactory.getLogger(this.getClass());
         this.mbox = mbox;
@@ -96,6 +131,12 @@ public class NChecksStateServer implements Runnable {
         dbConfig.setAllowCreate(true);
         this.db = this.env.openDatabase(null, NChecksStateServer.DB_NAME, dbConfig);
         this.logger.info("database ok");
+
+        this.server = new StateServerSocket(port);
+        Thread serverThread = new Thread(server);
+        serverThread.start();
+        this.logger.info("server started ok");
+
     }
 
     @Override
@@ -135,6 +176,8 @@ public class NChecksStateServer implements Runnable {
             this.db.close();
             this.env.close();
             this.logger.info("end run");
+            this.server.stop();
+            this.logger.info("server closed");
         }
     }
 
@@ -146,17 +189,18 @@ public class NChecksStateServer implements Runnable {
         private ServerSocket server = null;
 
         StateServerSocket(int port) throws IOException {
-            this.server = new ServerSocket(8867);
+            if (port == 0) {
+                port = NChecksStateServer.DEFAULT_PORT;
+            }
+            this.server = new ServerSocket(port);
         }
 
         public void stop() {
-            if (this.server != null) {
-                try {
-                    this.server.close();
-                    this.server = null;
-                } catch (IOException e) {
-                    // ignore
-                }
+            if (this.server != null) try {
+                this.server.close();
+                this.server = null;
+            } catch (IOException e) {
+                // ignore
             }
         }
 
@@ -165,7 +209,7 @@ public class NChecksStateServer implements Runnable {
             while (true) try {
 
                 Socket client = this.server.accept();
-                Runnable clientRunnable = new StateClient(client);
+                Runnable clientRunnable = new ClientSocket(client);
                 Thread clientThread = new Thread(clientRunnable);
                 clientThread.start();
 
@@ -179,19 +223,79 @@ public class NChecksStateServer implements Runnable {
                 }
                 break;
             }
+            NChecksStateServer.instance.stop();
         }
     }
 
-    static class StateClient implements Runnable {
+    static class ClientSocket implements Runnable {
+        private Socket socket;
 
-        StateClient(Socket client) {
-
+        ClientSocket(Socket socket) {
+            this.socket = socket;
         }
 
         @Override
         public void run() {
-            // handle client socket read write
+            ObjectInputStream in = null;
+            ObjectOutputStream out = null;
+            try {
+                in = new ObjectInputStream(this.socket.getInputStream());
+                out = new ObjectOutputStream(this.socket.getOutputStream());
 
+                String key;
+                byte[] value;
+
+                StateMessage message;
+                while (this.socket.isConnected()) try {
+
+                    message = (StateMessage) in.readObject();
+
+                    /*
+                     * get action
+                     */
+                    switch (message.getAction()) {
+                        case "set":
+                            key = message.getKey();
+                            value = message.getValue();
+                            NChecksStateServer.setState(key,value);
+                            break;
+                        case "get":
+                            key = message.getKey();
+                            value = NChecksStateServer.getState(key);
+                            message.setValue(value);
+                            out.writeObject(message);
+                            break;
+                    }
+
+                } catch (ClassNotFoundException inner) {
+                    break;
+                }
+
+            } catch (IOException e) {
+                // ignore
+            } finally {
+                try {
+                    if (in != null) {
+                        in.close();
+                    }
+                } catch (IOException ignore) {
+                    // ignore
+                }
+
+                try {
+                    if (out != null) {
+                        out.close();
+                    }
+                } catch (IOException ignore) {
+                    // ignore
+                }
+
+                try {
+                    this.socket.close();
+                } catch (IOException ignore) {
+                    // ignore
+                }
+            }
         }
     }
 }

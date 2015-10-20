@@ -36,10 +36,14 @@ import org.eclipse.jetty.server.Server;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
+import java.nio.file.Paths;
+import java.util.Properties;
 import java.util.logging.LogManager;
 
 public class SysmoServer {
@@ -60,6 +64,7 @@ public class SysmoServer {
             if (in != null) {
                 try {
                     in.close();
+                    in = null;
                 } catch (IOException e) {
                     // ignore
                 }
@@ -87,6 +92,27 @@ public class SysmoServer {
         String etcDir     = fs.getPath("etc").toString();
         String docrootDir = fs.getPath("docroot").toString();
         String dataDir    = fs.getPath("data").toString();
+
+        String confFile = Paths.get(etcDir, "sysmo.properties").toString();
+        InputStream propIn = null;
+        int stateServerPort;
+        try  {
+            Properties props = new Properties();
+            propIn = new FileInputStream(confFile);
+            props.load(propIn);
+            stateServerPort =
+                    Integer.parseInt(props.getProperty("state_server_port"));
+        } catch (Exception e) {
+            stateServerPort = 0;
+        } finally {
+            if (propIn != null) {
+                try {
+                    propIn.close();
+                } catch (IOException e) {
+                    // ignore
+                }
+            }
+        }
 
         /*
          * Connect to erlang-main node
@@ -129,6 +155,22 @@ public class SysmoServer {
         }
 
         /*
+         * Create state server thread
+         */
+        NChecksStateServer stateServer;
+        try {
+            // dummy mbox only used to notify mainMbox of a failure
+            // and stop the JVM.
+            stateServer = NChecksStateServer.getInstance(
+                    dataDir, stateServerPort, stateDummyMbox);
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
+            return;
+        }
+        Thread stateServerThread = new Thread(stateServer);
+        stateServerThread.start();
+
+        /*
          * Create derby thread
          */
         EventDb eventDb;
@@ -147,8 +189,8 @@ public class SysmoServer {
          */
         NChecksErlang nchecks;
         try {
-            nchecks = NChecksErlang.getInstance(
-                    nchecksMbox, foreignNodeName, rubyDir, utilsDir, etcDir);
+            nchecks = NChecksErlang.getInstance(nchecksMbox, foreignNodeName,
+                    rubyDir, utilsDir, etcDir);
         } catch (Exception e) {
             logger.error("NChecks failed to start" + e.getMessage(), e);
             System.err.println("NChecks failed to start" + e.getMessage());
@@ -191,21 +233,6 @@ public class SysmoServer {
         Server jettyThread = JettyServer.startServer(docrootDir, etcDir);
         int jettyPort = JettyServer.getPort();
 
-        /*
-         * Create state server thread
-         */
-        NChecksStateServer stateServer;
-        try {
-            // dummy mbox only used to notify mainMbox of a failure
-            // and stop the JVM.
-            stateServer = NChecksStateServer.getInstance(
-                    dataDir, stateDummyMbox);
-        } catch (Exception e) {
-            // ignore
-            return;
-        }
-        Thread stateServerThread = new Thread(stateServer);
-        stateServerThread.start();
 
         /*
          * Send acknowledgement to the "sysmo" erlang process
