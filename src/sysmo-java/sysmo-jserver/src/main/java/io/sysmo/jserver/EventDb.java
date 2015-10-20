@@ -86,7 +86,9 @@ public class EventDb implements Runnable
     private static final int HOST_CONTACT  = 10;
     private static final int PROBE_DISPLAY = 11;
     private static final int ACKNOWLEDGED  = 12;
-    private static final int EVENT_ID      = 13;
+    private static final int ACK_USER      = 13;
+    private static final int ACK_MESSAGE   = 14;
+    private static final int EVENT_ID      = 15;
 
     // NCHECKS_EVENTS and NCHECKS_LATEST_EVENTS update acknowledgement
     private PreparedStatement psUpdateAck;
@@ -182,8 +184,8 @@ public class EventDb implements Runnable
                         + "HOST_CONTACT  VARCHAR(255) NOT NULL,"
                         + "PROBE_DISPLAY VARCHAR(255) NOT NULL,"
                         + "ACKNOWLEDGED  BOOLEAN      NOT NULL,"
-                        + "ACK_USER     VARCHAR(255),"
-                        + "ACK_MESSAGE  VARCHAR(500),"
+                        + "ACK_USER      VARCHAR(255) NOT NULL,"
+                        + "ACK_MESSAGE   VARCHAR(500) NOT NULL,"
                         + "PRIMARY KEY (EVENT_ID))");
 
                 statement.execute("CREATE INDEX PROBE_ID_INDEX "
@@ -208,9 +210,9 @@ public class EventDb implements Runnable
                         + "HOST_LOCATION   VARCHAR(255) NOT NULL,"
                         + "HOST_CONTACT    VARCHAR(255) NOT NULL,"
                         + "PROBE_DISPLAY   VARCHAR(255) NOT NULL,"
-                        + "ACKNOWLEDGED    BOOLEAN NOT NULL,"
-                        + "ACK_USER        VARCHAR(255),"
-                        + "ACK_MESSAGE     VARCHAR(500),"
+                        + "ACKNOWLEDGED    BOOLEAN      NOT NULL,"
+                        + "ACK_USER        VARCHAR(255) NOT NULL,"
+                        + "ACK_MESSAGE     VARCHAR(500) NOT NULL,"
                         + "PRIMARY KEY (EVENT_ID))");
                 this.conn.commit();
                 this.logger.info("Database successfully initialized");
@@ -241,8 +243,9 @@ public class EventDb implements Runnable
                             + "(PROBE_ID,DATE_CREATED,NCHECKS_ID,"
                             + "STATUS,STATUS_CODE,RETURN_STRING,MONTH_CREATED,"
                             + "HOST_DISPLAY,HOST_LOCATION,HOST_CONTACT,"
-                            + "PROBE_DISPLAY,ACKNOWLEDGED) "
-                            + "VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+                            + "PROBE_DISPLAY,ACKNOWLEDGED,ACK_USER,"
+                            + "ACK_MESSAGE) "
+                            + "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                     Statement.RETURN_GENERATED_KEYS);
 
             this.psInsertLast = conn.prepareStatement(
@@ -250,8 +253,9 @@ public class EventDb implements Runnable
                             + "(PROBE_ID,DATE_CREATED,NCHECKS_ID,"
                             + "STATUS,STATUS_CODE,RETURN_STRING,MONTH_CREATED,"
                             + "HOST_DISPLAY,HOST_LOCATION,HOST_CONTACT,"
-                            + "PROBE_DISPLAY,ACKNOWLEDGED,EVENT_ID) "
-                            + "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)");
+                            + "PROBE_DISPLAY,ACKNOWLEDGED,ACK_USER,"
+                            + "ACK_MESSAGE,EVENT_ID) "
+                            + "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
 
 
             this.psDeletePrevious = conn.prepareStatement(
@@ -282,7 +286,7 @@ public class EventDb implements Runnable
                             + "WHERE EVENT_ID = ?");
 
         } catch (SQLException e) {
-            printSQLException(e);
+            this.printSQLException(e);
             throw e;
         }
     }
@@ -538,6 +542,8 @@ public class EventDb implements Runnable
         this.psInsert.setString(EventDb.HOST_LOCATION, hostLocation);
         this.psInsert.setString(EventDb.HOST_CONTACT, hostContact);
         this.psInsert.setBoolean(EventDb.ACKNOWLEDGED, false);
+        this.psInsert.setString(EventDb.ACK_USER, "");
+        this.psInsert.setString(EventDb.ACK_MESSAGE, "");
 
         this.psInsert.executeUpdate();
 
@@ -572,6 +578,9 @@ public class EventDb implements Runnable
         this.psInsertLast.setString(EventDb.HOST_LOCATION, hostLocation);
         this.psInsertLast.setString(EventDb.HOST_CONTACT, hostContact);
         this.psInsertLast.setBoolean(EventDb.ACKNOWLEDGED, false);
+        this.psInsertLast.setString(EventDb.ACK_USER, "");
+        this.psInsertLast.setString(EventDb.ACK_MESSAGE, "");
+
         this.psInsertLast.executeUpdate();
 
         //this.printTables();
