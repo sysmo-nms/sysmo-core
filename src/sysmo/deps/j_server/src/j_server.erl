@@ -11,35 +11,34 @@
 -export([start_link/0]).
 
 % other
--export([get_pid/1, get_http_port/0]).
+-export([get_pid/1]).
 
 -record(state, {rrd4j_pid, snmp4j_pid, nchecks_pid,
-                eventdb_pid, mail_pid, jetty_port, assert, ready=false}).
+    eventdb_pid, mail_pid, jetty_port, assert, ready=false}).
 
 -define(JAVA_START_TIMEOUT, 25000).
+
+start_link() ->
+    Result = gen_server:start_link({local, ?MODULE}, ?MODULE, [], []),
+    % Wait for java side mailbox to be ready and send the "java_connected"
+    % info message.
+    ok = assert_init(),
+    Result.
 
 get_pid(For) ->
     gen_server:call(?MODULE, {get_pid, For}).
 
-get_http_port() ->
-    gen_server:call(?MODULE, get_http_port).
-
 assert_init() ->
     gen_server:call(?MODULE, assert_init, ?JAVA_START_TIMEOUT).
 
-start_link() ->
-    Ret = gen_server:start_link({local, ?MODULE}, ?MODULE, [], []),
-    % Wait for java side mailbox ready and send the "java_connected"
-    % info message.
-    ok  = assert_init(),
-    Ret.
 
+% gen_server
 init([]) ->
     % build relative java server script path
     Prefix = case os:type() of
-        {win32,_} -> ".bat";
-        _         -> ""
-    end,
+                 {win32,_} -> ".bat";
+                 _         -> ""
+             end,
     Relative = string:concat("sysmo-jserver/bin/sysmo-jserver", Prefix),
 
     % get the location of the java app and generate cmd
@@ -54,10 +53,8 @@ init([]) ->
     WorkDir  = filename:absname(""),
 
     erlang:open_port({spawn_executable, Cmd},
-                [{cd, WorkDir},
-                 {args,[Node, Cookie]},
-                 exit_status,
-                 stderr_to_stdout]),
+        [{cd, WorkDir}, {args,[Node, Cookie]}, exit_status, stderr_to_stdout]),
+
     {ok, #state{}}.
 
 handle_call(assert_init, _From, #state{ready=true} = S) ->
@@ -88,41 +85,26 @@ handle_cast(_Cast, S) ->
 
 
 handle_info({java_connected, Rrd4jPid, Snmp4jPid, NchecksPid, EventdbPid,
-             MailPid, JettyPort}, #state{assert=undefined}) ->
+    MailPid, JettyPort}, #state{assert=From}) ->
+    case From of undefined -> ok; _ -> gen_server:reply(From, ok) end,
     application:set_env(supercast, http_port, JettyPort),
     {noreply, #state{
-                 ready = true,
-                 rrd4j_pid = Rrd4jPid,
-                 snmp4j_pid = Snmp4jPid,
-                 nchecks_pid = NchecksPid,
-                 eventdb_pid = EventdbPid,
-                 mail_pid = MailPid,
-                 jetty_port = JettyPort}};
-handle_info({java_connected, Rrd4jPid, Snmp4jPid, NchecksPid, EventdbPid,
-             MailPid, JettyPort}, #state{assert=From}) ->
-    gen_server:reply(From, ok),
-    application:set_env(supercast, http_port, JettyPort),
-    {noreply, #state{
-                 ready = true,
-                 rrd4j_pid = Rrd4jPid,
-                 snmp4j_pid = Snmp4jPid,
-                 nchecks_pid = NchecksPid,
-                 eventdb_pid = EventdbPid,
-                 mail_pid = MailPid,
-                 jetty_port = JettyPort}};
+        ready = true,
+        rrd4j_pid = Rrd4jPid,
+        snmp4j_pid = Snmp4jPid,
+        nchecks_pid = NchecksPid,
+        eventdb_pid = EventdbPid,
+        mail_pid = MailPid,
+        jetty_port = JettyPort}};
 
 handle_info({_Port, {exit_status, Status}}, S) ->
     ?LOG_ERROR("java node has crashed", {status, Status, state, S}),
-    {noreply, S};
-    %{stop, "Java node has crashed", S};
+    {stop, "Java node has crashed", S};
 
 handle_info(_Info, S) ->
     ?LOG_WARNING("Received unknow info", _Info),
     {noreply, S}.
 
+terminate(_, _) -> ok.
 
-terminate(_,_) ->
-    ok.
-
-code_change(_,S,_) ->
-     {ok, S}.
+code_change(_, S, _) -> {ok, S}.

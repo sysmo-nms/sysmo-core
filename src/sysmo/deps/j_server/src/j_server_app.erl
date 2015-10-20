@@ -4,8 +4,6 @@
 
 -export([start/2, stop/1]).
 
-start(_Type, _Args) ->
-    j_server_sup:start_link().
+start(_Type, _Args) -> j_server_sup:start_link().
 
-stop(_State) ->
-    ok.
+stop(_State) -> ok.

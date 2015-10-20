@@ -127,10 +127,9 @@ public class NChecksErlang implements Runnable
         } catch (OtpErlangDecodeException e) {
             NChecksErlang.logger.error(e.getMessage(), e);
             break;
-        } finally {
-            this.threadPool.shutdownNow();
-            this.mbox.exit("crach");
         }
+        this.threadPool.shutdownNow();
+        this.mbox.exit("crach");
     }
 
     /**

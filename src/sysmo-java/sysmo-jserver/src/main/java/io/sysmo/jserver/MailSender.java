@@ -134,9 +134,8 @@ public class MailSender implements Runnable {
         } catch (OtpErlangDecodeException e) {
             this.logger.error(e.getMessage(), e);
             break;
-        } finally {
-            this.mbox.exit("crash");
         }
+        this.mbox.exit("crash");
     }
 
     public void sendMail(OtpErlangObject event) {

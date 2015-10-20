@@ -38,6 +38,7 @@
 % @private
 start_link() ->
     Ret = gen_server:start_link({local, ?MODULE}, ?MODULE, [], []),
+    % TODO should be a supercast work
     % clean sync dir every hours
     ok = register_job("clean_sync_dir", 3600000, {?MODULE, clean_sync_dir, ""}),
     Ret.

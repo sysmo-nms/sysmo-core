@@ -23,38 +23,17 @@
 -include("monitor.hrl").
 -include_lib("common_hrl/include/logs.hrl").
 
--export([
-    % public
-    new_target/2,
-    new_job/2,
-    new_probe/2,
+-export([new_target/2, new_job/2, new_probe/2]).
+-export([del_target/1, del_job/1, del_probe/1]).
+-export([fire_job/1, force_probe/1, trigger_nchecks_reply/2]).
+-export([which_targets/0, which_probes/0, which_jobs/0]).
 
-    del_target/1,
-    del_job/1,
-    del_probe/1,
+% private probe utils
+-export([timestamp/0, read_timer/1, generate_temp_dir/0,
+    send_after/2, send_after_rand/2]).
 
-    fire_job/1,
-
-    which_targets/0,
-    which_probes/0,
-    which_jobs/0,
-
-    force_probe/1,
-
-    trigger_nchecks_reply/2,
-
-    % private probe utils
-    timestamp/0,
-    read_timer/1,
-    generate_temp_dir/0,
-    send_after/2,
-    send_after_rand/2,
-
-
-    % tests
-    fill_test/1
-
-]).
+% tests
+-export([fill_test/1]).
 
 
 %%-----------------------------------------------------------------------------
@@ -180,6 +159,7 @@ read_timer(TRef) ->
 -spec generate_temp_dir() -> TmpdirString::string().
 % @private
 % @doc
+% TODO should be a supercast work
 % The string returned can be used to create a temporary directory under dump.
 % Used by the probes for synchronization events.
 % @end

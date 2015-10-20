@@ -26,20 +26,13 @@
 -behaviour(gen_server).
 
 % GEN_SERVER
--export([
-    start_link/0,
-    init/1,
-    handle_call/3,
-    handle_cast/2,
-    handle_info/2,
-    terminate/2,
-    code_change/3
-]).
+-export([init/1, handle_call/3, handle_cast/2, handle_info/2,
+    terminate/2, code_change/3]).
+
+-export([start_link/0]).
 
 % SUPERCAST_COMMANDER
--export([
-    handle_command/2
-]).
+-export([handle_command/2]).
 
 % TODO handle_command might be spawned when no lock is required.
 % catch every client entry. I do not want this gen_server to crash.

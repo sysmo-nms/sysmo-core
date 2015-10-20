@@ -149,9 +149,9 @@ public class SnmpManager implements Runnable
         } catch (OtpErlangDecodeException e) {
             this.logger.error(e.getMessage(), e);
             break;
-        } finally {
-            this.mbox.exit("crash");
         }
+
+        this.mbox.exit("crash");
     }
 
     private byte[] getEngineId(Path path) throws Exception, Error

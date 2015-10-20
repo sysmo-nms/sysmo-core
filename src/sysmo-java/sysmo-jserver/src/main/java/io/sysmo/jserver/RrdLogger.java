@@ -139,10 +139,9 @@ public class RrdLogger implements Runnable
         } catch (OtpErlangDecodeException e) {
             this.logger.error(e.getMessage(), e);
             break;
-        } finally {
-            this.threadPool.shutdown();
-            this.mbox.exit("crash");
         }
+        this.threadPool.shutdown();
+        this.mbox.exit("crash");
     }
 
     public static void sendReply(

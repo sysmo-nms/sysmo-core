@@ -36,6 +36,9 @@
 -define(ASSERT_TIMEOUT, 5000).
 -define(CALL_TIMEOUT,   10000).
 
+% @private
+start_link() ->
+    gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
 -spec notify(Notif::#notification{}) -> ok.
 notify(Notif) ->
@@ -43,27 +46,23 @@ notify(Notif) ->
 
 
 -spec dump_latest_events(DumpDir::string()) ->
-                    {ok, FileName::string()} | {error, Error::string()}.
+        {ok, FileName::string()} | {error, Error::string()}.
 % @doc
 % return two latests months of events in json file.
 % @end
 dump_latest_events(DumpDir) ->
     gen_server:call(?MODULE,
-         {call_eventdb, {dump_latest_events, DumpDir}}, ?CALL_TIMEOUT).
+        {call_eventdb, {dump_latest_events, DumpDir}}, ?CALL_TIMEOUT).
 
 
 -spec dump_probe_events(DumpDir::string(), Probe::string()) ->
-                    {ok, FileName::string()} | {error, Error::string()}.
+        {ok, FileName::string()} | {error, Error::string()}.
 % @doc
 % return all events for probe Probe in json file.
 % @end
 dump_probe_events(DumpDir, Probe) ->
     gen_server:call(?MODULE,
-         {call_eventdb, {dump_probe_events, {Probe, DumpDir}}}, ?CALL_TIMEOUT).
-
-% @private
-start_link() ->
-    gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
+        {call_eventdb, {dump_probe_events, {Probe, DumpDir}}}, ?CALL_TIMEOUT).
 
 
 % GEN_SERVER
@@ -73,14 +72,11 @@ init([]) ->
     ?LOG_INFO("success pid", JavaPid),
     {ok, #state{java_pid=JavaPid}}.
 
-% CALL
 % @private
 handle_call({call_eventdb, {Command, Payload}}, From, S) ->
     S#state.java_pid ! {Command, From, Payload},
     {noreply, S}.
 
-
-% CAST
 % @private
 handle_cast(Msg, #state{java_pid=Pid} = S) ->
     Pid ! Msg,
@@ -89,7 +85,6 @@ handle_cast(Msg, #state{java_pid=Pid} = S) ->
 handle_cast(_C,S) ->
     ?LOG_INFO("Unknown cast", _C),
     {noreply, S}.
-
 
 % @private
 handle_info(stop, S) ->
@@ -108,14 +103,8 @@ handle_info(_I, S) ->
     ?LOG_INFO("received handle info:", _I),
     {noreply, S}.
 
-
-% TERMINATE
 % @private
-terminate(_,_) ->
-    ok.
+terminate(_,_) -> ok.
 
-
-% CHANGE
 % @private
-code_change(_,S,_) ->
-    {ok, S}.
+code_change(_,S,_) -> {ok, S}.

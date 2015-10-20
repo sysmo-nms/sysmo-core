@@ -47,11 +47,11 @@
 % @end
 multi_update([]) -> ok;
 multi_update(Updates) ->
-    gen_server:call(?MODULE, {call_errd4j, {multi_update, {Updates}}},
-                    ?CALL_TIMEOUT).
+    gen_server:call(?MODULE,
+        {call_errd4j, {multi_update, {Updates}}}, ?CALL_TIMEOUT).
 
 -spec update(File::string(), Updates::{string(), integer()},
-             Timstamp::integer()) -> ok.
+        Timestamp::integer()) -> ok.
 % @doc
 % Execute an update to a single rrdfile.
 % example: Updates = [{"MaxRoundTrip", 3000}, {"MinRoundTrip", 399}],
@@ -69,8 +69,8 @@ update(File, Updates, Timestamp) ->
 %   [{"speed", "COUNTER", 600, 0, 'Nan'}],"default"}...]
 % @end
 multi_create(Args) ->
-    gen_server:call(?MODULE, 
-                    {call_errd4j, {multi_create, {Args}}}, ?CALL_TIMEOUT).
+    gen_server:call(?MODULE,
+        {call_errd4j, {multi_create, {Args}}}, ?CALL_TIMEOUT).
 
 
 -spec create(File::string(), Step::integer(), DDs::[]) -> ok.
@@ -106,18 +106,14 @@ init([]) ->
     ?LOG_INFO("success pid", JavaPid),
     {ok, #state{java_pid=JavaPid}}.
 
-% CALL
 % @private
 handle_call({call_errd4j, {Command, Payload}}, From, S) ->
     S#state.java_pid ! {Command, From, Payload},
     {noreply, S}.
 
-
-% CAST
 % @private
 handle_cast(_,S) ->
     {noreply, S}.
-
 
 % @private
 handle_info(stop, S) ->
@@ -136,14 +132,8 @@ handle_info(_I, S) ->
     ?LOG_INFO("received handle info:", _I),
     {noreply, S}.
 
-
-% TERMINATE
 % @private
-terminate(_,_) ->
-    ok.
+terminate(_,_) -> ok.
 
-
-% CHANGE
 % @private
-code_change(_,S,_) ->
-    {ok, S}.
+code_change(_,S,_) -> {ok, S}.

@@ -152,7 +152,7 @@ do_sync_request(CState, #state{name=Name}) ->
     file:make_dir(DumpPath),
 
     % probe events table
-    {ok, EventFile} = j_server_eventdb:dump_probe_events(DumpPath, Name),
+    {ok, EventFile} = monitor_events:dump_probe_events(DumpPath, Name),
 
     % generate the rrd file
     {Type, RrdCfg}  = ES#ets_state.local_state#nchecks_state.rrd_config,

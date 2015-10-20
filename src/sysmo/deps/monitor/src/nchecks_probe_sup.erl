@@ -33,7 +33,7 @@ launch(Probe) ->
     {ok, _} = supervisor:start_child(?MODULE, [Probe]).
 
 init([]) ->
-    {ok, 
+    {ok,
         {
             {simple_one_for_one, 1, 60},
             [
@@ -44,7 +44,7 @@ init([]) ->
                     2000,
                     worker,
                     [nchecks_probe]
-               }
+                }
             ]
         }
     }.

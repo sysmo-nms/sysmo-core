@@ -30,25 +30,21 @@
 -export([start_link/0]).
 
 % API
--export([notify/2, notify_move/7, notify_init/2, select/1]).
+-export([notify/2, notify_move/7, notify_init/2,
+    dump_probe_events/2, dump_latest_events/1]).
 
--record(state, {
-    last_notif,
-    last_move
-}).
+-record(state, {last_notif, last_move}).
 
 start_link() ->
     gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
-select(_Any) ->
-    % TODO select latest entries,
-    % TODO select all events from probe id,
-    %
-    % TODO WARNING WARNING WARNING
-    % SELECT from nchecks_probe synchronize must pass from this
-    % gen_server to keep data consistency (SQLDb mailbox message order).
-    % See snmpman,nchecks,errd4j for java calls.
-    ok.
+% SELECT from nchecks_probe or monitor_channel synchronize must pass from this
+% gen_server to keep data consistency (SQLDb mailbox message order).
+dump_probe_events(DumpPath, Probe) ->
+    gen_server:call(?MODULE, {dump_probe_events, DumpPath, Probe}).
+dump_latest_events(DumpPath) ->
+    % IDEM
+    gen_server:call(?MODULE, {dump_latest_events, DumpPath}).
 
 notify(Name, Status) ->
     Ts = get_ts(),
@@ -86,20 +82,28 @@ handle_call({notify_move, Name, CheckId, Descr, Status,
             #state{last_notif=Nt,last_move=Mv} = S) ->
     {TargetDisplay,TargetLocation,TargetContact} = get_target_infos(BelongTo),
     Notif = #notification{
-               probe=Name,
-               check_id=CheckId,
-               status=Status,
-               status_code=StatusCode,
-               time=Time,
-               return_string=String,
-               description=Descr,
-               target_display=TargetDisplay,
-               target_location=TargetLocation,
-               target_contact=TargetContact},
+        probe=Name,
+        check_id=CheckId,
+        status=Status,
+        status_code=StatusCode,
+        time=Time,
+        return_string=String,
+        description=Descr,
+        target_display=TargetDisplay,
+        target_location=TargetLocation,
+        target_contact=TargetContact},
     ets:insert(Nt, Notif),
     ets:insert(Mv, Notif),
     j_server_eventdb:notify(Notif),
     {reply, ok, S};
+
+handle_call({dump_probe_events, DumpPath, Probe}, _F, S) ->
+    {ok, EventFile} = j_server_eventdb:dump_probe_events(DumpPath, Probe),
+    {reply, EventFile, S};
+
+handle_call({dump_latest_events, DumpPath}, _F, S) ->
+    {ok, LatestEvents} = j_server_eventdb:dump_latest_events(DumpPath),
+    {reply, LatestEvents, S};
 
 handle_call(_R,_F,S) ->
     {noreply, S}.
@@ -139,19 +143,16 @@ get_target_infos(Target) ->
             SysName = proplists:get_value("sysName", Props),
             Name    = proplists:get_value("name",    Props),
 
-            case SysName of
-                "undefined" ->
-                    case Name of
-                        "undefined" ->
-                            DisplayName = Host;
-                        "" ->
-                            DisplayName = Host;
-                        _ ->
-                            DisplayName = Name ++ "(" ++ Host ++ ")"
-                    end;
-                _ ->
-                    DisplayName = SysName ++ "(" ++ Host ++ ")"
-            end,
+            DisplayName = case SysName of
+                              "undefined" ->
+                                  case Name of
+                                      "undefined" -> Host;
+                                      ""          -> Host;
+                                      _           -> Name ++ "(" ++ Host ++ ")"
+                                  end;
+                              _ ->
+                                  SysName ++ "(" ++ Host ++ ")"
+                          end,
 
             SysLocation = proplists:get_value("sysLocation", Props, "undefined"),
             SysContact  = proplists:get_value("sysContact", Props, "undefined"),
