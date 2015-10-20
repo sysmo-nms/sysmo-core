@@ -83,7 +83,8 @@ public class EventDb implements Runnable
     private static final int HOST_LOCATION = 9;
     private static final int HOST_CONTACT  = 10;
     private static final int PROBE_DISPLAY = 11;
-    private static final int EVENT_ID      = 12;
+    private static final int ACKNOWLEDGED  = 12;
+    private static final int EVENT_ID      = 13;
 
     // NCHECKS_LATEST_EVENTS table delete prepared statement
     private PreparedStatement psDeletePrevious;
@@ -171,6 +172,7 @@ public class EventDb implements Runnable
                         + "HOST_LOCATION VARCHAR(255) NOT NULL,"
                         + "HOST_CONTACT  VARCHAR(255) NOT NULL,"
                         + "PROBE_DISPLAY VARCHAR(255) NOT NULL,"
+                        + "ACKNOWLEDGED  BOOLEAN NOT NULL,"
                         + "PRIMARY KEY (EVENT_ID))");
 
                 statement.execute("CREATE INDEX PROBE_ID_INDEX "
@@ -178,6 +180,9 @@ public class EventDb implements Runnable
 
                 statement.execute("CREATE INDEX MONTH_CREATED_INDEX "
                         + "ON NCHECKS_EVENTS (MONTH_CREATED)");
+
+                statement.execute("CREATE INDEX ACKNOWLEDGED_INDEX "
+                        + "ON NCHECKS_EVENTS (ACKNOWLEDGED)");
 
                 statement.execute("CREATE TABLE NCHECKS_LATEST_EVENTS("
                         + "EVENT_ID        INT          NOT NULL,"
@@ -192,6 +197,7 @@ public class EventDb implements Runnable
                         + "HOST_LOCATION   VARCHAR(255) NOT NULL,"
                         + "HOST_CONTACT    VARCHAR(255) NOT NULL,"
                         + "PROBE_DISPLAY   VARCHAR(255) NOT NULL,"
+                        + "ACKNOWLEDGED  BOOLEAN NOT NULL,"
                         + "PRIMARY KEY (EVENT_ID))");
                 this.conn.commit();
                 this.logger.info("Database successfully initialized");
@@ -222,8 +228,8 @@ public class EventDb implements Runnable
                             + "(PROBE_ID,DATE_CREATED,NCHECKS_ID,"
                             + "STATUS,STATUS_CODE,RETURN_STRING,MONTH_CREATED,"
                             + "HOST_DISPLAY,HOST_LOCATION,HOST_CONTACT,"
-                            + "PROBE_DISPLAY) "
-                            + "VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+                            + "PROBE_DISPLAY,ACKNOWLEDGED) "
+                            + "VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
                     Statement.RETURN_GENERATED_KEYS);
 
             this.psInsertLast = conn.prepareStatement(
@@ -231,14 +237,13 @@ public class EventDb implements Runnable
                             + "(PROBE_ID,DATE_CREATED,NCHECKS_ID,"
                             + "STATUS,STATUS_CODE,RETURN_STRING,MONTH_CREATED,"
                             + "HOST_DISPLAY,HOST_LOCATION,HOST_CONTACT,"
-                            + "PROBE_DISPLAY,EVENT_ID) "
-                            + "VALUES (?,?,?,?,?,?,?,?,?,?,?,?)");
+                            + "PROBE_DISPLAY,ACKNOWLEDGED,EVENT_ID) "
+                            + "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)");
 
 
             this.psDeletePrevious = conn.prepareStatement(
                     "DELETE FROM NCHECKS_LATEST_EVENTS "
                             + "WHERE PROBE_ID = ?");
-
 
             this.psSelectProbeEvents = conn.prepareStatement(
                     "SELECT * FROM NCHECKS_EVENTS WHERE PROBE_ID = ?");
@@ -246,6 +251,7 @@ public class EventDb implements Runnable
             this.psSelectLatestEvents = conn.prepareStatement(
                     "SELECT * FROM NCHECKS_EVENTS "
                             + "WHERE MONTH_CREATED = ? OR MONTH_CREATED = ? "
+                                + "OR ACKNOWLEDGED = FALSE "
                             + "UNION "
                             + "SELECT * FROM NCHECKS_LATEST_EVENTS");
 
@@ -459,6 +465,7 @@ public class EventDb implements Runnable
         this.psInsert.setString(EventDb.HOST_DISPLAY, hostDisplayName);
         this.psInsert.setString(EventDb.HOST_LOCATION, hostLocation);
         this.psInsert.setString(EventDb.HOST_CONTACT, hostContact);
+        this.psInsert.setBoolean(EventDb.ACKNOWLEDGED, false);
 
         this.psInsert.executeUpdate();
 
@@ -492,6 +499,7 @@ public class EventDb implements Runnable
         this.psInsertLast.setString(EventDb.HOST_DISPLAY, hostDisplayName);
         this.psInsertLast.setString(EventDb.HOST_LOCATION, hostLocation);
         this.psInsertLast.setString(EventDb.HOST_CONTACT, hostContact);
+        this.psInsertLast.setBoolean(EventDb.ACKNOWLEDGED, false);
         this.psInsertLast.executeUpdate();
 
         //this.printTables();
@@ -627,17 +635,31 @@ public class EventDb implements Runnable
             JsonObjectBuilder obj = factory.createObjectBuilder();
             for (int i = 0; i < total_rows; i++) {
                 int rowType = resultSet.getMetaData().getColumnType(i + 1);
-                if (rowType == Types.TIMESTAMP) {
-                    Timestamp tsObj = resultSet.getTimestamp(i + 1);
-                    obj.add(resultSet.getMetaData().getColumnLabel(i + 1),
-                            tsObj.getTime() / 1000);
-                } else if (rowType == Types.INTEGER) {
-                    Integer tsObj = resultSet.getInt(i + 1);
-                    obj.add(resultSet.getMetaData().getColumnLabel(i + 1),
-                            tsObj);
-                } else {
-                    obj.add(resultSet.getMetaData().getColumnLabel(i + 1),
-                            resultSet.getObject(i + 1).toString());
+                switch (rowType) {
+                    case Types.VARCHAR:
+                        String strObj = resultSet.getString(i + 1);
+                        obj.add(resultSet.getMetaData().getColumnLabel(i + 1),
+                                strObj);
+                        break;
+                    case Types.TIMESTAMP:
+                        Timestamp tsObj = resultSet.getTimestamp(i + 1);
+                        obj.add(resultSet.getMetaData().getColumnLabel(i + 1),
+                                tsObj.getTime() / 1000);
+                        break;
+                    case Types.INTEGER:
+                        Integer intObj = resultSet.getInt(i + 1);
+                        obj.add(resultSet.getMetaData().getColumnLabel(i + 1),
+                                intObj);
+                        break;
+                    case Types.BOOLEAN:
+                        boolean bolObj = resultSet.getBoolean(i + 1);
+                        obj.add(resultSet.getMetaData().getColumnLabel(i + 1),
+                                bolObj);
+                        break;
+                    default:
+                        String anyObj = resultSet.getObject(i + 1).toString();
+                        obj.add(resultSet.getMetaData().getColumnLabel(i + 1),
+                                anyObj);
                 }
             }
             arrayBuilder.add(obj);
