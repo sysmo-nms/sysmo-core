@@ -159,18 +159,14 @@ public class SysmoServer {
         /*
          * Create state server thread
          */
-        StateServer stateServer;
         try {
             // dummy mbox only used to notify mainMbox of a failure
             // and stop the JVM.
-            stateServer = StateServer.getInstance(
-                    dataDir, stateServerPort, stateDummyMbox);
+            StateServer.start(dataDir, stateServerPort, stateDummyMbox);
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
             return;
         }
-        Thread stateServerThread = new Thread(stateServer);
-        stateServerThread.start();
 
         /*
          * Create derby thread
@@ -182,7 +178,7 @@ public class SysmoServer {
             logger.error("EventDb failed to start" + e.getMessage(), e);
             System.err.println("EventDb failed to start" + e.getMessage());
             derbyMbox.exit("error");
-            stateServer.stop();
+            StateServer.stop();
             return;
         }
         Thread eventDbThread = new Thread(eventDb);
@@ -206,7 +202,7 @@ public class SysmoServer {
             } catch (Exception inner) {
                 logger.error("Fail to shutdown derby: ", inner);
             }
-            stateServer.stop();
+            StateServer.stop();
             return;
         }
         Thread nchecksThread = new Thread(nchecks);
@@ -266,7 +262,7 @@ public class SysmoServer {
          * to terminate.
          */
         try {
-            stateServer.stop();
+            StateServer.stop();
             jettyThread.stop();
             nchecksThread.join();
             rrd4jThread.join();

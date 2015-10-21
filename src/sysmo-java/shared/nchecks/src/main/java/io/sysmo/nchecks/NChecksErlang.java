@@ -232,14 +232,14 @@ public class NChecksErlang implements Runnable
                     OtpErlangList checkArgs = (OtpErlangList)
                             (payload.elementAt(1));
 
-                    OtpErlangString opaque = (OtpErlangString)
+                    OtpErlangString checkId = (OtpErlangString)
                             (payload.elementAt(2));
 
                     Runnable checkWorker = new NChecksRunnable(
                             Class.forName(checkClassName).newInstance(),
                             caller,
                             checkArgs,
-                            opaque);
+                            checkId);
                     this.threadPool.execute(checkWorker);
                     break;
 
