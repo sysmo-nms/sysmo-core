@@ -38,28 +38,24 @@ import java.io.Serializable;
 public class StateMessage implements Serializable {
     private String key;
     private byte[] value;
-    private int id;
-    private String action;
+    private int action;
+    public static final int GET = 0;
+    public static final int SET = 1;
 
     /**
-     * Build a query of type get with key 'key'
-     * @param key the key representing the value requested.
+     * Build a query of type type
+     * can be StateMessage.GET or StateMessage.SET
+     * @param action GET or SET
      */
-    StateMessage(String key) {
-        this.id = 0;
-        this.key = key;
-        this.action = "get";
+    StateMessage(int action) {
+        this.action = action;
     }
 
     /**
-     * Build a query of type set.
-     * @param key the key
+     * Set object state.
      * @param value a serializable object
      */
-    StateMessage(String key, Serializable value) {
-        this.key = key;
-        this.action = "set";
-
+    public void setObjectState(Serializable value) {
         ByteArrayOutputStream outStream = null;
         ObjectOutput objOut = null;
         try {
@@ -88,11 +84,19 @@ public class StateMessage implements Serializable {
     }
 
     /**
+     * Set the key state.
+     * @param key the unique key
+     */
+    public void setKey(String key) {
+        this.key = key;
+    }
+
+    /**
      * Get the value object as byte array.
      * @return value object as byte array
      */
     public byte[] getBytes() {
-        return this.value;
+        return this.value.clone();
     }
 
     /**
@@ -100,6 +104,8 @@ public class StateMessage implements Serializable {
      * @return an Object
      */
     public Object getObject() {
+        if (this.value.length == 0) return null;
+
         ByteArrayInputStream inStream = null;
         ObjectInput objIn = null;
 
@@ -140,16 +146,8 @@ public class StateMessage implements Serializable {
      * Get the action of this message.
      * @return "get" or "set"
      */
-    public String getAction() {
+    public int getAction() {
         return this.action;
-    }
-
-    /**
-     * Get the unique identifier of this message.
-     * @return an int identifier
-     */
-    public int getId() {
-        return this.id;
     }
 
     /**
@@ -157,6 +155,6 @@ public class StateMessage implements Serializable {
      * @param value a byte array
      */
     public void setBytes(byte[] value) {
-        this.value = value;
+        this.value = value.clone();
     }
 }

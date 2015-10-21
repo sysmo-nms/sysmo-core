@@ -21,13 +21,13 @@
 package io.sysmo.nchecks;
 
 import com.ericsson.otp.erlang.OtpErlangAtom;
-import com.ericsson.otp.erlang.OtpErlangBinary;
 import com.ericsson.otp.erlang.OtpErlangList;
 import com.ericsson.otp.erlang.OtpErlangLong;
 import com.ericsson.otp.erlang.OtpErlangObject;
 import com.ericsson.otp.erlang.OtpErlangString;
 import com.ericsson.otp.erlang.OtpErlangTuple;
 
+import java.io.Serializable;
 import java.util.Map;
 import java.util.HashMap;
 
@@ -48,7 +48,6 @@ public class Reply
     private static final OtpErlangAtom atomNchecksReply = new OtpErlangAtom("nchecks_reply");
     private String replyMsg;
     private String status;
-    private byte[] opaque;
     private long   timestamp;
     private Map<String,PerformanceGroup> perfValues;
     private int statusCode;
@@ -60,7 +59,6 @@ public class Reply
         this.status   = "DOWN";
         this.timestamp = System.currentTimeMillis() / 1000;
         this.perfValues = new HashMap<>();
-        this.opaque = new byte[0];
     }
 
     /**
@@ -111,20 +109,27 @@ public class Reply
         return replyMsg;
     }
 
+
     /**
-     * Set an opaque object in the reply. This data will stored
-     * and returned on the next call of the check. This mechanism is used
-     * to store and compare COUNTER type values, but can be used as you wish.
-     * Here is a serialization example:
+     * Store a state for this probe for later calls. 'key' must be taken from
+     * Query.getStateId() to insure an unique entry.
      *
-     *       ByteArrayOutputStream b = new ByteArrayOutputStream();
-     *       ObjectOutputStream    o = new ObjectOutputStream(b);
-     *       o.writeObject(myObject);
-     *       state = b.toByteArray();
-     *       myreply.setState(state);
+     * example:
+     *
+     * ...
+     * Query query = new Query();
+     * query.setState(reply.getStateId(), myState);
+     *
+     * @see Query.getStateId()
+     *
+     * @param key the key from Query.getStateId();
+     * @param value the Object to be stored
      */
-    public void setState(byte[] value) {
-        opaque = value.clone();
+    public void setState(String key, Serializable value) {
+        StateMessage msg = new StateMessage(StateMessage.SET);
+        msg.setKey(key);
+        msg.setObjectState(value);
+        StateClient.setState(msg);
     }
 
     /**
@@ -214,14 +219,13 @@ public class Reply
         }
         OtpErlangList perfValueList = new OtpErlangList(perfValuesObj);
 
-        OtpErlangObject[] replyRecord = new OtpErlangObject[7];
+        OtpErlangObject[] replyRecord = new OtpErlangObject[6];
         replyRecord[0] = Reply.atomNchecksReply;
         replyRecord[1] = new OtpErlangString(this.status);
         replyRecord[2] = new OtpErlangLong(this.statusCode);
         replyRecord[3] = perfValueList;
         replyRecord[4] = new OtpErlangString(this.replyMsg);
         replyRecord[5] = new OtpErlangLong(this.timestamp);
-        replyRecord[6] = new OtpErlangBinary(this.opaque);
 
         return new OtpErlangTuple(replyRecord);
     }

@@ -5,6 +5,5 @@
     status_code,
     performances,
     reply_string,
-    timestamp,
-    opaque
+    timestamp
 }).

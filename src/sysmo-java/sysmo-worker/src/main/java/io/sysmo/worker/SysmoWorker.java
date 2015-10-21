@@ -37,6 +37,7 @@ import io.sysmo.nchecks.NChecksErlang;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.InetAddress;
 import java.util.Properties;
 
 /**
@@ -128,8 +129,12 @@ public class SysmoWorker {
             /*
              * Create Nchecks thread
              */
+            // TODO
+            int stateServerPort = 0;
+            InetAddress stateServerAddress = InetAddress.getByName(null);
             NChecksErlang nchecks = NChecksErlang.getInstance(
-                    nchecksMbox, masterNode, rubyDir, utilsDir, etcDir);
+                    nchecksMbox,masterNode,rubyDir,
+                    utilsDir,etcDir,stateServerAddress,stateServerPort);
 
             Thread nchecksThread = new Thread(nchecks);
             nchecksThread.start();

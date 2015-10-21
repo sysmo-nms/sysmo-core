@@ -52,7 +52,7 @@
     args,
     dump_dir,
     rrd_config,
-    opaque = <<>>,
+    state_id,
     last_return = ""
 }).
 
@@ -88,19 +88,21 @@ do_init(Probe) ->
     {{Class, Args}, RrdConfig, CheckId} = init_nchecks(Probe),
     TRef = monitor:send_after_rand(Probe#probe.step, {take_of, Ref}),
 
-    NS = #nchecks_state{
-        class      = Class,
-        args       = Args,
-        dump_dir   = DumpDir,
-        rrd_config = RrdConfig
-    },
-
     #probe{
        name        = PName,
        permissions = PPermissions,
        belong_to   = PBelongTo,
        status      = PStatus,
        description = PDescription} = Probe,
+
+    NS = #nchecks_state{
+        class      = Class,
+        args       = Args,
+        dump_dir   = DumpDir,
+        rrd_config = RrdConfig,
+        state_id   = PName
+    },
+
 
     ES = #ets_state{
         name                = PName,
@@ -358,15 +360,15 @@ do_take_of(#state{ref=Ref,name=PName}) ->
     ES      = monitor_data_master:get_probe_state(PName),
     Class   = ES#ets_state.local_state#nchecks_state.class,
     Args    = ES#ets_state.local_state#nchecks_state.args,
-    Opaque  = ES#ets_state.local_state#nchecks_state.opaque,
+    StateId = ES#ets_state.local_state#nchecks_state.state_id,
     ToPid   = self(),
     erlang:spawn(fun() ->
-        {ok, Return} = ?MODULE:exec_nchecks(Class, Args, Opaque),
+        {ok, Return} = ?MODULE:exec_nchecks(Class, Args, StateId),
         erlang:send(ToPid, {nchecks_reply, Ref, Return})
     end).
 
-exec_nchecks(Class, Args, Opaque) ->
-    case (catch(j_server_nchecks:check(Class,Args,Opaque))) of
+exec_nchecks(Class, Args, StateId) ->
+    case (catch(j_server_nchecks:check(Class,Args,StateId))) of
          {ok, Reply} -> ProbeReturn = Reply;
          Error ->
             % An error occured.
@@ -375,8 +377,7 @@ exec_nchecks(Class, Args, Opaque) ->
             ?LOG_ERROR("", Error),
             ProbeReturn = #nchecks_reply{
                 status          = "ERROR",
-                reply_string    = ?CRASH,
-                opaque          = Opaque
+                reply_string    = ?CRASH
             }
 
     end,

@@ -52,7 +52,7 @@ import java.nio.file.Paths;
 public class StateServer implements Runnable {
     private static StateServer instance;
     private static final String DB_NAME = "NCHECKS_STATES";
-    private static final int DEFAULT_PORT = 9760;
+    public static final int DEFAULT_PORT = 9760;
     private Database db;
     private Environment env;
     private Logger logger;
@@ -69,6 +69,7 @@ public class StateServer implements Runnable {
 
     public static synchronized byte[] getState(String key) {
         synchronized (StateServer.instance.lock) {
+            StateServer.instance.logger.info("get state called");
             try {
                 DatabaseEntry theKey = new DatabaseEntry(key.getBytes("UTF-8"));
                 DatabaseEntry data = new DatabaseEntry();
@@ -91,6 +92,7 @@ public class StateServer implements Runnable {
                 DatabaseEntry theKey = new DatabaseEntry(key.getBytes("UTF-8"));
                 DatabaseEntry theData = new DatabaseEntry(value);
                 StateServer.instance.db.put(null, theKey, theData);
+                StateServer.instance.logger.info("log to state server key: " + key);
             } catch (UnsupportedEncodingException e) {
                 // ignore
             }
@@ -101,6 +103,9 @@ public class StateServer implements Runnable {
             int port,
             OtpMbox mbox) throws IOException {
         if (StateServer.instance == null) {
+            if (port == 0) {
+                port = StateServer.DEFAULT_PORT;
+            }
             StateServer.instance =
                     new StateServer(dataDir, port, mbox);
         }
@@ -129,7 +134,7 @@ public class StateServer implements Runnable {
         this.server = new StateServerSocket(port);
         Thread serverThread = new Thread(server);
         serverThread.start();
-        this.logger.info("server started ok");
+        this.logger.info("server listening on " + port);
 
     }
 
@@ -170,9 +175,9 @@ public class StateServer implements Runnable {
         } finally {
             this.db.close();
             this.env.close();
-            this.logger.info("end run");
             this.server.stop();
-            this.logger.info("server closed");
+            this.mbox.close();
+            this.logger.info("end run");
         }
     }
 
@@ -182,15 +187,16 @@ public class StateServer implements Runnable {
     {
         // server loop
         private ServerSocket server = null;
+        private Logger logger;
 
         StateServerSocket(int port) throws IOException {
-            if (port == 0) {
-                port = StateServer.DEFAULT_PORT;
-            }
+            this.logger = LoggerFactory.getLogger(this.getClass());
             this.server = new ServerSocket(port);
+            this.logger.info("create state server socket");
         }
 
         public void stop() {
+            this.logger.info("stop socket listener");
             if (this.server != null) try {
                 this.server.close();
                 this.server = null;
@@ -201,14 +207,17 @@ public class StateServer implements Runnable {
 
         @Override
         public void run() {
+            this.logger.info("Start socket listener");
             while (true) try {
 
                 Socket client = this.server.accept();
                 Runnable clientRunnable = new ServerClientSocket(client);
                 Thread clientThread = new Thread(clientRunnable);
                 clientThread.start();
+                this.logger.debug("have accepted client");
 
             } catch (Exception | Error e) {
+                this.logger.error(e.getMessage(), e);
                 if (this.server != null) {
                     try {
                         this.server.close();
@@ -224,17 +233,25 @@ public class StateServer implements Runnable {
 
     static class ServerClientSocket implements Runnable {
         private Socket socket;
+        private Logger logger;
 
         ServerClientSocket(Socket socket) {
+            this.logger = LoggerFactory.getLogger(this.getClass());
             this.socket = socket;
+            this.logger.info("Accept client for socket: " +
+                    socket.getInetAddress());
         }
 
         @Override
         public void run() {
+            this.logger.debug("run client for socket");
             ObjectInputStream in = null;
             ObjectOutputStream out = null;
-            Exception ex;
             try {
+                // Why ???
+                this.socket.getOutputStream().flush();
+                //
+
                 in = new ObjectInputStream(this.socket.getInputStream());
                 out = new ObjectOutputStream(this.socket.getOutputStream());
 
@@ -242,6 +259,7 @@ public class StateServer implements Runnable {
                 byte[] bytes;
 
                 StateMessage message;
+                StateMessage reply;
                 while (this.socket.isConnected()) try {
 
                     message = (StateMessage) in.readObject();
@@ -250,16 +268,19 @@ public class StateServer implements Runnable {
                      * get action
                      */
                     switch (message.getAction()) {
-                        case "set":
+                        case StateMessage.SET:
                             key = message.getKey();
                             bytes = message.getBytes();
                             StateServer.setState(key, bytes);
                             break;
-                        case "get":
+                        case StateMessage.GET:
                             key = message.getKey();
                             bytes = StateServer.getState(key);
-                            message.setBytes(bytes);
-                            out.writeObject(message);
+                            reply = new StateMessage(StateMessage.GET);
+                            reply.setKey(key);
+                            reply.setBytes(bytes);
+                            out.writeObject(reply);
+                            out.flush();
                             break;
                     }
 
@@ -269,6 +290,7 @@ public class StateServer implements Runnable {
 
 
             } catch (Exception e) {
+                this.logger.warn(e.getMessage(), e);
                 // ignore
             } finally {
                 try {

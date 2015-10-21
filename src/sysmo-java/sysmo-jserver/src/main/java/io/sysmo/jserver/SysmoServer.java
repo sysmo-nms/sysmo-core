@@ -39,6 +39,7 @@ import org.slf4j.LoggerFactory;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.InetAddress;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Paths;
@@ -180,6 +181,8 @@ public class SysmoServer {
         } catch (Exception e) {
             logger.error("EventDb failed to start" + e.getMessage(), e);
             System.err.println("EventDb failed to start" + e.getMessage());
+            derbyMbox.exit("error");
+            stateServer.stop();
             return;
         }
         Thread eventDbThread = new Thread(eventDb);
@@ -190,8 +193,10 @@ public class SysmoServer {
          */
         NChecksErlang nchecks;
         try {
+            InetAddress stateServerAddress = InetAddress.getByName(null);
             nchecks = NChecksErlang.getInstance(nchecksMbox, foreignNodeName,
-                    rubyDir, utilsDir, etcDir);
+                    rubyDir, utilsDir, etcDir,
+                    stateServerAddress,stateServerPort);
         } catch (Exception e) {
             logger.error("NChecks failed to start" + e.getMessage(), e);
             System.err.println("NChecks failed to start" + e.getMessage());
@@ -201,6 +206,7 @@ public class SysmoServer {
             } catch (Exception inner) {
                 logger.error("Fail to shutdown derby: ", inner);
             }
+            stateServer.stop();
             return;
         }
         Thread nchecksThread = new Thread(nchecks);

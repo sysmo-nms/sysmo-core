@@ -64,8 +64,7 @@
 %     status_code     = 0             :: integer(),
 %     reply_string    = ""            :: string(),
 %     timestamp       = 0             :: integer(),
-%     performances    = []            :: [{string(), integer()}],
-%     opaque          = <<>>          :: any()
+%     performances    = []            :: [{string(), integer()}]
 % }).
 
 -record(job, {

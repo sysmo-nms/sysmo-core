@@ -26,7 +26,6 @@ import com.ericsson.otp.erlang.OtpErlangExit;
 import io.sysmo.nchecks.modules.*;
 
 import com.ericsson.otp.erlang.OtpErlangAtom;
-import com.ericsson.otp.erlang.OtpErlangBinary;
 import com.ericsson.otp.erlang.OtpErlangChar;
 import com.ericsson.otp.erlang.OtpErlangList;
 import com.ericsson.otp.erlang.OtpErlangObject;
@@ -37,6 +36,7 @@ import com.ericsson.otp.erlang.OtpMbox;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.InetAddress;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Iterator;
@@ -72,16 +72,19 @@ public class NChecksErlang implements Runnable
      * @param rubyDir The ruby script dir
      * @param utilsDir The utils dir
      * @param etcDir The config dir
+     * @param stateServer the state server address
+     * @param stateServerPort the state server port
      * @return An NChecksErlang Instance
      * @throws Exception
      */
     public static synchronized NChecksErlang getInstance(
             final OtpMbox mbox, final String nodeName,
             final String rubyDir, final String utilsDir,
-            final String etcDir) throws Exception {
+            final String etcDir, final InetAddress stateServer,
+            final int stateServerPort) throws Exception {
         if (NChecksErlang.instance == null) {
-            NChecksErlang.instance =
-                    new NChecksErlang(mbox,nodeName,rubyDir,utilsDir,etcDir);
+            NChecksErlang.instance = new NChecksErlang(mbox,nodeName,rubyDir,
+                    utilsDir,etcDir,stateServer,stateServerPort);
         }
         return NChecksErlang.instance;
     }
@@ -89,7 +92,8 @@ public class NChecksErlang implements Runnable
     private NChecksErlang(
             final OtpMbox mbox, final String nodeName,
             final String rubyDir, final String utilsDir,
-            final String etcDir) throws Exception {
+            final String etcDir, final InetAddress stateServer,
+            final int stateServerPort) throws Exception {
         this.nodeName = nodeName;
         this.mbox = mbox;
 
@@ -121,6 +125,9 @@ public class NChecksErlang implements Runnable
         // initialize snmpman
         NChecksSNMP.startSnmp(etcDir);
         NChecksErlang.logger.info("SNMP started");
+
+        // initialize state client
+        StateClient.start(stateServer,stateServerPort);
     }
 
     @Override
@@ -139,6 +146,7 @@ public class NChecksErlang implements Runnable
             break;
         }
         this.threadPool.shutdownNow();
+        StateClient.stop();
         this.mbox.exit("crach");
     }
 
@@ -224,7 +232,7 @@ public class NChecksErlang implements Runnable
                     OtpErlangList checkArgs = (OtpErlangList)
                             (payload.elementAt(1));
 
-                    OtpErlangBinary opaque = (OtpErlangBinary)
+                    OtpErlangString opaque = (OtpErlangString)
                             (payload.elementAt(2));
 
                     Runnable checkWorker = new NChecksRunnable(
@@ -325,25 +333,25 @@ public class NChecksErlang implements Runnable
         private NChecksInterface check;
         private OtpErlangObject  caller;
         private OtpErlangList    args;
-        private OtpErlangBinary  opaqueData;
+        private OtpErlangString  stateId;
 
         public NChecksRunnable(
                 Object          checkObj,
                 OtpErlangObject callerObj,
                 OtpErlangList   argsList,
-                OtpErlangBinary opaque)
+                OtpErlangString stateId)
         {
             this.check   = (NChecksInterface) checkObj;
             this.caller  = callerObj;
             this.args    = argsList;
-            this.opaqueData = opaque;
+            this.stateId = stateId;
         }
 
         @Override
         public void run()
         {
             Query query = new Query(NChecksErlang.decodeArgs(
-                    this.args), this.opaqueData.binaryValue());
+                    this.args), this.stateId.stringValue());
             Reply reply = this.check.execute(query);
             OtpErlangObject replyMsg = NChecksErlang.buildOkReply(reply.asTuple());
             NChecksErlang.sendReply(this.caller, replyMsg);

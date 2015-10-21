@@ -29,11 +29,11 @@ import java.util.HashMap;
 public class Query
 {
     private Map<String,Argument> arguments;
-    private byte[]               state;
+    private String               stateId;
 
-    public Query(Map<String,Argument> args, byte[] state)
+    public Query(Map<String,Argument> args, final String stateId)
     {
-        this.state      = state.clone();
+        this.stateId    = stateId;
         this.arguments  = new HashMap<>(args);
     }
 
@@ -43,19 +43,31 @@ public class Query
     }
 
     /**
-     * Retrieve the state set by the previous check call.
-     * (see Reply.setState)
-     * Deserialization example:
-     * DESERIALIZATION EXAMPLE
-     *       ByteArrayInputStream b = new ByteArrayInputStream(opaqueData);
-     *       ObjectInputStream o = new ObjectInputStream(b);
-     *       Object myObject = o.readObject();
-     *       or beter
-     *       MyObjectClass = (MyObjectClass) o.readObject();
+     * This identifier is for use with Reply.setState(id, value) as the
+     * unique identifier for the probe to store and get data later.
      *
-     * @return the byte array state set with Reply.setState
+     * @see Reply
+     *
+     * @return an unique probe identifier
      */
-    public byte[] getState() {return this.state.clone();}
+    public String getStateId() {
+        return this.stateId;
+    };
+
+    /**
+     * Retrieve the object stored from previous call.
+     *
+     * example:
+     *
+     * MyStateClass state = (MyStateClass) reply.getState();
+     *
+     * @return an Object set from Reply.setState
+     */
+    public Object getState() {
+        StateMessage msg = new StateMessage(StateMessage.GET);
+        msg.setKey(this.stateId);
+        return StateClient.getState(msg);
+    }
 
     /**
      * Return the argument identified by key or null if the key

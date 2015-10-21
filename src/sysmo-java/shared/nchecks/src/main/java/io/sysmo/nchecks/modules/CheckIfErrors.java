@@ -134,7 +134,18 @@ public class CheckIfErrors implements NChecksInterface, HelperInterface
                 }
             }
 
+            IfErrorsState st;
+            st = (IfErrorsState) query.getState();
 
+            if (st == null) {
+                st = new IfErrorsState("hello world");
+            } else {
+                st.increment();
+            }
+            CheckIfErrors.logger.info(
+                    "My state is: " + st.getMessage() + " " + st.getCount());
+
+            reply.setState(query.getStateId(), st);
             reply.setStatus(Reply.STATUS_OK);
             reply.setReply("CheckIfErrors successful");
             return reply;
@@ -155,7 +166,26 @@ public class CheckIfErrors implements NChecksInterface, HelperInterface
         return helper.call(query);
     }
 
-    static class CheckIfErrorsState implements Serializable {
+    static class IfErrorsState implements Serializable {
 
+        private String message;
+        private int count;
+
+        IfErrorsState(String message) {
+            this.message = message;
+            this.count = 0;
+        }
+
+        public String getMessage() {
+            return this.message;
+        }
+
+        public int getCount() {
+            return this.count;
+        }
+
+        public void increment() {
+            this.count += 1;
+        }
     }
 }

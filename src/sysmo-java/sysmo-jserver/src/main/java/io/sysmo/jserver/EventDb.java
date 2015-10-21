@@ -550,8 +550,12 @@ public class EventDb implements Runnable
         int key;
         try {
             ResultSet keyRs = this.psInsert.getGeneratedKeys();
-            keyRs.next();
-            key = keyRs.getInt(1);
+            if (keyRs.next()) {
+                key = keyRs.getInt(1);
+            } else {
+                // should never occur
+                key = 0;
+            }
         } catch (SQLFeatureNotSupportedException|NullPointerException e) {
             this.logger.error("getGeneratedKeys fail: " + e);
             throw e;
