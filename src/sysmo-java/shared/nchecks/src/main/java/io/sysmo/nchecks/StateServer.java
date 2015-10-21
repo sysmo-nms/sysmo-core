@@ -47,7 +47,8 @@ import java.nio.file.Paths;
 
 /**
  * Created by seb on 18/10/15.
- * TODO Provide berkley db store for NChecks modules state.
+ *
+ * Provide berkley db store for NChecks modules state.
  */
 public class StateServer {
     public  static final int DEFAULT_PORT = 9760;
@@ -99,7 +100,6 @@ public class StateServer {
 
     public static byte[] getState(String key) {
         synchronized (StateServer.lock) {
-            StateServer.logger.info("get state called");
             try {
                 DatabaseEntry theKey = new DatabaseEntry(key.getBytes("UTF-8"));
                 DatabaseEntry data = new DatabaseEntry();
@@ -107,6 +107,8 @@ public class StateServer {
                         LockMode.DEFAULT) == OperationStatus.SUCCESS) {
                     return data.getData();
                 } else {
+                    // Must return an empty byte array, "null" will not pass
+                    // ObjectInputStream on client side.
                     return new byte[0];
                 }
             } catch (UnsupportedEncodingException e) {
@@ -122,9 +124,8 @@ public class StateServer {
                 DatabaseEntry theKey = new DatabaseEntry(key.getBytes("UTF-8"));
                 DatabaseEntry theData = new DatabaseEntry(value);
                 StateServer.db.put(null, theKey, theData);
-                StateServer.logger.info("log to state server key: " + key);
             } catch (UnsupportedEncodingException e) {
-                // ignore
+                StateServer.logger.warn(e.getMessage(), e);
             }
         }
     }
@@ -186,7 +187,7 @@ public class StateServer {
         ServerClientSocket(Socket socket) {
             this.logger = LoggerFactory.getLogger(this.getClass());
             this.socket = socket;
-            this.logger.info("Accept client for socket: " +
+            this.logger.debug("Accept client for socket: " +
                     socket.getInetAddress());
         }
 
@@ -215,7 +216,7 @@ public class StateServer {
                     switch (message.getAction()) {
                         case StateMessage.SET:
                             key = message.getKey();
-                            bytes = message.getBytes();
+                            bytes = message.getObjectBytes();
                             StateServer.setState(key, bytes);
                             break;
                         case StateMessage.GET:
@@ -227,6 +228,8 @@ public class StateServer {
                             out.writeObject(reply);
                             out.flush();
                             break;
+                        default:
+                            // nothing
                     }
 
                 } catch (Exception inner) {

@@ -32,7 +32,7 @@ import java.util.Map;
 import java.util.HashMap;
 
 /**
- * The Reply class contain all the values and informations related to the execution of
+ * The Reply class contain all the values and data related to the execution of
  * a module implementing NCheckInterface (a check module).
  * @see io.sysmo.nchecks.Query
  */
@@ -61,6 +61,7 @@ public class Reply
         this.perfValues = new HashMap<>();
     }
 
+
     /**
      * The status code is used to determine if the event should be logged to
      * the event database when two subsequent checks have the same status
@@ -83,6 +84,7 @@ public class Reply
         this.statusCode = statusCode;
     }
 
+
     /**
      * Set the status code for this reply (see setStatusCode). The default value
      * is 0.
@@ -93,13 +95,15 @@ public class Reply
         return this.statusCode;
     }
 
+
     /**
-    * Set the reply string of this check. It should be a human readable string.
-    * @param str the string representing the reply.
-    */
+     * Set the reply string of this check. It should be a human readable string.
+     * @param str the string representing the reply.
+     */
     public void setReply(String str) {
         replyMsg = str;
     }
+
 
     /**
      * Get the reply string.
@@ -115,22 +119,22 @@ public class Reply
      * Query.getStateId() to insure an unique entry.
      *
      * example:
-     *
      * ...
-     * Query query = new Query();
-     * query.setState(reply.getStateId(), myState);
+     * Reply reply = new Reply();
+     * reply.setState((Query) query.getStateId(), myObjectState);
      *
-     * @see Query.getStateId()
+     * @see Query getStateId()
      *
-     * @param key the key from Query.getStateId();
+     * @param key the unique key from Query.getStateId();
      * @param value the Object to be stored
      */
-    public void setState(String key, Serializable value) {
+    public void setState(String key, Serializable value) throws Exception {
         StateMessage msg = new StateMessage(StateMessage.SET);
         msg.setKey(key);
-        msg.setObjectState(value);
+        msg.setObject(value);
         StateClient.setState(msg);
     }
+
 
     /**
      * Set the return status. (see setStatusCode)
@@ -140,12 +144,14 @@ public class Reply
         status = str;
     }
 
+
     /**
      * Get the return status.
      */
     public String getStatus() {
         return status;
     }
+
 
     /**
      * Store a performance value. These performances values will be interpreted
@@ -158,6 +164,7 @@ public class Reply
     {
         putPerformance("simple", key, value);
     }
+
 
     /**
      * Store a performance value. These performances values will be interpreted
@@ -174,10 +181,18 @@ public class Reply
         groupObj.putPerformance(key, value);
     }
 
+
+    /**
+     * Will call putPerformance(Integer.toString(group),key...)
+     * @param group the performance group key
+     * @param key the key
+     * @param value the value
+     */
     public void putPerformance(int group, String key, long value)
     {
         this.putPerformance(Integer.toString(group), key, value);
     }
+
 
     /**
      * Internal use.
@@ -200,6 +215,7 @@ public class Reply
             return group;
         }
     }
+
 
     /**
      * Internal use only for NChecksErlang.
@@ -229,6 +245,7 @@ public class Reply
 
         return new OtpErlangTuple(replyRecord);
     }
+
 
     // utility classes
     static class PerformanceGroup

@@ -61,6 +61,8 @@ public class SysmoWorker {
         String utilsDir;
         String etcDir;
         String rubyDir;
+        String stateServer;
+        int stateServerPort;
         int weight;
 
         String configFile;
@@ -81,12 +83,15 @@ public class SysmoWorker {
             etcDir = prop.getProperty("etc_dir");
             rubyDir = prop.getProperty("ruby_dir");
             weight = Integer.parseInt(prop.getProperty("node_weight"));
+            stateServer = prop.getProperty("state_server");
+            stateServerPort = Integer.parseInt(prop.getProperty("state_server"));
         } catch (Exception e) {
             System.err.println(
                     "Error while loading config file." + e.toString());
             System.exit(1);
             return;
         }
+
         Logger logger = LoggerFactory.getLogger(SysmoWorker.class);
         logger.info("worker started");
 
@@ -130,8 +135,7 @@ public class SysmoWorker {
              * Create Nchecks thread
              */
             // TODO
-            int stateServerPort = 0;
-            InetAddress stateServerAddress = InetAddress.getByName(null);
+            InetAddress stateServerAddress = InetAddress.getByName(stateServer);
             NChecksErlang nchecks = NChecksErlang.getInstance(
                     nchecksMbox,masterNode,rubyDir,
                     utilsDir,etcDir,stateServerAddress,stateServerPort);

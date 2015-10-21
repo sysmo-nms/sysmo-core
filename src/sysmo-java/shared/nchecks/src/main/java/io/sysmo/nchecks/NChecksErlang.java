@@ -65,6 +65,7 @@ public class NChecksErlang implements Runnable
     static NChecksErlang instance = null;
     static Logger logger = LoggerFactory.getLogger(NChecksErlang.class);
 
+
     /**
      * Start a Nchecks application that communicate with an erlang server.
      * @param mbox The jserver_nchecks mailbox
@@ -88,6 +89,7 @@ public class NChecksErlang implements Runnable
         }
         return NChecksErlang.instance;
     }
+
 
     private NChecksErlang(
             final OtpMbox mbox, final String nodeName,
@@ -130,6 +132,7 @@ public class NChecksErlang implements Runnable
         StateClient.start(stateServer,stateServerPort);
     }
 
+
     @Override
     public void run() {
         // loop and wait for calls
@@ -149,6 +152,7 @@ public class NChecksErlang implements Runnable
         StateClient.stop();
         this.mbox.exit("crach");
     }
+
 
     /**
      * Send a message to the caller.
@@ -170,6 +174,7 @@ public class NChecksErlang implements Runnable
         }
     }
 
+
     public static OtpErlangTuple buildOkReply(final OtpErlangObject msg)
     {
         OtpErlangObject[] valObj = new OtpErlangObject[2];
@@ -177,6 +182,7 @@ public class NChecksErlang implements Runnable
         valObj[1] = msg;
         return new OtpErlangTuple(valObj);
     }
+
 
     public static OtpErlangTuple buildErrorReply(final OtpErlangObject msg)
     {
@@ -186,6 +192,7 @@ public class NChecksErlang implements Runnable
         return new OtpErlangTuple(valObj);
     }
 
+
     public static OtpErlangTuple buildQueueFullReply(final OtpErlangObject msg)
     {
         OtpErlangObject[] valObj = new OtpErlangObject[2];
@@ -193,6 +200,7 @@ public class NChecksErlang implements Runnable
         valObj[1] = msg;
         return new OtpErlangTuple(valObj);
     }
+
 
     private void handleInit(OtpErlangTuple initMsg)
     {
@@ -226,7 +234,6 @@ public class NChecksErlang implements Runnable
                     OtpErlangString erlangCheckClassName = (OtpErlangString)
                             (payload.elementAt(0));
 
-                    // TODO full class name as argument
                     String checkClassName = erlangCheckClassName.stringValue();
 
                     OtpErlangList checkArgs = (OtpErlangList)
@@ -286,6 +293,7 @@ public class NChecksErlang implements Runnable
         }
     }
 
+
     public static Map<String,Argument> decodeArgs(final OtpErlangList argList)
     {
         Map<String,Argument> result = new HashMap<>();
@@ -302,15 +310,15 @@ public class NChecksErlang implements Runnable
                 a.set(valStr.stringValue());
                 result.put(key.stringValue(), a);
             } else {
-                // Actualy only string arguments are accepted
+                // Currently only string arguments are accepted
                 NChecksErlang.logger.info("Unknown arg type: " + val);
             }
         }
         return result;
     }
 
-    interface CheckCaller
-    {
+
+    interface CheckCaller {
         OtpErlangObject getCaller();
     }
 
@@ -327,6 +335,7 @@ public class NChecksErlang implements Runnable
             NChecksErlang.sendReply(caller, reply);
         }
     }
+
 
     static class NChecksRunnable implements Runnable, CheckCaller
     {
@@ -360,12 +369,14 @@ public class NChecksErlang implements Runnable
         public OtpErlangObject getCaller() {return this.caller;}
     }
 
+
     static class NHelperRunnable implements Runnable, CheckCaller
     {
         private HelperInterface helper;
         private String            helper_id;
         private OtpErlangObject   caller;
         private OtpErlangList     args;
+
 
         public NHelperRunnable(
                 final Object helpObj,
@@ -379,6 +390,7 @@ public class NChecksErlang implements Runnable
             this.args      = argsList;
         }
 
+
         @Override
         public void run()
         {
@@ -390,7 +402,9 @@ public class NChecksErlang implements Runnable
             NChecksErlang.sendReply(this.caller, replyMsg);
         }
 
+
         public OtpErlangObject getCaller() {return this.caller;}
+
 
         private OtpErlangList buildErlangCharList(char[] charList)
         {

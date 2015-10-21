@@ -42,20 +42,25 @@ public class StateMessage implements Serializable {
     public static final int GET = 0;
     public static final int SET = 1;
 
+
     /**
-     * Build a query of type type
-     * can be StateMessage.GET or StateMessage.SET
+     * Build a query of type StateMessage.GET or StateMessage.SET.
+     * StateMessage.SET require an object as state.
+     * @see StateMessage setObjectState(Object obj)
      * @param action GET or SET
      */
     StateMessage(int action) {
         this.action = action;
     }
 
+
     /**
      * Set object state.
      * @param value a serializable object
      */
-    public void setObjectState(Serializable value) {
+    public void setObject(Serializable value) throws Exception {
+        if (value == null) throw new NullPointerException();
+
         ByteArrayOutputStream outStream = null;
         ObjectOutput objOut = null;
         try {
@@ -83,6 +88,7 @@ public class StateMessage implements Serializable {
         }
     }
 
+
     /**
      * Set the key state.
      * @param key the unique key
@@ -91,13 +97,15 @@ public class StateMessage implements Serializable {
         this.key = key;
     }
 
+
     /**
      * Get the value object as byte array.
      * @return value object as byte array
      */
-    public byte[] getBytes() {
+    public byte[] getObjectBytes() {
         return this.value.clone();
     }
+
 
     /**
      * Get the object set in constructor.
@@ -134,6 +142,7 @@ public class StateMessage implements Serializable {
         }
     }
 
+
     /**
      * Get the key of this message.
      * @return the key
@@ -142,6 +151,7 @@ public class StateMessage implements Serializable {
         return this.key;
     }
 
+
     /**
      * Get the action of this message.
      * @return "get" or "set"
@@ -149,6 +159,7 @@ public class StateMessage implements Serializable {
     public int getAction() {
         return this.action;
     }
+
 
     /**
      * Set the Object value of the message in byte array form.

@@ -31,16 +31,24 @@ public class Query
     private Map<String,Argument> arguments;
     private String               stateId;
 
+
     public Query(Map<String,Argument> args, final String stateId)
     {
         this.stateId    = stateId;
         this.arguments  = new HashMap<>(args);
     }
 
+
+    /**
+     * No sate Query, used by HelperInterface
+     *
+     * @param args a map of Argument
+     */
     public Query(Map<String,Argument> args)
     {
         this.arguments = new HashMap<>(args);
     }
+
 
     /**
      * This identifier is for use with Reply.setState(id, value) as the
@@ -52,7 +60,8 @@ public class Query
      */
     public String getStateId() {
         return this.stateId;
-    };
+    }
+
 
     /**
      * Retrieve the object stored from previous call.
@@ -66,8 +75,12 @@ public class Query
     public Object getState() {
         StateMessage msg = new StateMessage(StateMessage.GET);
         msg.setKey(this.stateId);
+        /*
+         *getState will get the data from the (possibly) distant state server.
+         */
         return StateClient.getState(msg);
     }
+
 
     /**
      * Return the argument identified by key or null if the key

@@ -32,22 +32,25 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.concurrent.ConcurrentHashMap;
 
+
 /**
  * Created by seb on 21/10/15.
+ *
+ * Allow the connexion to a StateServer
  */
 public class StateClient implements Runnable {
     private static StateClient instance = null;
     private static ConcurrentHashMap<String,StateMessage> map = new ConcurrentHashMap<>();
     private static int TIMEOUT = 2000;
     private Logger logger;
-    private static final Object outLock = new Object();
-    private static final Object initLock = new Object();
+    private static final Object lock = new Object();
     private ObjectInputStream in = null;
     private ObjectOutputStream out = null;
     private Socket socket = null;
 
+
     public static void start(InetAddress address, int port) throws Exception {
-        synchronized (StateClient.initLock) {
+        synchronized (StateClient.lock) {
             if (StateClient.instance == null) {
                 StateClient.instance = new StateClient(address, port);
                 Thread thread = new Thread(StateClient.instance);
@@ -57,6 +60,7 @@ public class StateClient implements Runnable {
             }
         }
     }
+
 
     public static void stop() {
         StateClient sc = StateClient.instance;
@@ -85,6 +89,7 @@ public class StateClient implements Runnable {
             }
         }
     }
+
 
     private StateClient(InetAddress address, int port) throws Exception {
         if (port == 0) {
@@ -142,7 +147,7 @@ public class StateClient implements Runnable {
 
 
     public static void setState(StateMessage msg) {
-        synchronized (StateClient.outLock) {
+        synchronized (StateClient.lock) {
             try {
                 StateClient.instance.out.writeObject(msg);
                 StateClient.instance.out.flush();
@@ -152,9 +157,10 @@ public class StateClient implements Runnable {
         }
     }
 
+
     public static Object getState(StateMessage msg) {
         StateClient.map.put(msg.getKey(), msg);
-        synchronized(StateClient.outLock) {
+        synchronized(StateClient.lock) {
             try {
                 StateClient.instance.out.writeObject(msg);
                 StateClient.instance.out.flush();
@@ -182,32 +188,25 @@ public class StateClient implements Runnable {
         }
     }
 
+
     @Override
     public void run() {
         StateMessage message;
-        StateClient.instance.logger.info("start run");
+        this.logger.info("start run");
 
         while (this.socket.isConnected()) try {
-            StateClient.instance.logger.info("begin to loooooooooop");
             message = (StateMessage) this.in.readObject();
-            StateClient.instance.logger.info("have read object");
 
             if (message.getAction() == StateMessage.GET) {
-                StateClient.instance.logger.info("get action");
                 String key = message.getKey();
-                StateClient.instance.logger.info("get key");
                 Object caller = StateClient.map.get(key);
-                StateClient.instance.logger.info("get caller" + caller);
                 StateClient.map.put(key, message);
-                StateClient.instance.logger.info("put reply" + message);
                 synchronized (caller) {
                     caller.notify();
                 }
-                StateClient.instance.logger.info("have notifyed caller");
-
             }
         } catch (IOException|ClassNotFoundException e) {
-            this.logger.error(e.getMessage(), e);
+            this.logger.warn(e.getMessage(), e);
             StateClient.stop();
             break;
         }

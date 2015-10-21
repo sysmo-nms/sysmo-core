@@ -84,7 +84,7 @@ public class CheckIfErrors implements NChecksInterface, HelperInterface
             Snmp session = NChecksSNMP.getInstance().getSnmpSession();
 
             // TODO try PDU.GETBULK then PDU.GETNEXT to degrade....
-            // TODO keep degrade state in reply.setOpaqueData(v)
+            // TODO keep degrade state in reply.setState(v)
             TableUtils tableWalker =
                     new TableUtils(
                             session,
