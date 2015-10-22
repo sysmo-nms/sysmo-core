@@ -2,7 +2,9 @@
 -name sysmo-erlang@127.0.0.1
 
 ## Cookie for distributed erlang
--setcookie sysmo-cookie
+# This command is unused but required by rebar.
+# The cookie is located in etc/sysmo.cookie
+-setcookie UNUSED
 
 ## Heartbeat management; auto-restarts VM if it dies or becomes unresponsive
 ## (Disabled by default..use with caution!)

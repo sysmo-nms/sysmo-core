@@ -3,10 +3,7 @@
 -behaviour(application).
 -include_lib("kernel/include/file.hrl").
 
--export([
-    start/2,
-    stop/1
-]).
+-export([start/2, stop/1]).
 
 start(_Type, _Args) ->
     set_cookie(),
@@ -19,7 +16,12 @@ set_cookie()  ->
     {ok, Cookie} = read_cookie("etc/erlang.cookie"),
     erlang:set_cookie(node(), erlang:list_to_atom(Cookie)).
 
-%% Taken from undocumented lib/kernel/src/auth.erl
+
+
+
+%%
+%% Taken from undocumented lib/kernel/src/auth.erl functions
+%%
 read_cookie(Name) ->
     case file:raw_read_file_info(Name) of
         {ok, #file_info {type=Type, mode=Mode, size=Size}} ->
