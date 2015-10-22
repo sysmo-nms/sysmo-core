@@ -227,7 +227,6 @@ public class StateServer {
                             reply.setKey(key);
                             reply.setBytes(bytes);
                             out.writeObject(reply);
-                            out.flush();
                             break;
                         default:
                             // nothing

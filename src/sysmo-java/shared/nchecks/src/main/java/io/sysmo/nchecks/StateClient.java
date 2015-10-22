@@ -151,7 +151,6 @@ public class StateClient implements Runnable {
         synchronized (StateClient.lock) {
             try {
                 StateClient.instance.out.writeObject(msg);
-                StateClient.instance.out.flush();
             } catch (IOException e) {
                 StateClient.instance.logger.error(e.getMessage(), e);
             }
@@ -164,7 +163,6 @@ public class StateClient implements Runnable {
         synchronized(StateClient.lock) {
             try {
                 StateClient.instance.out.writeObject(msg);
-                StateClient.instance.out.flush();
             } catch (IOException e) {
                 StateClient.instance.logger.error(e.getMessage(),e);
                 return null;
