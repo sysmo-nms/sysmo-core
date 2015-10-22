@@ -42,8 +42,11 @@ import org.snmp4j.util.TableUtils;
 
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Definition of the check is in the file CheckIfErrors.xml
@@ -68,9 +71,13 @@ public class CheckIfErrors implements NChecksInterface, HelperInterface
         Reply  reply = new Reply();
         String error = "undefined";
         String ifSelection;
+        int warningThreshold;
+        int criticalThreshold;
 
         try {
             ifSelection = query.get("if_selection").asString();
+            warningThreshold = query.get("warning_threshold").asInteger();
+            criticalThreshold = query.get("critical_threshold").asInteger();
         } catch (Exception|Error e) {
             CheckIfErrors.logger.error(e.getMessage(), e);
             reply.setStatus(Reply.STATUS_ERROR);
@@ -78,6 +85,12 @@ public class CheckIfErrors implements NChecksInterface, HelperInterface
             return reply;
         }
 
+        IfErrorsState state = (IfErrorsState) query.getState();
+        if (state == null) {
+            state = new IfErrorsState();
+        }
+
+        HashMap<Integer, Long> newStatusMap = new HashMap<>();
         try {
             AbstractTarget target = NChecksSNMP.getInstance().getTarget(query);
 
@@ -86,7 +99,7 @@ public class CheckIfErrors implements NChecksInterface, HelperInterface
             // TODO try PDU.GETBULK then PDU.GETNEXT to degrade....
             // TODO keep degrade state in reply.setState(v)
             TableUtils tableWalker =
-                    new TableUtils(session, new DefaultPDUFactory(PDU.GETNEXT));
+                    new TableUtils(session, new DefaultPDUFactory(state.getPduType()));
 
 
             // get indexes string list
@@ -125,27 +138,38 @@ public class CheckIfErrors implements NChecksInterface, HelperInterface
                 Integer ifIndex = vbs[0].getVariable().toInt();
 
                 if (intList.contains(ifIndex)) {
-                    reply.putPerformance(ifIndex, "IfInErrors",
-                            vbs[1].getVariable().toLong());
-                    reply.putPerformance(ifIndex, "IfOutErrors",
-                            vbs[2].getVariable().toLong());
+                    Long errsIn = vbs[1].getVariable().toLong();
+                    Long errsOut = vbs[2].getVariable().toLong();
+                    reply.putPerformance(ifIndex, "IfInErrors", errsIn);
+                    reply.putPerformance(ifIndex, "IfOutErrors", errsOut);
+
+                    newStatusMap.put(ifIndex, errsIn + errsOut);
                 }
             }
 
-            IfErrorsState st;
-            st = (IfErrorsState) query.getState();
+            String newStatus = state.computeStatusMaps(
+                    newStatusMap, warningThreshold, criticalThreshold);
 
-            if (st == null) {
-                st = new IfErrorsState("hello world");
-            } else {
-                st.increment();
+            String replyMsg;
+            switch (newStatus) {
+                case Reply.STATUS_OK:
+                    replyMsg = "CheckIfErrors OK";
+                    break;
+                case Reply.STATUS_UNKNOWN:
+                    replyMsg = "CheckIfErrors UNKNOWN. No enough data to compute thresholds";
+                    break;
+                case Reply.STATUS_CRITICAL:
+                    replyMsg = "CheckIfErrors CRITICAL have found errors!";
+                    break;
+                case Reply.STATUS_WARNING:
+                    replyMsg = "CheckIfErrors WARNING have found errors!";
+                    break;
+                default:
+                    replyMsg = "";
             }
-            CheckIfErrors.logger.info(
-                    "My state is: " + st.getMessage() + " " + st.getCount());
-
-            reply.setState(st);
-            reply.setStatus(Reply.STATUS_OK);
-            reply.setReply("CheckIfErrors successful");
+            reply.setState(state);
+            reply.setStatus(newStatus);
+            reply.setReply(replyMsg);
             return reply;
         } catch (Exception|Error e) {
             CheckIfErrors.logger.error(e.getMessage(), e);
@@ -154,6 +178,7 @@ public class CheckIfErrors implements NChecksInterface, HelperInterface
             return reply;
         }
     }
+
 
     /*
      * Helper interface
@@ -165,25 +190,91 @@ public class CheckIfErrors implements NChecksInterface, HelperInterface
     }
 
     static class IfErrorsState implements Serializable {
+        private int pduType;
+        private Date time;
+        private HashMap<Integer, Long> data;
+        private String status;
 
-        private String message;
-        private int count;
-
-        IfErrorsState(String message) {
-            this.message = message;
-            this.count = 0;
+        IfErrorsState() {
+            this.pduType = PDU.GETNEXT;
+            this.time    = new Date();
+            this.data    = new HashMap<>();
+            this.status  = Reply.STATUS_UNKNOWN;
         }
 
-        public String getMessage() {
-            return this.message;
+        public int getPduType() {
+            return this.pduType;
         }
 
-        public int getCount() {
-            return this.count;
-        }
+        public String computeStatusMaps(HashMap<Integer,Long> update,
+                int warning, int critical)
+        {
+            Date newDate = new Date();
+            Date oldDate = this.time;
+            long seconds = (newDate.getTime() - oldDate.getTime()) / 1000;
+            long minutes;
+            boolean keepWorstState = false;
+            if (seconds < 60) {
+                // no enough time elapsed return old status or worst status
+                keepWorstState = true;
+                minutes = 1;
+            } else {
+                minutes = seconds / 60;
+            }
 
-        public void increment() {
-            this.count += 1;
+            String status = Reply.STATUS_OK;
+            for (Map.Entry<Integer, Long> entry: update.entrySet())
+            {
+                Integer key = entry.getKey();
+                Long upd = entry.getValue();
+                Long old = this.data.get(key);
+                if (old != null) {
+                    long diff = (upd - old) / minutes;
+                    if (diff > warning) {
+                        status = Reply.STATUS_WARNING;
+                    }
+                    if (diff > critical) {
+                        status = Reply.STATUS_CRITICAL;
+                    }
+                }
+            }
+
+            if (keepWorstState) {
+                switch (status) {
+                    case Reply.STATUS_CRITICAL:
+                        // it is the worst
+                        this.status = status;
+                        break;
+                    case Reply.STATUS_WARNING:
+                        // is it the worst?
+                        if (!this.status.equals(Reply.STATUS_CRITICAL)) {
+                            // yes go warning
+                            this.status = status;
+                        }
+                        break;
+                    case Reply.STATUS_OK:
+                        // is it the worst?
+                        if (this.status.equals(Reply.STATUS_CRITICAL)) {
+                            // no stay with our critical
+                            break;
+                        } else if (this.status.equals(Reply.STATUS_WARNING)) {
+                            // no stay with our warning
+                            break;
+                        } else if (this.status.equals(Reply.STATUS_UNKNOWN)) {
+                            // no stay with our unknown
+                            break;
+                        } else {
+                            // then go ok
+                            this.status = status;
+                            break;
+                        }
+                }
+            } else {
+                this.time = newDate;
+                this.data = update;
+                this.status = status;
+            }
+            return this.status;
         }
     }
 }

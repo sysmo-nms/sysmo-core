@@ -86,6 +86,14 @@ public class Query
 
 
     /**
+     *
+     * @return the unique string identifying the probe
+     */
+    public String getStateId() {
+        return this.stateId;
+    }
+
+    /**
      * Return the argument identified by key or null if the key
      * does not exist.
      * @param key the flag identifying the argument

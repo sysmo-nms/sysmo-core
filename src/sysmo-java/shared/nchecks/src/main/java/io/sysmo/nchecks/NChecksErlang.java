@@ -101,12 +101,6 @@ public class NChecksErlang implements Runnable
 
         NChecksErlang.logger.info("ruby dir is: " + rubyDir);
 
-        // if -test
-        /*
-        if (args.length != 0 && args[0].equals("--test"))
-            {testSpace(); return;}
-        */
-
         // init thread pool
         this.threadPool = new ThreadPoolExecutor(
                 8,  // base pool size

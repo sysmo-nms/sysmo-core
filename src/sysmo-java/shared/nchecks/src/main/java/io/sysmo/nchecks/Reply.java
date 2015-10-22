@@ -44,6 +44,7 @@ public class Reply
     public static final String STATUS_CRITICAL = "CRITICAL";
     public static final String STATUS_DOWN = "DOWN";
     public static final String STATUS_ERROR = "ERROR";
+    public static final String STATUS_UNKNOWN = "UNKNOWN";
 
     private static final OtpErlangAtom atomNchecksReply = new OtpErlangAtom("nchecks_reply");
     private String replyMsg;
