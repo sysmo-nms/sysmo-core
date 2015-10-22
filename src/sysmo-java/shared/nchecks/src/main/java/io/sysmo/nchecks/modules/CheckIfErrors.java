@@ -86,9 +86,7 @@ public class CheckIfErrors implements NChecksInterface, HelperInterface
             // TODO try PDU.GETBULK then PDU.GETNEXT to degrade....
             // TODO keep degrade state in reply.setState(v)
             TableUtils tableWalker =
-                    new TableUtils(
-                            session,
-                            new DefaultPDUFactory(PDU.GETNEXT));
+                    new TableUtils(session, new DefaultPDUFactory(PDU.GETNEXT));
 
 
             // get indexes string list
@@ -145,7 +143,7 @@ public class CheckIfErrors implements NChecksInterface, HelperInterface
             CheckIfErrors.logger.info(
                     "My state is: " + st.getMessage() + " " + st.getCount());
 
-            reply.setState(query.getStateId(), st);
+            reply.setState(st);
             reply.setStatus(Reply.STATUS_OK);
             reply.setReply("CheckIfErrors successful");
             return reply;

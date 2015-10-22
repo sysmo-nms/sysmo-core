@@ -34,7 +34,7 @@ import java.util.HashMap;
 /**
  * The Reply class contain all the values and data related to the execution of
  * a module implementing NCheckInterface (a check module).
- * @see io.sysmo.nchecks.Query
+ * @see {@link io.sysmo.nchecks.Query}.
  */
 
 public class Reply
@@ -51,6 +51,7 @@ public class Reply
     private long   timestamp;
     private Map<String,PerformanceGroup> perfValues;
     private int statusCode;
+    private Serializable state;
 
 
     public Reply() {
@@ -59,6 +60,7 @@ public class Reply
         this.status   = "DOWN";
         this.timestamp = System.currentTimeMillis() / 1000;
         this.perfValues = new HashMap<>();
+        this.state = null;
     }
 
 
@@ -115,29 +117,36 @@ public class Reply
 
 
     /**
-     * Store a state for this probe for later calls. 'key' must be taken from
-     * Query.getStateId() to insure an unique entry.
+     * Store a state for this probe for later calls. The object will be
+     * available in the next queries with Query.getState().
      *
-     * example:
-     * ...
-     * Reply reply = new Reply();
-     * reply.setState((Query) query.getStateId(), myObjectState);
+     * @see {@link Query#getState()}.
      *
-     * @see Query getStateId()
-     *
-     * @param key the unique key from Query.getStateId();
      * @param value the Object to be stored
      */
-    public void setState(String key, Serializable value) throws Exception {
-        StateMessage msg = new StateMessage(StateMessage.SET);
-        msg.setKey(key);
-        msg.setObject(value);
-        StateClient.setState(msg);
+    public void setState(Serializable value) throws Exception {
+        this.state = value;
+    }
+
+    /**
+     * For internal use only. This function is called by NChecks
+     * with an unique key for you.
+     * @see {@link Query#getState()}
+     * @see {@link Reply#setState(Serializable)}
+     * @param key unique key identifying the probe
+     */
+    public void pushState(String key) {
+        if (this.state != null) {
+            StateMessage msg = new StateMessage(StateMessage.SET);
+            msg.setKey(key);
+            msg.setObject(this.state);
+            StateClient.setState(msg);
+        }
     }
 
 
     /**
-     * Set the return status. (see setStatusCode)
+     * Set the return status. (see {@link #setStatusCode(int)})
      * @param str A return status (Reply.STATUS_{ERROR|OK|WARNING|CRITICAL})
      */
     public void setStatus(String str) {

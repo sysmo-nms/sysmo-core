@@ -58,8 +58,8 @@ public class StateMessage implements Serializable {
      * Set object state.
      * @param value a serializable object
      */
-    public void setObject(Serializable value) throws Exception {
-        if (value == null) throw new NullPointerException();
+    public void setObject(Serializable value) {
+        if (value == null) return;
 
         ByteArrayOutputStream outStream = null;
         ObjectOutput objOut = null;

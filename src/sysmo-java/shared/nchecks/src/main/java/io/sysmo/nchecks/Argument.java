@@ -45,7 +45,7 @@ public class Argument
 
     /**
      * Return the string value of argument
-     * @return the original argulent string
+     * @return the original argument string
      */
     public String asString() {return this.argument;}
 }

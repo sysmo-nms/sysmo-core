@@ -23,15 +23,23 @@ import java.util.Map;
 import java.util.HashMap;
 
 /**
-* The Reply class contain all the values and informations related to the execution of 
-* a module implementing NCheckInterface (a check module).
-*/
+ * The Reply class contain all the values and data related to the execution of
+ * a module implementing NCheckInterface (a check module).
+ *
+ * @see {@link Reply}
+ */
 public class Query
 {
     private Map<String,Argument> arguments;
     private String               stateId;
 
 
+    /**
+     * Private use only.
+     *
+     * @param args a map of {@link Argument}
+     * @param stateId a unique string identifying the probe
+     */
     public Query(Map<String,Argument> args, final String stateId)
     {
         this.stateId    = stateId;
@@ -40,6 +48,8 @@ public class Query
 
 
     /**
+     * Private use only.
+     *
      * No sate Query, used by HelperInterface
      *
      * @param args a map of Argument
@@ -51,33 +61,26 @@ public class Query
 
 
     /**
-     * This identifier is for use with Reply.setState(id, value) as the
-     * unique identifier for the probe to store and get data later.
-     *
-     * @see Reply
-     *
-     * @return an unique probe identifier
-     */
-    public String getStateId() {
-        return this.stateId;
-    }
-
-
-    /**
      * Retrieve the object stored from previous call.
      *
      * example:
      *
+     * ...
      * MyStateClass state = (MyStateClass) reply.getState();
+     * if (state == null) {
+     *    // initialize a new state then
+     *    state = new MySateClass();
+     * }
+     * ...
      *
-     * @return an Object set from Reply.setState
+     * @see {@link Reply#setState(java.io.Serializable)}
+     * @return an Object set from Reply.setState or null
      */
     public Object getState() {
+        // Lazy getState. Modules not using states, will not use it.
         StateMessage msg = new StateMessage(StateMessage.GET);
         msg.setKey(this.stateId);
-        /*
-         *getState will get the data from the (possibly) distant state server.
-         */
+        // getState will get the data from the (possibly) distant state server.
         return StateClient.getState(msg);
     }
 
@@ -87,8 +90,8 @@ public class Query
      * does not exist.
      * @param key the flag identifying the argument
      * @return the argument or null
-     * @see io.sysmo.nchecks.Reply
-     * @see io.sysmo.nchecks.Argument
+     * @see {@link io.sysmo.nchecks.Reply}
+     * @see {@link io.sysmo.nchecks.Argument}
      */
     public Argument get(String key) {
         if (this.arguments.containsKey(key)) {
@@ -97,5 +100,4 @@ public class Query
             return null;
         }
     }
-
 }

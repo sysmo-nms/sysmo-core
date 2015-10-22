@@ -342,7 +342,7 @@ public class NChecksErlang implements Runnable
         private NChecksInterface check;
         private OtpErlangObject  caller;
         private OtpErlangList    args;
-        private OtpErlangString  stateId;
+        private String           stateId;
 
         public NChecksRunnable(
                 Object          checkObj,
@@ -353,15 +353,23 @@ public class NChecksErlang implements Runnable
             this.check   = (NChecksInterface) checkObj;
             this.caller  = callerObj;
             this.args    = argsList;
-            this.stateId = stateId;
+            this.stateId = stateId.stringValue();
         }
 
         @Override
         public void run()
         {
-            Query query = new Query(NChecksErlang.decodeArgs(
-                    this.args), this.stateId.stringValue());
+            // build a query from arguments
+            Query query =
+                   new Query(NChecksErlang.decodeArgs(this.args), this.stateId);
+
+            // execute and get reply
             Reply reply = this.check.execute(query);
+
+            // maybe push state to state server
+            reply.pushState(this.stateId);
+
+            // build and send erlang reply
             OtpErlangObject replyMsg = NChecksErlang.buildOkReply(reply.asTuple());
             NChecksErlang.sendReply(this.caller, replyMsg);
         }
