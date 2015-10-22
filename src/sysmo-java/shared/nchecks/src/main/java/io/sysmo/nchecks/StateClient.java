@@ -102,6 +102,7 @@ public class StateClient implements Runnable {
             InetSocketAddress inetAddress = new InetSocketAddress(address, port);
             this.socket = new Socket();
             this.socket.setKeepAlive(true);
+            this.socket.setTcpNoDelay(true);
             this.socket.connect(inetAddress, StateClient.TIMEOUT);
 
             // Why???

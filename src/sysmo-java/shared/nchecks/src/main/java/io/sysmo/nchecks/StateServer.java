@@ -159,6 +159,7 @@ public class StateServer {
             while (true) try {
 
                 Socket client = this.server.accept();
+                client.setTcpNoDelay(true);
                 Runnable clientRunnable = new ServerClientSocket(client);
                 Thread clientThread = new Thread(clientRunnable);
                 clientThread.start();
