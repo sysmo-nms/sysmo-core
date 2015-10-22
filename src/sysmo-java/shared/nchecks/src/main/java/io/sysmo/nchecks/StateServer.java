@@ -59,11 +59,28 @@ public class StateServer {
     private static OtpMbox mbox;
     private static StateServerSocket server;
     private static final Object lock = new Object();
+    private static boolean started = false;
+
+    public static void main(final String[] args) {
+        String dataDir = args[0];
+        int port = Integer.parseInt(args[1]);
+
+        try {
+            StateServer.start(dataDir, port, null);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static boolean isStarted() {
+        return StateServer.started;
+    }
 
     public static synchronized void start(
             final String dataDir, int port,
             final OtpMbox mbox) throws IOException
     {
+        StateServer.started = true;
         if (port == 0) { port = StateServer.DEFAULT_PORT; }
 
         StateServer.logger = LoggerFactory.getLogger(StateServer.class);
@@ -90,7 +107,10 @@ public class StateServer {
     }
 
     public static void stop() {
-        StateServer.mbox.exit("crash");
+        StateServer.started = false;
+        if (StateServer.mbox != null) {
+            StateServer.mbox.exit("crash");
+        }
         StateServer.db.close();
         StateServer.env.close();
         StateServer.server.stop();

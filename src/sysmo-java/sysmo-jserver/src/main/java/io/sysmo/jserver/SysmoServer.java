@@ -98,14 +98,20 @@ public class SysmoServer {
 
         InputStream propIn = null;
         int stateServerPort;
+        String stateServerEmbedded;
+        String stateServerHost;
         try  {
             Properties props = new Properties();
             propIn = new FileInputStream(confFile);
             props.load(propIn);
             stateServerPort =
                     Integer.parseInt(props.getProperty("state_server_port"));
+            stateServerEmbedded = props.getProperty("state_server_embedded", "true");
+            stateServerHost = props.getProperty("state_server_host");
         } catch (Exception e) {
             stateServerPort = 0;
+            stateServerEmbedded = "true";
+            stateServerHost = "";
         } finally {
             if (propIn != null) {
                 try {
@@ -157,15 +163,17 @@ public class SysmoServer {
         }
 
         /*
-         * Create state server thread
+         * Create state server thread if required
          */
-        try {
-            // dummy mbox only used to notify mainMbox of a failure
-            // and stop the JVM.
-            StateServer.start(dataDir, stateServerPort, stateDummyMbox);
-        } catch (Exception e) {
-            logger.error(e.getMessage(), e);
-            return;
+        if (stateServerEmbedded.equals("true")) {
+            try {
+                // dummy mbox only used to notify mainMbox of a failure
+                // and stop the JVM.
+                StateServer.start(dataDir, stateServerPort, stateDummyMbox);
+            } catch (Exception e) {
+                logger.error(e.getMessage(), e);
+                return;
+            }
         }
 
         /*
@@ -178,7 +186,9 @@ public class SysmoServer {
             logger.error("EventDb failed to start" + e.getMessage(), e);
             System.err.println("EventDb failed to start" + e.getMessage());
             derbyMbox.exit("error");
-            StateServer.stop();
+            if (StateServer.isStarted()) {
+                StateServer.stop();
+            }
             return;
         }
         Thread eventDbThread = new Thread(eventDb);
@@ -189,7 +199,14 @@ public class SysmoServer {
          */
         NChecksErlang nchecks;
         try {
-            InetAddress stateServerAddress = InetAddress.getByName(null);
+
+            InetAddress stateServerAddress;
+            if (stateServerEmbedded.equals("true")) {
+                stateServerAddress = InetAddress.getByName(null);
+            } else {
+                stateServerAddress = InetAddress.getByName(stateServerHost);
+            }
+
             nchecks = NChecksErlang.getInstance(nchecksMbox, foreignNodeName,
                     rubyDir, utilsDir, etcDir,
                     stateServerAddress,stateServerPort);
@@ -202,7 +219,9 @@ public class SysmoServer {
             } catch (Exception inner) {
                 logger.error("Fail to shutdown derby: ", inner);
             }
-            StateServer.stop();
+            if (StateServer.isStarted()) {
+                StateServer.stop();
+            }
             return;
         }
         Thread nchecksThread = new Thread(nchecks);
@@ -262,7 +281,9 @@ public class SysmoServer {
          * to terminate.
          */
         try {
-            StateServer.stop();
+            if (StateServer.isStarted()) {
+                StateServer.stop();
+            }
             jettyThread.stop();
             nchecksThread.join();
             rrd4jThread.join();
