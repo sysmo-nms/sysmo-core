@@ -210,7 +210,7 @@ public class CheckIfErrors implements NChecksInterface, HelperInterface
          * @param update the new value from snmp walk
          * @param warning the warning threshold
          * @param critical the critical threshold
-         * @return
+         * @return the new state
          */
         public String computeStatusMaps(HashMap<Integer,Long> update,
                 int warning, int critical)
