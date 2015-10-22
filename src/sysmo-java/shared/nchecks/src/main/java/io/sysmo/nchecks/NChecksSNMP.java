@@ -111,14 +111,14 @@ public class NChecksSNMP
 
     private AbstractTarget getSnmpTarget(Query query) throws Exception
     {
-        String targetid = query.get("target_id").asString();
-        AbstractTarget target = agents.get(targetid);
+        String targetId = query.get("target_id").asString();
+        AbstractTarget target = agents.get(targetId);
         if (target != null) { return target; }
 
         target = generateTarget(query);
         if (target.getSecurityModel() != SecurityModel.SECURITY_MODEL_USM)
         {
-            agents.put(targetid, target);
+            agents.put(targetId, target);
             return target;
         } else {
             UsmUser user     = generateUser(query);
@@ -128,7 +128,7 @@ public class NChecksSNMP
             if (oldUser == null)
             {
                 snmp4jSession.getUSM().addUser(user);
-                agents.put(targetid, target);
+                agents.put(targetId, target);
                 return target;
             }
             else
@@ -136,7 +136,7 @@ public class NChecksSNMP
                 if (NChecksSNMP.usmUsersEquals(oldUser.getUsmUser(),user))
                 {
                     // same users conf, ok
-                    agents.put(targetid, target);
+                    agents.put(targetId, target);
                     return target;
                 }
                 // TODO then replace old user with new one, use a thread lock
@@ -149,26 +149,26 @@ public class NChecksSNMP
     {
         String  host        = query.get("host").asString();
         int     port        = query.get("snmp_port").asInteger();
-        String  seclevel    = query.get("snmp_seclevel").asString();
+        String  secLevel    = query.get("snmp_seclevel").asString();
         String  version     = query.get("snmp_version").asString();
         int     retries     = query.get("snmp_retries").asInteger();
         int     timeout     = query.get("snmp_timeout").asInteger();
         
         Address address = GenericAddress.parse("udp:" + host + "/" + port);
 
-        int seclevelConst = NChecksSNMP.getSecLevel(seclevel);
+        int secLevelConst = NChecksSNMP.getSecLevel(secLevel);
 
         switch (version)
         {
             case "3":
-                String  secname = query.get("snmp_usm_user").asString();
+                String  secName = query.get("snmp_usm_user").asString();
                 UserTarget targetV3 = new UserTarget();
                 targetV3.setAddress(address);
                 targetV3.setRetries(retries);
                 targetV3.setTimeout(timeout);
                 targetV3.setVersion(SnmpConstants.version3);
-                targetV3.setSecurityLevel(seclevelConst);
-                targetV3.setSecurityName(new OctetString(secname));
+                targetV3.setSecurityLevel(secLevelConst);
+                targetV3.setSecurityName(new OctetString(secName));
                 return targetV3;
 
             default:

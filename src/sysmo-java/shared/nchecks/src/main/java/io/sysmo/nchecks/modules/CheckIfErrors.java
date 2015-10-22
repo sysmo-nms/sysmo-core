@@ -96,12 +96,6 @@ public class CheckIfErrors implements NChecksInterface, HelperInterface
 
             Snmp session = NChecksSNMP.getInstance().getSnmpSession();
 
-            // TODO try PDU.GETBULK then PDU.GETNEXT to degrade....
-            // TODO keep degrade state in reply.setState(v)
-            TableUtils tableWalker =
-                    new TableUtils(session, new DefaultPDUFactory(state.getPduType()));
-
-
             // get indexes string list
             String[] indexesArrayString = ifSelection.split(",");
 
@@ -120,12 +114,17 @@ public class CheckIfErrors implements NChecksInterface, HelperInterface
             OID lowerBoundIndex = new OID(lower.toString());
             OID upperBoundIndex = new OID(upper.toString());
 
+            // TODO try PDU.GETBULK then PDU.GETNEXT to degrade....
+            // TODO keep degrade state in reply.setState(v)
+            TableUtils tableWalker = new TableUtils(
+                    session, new DefaultPDUFactory(state.getPduType()));
+
             List<TableEvent> snmpReply = tableWalker.getTable(
                     target, CheckIfErrors.columns,
                     lowerBoundIndex, upperBoundIndex);
 
-            // TODO degrade to PDU.GETNEXT if some vb(s) == null
-            // TODO check if reply is valid. Where is is the error status?
+            // TODO check the last element of the list see TableUtils.getTable
+            // and TableEvent.getStatus()
 
             // asList for List.contains
             List<Integer> intList = Arrays.asList(indexesArrayInt);
@@ -179,7 +178,6 @@ public class CheckIfErrors implements NChecksInterface, HelperInterface
         }
     }
 
-
     /*
      * Helper interface
      */
@@ -206,9 +204,18 @@ public class CheckIfErrors implements NChecksInterface, HelperInterface
             return this.pduType;
         }
 
+        /**
+         * Take two counter entries from different dates, compare to critical
+         * and warning values and return the appropriate status.
+         * @param update the new value from snmp walk
+         * @param warning the warning threshold
+         * @param critical the critical threshold
+         * @return
+         */
         public String computeStatusMaps(HashMap<Integer,Long> update,
                 int warning, int critical)
         {
+            // get the minutes diff from last walk
             Date newDate = new Date();
             Date oldDate = this.time;
             long seconds = (newDate.getTime() - oldDate.getTime()) / 1000;
@@ -222,7 +229,9 @@ public class CheckIfErrors implements NChecksInterface, HelperInterface
                 minutes = seconds / 60;
             }
 
+
             String status = Reply.STATUS_OK;
+            // if one of the key reach threshold value set the new status.
             for (Map.Entry<Integer, Long> entry: update.entrySet())
             {
                 Integer key = entry.getKey();
@@ -239,6 +248,8 @@ public class CheckIfErrors implements NChecksInterface, HelperInterface
                 }
             }
 
+            // keep old worst state if the date diff is under 60 seconds, but
+            // change the state to a new worst status if thresholds are reached.
             if (keepWorstState) {
                 switch (status) {
                     case Reply.STATUS_CRITICAL:
