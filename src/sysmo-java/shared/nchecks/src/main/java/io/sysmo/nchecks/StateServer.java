@@ -259,20 +259,15 @@ public class StateServer {
 
             } catch (Exception e) {
                 this.logger.warn(e.getMessage(), e);
-                // ignore
             } finally {
-                try {
-                    if (in != null) {
-                        in.close();
-                    }
+                if (in != null) try {
+                    in.close();
                 } catch (IOException ignore) {
                     // ignore
                 }
 
-                try {
-                    if (out != null) {
-                        out.close();
-                    }
+                if (out != null) try {
+                    out.close();
                 } catch (IOException ignore) {
                     // ignore
                 }
