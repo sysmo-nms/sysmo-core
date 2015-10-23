@@ -18,6 +18,7 @@
 # along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
 require 'java'
 java_import 'io.sysmo.nchecks.Reply'
+java_import 'io.sysmo.nchecks.Status'
 
 require 'net/http'
 
@@ -58,24 +59,24 @@ def check(query) # query is io.sysmo.nchecks.Query
     # will raise an error if code is not 2**
     value = response.value()
 
-    reply.setStatus(Reply::STATUS_OK)
+    reply.setStatus(Status::OK)
     reply.setReply("HTTP Get successfull response")
     reply.putPerformance("ReplyDuration", diff)
 
   rescue Net::HTTPServerException => ex
-    reply.setStatus(Reply::STATUS_CRITICAL)
+    reply.setStatus(Status::CRITICAL)
     reply.setReply(ex.message())
 
   rescue Timeout::Error => ex
-    reply.setStatus(Reply::STATUS_CRITICAL)
+    reply.setStatus(Status::CRITICAL)
     reply.setReply(ex.message)
 
   rescue Errno::ECONNREFUSED => ex
-    reply.setStatus(Reply::STATUS_CRITICAL)
+    reply.setStatus(Status::CRITICAL)
     reply.setReply("Connection refused")
 
   rescue Exception => ex
-    reply.setStatus(Reply::STATUS_ERROR)
+    reply.setStatus(Status::ERROR)
     reply.setReply("#{ex.class} #{ex.message}")
 
   end

@@ -26,6 +26,7 @@ import io.sysmo.nchecks.NChecksSNMP;
 import io.sysmo.nchecks.Query;
 import io.sysmo.nchecks.Reply;
 
+import io.sysmo.nchecks.Status;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snmp4j.AbstractTarget;
@@ -75,7 +76,7 @@ public class CheckIfErrors implements NChecksInterface
             criticalThreshold = query.get("critical_threshold").asInteger();
         } catch (Exception|Error e) {
             CheckIfErrors.logger.error(e.getMessage(), e);
-            reply.setStatus(Reply.STATUS_ERROR);
+            reply.setStatus(Status.ERROR);
             reply.setReply("Missing or wrong argument: " + e);
             return reply;
         }
@@ -137,33 +138,29 @@ public class CheckIfErrors implements NChecksInterface
                 }
             }
 
-            String newStatus = state.computeStatusMaps(
+            Status newStatus = state.computeStatusMaps(
                     newStatusMap, warningThreshold, criticalThreshold);
 
             String replyMsg;
-            switch (newStatus) {
-                case Reply.STATUS_OK:
-                    replyMsg = "CheckIfErrors OK";
-                    break;
-                case Reply.STATUS_UNKNOWN:
-                    replyMsg = "CheckIfErrors UNKNOWN. No enough data to compute thresholds";
-                    break;
-                case Reply.STATUS_CRITICAL:
-                    replyMsg = "CheckIfErrors CRITICAL have found errors!";
-                    break;
-                case Reply.STATUS_WARNING:
-                    replyMsg = "CheckIfErrors WARNING have found errors!";
-                    break;
-                default:
-                    replyMsg = "";
+            if (newStatus.equals(Status.OK)) {
+                replyMsg = "CheckIfErrors OK";
+            } else if (newStatus.equals(Status.UNKNOWN)) {
+                replyMsg = "CheckIfErrors UNKNOWN. No enough data to compute thresholds";
+            } else if (newStatus.equals(Status.WARNING)) {
+                replyMsg = "CheckIfErrors WARNING have found errors!";
+            } else if (newStatus.equals(Status.CRITICAL)) {
+                replyMsg = "CheckIfErrors CRITICAL have found errors!";
+            } else {
+                replyMsg = "";
             }
+
             reply.setState(state);
             reply.setStatus(newStatus);
             reply.setReply(replyMsg);
             return reply;
         } catch (Exception|Error e) {
             CheckIfErrors.logger.error(e.getMessage(), e);
-            reply.setStatus(Reply.STATUS_ERROR);
+            reply.setStatus(Status.ERROR);
             reply.setReply("Error: " + error);
             return reply;
         }
@@ -171,15 +168,14 @@ public class CheckIfErrors implements NChecksInterface
 
     static class IfErrorsState implements Serializable {
         private int pduType;
+        private Status status;
         private Date time;
         private HashMap<Integer, Long> data;
-        private String status;
 
         IfErrorsState() {
+            this.time = null;
             this.pduType = PDU.GETNEXT;
-            this.time    = new Date();
-            this.data    = new HashMap<>();
-            this.status  = Reply.STATUS_UNKNOWN;
+            this.status  = Status.UNKNOWN;
         }
 
         public int getPduType() {
@@ -194,25 +190,34 @@ public class CheckIfErrors implements NChecksInterface
          * @param critical the critical threshold
          * @return the new state
          */
-        public String computeStatusMaps(HashMap<Integer,Long> update,
+        public Status computeStatusMaps(HashMap<Integer,Long> update,
                 int warning, int critical)
         {
+            if (this.time == null) {
+                // this is the first compute statusMap, nothing to compare
+                this.time = new Date();
+                this.data = update;
+                return this.status;
+            }
+
             // get the minutes diff from last walk
             Date newDate = new Date();
             Date oldDate = this.time;
             long seconds = (newDate.getTime() - oldDate.getTime()) / 1000;
             long minutes;
-            boolean keepWorstState = false;
+            //boolean keepWorstState = false;
             if (seconds < 60) {
-                // no enough time elapsed return old status or worst status
-                keepWorstState = true;
-                minutes = 1;
+                // no enough time elapsed return old status
+                // TODO check and return worst status
+                //keepWorstState = true;
+                //minutes = 1;
+                return this.status;
             } else {
                 minutes = seconds / 60;
             }
 
 
-            String status = Reply.STATUS_OK;
+            Status newStatus = Status.OK;
             // if one of the key reach threshold value set the new status.
             for (Map.Entry<Integer, Long> entry: update.entrySet())
             {
@@ -222,52 +227,61 @@ public class CheckIfErrors implements NChecksInterface
                 if (old != null) {
                     long diff = (upd - old) / minutes;
                     if (diff > warning) {
-                        status = Reply.STATUS_WARNING;
+                        newStatus = Status.WARNING;
                     }
                     if (diff > critical) {
-                        status = Reply.STATUS_CRITICAL;
+                        newStatus = Status.CRITICAL;
                     }
                 }
             }
 
+            this.time = newDate;
+            this.data = update;
+            this.status = newStatus;
+            return this.status;
+
+            /* TODO test worst state if no enough data
             // keep old worst state if the date diff is under 60 seconds, but
             // change the state to a new worst status if thresholds are reached.
             if (keepWorstState) {
                 switch (status) {
-                    case Reply.STATUS_CRITICAL:
+                    case Reply.CRITICAL:
                         // it is the worst
                         this.status = status;
                         break;
-                    case Reply.STATUS_WARNING:
+                    case Reply.WARNING:
                         // is it the worst?
-                        if (!this.status.equals(Reply.STATUS_CRITICAL)) {
+                        if (!this.status.equals(Reply.CRITICAL)) {
                             // yes go warning
                             this.status = status;
                         }
                         break;
-                    case Reply.STATUS_OK:
+                    case Reply.OK:
                         // is it the worst?
-                        if (this.status.equals(Reply.STATUS_CRITICAL)) {
-                            // no stay with our critical
-                            break;
-                        } else if (this.status.equals(Reply.STATUS_WARNING)) {
-                            // no stay with our warning
-                            break;
-                        } else if (this.status.equals(Reply.STATUS_UNKNOWN)) {
-                            // no stay with our unknown
-                            break;
-                        } else {
-                            // then go ok
-                            this.status = status;
-                            break;
+                        switch(this.status) {
+                            case Reply.CRITICAL:
+                                // no stay with our critical
+                                break;
+                            case Reply.WARNING:
+                                // no stay with our warning
+                                break;
+                            case Reply.UNKNOWN:
+                                // no stay with our unknown
+                                break;
+                            default:
+                                // then go ok
+                                this.status = status;
+                                break;
                         }
+                        break;
                 }
             } else {
                 this.time = newDate;
                 this.data = update;
                 this.status = status;
             }
-            return this.status;
+        return this.status;
+            */
         }
     }
 }

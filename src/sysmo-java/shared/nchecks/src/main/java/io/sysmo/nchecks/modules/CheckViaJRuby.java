@@ -25,6 +25,7 @@ import io.sysmo.nchecks.NChecksInterface;
 import io.sysmo.nchecks.Reply;
 import io.sysmo.nchecks.Query;
 import io.sysmo.nchecks.NChecksJRuby;
+import io.sysmo.nchecks.Status;
 import org.jruby.embed.ScriptingContainer;
 
 import org.slf4j.LoggerFactory;
@@ -74,14 +75,14 @@ public class CheckViaJRuby implements NChecksInterface //, HelperInterface
         String msg = e.getMessage();
         CheckViaJRuby.logger.error(e.getMessage(), e);
         Reply reply = new Reply();
-        reply.setStatus(Reply.STATUS_ERROR);
+        reply.setStatus(Status.ERROR);
         reply.setReply("CheckViaJRuby ERROR: " + txt + msg);
         return reply;
     }
 
     private static Reply handleError(String txt) {
         Reply reply = new Reply();
-        reply.setStatus(Reply.STATUS_ERROR);
+        reply.setStatus(Status.ERROR);
         reply.setReply("CheckViaJRuby ERROR: " + txt);
         return reply;
     }

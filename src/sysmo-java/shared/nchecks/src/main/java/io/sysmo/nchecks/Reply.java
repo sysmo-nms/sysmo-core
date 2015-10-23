@@ -39,16 +39,9 @@ import java.util.HashMap;
 
 public class Reply
 {
-    public static final String STATUS_OK = "OK";
-    public static final String STATUS_WARNING = "WARNING";
-    public static final String STATUS_CRITICAL = "CRITICAL";
-    public static final String STATUS_DOWN = "DOWN";
-    public static final String STATUS_ERROR = "ERROR";
-    public static final String STATUS_UNKNOWN = "UNKNOWN";
-
     private static final OtpErlangAtom atomNchecksReply = new OtpErlangAtom("nchecks_reply");
     private String replyMsg;
-    private String status;
+    private Status status;
     private long   timestamp;
     private Map<String,PerformanceGroup> perfValues;
     private int statusCode;
@@ -58,7 +51,7 @@ public class Reply
     public Reply() {
         this.statusCode = 0;
         this.replyMsg = "";
-        this.status   = "DOWN";
+        this.status   = Status.DOWN;
         this.timestamp = System.currentTimeMillis() / 1000;
         this.perfValues = new HashMap<>();
         this.state = null;
@@ -148,17 +141,17 @@ public class Reply
 
     /**
      * Set the return status. (see {@link #setStatusCode(int)})
-     * @param str A return status (Reply.STATUS_{ERROR|OK|WARNING|CRITICAL})
+     * @param status A return status (Status.{ERROR|OK|WARNING|CRITICAL})
      */
-    public void setStatus(String str) {
-        status = str;
+    public void setStatus(Status status) {
+        this.status = status;
     }
 
 
     /**
      * Get the return status.
      */
-    public String getStatus() {
+    public Status getStatus() {
         return status;
     }
 
@@ -247,7 +240,7 @@ public class Reply
 
         OtpErlangObject[] replyRecord = new OtpErlangObject[6];
         replyRecord[0] = Reply.atomNchecksReply;
-        replyRecord[1] = new OtpErlangString(this.status);
+        replyRecord[1] = new OtpErlangString(this.status.toString());
         replyRecord[2] = new OtpErlangLong(this.statusCode);
         replyRecord[3] = perfValueList;
         replyRecord[4] = new OtpErlangString(this.replyMsg);

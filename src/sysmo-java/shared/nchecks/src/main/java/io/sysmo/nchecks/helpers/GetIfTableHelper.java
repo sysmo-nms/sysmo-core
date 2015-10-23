@@ -31,10 +31,8 @@ import io.sysmo.nchecks.Query;
 
 import org.snmp4j.AbstractTarget;
 import org.snmp4j.PDU;
-import org.snmp4j.Snmp;
 import org.snmp4j.smi.OID;
 import org.snmp4j.smi.VariableBinding;
-import org.snmp4j.util.DefaultPDUFactory;
 import org.snmp4j.util.TableEvent;
 import org.snmp4j.util.TableUtils;
 
@@ -44,7 +42,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Created by seb on 18/10/15.
+ * Provide a selectable list of interfaces with multiple choices,
+ * grouped by ifType.
  */
 public class GetIfTableHelper implements HelperInterface {
 

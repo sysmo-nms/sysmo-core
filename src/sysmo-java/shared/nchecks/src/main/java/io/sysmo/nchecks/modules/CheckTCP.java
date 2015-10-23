@@ -30,6 +30,7 @@ import java.net.Socket;
 import java.net.InetSocketAddress;
 import java.net.InetAddress;
 
+import io.sysmo.nchecks.Status;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
@@ -42,8 +43,8 @@ public class CheckTCP implements NChecksInterface
     private int     msWarning   = 500;
     private int     msCritical  = 2500;
     private int     msTimeout   = 5000;
-    private String  refuseState = Reply.STATUS_CRITICAL;
-    private String  acceptState = Reply.STATUS_OK;
+    private Status  refuseState = Status.CRITICAL;
+    private Status  acceptState = Status.OK;
 
     public CheckTCP() {}
 
@@ -71,18 +72,22 @@ public class CheckTCP implements NChecksInterface
             if (msWarningArg    != null) { msWarning = msWarningArg.asInteger(); }
             if (msCriticalArg   != null) { msCritical = msCriticalArg.asInteger(); }
             if (msTimeoutArg    != null) { msTimeout = msTimeoutArg.asInteger(); }
-            if (refuseStateArg  != null) { refuseState = refuseStateArg.asString(); }
-            if (acceptStateArg  != null) { acceptState = acceptStateArg.asString(); }
+            if (refuseStateArg  != null) {
+                refuseState = Status.fromString(refuseStateArg.asString());
+            }
+            if (acceptStateArg  != null) {
+                acceptState = Status.fromString(acceptStateArg.asString());
+            }
         } catch (Exception|Error e) {
             CheckTCP.logger.error(e.getMessage(), e);
-            reply.setStatus(Reply.STATUS_ERROR);
+            reply.setStatus(Status.ERROR);
             reply.setReply("Bad or wrong arguments: " + e);
             return reply;
         }
 
 
         if (port == 0 || port > 65535) {
-            reply.setStatus(Reply.STATUS_ERROR);
+            reply.setStatus(Status.ERROR);
             reply.setReply("CheckTCP ERROR: Bad port definition " + port);
             return reply;
         }
@@ -92,7 +97,7 @@ public class CheckTCP implements NChecksInterface
             addr = InetAddress.getByName(host);
         } catch (Exception e) {
             CheckTCP.logger.error(e.getMessage(), e);
-            reply.setStatus(Reply.STATUS_ERROR);
+            reply.setStatus(Status.ERROR);
             reply.setReply("Host lookup fail for: " + host);
             return reply;
         }
@@ -115,15 +120,15 @@ public class CheckTCP implements NChecksInterface
 
         long elapsed = (stop - start) / 1000000;
         reply.putPerformance("ReplyDuration", elapsed);
-        String st;
-        if (Reply.STATUS_OK.equals(acceptState))
+        Status st;
+        if (Status.OK.equals(acceptState))
         {
             if (elapsed >= msCritical) {
-                st = Reply.STATUS_CRITICAL;
+                st = Status.CRITICAL;
             } else if (elapsed >= msWarning) {
-                st = Reply.STATUS_WARNING;
+                st = Status.WARNING;
             } else {
-                st = Reply.STATUS_OK;
+                st = Status.OK;
             }
         } else {
             st = acceptState;

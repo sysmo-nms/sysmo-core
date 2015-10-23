@@ -136,10 +136,8 @@ public class NChecksSNMP
 
     public static synchronized void cleanup()
     {
-        synchronized (NChecksSNMP.instance.snmp4jSession) {
-            NChecksSNMP.instance.snmp4jSession.getUSM().removeAllUsers();
-            NChecksSNMP.instance.agents = new HashMap<>();
-        }
+        NChecksSNMP.instance.snmp4jSession.getUSM().removeAllUsers();
+        NChecksSNMP.instance.agents = new HashMap<>();
     }
 
     public static synchronized AbstractTarget getTarget(Query query)

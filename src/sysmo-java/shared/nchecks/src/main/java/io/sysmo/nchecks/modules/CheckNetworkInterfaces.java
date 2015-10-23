@@ -26,6 +26,7 @@ import io.sysmo.nchecks.Reply;
 import io.sysmo.nchecks.Query;
 import io.sysmo.nchecks.NChecksSNMP;
 
+import io.sysmo.nchecks.Status;
 import org.snmp4j.AbstractTarget;
 import org.snmp4j.util.TableUtils;
 import org.snmp4j.util.TableEvent;
@@ -78,7 +79,7 @@ public class CheckNetworkInterfaces implements NChecksInterface
             ifSelection = query.get("if_selection").asString();
         } catch (Exception|Error e) {
             CheckNetworkInterfaces.logger.error(e.getMessage(), e);
-            reply.setStatus(Reply.STATUS_ERROR);
+            reply.setStatus(Status.ERROR);
             reply.setReply("Missing or wrong argument: " + e);
             return reply;
         }
@@ -145,12 +146,12 @@ public class CheckNetworkInterfaces implements NChecksInterface
             }
 
 
-            reply.setStatus(Reply.STATUS_OK);
+            reply.setStatus(Status.OK);
             reply.setReply("IfPerTableTest success fetch for: " + ifSelection);
             return reply;
         } catch (Exception|Error e) {
             CheckNetworkInterfaces.logger.error(e.getMessage(), e);
-            reply.setStatus(Reply.STATUS_ERROR);
+            reply.setStatus(Status.ERROR);
             reply.setReply("Error: " + error);
             return reply;
         }
