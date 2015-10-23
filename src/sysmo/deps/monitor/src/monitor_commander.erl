@@ -34,11 +34,8 @@
 % SUPERCAST_COMMANDER
 -export([handle_command/2]).
 
-% TODO handle_command might be spawned when no lock is required.
-% catch every client entry. I do not want this gen_server to crash.
-% It should be a kind of guard.
 % TODO remove handle_cast for most of the commands, and if crash, crash the
-% client gen_tcp to.
+% tcp_client process only (see supercast TODO.md).
 
 handle_command(Command, CState) ->
     % TODO check permissions here?
@@ -46,7 +43,6 @@ handle_command(Command, CState) ->
 
 handle_cast({{"createTargetQuery", Contents}, CState}, S) ->
     ?LOG_INFO("Create target query", Contents),
-    % TODO check permissions and spawn and catch
     QueryId             = proplists:get_value(<<"queryId">>, Contents),
     {struct, Contents2} = proplists:get_value(<<"value">>,   Contents),
     {struct, Prop}      = proplists:get_value(<<"properties">>,    Contents2),
@@ -77,8 +73,6 @@ handle_cast({{"createTargetQuery", Contents}, CState}, S) ->
     {noreply, S};
 
 handle_cast({{"createNchecksQuery", Contents}, CState}, S) ->
-    % TODO check permissions and spawn and catch
-
     QueryId             = proplists:get_value(<<"queryId">>, Contents),
     {struct, Contents2} = proplists:get_value(<<"value">>,   Contents),
     {struct, Prop}  = proplists:get_value(<<"properties">>, Contents2),
@@ -96,7 +90,6 @@ handle_cast({{"createNchecksQuery", Contents}, CState}, S) ->
     {noreply, S};
 
 handle_cast({{"deleteProbeQuery", Contents}, CState}, S) ->
-    % TODO check permissions and spawn and catch
     QueryId             = proplists:get_value(<<"queryId">>, Contents),
     {struct, Contents2} = proplists:get_value(<<"value">>,   Contents),
     Probe   = binary_to_list(proplists:get_value(<<"name">>,  Contents2)),
@@ -106,7 +99,6 @@ handle_cast({{"deleteProbeQuery", Contents}, CState}, S) ->
     {noreply, S};
 
 handle_cast({{"deleteTargetQuery", Contents}, CState}, S) ->
-    % TODO check permissions and spawn and catch
     QueryId              = proplists:get_value(<<"queryId">>, Contents),
     {struct, Contents2}  = proplists:get_value(<<"value">>,   Contents),
     Target  = binary_to_list(proplists:get_value(<<"name">>, Contents2)),
@@ -116,7 +108,6 @@ handle_cast({{"deleteTargetQuery", Contents}, CState}, S) ->
     {noreply, S};
 
 handle_cast({{"forceProbeQuery", Contents}, CState}, S) ->
-    % TODO check permissions and spawn and catch
     QueryId              = proplists:get_value(<<"queryId">>, Contents),
     {struct, Contents2}  = proplists:get_value(<<"value">>,   Contents),
     Probe   = binary_to_list(proplists:get_value(<<"name">>, Contents2)),
