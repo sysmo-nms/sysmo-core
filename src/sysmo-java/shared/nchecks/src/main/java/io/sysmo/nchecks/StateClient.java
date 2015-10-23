@@ -47,6 +47,7 @@ public class StateClient implements Runnable {
     private ObjectInputStream in = null;
     private ObjectOutputStream out = null;
     private Socket socket = null;
+    private boolean normalShutdown = false;
 
 
     public static void start(InetAddress address, int port) throws Exception {
@@ -64,6 +65,7 @@ public class StateClient implements Runnable {
 
     public static void stop() {
         StateClient sc = StateClient.instance;
+        sc.normalShutdown = true;
 
         if (sc.in != null) {
             try {
@@ -151,6 +153,7 @@ public class StateClient implements Runnable {
         synchronized (StateClient.lock) {
             try {
                 StateClient.instance.out.writeObject(msg);
+                StateClient.instance.out.flush();
             } catch (IOException e) {
                 StateClient.instance.logger.error(e.getMessage(), e);
             }
@@ -163,6 +166,7 @@ public class StateClient implements Runnable {
         synchronized(StateClient.lock) {
             try {
                 StateClient.instance.out.writeObject(msg);
+                StateClient.instance.out.flush();
             } catch (IOException e) {
                 StateClient.instance.logger.error(e.getMessage(),e);
                 return null;
@@ -205,8 +209,12 @@ public class StateClient implements Runnable {
                 }
             }
         } catch (IOException|ClassNotFoundException e) {
-            this.logger.warn(e.getMessage(), e);
-            StateClient.stop();
+            if (this.normalShutdown) {
+                this.logger.info(e.getMessage(), e);
+            } else {
+                this.logger.error(e.getMessage(), e);
+                StateClient.stop();
+            }
             break;
         }
     }

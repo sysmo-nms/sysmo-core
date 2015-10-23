@@ -156,6 +156,7 @@ public class StateServer {
         // server loop
         private ServerSocket server = null;
         private Logger logger;
+        private boolean normalShutdown = false;
 
         StateServerSocket(int port) throws IOException {
             this.logger = LoggerFactory.getLogger(this.getClass());
@@ -166,6 +167,7 @@ public class StateServer {
         public void stop() {
             this.logger.info("stop socket listener");
             if (this.server != null) try {
+                this.normalShutdown = true;
                 this.server.close();
                 this.server = null;
             } catch (IOException e) {
@@ -186,12 +188,16 @@ public class StateServer {
                 this.logger.debug("have accepted client");
 
             } catch (Exception | Error e) {
-                this.logger.error(e.getMessage(), e);
-                if (this.server != null) {
-                    try {
-                        this.server.close();
-                    } catch (IOException ignore) {
-                        // ignore
+                if (this.normalShutdown) {
+                    this.logger.info(e.getMessage(), e);
+                } else {
+                    this.logger.error(e.getMessage(), e);
+                    if (this.server != null) {
+                        try {
+                            this.server.close();
+                        } catch (IOException ignore) {
+                            // ignore
+                        }
                     }
                 }
                 break;
@@ -247,6 +253,7 @@ public class StateServer {
                             reply.setKey(key);
                             reply.setBytes(bytes);
                             out.writeObject(reply);
+                            out.flush();
                             break;
                         default:
                             // nothing
