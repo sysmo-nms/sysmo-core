@@ -21,20 +21,14 @@
 
 package io.sysmo.nchecks.modules;
 
-import io.sysmo.nchecks.HelperInterface;
-import io.sysmo.nchecks.HelperReply;
-import io.sysmo.nchecks.helpers.GetIfTableHelper;
-
 import io.sysmo.nchecks.NChecksInterface;
 import io.sysmo.nchecks.Reply;
 import io.sysmo.nchecks.Query;
 import io.sysmo.nchecks.NChecksSNMP;
 
-import org.snmp4j.Snmp;
 import org.snmp4j.AbstractTarget;
 import org.snmp4j.util.TableUtils;
 import org.snmp4j.util.TableEvent;
-import org.snmp4j.util.DefaultPDUFactory;
 import org.snmp4j.smi.OID;
 import org.snmp4j.smi.VariableBinding;
 import org.snmp4j.PDU;
@@ -46,7 +40,7 @@ import java.util.Iterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class CheckNetworkInterfaces implements NChecksInterface, HelperInterface
+public class CheckNetworkInterfaces implements NChecksInterface
 {
     static Logger logger =
             LoggerFactory.getLogger(CheckNetworkInterfaces.class);
@@ -90,16 +84,6 @@ public class CheckNetworkInterfaces implements NChecksInterface, HelperInterface
         }
 
         try {
-            AbstractTarget target = NChecksSNMP.getInstance().getTarget(query);
-
-            Snmp session = NChecksSNMP.getInstance().getSnmpSession();
-
-            // TODO try PDU.GETBULK then PDU.GETNEXT to degrade....
-            // TODO keep degrade state in reply.setOpaqueData(v)
-            TableUtils tableWalker =
-                new TableUtils(
-                        session,
-                        new DefaultPDUFactory(PDU.GETNEXT));
 
             // get indexes string list
             String[] indexesArrayString = ifSelection.split(",");
@@ -119,6 +103,10 @@ public class CheckNetworkInterfaces implements NChecksInterface, HelperInterface
             OID lowerBoundIndex = new OID(lower.toString());
             OID upperBoundIndex = new OID(upper.toString());
 
+            // TODO try PDU.GETBULK then PDU.GETNEXT to degrade....
+            // TODO keep degrade state in reply.setOpaqueData(v)
+            AbstractTarget target = NChecksSNMP.getTarget(query);
+            TableUtils tableWalker = NChecksSNMP.getTableUtils(PDU.GETNEXT);
             List<TableEvent> snmpReply = tableWalker.getTable(
                     target, CheckNetworkInterfaces.columns,
                     lowerBoundIndex, upperBoundIndex);
@@ -166,14 +154,5 @@ public class CheckNetworkInterfaces implements NChecksInterface, HelperInterface
             reply.setReply("Error: " + error);
             return reply;
         }
-    }
-
-    /*
-     * Helper interface
-     */
-    public HelperReply callHelper(Query query, String id)
-    {
-        GetIfTableHelper helper = new GetIfTableHelper();
-        return helper.call(query);
     }
 }

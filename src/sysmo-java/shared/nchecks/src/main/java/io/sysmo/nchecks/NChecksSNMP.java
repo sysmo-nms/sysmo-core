@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 
 import org.snmp4j.AbstractTarget;
 import org.snmp4j.CommunityTarget;
+import org.snmp4j.PDU;
 import org.snmp4j.Snmp;
 import org.snmp4j.UserTarget;
 import org.snmp4j.mp.MPv3;
@@ -52,7 +53,10 @@ import org.snmp4j.transport.DefaultUdpTransportMapping;
 import org.snmp4j.transport.UdpTransportMapping;
 import org.snmp4j.security.nonstandard.PrivAES192With3DESKeyExtension;
 import org.snmp4j.security.nonstandard.PrivAES256With3DESKeyExtension;
+import org.snmp4j.util.DefaultPDUFactory;
+import org.snmp4j.util.TableUtils;
 
+import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -63,14 +67,31 @@ import java.util.Map;
 // TODO handle snmp v3 usm user modification;
 public class NChecksSNMP
 {
-    public Snmp snmp4jSession;
+    private Snmp snmp4jSession = null;
+    private TableUtils getNextTableUtils;
+    private TableUtils getBulkTableUtils;
+    private TableUtils getTableUtils;
     private Map<String, AbstractTarget> agents;
-    private static NChecksSNMP INSTANCE;
-    private static Logger logger = LoggerFactory.getLogger(NChecksSNMP.class);
+    private Logger logger = LoggerFactory.getLogger(NChecksSNMP.class);
+    private static NChecksSNMP instance = null;
 
-    public static void startSnmp(final String etcDir) throws Exception {
-        new NChecksSNMP(etcDir);
+    public static void start(final String etcDir) throws Exception {
+        NChecksSNMP.instance = new NChecksSNMP(etcDir);
     }
+
+    public static void stop() {
+        if (NChecksSNMP.instance != null) {
+            NChecksSNMP.instance.logger.info("stop");
+            if (NChecksSNMP.instance.snmp4jSession != null) {
+                try {
+                    NChecksSNMP.instance.snmp4jSession.close();
+                } catch (IOException e) {
+                    // ignore
+                }
+            }
+        }
+    }
+
     private NChecksSNMP(final String etcDir) throws Exception
     {
         try {
@@ -81,54 +102,73 @@ public class NChecksSNMP
 
             byte[] engineId = NChecksSNMP.getEngineId(eidFile);
             UdpTransportMapping transport = new DefaultUdpTransportMapping();
-            snmp4jSession   = new Snmp(transport);
-            USM usm         = new USM(SecurityProtocols.getInstance(),
-                                                new OctetString(engineId), 0);
+            this.snmp4jSession = new Snmp(transport);
+            USM usm = new USM(SecurityProtocols.getInstance(),
+                                    new OctetString(engineId), 0);
             SecurityModels.getInstance().addSecurityModel(usm);
-            agents          = new HashMap<>();
+            this.agents = new HashMap<>();
             transport.listen();
         } catch (Exception e) {
-            NChecksSNMP.logger.error("SNMP init fail: " + e.getMessage(), e);
+            this.logger.error("SNMP init fail: " + e.getMessage(), e);
             throw e;
         }
-        INSTANCE = this;
+
+        this.getNextTableUtils = new TableUtils(this.snmp4jSession,
+                new DefaultPDUFactory(PDU.GETNEXT));
+        this.getBulkTableUtils = new TableUtils(this.snmp4jSession,
+                new DefaultPDUFactory(PDU.GETBULK));
+        this.getTableUtils = new TableUtils(this.snmp4jSession,
+                new DefaultPDUFactory(PDU.GET));
+
     }
 
-    public static NChecksSNMP getInstance() {return INSTANCE;}
-
-    public Snmp getSnmpSession() {return snmp4jSession;}
-
-    public synchronized void cleanup()
+    public static TableUtils getTableUtils(int pduType)
     {
-        snmp4jSession.getUSM().removeAllUsers();
-        agents = new HashMap<>();
+        switch (pduType) {
+            case PDU.GETNEXT:
+                return NChecksSNMP.instance.getNextTableUtils;
+            case PDU.GETBULK:
+                return NChecksSNMP.instance.getBulkTableUtils;
+            default:
+                return NChecksSNMP.instance.getTableUtils;
+        }
     }
 
-    public synchronized AbstractTarget getTarget(Query query) throws Exception
+    public static synchronized void cleanup()
     {
-        return getSnmpTarget(query);
+        synchronized (NChecksSNMP.instance.snmp4jSession) {
+            NChecksSNMP.instance.snmp4jSession.getUSM().removeAllUsers();
+            NChecksSNMP.instance.agents = new HashMap<>();
+        }
     }
 
-    private AbstractTarget getSnmpTarget(Query query) throws Exception
+    public static synchronized AbstractTarget getTarget(Query query)
+            throws Exception
+    {
+        return NChecksSNMP.instance.getTargetFor(query);
+    }
+
+    public synchronized AbstractTarget getTargetFor(Query query)
+            throws Exception
     {
         String targetId = query.get("target_id").asString();
-        AbstractTarget target = agents.get(targetId);
+        AbstractTarget target = this.agents.get(targetId);
         if (target != null) { return target; }
 
-        target = generateTarget(query);
+        target = this.generateTarget(query);
         if (target.getSecurityModel() != SecurityModel.SECURITY_MODEL_USM)
         {
-            agents.put(targetId, target);
+            this.agents.put(targetId, target);
             return target;
         } else {
-            UsmUser user     = generateUser(query);
+            UsmUser user = this.generateUser(query);
             OctetString username = user.getSecurityName();
             UsmUserEntry oldUser =
-                    snmp4jSession.getUSM().getUserTable().getUser(username);
+                    this.snmp4jSession.getUSM().getUserTable().getUser(username);
             if (oldUser == null)
             {
-                snmp4jSession.getUSM().addUser(user);
-                agents.put(targetId, target);
+                this.snmp4jSession.getUSM().addUser(user);
+                this.agents.put(targetId, target);
                 return target;
             }
             else
@@ -136,7 +176,7 @@ public class NChecksSNMP
                 if (NChecksSNMP.usmUsersEquals(oldUser.getUsmUser(),user))
                 {
                     // same users conf, ok
-                    agents.put(targetId, target);
+                    this.agents.put(targetId, target);
                     return target;
                 }
                 // TODO then replace old user with new one, use a thread lock
@@ -190,17 +230,17 @@ public class NChecksSNMP
     private UsmUser generateUser(Query query) throws Exception, Error
     {
 
-        OID authProtoOid =
-                    NChecksSNMP.getAuthProto(query.get("snmp_authproto").asString());
-        OID privProtoOid =
-                    NChecksSNMP.getPrivProto(query.get("snmp_privproto").asString());
+        OID authProtoOid = NChecksSNMP.getAuthProto(
+                query.get("snmp_authproto").asString());
+        OID privProtoOid = NChecksSNMP.getPrivProto(
+                query.get("snmp_privproto").asString());
 
-        OctetString uName =
-                        new OctetString(query.get("snmp_usm_user").asString());
-        OctetString authkey = 
-                        new OctetString(query.get("snmp_authkey").asString());
-        OctetString privkey = 
-                        new OctetString(query.get("snmp_privkey").asString());
+        OctetString uName = new OctetString(
+                query.get("snmp_usm_user").asString());
+        OctetString authkey = new OctetString(
+                query.get("snmp_authkey").asString());
+        OctetString privkey = new OctetString(
+                query.get("snmp_privkey").asString());
 
         return new UsmUser(uName,authProtoOid,authkey, privProtoOid,privkey);
     }
@@ -214,19 +254,20 @@ public class NChecksSNMP
             throws Exception, Error
     {
         Path path = Paths.get(stringPath);
-        if (Files.isRegularFile(path))
-        {
+        if (Files.isRegularFile(path)) {
+
             byte[] engineIdDump = Files.readAllBytes(path);
             String engineIdHex = new String(engineIdDump, "UTF-8");
             return NChecksSNMP.hexStringToBytes(engineIdHex); // return engine Id
-        }
-        else
-        {
+
+        } else {
+
             byte[] engineId     = MPv3.createLocalEngineID();
             String engineIdHex  = NChecksSNMP.bytesToHexString(engineId);
             byte[] engineIdDump = engineIdHex.getBytes("UTF-8");
             Files.write(path, engineIdDump);
             return engineId;
+
         }
     }
 

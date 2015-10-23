@@ -21,6 +21,7 @@
 
 package io.sysmo.nchecks.helpers;
 
+import io.sysmo.nchecks.HelperInterface;
 import io.sysmo.nchecks.HelperReply;
 import io.sysmo.nchecks.HelperSimpleReply;
 import io.sysmo.nchecks.NChecksSNMP;
@@ -45,7 +46,7 @@ import java.util.Map;
 /**
  * Created by seb on 18/10/15.
  */
-public class GetIfTableHelper {
+public class GetIfTableHelper implements HelperInterface {
 
     private static final String IF_INDEX       = "1.3.6.1.2.1.2.2.1.1";
     private static final String IF_DESCR       = "1.3.6.1.2.1.2.2.1.2";
@@ -99,16 +100,11 @@ public class GetIfTableHelper {
 
     public GetIfTableHelper() {}
 
-    public HelperReply call(Query query)
+    public HelperReply callHelper(Query query)
     {
         try {
-            AbstractTarget target = NChecksSNMP.getInstance().getTarget(query);
-
-            Snmp session = NChecksSNMP.getInstance().getSnmpSession();
-            TableUtils tableWalker =
-                new TableUtils(
-                        session,
-                        new DefaultPDUFactory(PDU.GETNEXT));
+            AbstractTarget target = NChecksSNMP.getTarget(query);
+            TableUtils tableWalker = NChecksSNMP.getTableUtils(PDU.GETNEXT);
 
             List<TableEvent> snmpReply = tableWalker.getTable(
                     target, columns, null, null);

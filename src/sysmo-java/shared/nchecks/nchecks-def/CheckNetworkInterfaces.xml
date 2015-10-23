@@ -40,9 +40,8 @@
             <Flag Id="if_selection">
                 <Hint>A comma separated list of interfaces indexes.</Hint>
                 <Usage>Comma separated list of integers representing snmp interface indexes</Usage>
-                <Helper
-                    Id="SelectNetworkInterfaces"
-                    Class="io.sysmo.nchecks.modules.CheckNetworkInterfaces" />
+                <Helper Descr="Select from if table"
+                    Class="io.sysmo.nchecks.helpers.GetIfTableHelper" />
             </Flag>
 
         </FlagTable>

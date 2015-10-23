@@ -21,22 +21,17 @@
 
 package io.sysmo.nchecks.modules;
 
-import io.sysmo.nchecks.HelperInterface;
-import io.sysmo.nchecks.HelperReply;
 import io.sysmo.nchecks.NChecksInterface;
 import io.sysmo.nchecks.NChecksSNMP;
 import io.sysmo.nchecks.Query;
 import io.sysmo.nchecks.Reply;
-import io.sysmo.nchecks.helpers.GetIfTableHelper;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snmp4j.AbstractTarget;
 import org.snmp4j.PDU;
-import org.snmp4j.Snmp;
 import org.snmp4j.smi.OID;
 import org.snmp4j.smi.VariableBinding;
-import org.snmp4j.util.DefaultPDUFactory;
 import org.snmp4j.util.TableEvent;
 import org.snmp4j.util.TableUtils;
 
@@ -51,7 +46,7 @@ import java.util.Map;
 /**
  * Definition of the check is in the file CheckIfErrors.xml
  */
-public class CheckIfErrors implements NChecksInterface, HelperInterface
+public class CheckIfErrors implements NChecksInterface
 {
     static Logger logger = LoggerFactory.getLogger(CheckIfErrors.class);
     private static String IF_INDEX      = "1.3.6.1.2.1.2.2.1.1";
@@ -92,9 +87,6 @@ public class CheckIfErrors implements NChecksInterface, HelperInterface
 
         HashMap<Integer, Long> newStatusMap = new HashMap<>();
         try {
-            AbstractTarget target = NChecksSNMP.getInstance().getTarget(query);
-
-            Snmp session = NChecksSNMP.getInstance().getSnmpSession();
 
             // get indexes string list
             String[] indexesArrayString = ifSelection.split(",");
@@ -116,9 +108,8 @@ public class CheckIfErrors implements NChecksInterface, HelperInterface
 
             // TODO try PDU.GETBULK then PDU.GETNEXT to degrade....
             // TODO keep degrade state in reply.setState(v)
-            TableUtils tableWalker = new TableUtils(
-                    session, new DefaultPDUFactory(state.getPduType()));
-
+            AbstractTarget target = NChecksSNMP.getTarget(query);
+            TableUtils tableWalker = NChecksSNMP.getTableUtils(state.getPduType());
             List<TableEvent> snmpReply = tableWalker.getTable(
                     target, CheckIfErrors.columns,
                     lowerBoundIndex, upperBoundIndex);
@@ -176,15 +167,6 @@ public class CheckIfErrors implements NChecksInterface, HelperInterface
             reply.setReply("Error: " + error);
             return reply;
         }
-    }
-
-    /*
-     * Helper interface
-     */
-    public HelperReply callHelper(Query query, String id)
-    {
-        GetIfTableHelper helper = new GetIfTableHelper();
-        return helper.call(query);
     }
 
     static class IfErrorsState implements Serializable {

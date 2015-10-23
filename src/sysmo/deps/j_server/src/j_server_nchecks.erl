@@ -30,7 +30,7 @@
 -export([start_link/0]).
 
 % API
--export([check/3, helper/3]).
+-export([check/3, helper/2]).
 
 -record(java_node, {name, pid}).
 -record(state, {java_nodes=[]}).
@@ -39,9 +39,9 @@
 
 %% TODO implement node weight concept
 
-helper(Class, Id, Props) ->
+helper(Class, Props) ->
     gen_server:call(?MODULE, {call_nchecks,
-                {helper, {Class, Id, Props}}}, ?CALL_TIMEOUT).
+                {helper, {Class, Props}}}, ?CALL_TIMEOUT).
 
 check(Class, ArgList, Opaque) ->
     gen_server:call(?MODULE, {call_nchecks,

@@ -22,5 +22,5 @@ package io.sysmo.nchecks;
 
 public interface HelperInterface
 {
-    HelperReply callHelper(Query query, String id);
+    HelperReply callHelper(Query query);
 }

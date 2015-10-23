@@ -39,9 +39,8 @@
             <Flag Id="if_selection">
                 <Hint>A comma separated list of interfaces indexes.</Hint>
                 <Usage>Comma separated list of integers representing snmp interface indexes</Usage>
-                <Helper
-                    Id="SelectNetworkInterfaces"
-                    Class="io.sysmo.nchecks.modules.CheckIfErrors" />
+                <Helper Descr="Select from if table"
+                    Class="io.sysmo.nchecks.helpers.GetIfTableHelper" />
             </Flag>
             <Flag Id="warning_threshold">
                 <Hint>Integer representing an average number of error per minute.</Hint>

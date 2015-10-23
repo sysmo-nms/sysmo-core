@@ -119,7 +119,7 @@ public class NChecksErlang implements Runnable
         NChecksErlang.logger.info("JRuby init with path: " + rubyDir);
 
         // initialize snmpman
-        NChecksSNMP.startSnmp(etcDir);
+        NChecksSNMP.start(etcDir);
         NChecksErlang.logger.info("SNMP started");
 
         // initialize state client
@@ -144,6 +144,7 @@ public class NChecksErlang implements Runnable
         }
         this.threadPool.shutdownNow();
         StateClient.stop();
+        NChecksSNMP.stop();
         this.mbox.exit("crach");
     }
 
@@ -246,18 +247,12 @@ public class NChecksErlang implements Runnable
 
                 case "helper":
                     OtpErlangString erlangHelperClassName =
-                            (OtpErlangString)
-                                    (payload.elementAt(0));
+                            (OtpErlangString) (payload.elementAt(0));
                     String helperClassName = erlangHelperClassName.stringValue();
-                    OtpErlangString erlangIdName =
-                            (OtpErlangString)
-                                    (payload.elementAt(1));
-                    String idName = erlangIdName.stringValue();
-                    OtpErlangList args = (OtpErlangList)
-                            (payload.elementAt(2));
+                    OtpErlangList args =
+                            (OtpErlangList) (payload.elementAt(1));
                     Runnable helperWorker = new NHelperRunnable(
                             Class.forName(helperClassName).newInstance(),
-                            idName,
                             caller,
                             args);
                     this.threadPool.execute(helperWorker);
@@ -268,7 +263,7 @@ public class NChecksErlang implements Runnable
                     break;
 
                 case "cleanup":
-                    NChecksSNMP.getInstance().cleanup();
+                    NChecksSNMP.cleanup();
                     break;
 
                 default:
@@ -375,19 +370,16 @@ public class NChecksErlang implements Runnable
     static class NHelperRunnable implements Runnable, CheckCaller
     {
         private HelperInterface helper;
-        private String            helper_id;
         private OtpErlangObject   caller;
         private OtpErlangList     args;
 
 
         public NHelperRunnable(
                 final Object helpObj,
-                final String id,
                 final OtpErlangObject callerObj,
                 final OtpErlangList argsList)
         {
             this.helper    = (HelperInterface) helpObj;
-            this.helper_id = id;
             this.caller    = callerObj;
             this.args      = argsList;
         }
@@ -397,7 +389,7 @@ public class NChecksErlang implements Runnable
         public void run()
         {
             Query query = new Query(NChecksErlang.decodeArgs(this.args));
-            HelperReply helperReply = helper.callHelper(query, this.helper_id);
+            HelperReply helperReply = helper.callHelper(query);
             OtpErlangList jsonCharList =
                     this.buildErlangCharList(helperReply.toCharArray());
             OtpErlangObject replyMsg = NChecksErlang.buildOkReply(jsonCharList);
