@@ -73,6 +73,7 @@ handle_cast({{"createTargetQuery", Contents}, CState}, S) ->
     {noreply, S};
 
 handle_cast({{"createNchecksQuery", Contents}, CState}, S) ->
+    ?LOG_INFO("create probe query", Contents),
     QueryId             = proplists:get_value(<<"queryId">>, Contents),
     {struct, Contents2} = proplists:get_value(<<"value">>,   Contents),
     {struct, Prop}  = proplists:get_value(<<"properties">>, Contents2),
@@ -90,6 +91,7 @@ handle_cast({{"createNchecksQuery", Contents}, CState}, S) ->
     {noreply, S};
 
 handle_cast({{"deleteProbeQuery", Contents}, CState}, S) ->
+    ?LOG_INFO("delete probe query", Contents),
     QueryId             = proplists:get_value(<<"queryId">>, Contents),
     {struct, Contents2} = proplists:get_value(<<"value">>,   Contents),
     Probe   = binary_to_list(proplists:get_value(<<"name">>,  Contents2)),
@@ -99,6 +101,7 @@ handle_cast({{"deleteProbeQuery", Contents}, CState}, S) ->
     {noreply, S};
 
 handle_cast({{"deleteTargetQuery", Contents}, CState}, S) ->
+    ?LOG_INFO("delete target query", Contents),
     QueryId              = proplists:get_value(<<"queryId">>, Contents),
     {struct, Contents2}  = proplists:get_value(<<"value">>,   Contents),
     Target  = binary_to_list(proplists:get_value(<<"name">>, Contents2)),
@@ -108,6 +111,7 @@ handle_cast({{"deleteTargetQuery", Contents}, CState}, S) ->
     {noreply, S};
 
 handle_cast({{"forceProbeQuery", Contents}, CState}, S) ->
+    ?LOG_INFO("force probe query", Contents),
     QueryId              = proplists:get_value(<<"queryId">>, Contents),
     {struct, Contents2}  = proplists:get_value(<<"value">>,   Contents),
     Probe   = binary_to_list(proplists:get_value(<<"name">>, Contents2)),
@@ -117,6 +121,7 @@ handle_cast({{"forceProbeQuery", Contents}, CState}, S) ->
     {noreply, S};
 
 handle_cast({{"ncheckHelperQuery", Contents}, CState}, S) ->
+    ?LOG_INFO("helper query", Contents),
     QueryId             = proplists:get_value(<<"queryId">>, Contents),
     {struct, Contents2} = proplists:get_value(<<"value">>,   Contents),
     Target = binary_to_list(proplists:get_value(<<"target">>, Contents2)),
@@ -134,6 +139,7 @@ handle_cast({{"ncheckHelperQuery", Contents}, CState}, S) ->
     {noreply, S};
 
 handle_cast(_R, S) ->
+    % TODO crash the client
     ?LOG_INFO("unknown cast for command", _R),
     {noreply, S}.
 
