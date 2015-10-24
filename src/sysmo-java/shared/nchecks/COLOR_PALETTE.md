@@ -1,7 +1,7 @@
 Nice outlined area graphs
 -------------------------
 
-From (https://oss.oetiker.ch/rrdtool-trac/wiki/OutlinedAreaGraph)[https://oss.oetiker.ch/rrdtool-trac/wiki/OutlinedAreaGraph]
+From (here)[https://oss.oetiker.ch/rrdtool-trac/wiki/OutlinedAreaGraph].
 
 <table>
  <tr>
