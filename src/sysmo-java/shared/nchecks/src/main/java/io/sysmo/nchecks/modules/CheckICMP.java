@@ -211,7 +211,7 @@ public class CheckICMP implements NChecksInterface
 
         String[] ppingReturn = stdoutReturn.split(",");
         if (! "<PPING_RETURN>".equals(ppingReturn[0])) {
-            reply.setStatus(Status.DOWN);
+            reply.setStatus(Status.ERROR);
             reply.setReply(String.format("CheckICMP ERROR: stdout=%s, stderr=%s", stderrReturn, stdoutReturn));
             return reply;
         }

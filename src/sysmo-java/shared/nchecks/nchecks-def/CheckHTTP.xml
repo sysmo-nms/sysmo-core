@@ -69,27 +69,42 @@
                     Unit="ms"
                     UnitExponent="0" >
                     <Title>HTTP Performances</Title>
-                    <VerticalLabel>"Milliseconds"</VerticalLabel>
+                    <VerticalLabel>Milliseconds</VerticalLabel>
+                    <Draw
+                        Type="area"
+                        DataSource="ReplyDuration"
+                        Consolidation="MAX"
+                        Color="#48c4ecff" />
+                    <Draw
+                        Type="area"
+                        DataSource="ReplyDuration"
+                        Consolidation="MAX"
+                        Color="#de48edff" />
+                    <Draw
+                        Type="area"
+                        DataSource="ReplyDuration"
+                        Consolidation="MAX"
+                        Color="#7648edff" />
                     <Draw
                         Type="line"
                         DataSource="ReplyDuration"
                         Consolidation="MAX"
-                        Color="#729FCFFF" >
-                        Maximum reply latency"
+                        Color="#1598c3ff" >
+                        Maximum reply latency
                     </Draw>
                     <Draw
                         Type="line"
                         DataSource="ReplyDuration"
                         Consolidation="MAX"
-                        Color="#204A87FF" >
-                        Average reply latency"
+                        Color="#b415c7ff" >
+                        Average reply latency
                     </Draw>
                     <Draw
                         Type="line"
                         DataSource="ReplyDuration"
                         Consolidation="MAX"
-                        Color="#3665A4FF" >
-                        Minimum reply latency"
+                        Color="#4d18e4ff" >
+                        Minimum reply latency
                     </Draw>
                 </Graph>
             </GraphTable>

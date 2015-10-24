@@ -59,8 +59,8 @@
 
 % from nchecks/include/nchecks.hrl
 % -record(nchecks_reply, {
-%     % status = "OK" | "DOWN" | "WARNING" | "CRITICAL",
-%     status          = "DOWN"        :: string(),
+%     % status = "OK" | "UNKNOWN" | "WARNING" | "CRITICAL" | "ERROR",
+%     status          = "UNKNOWN"     :: string(),
 %     status_code     = 0             :: integer(),
 %     reply_string    = ""            :: string(),
 %     timestamp       = 0             :: integer(),
@@ -83,8 +83,8 @@
     belong_to           = "undefined"   :: string(),
     description         = ""            :: string(),
     timeout             = 5             :: integer(), % seconds
-    % status = "OK" | "DOWN" | "WARNING" | "CRITICAL",
-    status              = "DOWN"        :: string(),
+    % status = "OK" | "UNKNOWN" | "WARNING" | "CRITICAL" | "ERROR",
+    status              = "UNKNOWN"     :: string(),
     status_code         = 0             :: integer(),
     step                = 300           :: integer(), % seconds
     active              = true          :: true | false,

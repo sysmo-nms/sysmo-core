@@ -148,14 +148,24 @@
                         Type="area"
                         DataSource="PercentLost"
                         Consolidation="MAX"
-                        Color="#AD7FA8FF" >
-                        Maximum Percent packets lost
-                    </Draw>
+                        Color="#ec9d48ff" />
                     <Draw
                         Type="area"
                         DataSource="PercentLost"
                         Consolidation="AVERAGE"
-                        Color="#5C3566FF" >
+                        Color="#ecd748ff" />
+                    <Draw
+                        Type="line"
+                        DataSource="PercentLost"
+                        Consolidation="MAX"
+                        Color="#cc7016ff" >
+                        Maximum Percent packets lost
+                    </Draw>
+                    <Draw
+                        Type="line"
+                        DataSource="PercentLost"
+                        Consolidation="AVERAGE"
+                        Color="#c9b215ff" >
                         Average Percent Packets Lost
                     </Draw>
                 </Graph>

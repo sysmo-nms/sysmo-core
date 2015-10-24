@@ -45,22 +45,22 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Definition of the check is in the file CheckIfErrors.xml
+ * Definition of the check is in the file CheckIfTraffic.xml
  */
-public class CheckIfErrors implements NChecksInterface
+public class CheckIfTraffic implements NChecksInterface
 {
-    static Logger logger = LoggerFactory.getLogger(CheckIfErrors.class);
+    static Logger logger = LoggerFactory.getLogger(CheckIfTraffic.class);
     private static String IF_INDEX      = "1.3.6.1.2.1.2.2.1.1";
-    private static String IF_IN_ERRORS  = "1.3.6.1.2.1.2.2.1.14";
-    private static String IF_OUT_ERRORS = "1.3.6.1.2.1.2.2.1.20";
+    private static String IF_IN_OCTETS  = "1.3.6.1.2.1.2.2.1.10";
+    private static String IF_OUT_OCTETS = "1.3.6.1.2.1.2.2.1.16";
 
     private static OID[] columns = new OID[]{
             new OID(IF_INDEX),
-            new OID(IF_IN_ERRORS),
-            new OID(IF_OUT_ERRORS)
+            new OID(IF_IN_OCTETS),
+            new OID(IF_OUT_OCTETS)
     };
 
-    public CheckIfErrors() {}
+    public CheckIfTraffic() {}
 
     public Reply execute(Query query)
     {
@@ -75,15 +75,19 @@ public class CheckIfErrors implements NChecksInterface
             warningThreshold = query.get("warning_threshold").asInteger();
             criticalThreshold = query.get("critical_threshold").asInteger();
         } catch (Exception|Error e) {
-            CheckIfErrors.logger.error(e.getMessage(), e);
+            CheckIfTraffic.logger.error(e.getMessage(), e);
             reply.setStatus(Status.ERROR);
             reply.setReply("Missing or wrong argument: " + e);
             return reply;
         }
 
-        IfErrorsState state = (IfErrorsState) query.getState();
-        if (state == null) {
-            state = new IfErrorsState();
+        IfTrafficState state = null;
+        // Avoid calling query.getState() if not required.
+        if (warningThreshold != 0 || criticalThreshold != 0) {
+           state = (IfTrafficState) query.getState();
+            if (state == null) {
+                state = new IfTrafficState();
+            }
         }
 
         HashMap<Integer, Long> newStatusMap = new HashMap<>();
@@ -110,9 +114,9 @@ public class CheckIfErrors implements NChecksInterface
             // TODO try PDU.GETBULK then PDU.GETNEXT to degrade....
             // TODO keep degrade state in reply.setState(v)
             AbstractTarget target = NChecksSNMP.getTarget(query);
-            TableUtils tableWalker = NChecksSNMP.getTableUtils(state.getPduType());
+            TableUtils tableWalker = NChecksSNMP.getTableUtils(PDU.GETNEXT);
             List<TableEvent> snmpReply = tableWalker.getTable(
-                    target, CheckIfErrors.columns,
+                    target, CheckIfTraffic.columns,
                     lowerBoundIndex, upperBoundIndex);
 
             // TODO check the last element of the list see TableUtils.getTable
@@ -129,57 +133,58 @@ public class CheckIfErrors implements NChecksInterface
                 Integer ifIndex = vbs[0].getVariable().toInt();
 
                 if (intList.contains(ifIndex)) {
-                    Long errsIn = vbs[1].getVariable().toLong();
-                    Long errsOut = vbs[2].getVariable().toLong();
-                    reply.putPerformance(ifIndex, "IfInErrors", errsIn);
-                    reply.putPerformance(ifIndex, "IfOutErrors", errsOut);
+                    Long octetsIn = vbs[1].getVariable().toLong();
+                    Long octetsOut = vbs[2].getVariable().toLong();
+                    reply.putPerformance(ifIndex, "IfInOctets", octetsIn);
+                    reply.putPerformance(ifIndex, "IfOutOctets", octetsOut);
 
-                    newStatusMap.put(ifIndex, errsIn + errsOut);
+                    newStatusMap.put(ifIndex, octetsIn);
                 }
             }
 
-            Status newStatus = state.computeStatusMaps(
-                    newStatusMap, warningThreshold, criticalThreshold);
-
             String replyMsg;
-            if (newStatus.equals(Status.OK)) {
-                replyMsg = "CheckIfErrors OK";
-            } else if (newStatus.equals(Status.UNKNOWN)) {
-                replyMsg = "CheckIfErrors UNKNOWN. No enough data to set sensible status.";
-            } else if (newStatus.equals(Status.WARNING)) {
-                replyMsg = "CheckIfErrors WARNING have found errors!";
-            } else if (newStatus.equals(Status.CRITICAL)) {
-                replyMsg = "CheckIfErrors CRITICAL have found errors!";
+            Status newStatus;
+            // Avoid calling reply.setState() if not required.
+            if (state != null) {
+                newStatus = state.computeStatusMaps(
+                        newStatusMap, warningThreshold, criticalThreshold);
+
+                if (newStatus.equals(Status.OK)) {
+                    replyMsg = "CheckIfTraffic OK";
+                } else if (newStatus.equals(Status.UNKNOWN)) {
+                    replyMsg = "CheckIfTraffic UNKNOWN. No enough data to set sensible status.";
+                } else if (newStatus.equals(Status.WARNING)) {
+                    replyMsg = "CheckIfTraffic have exceeded WARNING threshold!";
+                } else if (newStatus.equals(Status.CRITICAL)) {
+                    replyMsg = "CheckIfTraffic have exceeded CRITICAL threshold!";
+                } else {
+                    replyMsg = "";
+                }
+                reply.setState(state);
             } else {
-                replyMsg = "";
+                newStatus = Status.OK;
+                replyMsg = "CheckIfTraffic OK";
             }
 
-            reply.setState(state);
             reply.setStatus(newStatus);
             reply.setReply(replyMsg);
             return reply;
         } catch (Exception|Error e) {
-            CheckIfErrors.logger.error(e.getMessage(), e);
+            CheckIfTraffic.logger.error(e.getMessage(), e);
             reply.setStatus(Status.ERROR);
             reply.setReply("Error: " + error);
             return reply;
         }
     }
 
-    static class IfErrorsState implements Serializable {
-        private int pduType;
+    static class IfTrafficState implements Serializable {
         private Status status;
         private Date time;
         private HashMap<Integer, Long> data;
 
-        IfErrorsState() {
+        IfTrafficState() {
             this.time = null;
-            this.pduType = PDU.GETNEXT;
             this.status  = Status.UNKNOWN;
-        }
-
-        public int getPduType() {
-            return this.pduType;
         }
 
         /**
@@ -227,11 +232,15 @@ public class CheckIfErrors implements NChecksInterface
                 Long old = this.data.get(key);
                 if (old != null) {
                     long diff = (upd - old) / minutes;
-                    if (diff > warning) {
-                        newStatus = Status.WARNING;
+                    if (warning != 0) {
+                        if (diff > warning) {
+                            newStatus = Status.WARNING;
+                        }
                     }
-                    if (diff > critical) {
-                        newStatus = Status.CRITICAL;
+                    if (critical != 0) {
+                        if (diff > critical) {
+                            newStatus = Status.CRITICAL;
+                        }
                     }
                 }
             }

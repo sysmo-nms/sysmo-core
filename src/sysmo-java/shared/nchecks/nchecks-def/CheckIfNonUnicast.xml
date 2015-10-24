@@ -22,16 +22,16 @@
 
 <NChecks xmlns="http://schemas.sysmo.io/2015/NChecks">
     <Check
-        Id="CheckIfErrors"
+        Id="CheckIfNonUnicast"
         Version="1.0"
-        Class="io.sysmo.nchecks.modules.CheckIfErrors">
+        Class="io.sysmo.nchecks.modules.CheckIfNonUnicast">
 
         <Author><![CDATA[Sebastien Serre (ssbx@sysmo.io)]]></Author>
         <AuthorUrl>http://www.sysmo.io</AuthorUrl>
-        <UpdatesUrl>http://www.sysmo.io/nchecks/updates/CheckIfErrors/</UpdatesUrl>
+        <UpdatesUrl>http://www.sysmo.io/nchecks/updates/CheckIfNonUnicast/</UpdatesUrl>
 
-        <Description>CheckIfErrors raise a CRITICAL or WARNING alert if interfaces errors exceed thresholds.</Description>
-        <Overview> </Overview>
+        <Description>Raise alerts on non unicast (broadcast and multicast) packets number.</Description>
+        <Overview>CheckIfNonUnicast raise a CRITICAL or WARNING alert on non unicast (broadcast and multicast) packets received or emited on interfaces.</Overview>
 
         <Require Ressource="snmp" />
 
@@ -43,14 +43,14 @@
                     Class="io.sysmo.nchecks.helpers.GetIfTableHelper" />
             </Flag>
             <Flag Id="warning_threshold">
-                <Hint>Integer representing an average number of error per minute.</Hint>
-                <Usage>Set the probe to WARNING state if one interface has more thant "warning_threshold" errors per minute.</Usage>
-                <Default>0</Default>
+                <Hint>Integer representing an average number of packets per minute.</Hint>
+                <Usage>Set the probe to WARNING state if packets received on one interface excees "warning_threshold" packets per minute.</Usage>
+                <Default>100</Default>
             </Flag>
             <Flag Id="critical_threshold">
-                <Hint>Integer representing an average number of error per minute.</Hint>
-                <Usage>Set the probe to CRITICAL state if one interface has more thant "critical_threshold" errors per minute.</Usage>
-                <Default>100</Default>
+                <Hint>Integer representing an average number of packets per minute.</Hint>
+                <Usage>Set the probe to CRITICAL state if packets received on one interface exceed "critical_theshold" packets per minute.</Usage>
+                <Default>1000</Default>
             </Flag>
         </FlagTable>
 
@@ -72,43 +72,43 @@
 
 
             <DataSourceTable>
-                <DataSource Id="IfInErrors"       Type="COUNTER" />
-                <DataSource Id="IfOutErrors"      Type="COUNTER" />
+                <DataSource Id="IfInNonUnicast"       Type="COUNTER" />
+                <DataSource Id="IfOutNonUnicast"      Type="COUNTER" />
             </DataSourceTable>
             <GraphTable>
                 <Graph
-                    Id="ErrorsInOut"
+                    Id="NonUnicastInOut"
                     Rigid="false"
                     Base="1000"
                     Unit=""
                     UnitExponent="" >
-                    <Title>Errors In/Out</Title>
-                    <VerticalLabel>Errors/Second</VerticalLabel>
+                    <Title>NonUnicast packets In/Out</Title>
+                    <VerticalLabel>Packets/Second</VerticalLabel>
                     <Draw
                         Type="area"
-                        DataSource="IfInErrors"
+                        DataSource="IfInNonUnicast"
                         Consolidation="MAX"
-                        Color="#ea644Aff" />
+                        Color="#54ec48ff" />
                      <Draw
                         Type="area"
-                        DataSource="IfOutErrors"
-                        Calculation="0,IfOutErrors,-"
+                        DataSource="IfOutNonUnicast"
+                        Calculation="0,IfOutNonUnicast,-"
                         Consolidation="MAX"
-                        Color="#ecd748ff" />
+                        Color="#48c4ecff" />
                     <Draw
                         Type="line"
-                        DataSource="IfInErrors"
+                        DataSource="IfInNonUnicast"
                         Consolidation="MAX"
-                        Color="#cc3118ff" >
-                        Errors in
+                        Color="#24bc14ff" >
+                        NonUnicast packets in
                     </Draw>
-                    <Draw
-                        Type="area"
-                        DataSource="IfOutErrors"
-                        Calculation="0,IfOutErrors,-"
+                     <Draw
+                        Type="line"
+                        DataSource="IfOutNonUnicast"
+                        Calculation="0,IfOutNonUnicast,-"
                         Consolidation="MAX"
-                        Color="#c9b215ff" >
-                        Errors out
+                        Color="#1598c3ff" >
+                        NonUnicast packets out
                     </Draw>
                 </Graph>
             </GraphTable>

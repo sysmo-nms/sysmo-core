@@ -51,7 +51,7 @@ public class Reply
     public Reply() {
         this.statusCode = 0;
         this.replyMsg = "";
-        this.status   = Status.DOWN;
+        this.status   = Status.UNKNOWN;
         this.timestamp = System.currentTimeMillis() / 1000;
         this.perfValues = new HashMap<>();
         this.state = null;
@@ -66,7 +66,7 @@ public class Reply
      * The default status code is 0
      *
      * Here are the rules concerning "status" ans "statusCode":
-     * - All status move (ie: from OK to DOWN...) are logged.
+     * - All status move (ie: from OK to ERROR...) are logged.
      * - If two (or more) consecutive returns have the same status
      * (CRITICAL for example) and the same statusCode, only the first event will
      * be logged.

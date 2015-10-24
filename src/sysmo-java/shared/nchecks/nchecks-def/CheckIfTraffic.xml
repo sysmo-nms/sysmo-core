@@ -22,15 +22,15 @@
 
 <NChecks xmlns="http://schemas.sysmo.io/2015/NChecks">
     <Check
-        Id="CheckIfErrors"
+        Id="CheckIfTraffic"
         Version="1.0"
-        Class="io.sysmo.nchecks.modules.CheckIfErrors">
+        Class="io.sysmo.nchecks.modules.CheckIfTraffic">
 
         <Author><![CDATA[Sebastien Serre (ssbx@sysmo.io)]]></Author>
         <AuthorUrl>http://www.sysmo.io</AuthorUrl>
-        <UpdatesUrl>http://www.sysmo.io/nchecks/updates/CheckIfErrors/</UpdatesUrl>
+        <UpdatesUrl>http://www.sysmo.io/nchecks/updates/CheckIfTraffic/</UpdatesUrl>
 
-        <Description>CheckIfErrors raise a CRITICAL or WARNING alert if interfaces errors exceed thresholds.</Description>
+        <Description>CheckIfTraffic raise a CRITICAL or WARNING alert if interfaces octets in exceed thresholds.</Description>
         <Overview> </Overview>
 
         <Require Ressource="snmp" />
@@ -43,14 +43,14 @@
                     Class="io.sysmo.nchecks.helpers.GetIfTableHelper" />
             </Flag>
             <Flag Id="warning_threshold">
-                <Hint>Integer representing an average number of error per minute.</Hint>
-                <Usage>Set the probe to WARNING state if one interface has more thant "warning_threshold" errors per minute.</Usage>
+                <Hint>Integer representing an average number of octets per minute.</Hint>
+                <Usage>Set the probe to WARNING state if one interface has received more thant "warning_threshold" octets per minute. Set it to 0 to disable this alert and only log traffic.</Usage>
                 <Default>0</Default>
             </Flag>
             <Flag Id="critical_threshold">
-                <Hint>Integer representing an average number of error per minute.</Hint>
-                <Usage>Set the probe to CRITICAL state if one interface has more thant "critical_threshold" errors per minute.</Usage>
-                <Default>100</Default>
+                <Hint>Integer representing an average number of octets per minute.</Hint>
+                <Usage>Set the probe to CRITICAL state if one interface has received more thant "critical_threshold" octets per minute. Set it to 0 to disable this alert and only log traffic.</Usage>
+                <Default>0</Default>
             </Flag>
         </FlagTable>
 
@@ -72,43 +72,45 @@
 
 
             <DataSourceTable>
-                <DataSource Id="IfInErrors"       Type="COUNTER" />
-                <DataSource Id="IfOutErrors"      Type="COUNTER" />
+                <DataSource Id="IfInOctets"  Type="COUNTER" />
+                <DataSource Id="IfOutOctets" Type="COUNTER" />
             </DataSourceTable>
             <GraphTable>
                 <Graph
-                    Id="ErrorsInOut"
+                    Id="OctetsInOut"
                     Rigid="false"
                     Base="1000"
                     Unit=""
                     UnitExponent="" >
-                    <Title>Errors In/Out</Title>
-                    <VerticalLabel>Errors/Second</VerticalLabel>
+                    <Title>Bits In/Out</Title>
+                    <VerticalLabel>Bits/Second</VerticalLabel>
                     <Draw
                         Type="area"
-                        DataSource="IfInErrors"
-                        Consolidation="MAX"
-                        Color="#ea644Aff" />
+                        DataSource="IfInOctets"
+                        Calculation="IfInOctets,8,*"
+                        Consolidation="AVERAGE"
+                        Color="#54ec48ff" />
                      <Draw
                         Type="area"
-                        DataSource="IfOutErrors"
-                        Calculation="0,IfOutErrors,-"
-                        Consolidation="MAX"
-                        Color="#ecd748ff" />
+                        DataSource="IfOutOctets"
+                        Calculation="0,IfOutOctets,8,*,-"
+                        Consolidation="AVERAGE"
+                        Color="#48c4ecff" />
                     <Draw
                         Type="line"
-                        DataSource="IfInErrors"
-                        Consolidation="MAX"
-                        Color="#cc3118ff" >
-                        Errors in
+                        DataSource="IfInOctets"
+                        Calculation="IfInOctets,8,*"
+                        Consolidation="AVERAGE"
+                        Color="#24bc14ff" >
+                        Bits per second In
                     </Draw>
-                    <Draw
-                        Type="area"
-                        DataSource="IfOutErrors"
-                        Calculation="0,IfOutErrors,-"
-                        Consolidation="MAX"
-                        Color="#c9b215ff" >
-                        Errors out
+                     <Draw
+                        Type="line"
+                        DataSource="IfOutOctets"
+                        Calculation="0,IfOutOctets,8,*,-"
+                        Consolidation="AVERAGE"
+                        Color="#1598c3ff" >
+                        Bits per second Out
                     </Draw>
                 </Graph>
             </GraphTable>

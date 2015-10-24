@@ -26,16 +26,25 @@ import java.io.Serializable;
 /**
  *
  * Created by seb on 23/10/15.
+ *
  * Comparable and printable status
+ *
+ * Status weight:
+ * <ul>
+ *     <li>OK 10</li>
+ *     <li>UNKNOWN 20</li>
+ *     <li>WARNING 30</li>
+ *     <li>CRITICAL 40</li>
+ *     <li>ERROR 50</li>
+ * </ul>
  *
  */
 public class Status implements Comparable<Status>, Serializable {
-    public static final Status UNKNOWN = new Status("UNKNOWN",0);
-    public static final Status OK = new Status("OK", 1);
-    public static final Status DOWN = new Status("DOWN",2);
-    public static final Status ERROR = new Status("ERROR",3);
-    public static final Status WARNING = new Status("WARNING",4);
-    public static final Status CRITICAL = new Status("CRITICAL",5);
+    public static final Status OK = new Status("OK", 10);
+    public static final Status UNKNOWN = new Status("UNKNOWN",20);
+    public static final Status WARNING = new Status("WARNING",30);
+    public static final Status CRITICAL = new Status("CRITICAL",40);
+    public static final Status ERROR = new Status("ERROR",50);
 
     private String str;
     private int weight;
@@ -44,10 +53,10 @@ public class Status implements Comparable<Status>, Serializable {
         switch (str) {
             case "UNKNOWN": return Status.UNKNOWN;
             case "OK": return Status.OK;
-            case "DOWN": return Status.DOWN;
             case "ERROR": return Status.ERROR;
             case "WARNING": return Status.WARNING;
-            default: return Status.CRITICAL;
+            case "CRITICAL": return Status.CRITICAL;
+            default: return null;
         }
     }
 
@@ -56,8 +65,7 @@ public class Status implements Comparable<Status>, Serializable {
         this.weight = weight;
     }
 
-    public int compareTo(Status status) throws NullPointerException {
-        if (status == null) throw new NullPointerException();
+    public int compareTo(Status status) {
         int other = status.getWeight();
         if (this.weight == other) {
             return 0;
