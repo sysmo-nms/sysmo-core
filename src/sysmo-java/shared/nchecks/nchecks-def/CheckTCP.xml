@@ -91,36 +91,36 @@
                         Type="area"
                         DataSource="ReplyDuration"
                         Consolidation="MAX"
-                        Color="#ea644Aff" />
+                        Color="#cc7016ff" />
                     <Draw
                         Type="area"
                         DataSource="ReplyDuration"
                         Consolidation="AVERAGE"
-                        Color="#ec9d48ff" />
+                        Color="#c9b215ff" />
                     <Draw
                         Type="area"
                         DataSource="ReplyDuration"
                         Consolidation="MIN"
-                        Color="#ecd748ff" />
+                        Color="#24bc14ff" />
                     <Draw
                         Type="line"
                         DataSource="ReplyDuration"
                         Consolidation="MAX"
-                        Color="#cc3118ff" >
+                        Color="#cc7016ff" >
                         Maximum reply latency
                     </Draw>
                     <Draw
                         Type="line"
                         DataSource="ReplyDuration"
                         Consolidation="AVERAGE"
-                        Color="#cc7016ff" >
+                        Color="#c9b215ff" >
                         Average reply latency
                     </Draw>
                     <Draw
                         Type="line"
                         DataSource="ReplyDuration"
                         Consolidation="MIN"
-                        Color="#c9b215ff" >
+                        Color="#24bc14ff" >
                         Minimum reply latency
                     </Draw>
                 </Graph>

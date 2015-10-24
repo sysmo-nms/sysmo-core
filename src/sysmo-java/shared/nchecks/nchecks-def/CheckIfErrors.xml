@@ -103,7 +103,7 @@
                         Errors in
                     </Draw>
                     <Draw
-                        Type="area"
+                        Type="line"
                         DataSource="IfOutErrors"
                         Calculation="0,IfOutErrors,-"
                         Consolidation="MAX"

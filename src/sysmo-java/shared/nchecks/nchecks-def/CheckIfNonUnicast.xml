@@ -87,18 +87,18 @@
                     <Draw
                         Type="area"
                         DataSource="IfInNonUnicast"
-                        Consolidation="MAX"
+                        Consolidation="AVERAGE"
                         Color="#54ec48ff" />
                      <Draw
                         Type="area"
                         DataSource="IfOutNonUnicast"
                         Calculation="0,IfOutNonUnicast,-"
-                        Consolidation="MAX"
+                        Consolidation="AVERAGE"
                         Color="#48c4ecff" />
                     <Draw
                         Type="line"
                         DataSource="IfInNonUnicast"
-                        Consolidation="MAX"
+                        Consolidation="AVERAGE"
                         Color="#24bc14ff" >
                         NonUnicast packets in
                     </Draw>
@@ -106,7 +106,7 @@
                         Type="line"
                         DataSource="IfOutNonUnicast"
                         Calculation="0,IfOutNonUnicast,-"
-                        Consolidation="MAX"
+                        Consolidation="AVERAGE"
                         Color="#1598c3ff" >
                         NonUnicast packets out
                     </Draw>

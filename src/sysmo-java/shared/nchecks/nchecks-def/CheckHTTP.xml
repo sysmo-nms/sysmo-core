@@ -78,12 +78,12 @@
                     <Draw
                         Type="area"
                         DataSource="ReplyDuration"
-                        Consolidation="MAX"
+                        Consolidation="AVERAGE"
                         Color="#de48edff" />
                     <Draw
                         Type="area"
                         DataSource="ReplyDuration"
-                        Consolidation="MAX"
+                        Consolidation="MIN"
                         Color="#7648edff" />
                     <Draw
                         Type="line"
@@ -95,14 +95,14 @@
                     <Draw
                         Type="line"
                         DataSource="ReplyDuration"
-                        Consolidation="MAX"
+                        Consolidation="AVERAGE"
                         Color="#b415c7ff" >
                         Average reply latency
                     </Draw>
                     <Draw
                         Type="line"
                         DataSource="ReplyDuration"
-                        Consolidation="MAX"
+                        Consolidation="MIN"
                         Color="#4d18e4ff" >
                         Minimum reply latency
                     </Draw>
