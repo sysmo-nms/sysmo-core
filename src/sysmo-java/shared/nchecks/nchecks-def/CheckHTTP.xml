@@ -32,24 +32,14 @@
         <UpdatesUrl>http://www.sysmo.io/nchecks/updates/CheckHTTP/</UpdatesUrl>
 
         <Description>Check HTTP service availability on the specified host.</Description>
-        <Overview>Overview and examples here</Overview>
+        <Overview></Overview>
 
 
         <FlagTable>
           <!-- If Default is inexistant, the flag is mandatory -->
-            <Flag Id="host">
-                <Hint>Hostname or IP</Hint>
-                <Usage>Host target as ip version 4/6 or hostname</Usage>
-            </Flag>
-            <Flag Id="port">
-                <Default>8080</Default>
-                <Hint>IP protocol port</Hint>
-                <Usage>HTTP port number to query</Usage>
-            </Flag>
-            <Flag Id="ms_timeout">
-                <Default>5000</Default>
-                <Hint>Milliseconds</Hint>
-                <Usage>Abort connection if it exceed the value.</Usage>
+            <Flag Id="uri">
+                <Hint>URI ex: "http://myhost.com:80/get?s=value"</Hint>
+                <Usage>Get this URI. Will return CRITICAL if the return is not 2**.</Usage>
             </Flag>
         </FlagTable>
 
