@@ -19,9 +19,9 @@
  * along with Sysmo.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package io.sysmo.nchecks.modules;
+package io.sysmo.nchecks.checks;
 
-import io.sysmo.nchecks.NChecksInterface;
+import io.sysmo.nchecks.CheckInterface;
 import io.sysmo.nchecks.NChecksSNMP;
 import io.sysmo.nchecks.Query;
 import io.sysmo.nchecks.Reply;
@@ -47,7 +47,7 @@ import java.util.Map;
 /**
  * Definition of the check is in the file CheckIfTraffic.xml
  */
-public class CheckIfTraffic implements NChecksInterface
+public class CheckIfTraffic implements CheckInterface
 {
     static Logger logger = LoggerFactory.getLogger(CheckIfTraffic.class);
     private static String IF_INDEX      = "1.3.6.1.2.1.2.2.1.1";

@@ -24,7 +24,7 @@
     <Check
         Id="CheckIfErrors"
         Version="1.0"
-        Class="io.sysmo.nchecks.modules.CheckIfErrors">
+        Class="io.sysmo.nchecks.checks.CheckIfErrors">
 
         <Author><![CDATA[Sebastien Serre (ssbx@sysmo.io)]]></Author>
         <AuthorUrl>http://www.sysmo.io</AuthorUrl>

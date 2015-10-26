@@ -38,6 +38,12 @@ subprojects {
 }
 
 project(':shared:nchecks') {
+    javadoc {
+        options.overview = "overview.html"
+        options.docTitle = "NChecks API"
+        options.windowTitle = "NChecks API"
+    }
+
     dependencies {
         compile 'org.erlang.otp:jinterface:1.5.6'
         compile 'org.glassfish:javax.json:1.0.4'

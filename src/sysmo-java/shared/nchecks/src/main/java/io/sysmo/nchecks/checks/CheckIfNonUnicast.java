@@ -19,9 +19,9 @@
  * along with Sysmo.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package io.sysmo.nchecks.modules;
+package io.sysmo.nchecks.checks;
 
-import io.sysmo.nchecks.NChecksInterface;
+import io.sysmo.nchecks.CheckInterface;
 import io.sysmo.nchecks.NChecksSNMP;
 import io.sysmo.nchecks.Query;
 import io.sysmo.nchecks.Reply;
@@ -45,22 +45,22 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Definition of the check is in the file CheckIfErrors.xml
+ * Definition of the check is in the file CheckIfNonUnicast.xml
  */
-public class CheckIfErrors implements NChecksInterface
+public class CheckIfNonUnicast implements CheckInterface
 {
-    static Logger logger = LoggerFactory.getLogger(CheckIfErrors.class);
-    private static String IF_INDEX      = "1.3.6.1.2.1.2.2.1.1";
-    private static String IF_IN_ERRORS  = "1.3.6.1.2.1.2.2.1.14";
-    private static String IF_OUT_ERRORS = "1.3.6.1.2.1.2.2.1.20";
+    static Logger logger = LoggerFactory.getLogger(CheckIfNonUnicast.class);
+    private static String IF_INDEX           = "1.3.6.1.2.1.2.2.1.1";
+    private static String IF_IN_NON_UNICAST  = "1.3.6.1.2.1.2.2.1.12";
+    private static String IF_OUT_NON_UNICAST = "1.3.6.1.2.1.2.2.1.18";
 
     private static OID[] columns = new OID[]{
             new OID(IF_INDEX),
-            new OID(IF_IN_ERRORS),
-            new OID(IF_OUT_ERRORS)
+            new OID(IF_IN_NON_UNICAST),
+            new OID(IF_OUT_NON_UNICAST)
     };
 
-    public CheckIfErrors() {}
+    public CheckIfNonUnicast() {}
 
     public Reply execute(Query query)
     {
@@ -75,15 +75,15 @@ public class CheckIfErrors implements NChecksInterface
             warningThreshold = query.get("warning_threshold").asInteger();
             criticalThreshold = query.get("critical_threshold").asInteger();
         } catch (Exception|Error e) {
-            CheckIfErrors.logger.error(e.getMessage(), e);
+            CheckIfNonUnicast.logger.error(e.getMessage(), e);
             reply.setStatus(Status.ERROR);
             reply.setReply("Missing or wrong argument: " + e);
             return reply;
         }
 
-        IfErrorsState state = (IfErrorsState) query.getState();
+        IfNonUnicastState state = (IfNonUnicastState) query.getState();
         if (state == null) {
-            state = new IfErrorsState();
+            state = new IfNonUnicastState();
         }
 
         HashMap<Integer, Long> newStatusMap = new HashMap<>();
@@ -112,7 +112,7 @@ public class CheckIfErrors implements NChecksInterface
             AbstractTarget target = NChecksSNMP.getTarget(query);
             TableUtils tableWalker = NChecksSNMP.getTableUtils(state.getPduType());
             List<TableEvent> snmpReply = tableWalker.getTable(
-                    target, CheckIfErrors.columns,
+                    target, CheckIfNonUnicast.columns,
                     lowerBoundIndex, upperBoundIndex);
 
             // TODO check the last element of the list see TableUtils.getTable
@@ -129,12 +129,12 @@ public class CheckIfErrors implements NChecksInterface
                 Integer ifIndex = vbs[0].getVariable().toInt();
 
                 if (intList.contains(ifIndex)) {
-                    Long errsIn = vbs[1].getVariable().toLong();
-                    Long errsOut = vbs[2].getVariable().toLong();
-                    reply.putPerformance(ifIndex, "IfInErrors", errsIn);
-                    reply.putPerformance(ifIndex, "IfOutErrors", errsOut);
+                    Long nuIn = vbs[1].getVariable().toLong();
+                    Long nuOut = vbs[2].getVariable().toLong();
+                    reply.putPerformance(ifIndex, "IfInNonUnicast", nuIn);
+                    reply.putPerformance(ifIndex, "IfOutNonUnicast", nuOut);
 
-                    newStatusMap.put(ifIndex, errsIn + errsOut);
+                    newStatusMap.put(ifIndex, nuIn);
                 }
             }
 
@@ -143,13 +143,13 @@ public class CheckIfErrors implements NChecksInterface
 
             String replyMsg;
             if (newStatus.equals(Status.OK)) {
-                replyMsg = "CheckIfErrors OK";
+                replyMsg = "CheckIfNonUnicast OK";
             } else if (newStatus.equals(Status.UNKNOWN)) {
-                replyMsg = "CheckIfErrors UNKNOWN. No enough data to set sensible status.";
+                replyMsg = "CheckIfNonUnicast UNKNOWN. No enough data to set sensible status.";
             } else if (newStatus.equals(Status.WARNING)) {
-                replyMsg = "CheckIfErrors WARNING have found errors!";
+                replyMsg = "CheckIfNonUnicast have exceeded WARNING threshold!";
             } else if (newStatus.equals(Status.CRITICAL)) {
-                replyMsg = "CheckIfErrors CRITICAL have found errors!";
+                replyMsg = "CheckIfNonUnicast have exceeded CRITICAL threshold!";
             } else {
                 replyMsg = "";
             }
@@ -159,20 +159,20 @@ public class CheckIfErrors implements NChecksInterface
             reply.setReply(replyMsg);
             return reply;
         } catch (Exception|Error e) {
-            CheckIfErrors.logger.error(e.getMessage(), e);
+            CheckIfNonUnicast.logger.error(e.getMessage(), e);
             reply.setStatus(Status.ERROR);
             reply.setReply("Error: " + error);
             return reply;
         }
     }
 
-    static class IfErrorsState implements Serializable {
+    static class IfNonUnicastState implements Serializable {
         private int pduType;
         private Status status;
         private Date time;
         private HashMap<Integer, Long> data;
 
-        IfErrorsState() {
+        IfNonUnicastState() {
             this.time = null;
             this.pduType = PDU.GETNEXT;
             this.status  = Status.UNKNOWN;

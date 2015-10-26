@@ -92,7 +92,7 @@ end
 desc "Generate documentation for java and erlang apps"
 task :doc do
   cd ERLANG_DIR; sh "#{REBAR} -r doc"
-  cd JAVA_DIR;   sh "#{GRADLE} doc"
+  cd JAVA_DIR;   sh "#{GRADLE} javadoc"
 end
 
 desc "Generate a release in directory ./sysmo"

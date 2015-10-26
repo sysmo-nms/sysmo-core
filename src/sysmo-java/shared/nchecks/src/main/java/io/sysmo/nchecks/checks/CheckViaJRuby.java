@@ -19,9 +19,9 @@
  * along with Sysmo.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package io.sysmo.nchecks.modules;
+package io.sysmo.nchecks.checks;
 
-import io.sysmo.nchecks.NChecksInterface;
+import io.sysmo.nchecks.CheckInterface;
 import io.sysmo.nchecks.Reply;
 import io.sysmo.nchecks.Query;
 import io.sysmo.nchecks.NChecksJRuby;
@@ -31,7 +31,7 @@ import org.jruby.embed.ScriptingContainer;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
-public class CheckViaJRuby implements NChecksInterface //, HelperInterface
+public class CheckViaJRuby implements CheckInterface //, HelperInterface
 {
     private static Logger logger = LoggerFactory.getLogger(CheckViaJRuby.class);
 

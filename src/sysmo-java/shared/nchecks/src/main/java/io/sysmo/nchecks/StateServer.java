@@ -48,7 +48,7 @@ import java.nio.file.Paths;
 /**
  * Created by seb on 18/10/15.
  *
- * Provide berkley db store for NChecks modules state.
+ * Provide berkley db store for NChecks checks state.
  */
 public class StateServer {
     public  static final int DEFAULT_PORT = 9760;

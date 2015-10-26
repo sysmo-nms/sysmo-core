@@ -23,7 +23,7 @@ package io.sysmo.nchecks;
 
 import com.ericsson.otp.erlang.OtpErlangDecodeException;
 import com.ericsson.otp.erlang.OtpErlangExit;
-import io.sysmo.nchecks.modules.*;
+import io.sysmo.nchecks.checks.*;
 
 import com.ericsson.otp.erlang.OtpErlangAtom;
 import com.ericsson.otp.erlang.OtpErlangChar;
@@ -328,7 +328,7 @@ public class NChecksErlang implements Runnable
 
     static class NChecksRunnable implements Runnable, CheckCaller
     {
-        private NChecksInterface check;
+        private CheckInterface check;
         private OtpErlangObject  caller;
         private OtpErlangList    args;
         private String           stateId;
@@ -339,7 +339,7 @@ public class NChecksErlang implements Runnable
                 OtpErlangList   argsList,
                 OtpErlangString stateId)
         {
-            this.check   = (NChecksInterface) checkObj;
+            this.check   = (CheckInterface) checkObj;
             this.caller  = callerObj;
             this.args    = argsList;
             this.stateId = stateId.stringValue();

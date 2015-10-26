@@ -34,7 +34,7 @@ import java.util.HashMap;
 /**
  * The Reply class contain all the values and data related to the execution of
  * a module implementing NCheckInterface (a check module).
- * @see {@link io.sysmo.nchecks.Query}.
+ * @see io.sysmo.nchecks.Query
  */
 
 public class Reply
@@ -61,7 +61,6 @@ public class Reply
     /**
      * The status code is used to determine if the event should be logged to
      * the event database when two subsequent checks have the same status
-     * (see setStatus()).
      *
      * The default status code is 0
      *
@@ -85,6 +84,7 @@ public class Reply
      * Set the status code for this reply (see setStatusCode). The default value
      * is 0.
      *
+     * @see io.sysmo.nchecks.Reply#setStatusCode(int)
      * @return the actual status code.
      */
     public int getStatusCode() {
@@ -103,6 +103,7 @@ public class Reply
 
     /**
      * Get the reply string.
+     * @see io.sysmo.nchecks.Reply#setReply(String)
      * @return the reply string
      */
     public String getReply() {
@@ -112,9 +113,9 @@ public class Reply
 
     /**
      * Store a state for this probe for later calls. The object will be
-     * available in the next queries with Query.getState().
+     * available in the next queries with Query#getState().
      *
-     * @see {@link Query#getState()}.
+     * @see io.sysmo.nchecks.Query#getState()
      *
      * @param value the Object to be stored
      */
@@ -125,8 +126,7 @@ public class Reply
     /**
      * For internal use only. This function is called by NChecks
      * with an unique key for you.
-     * @see {@link Query#getState()}
-     * @see {@link Reply#setState(Serializable)}
+     * @see io.sysmo.nchecks.Query#getState()
      * @param key unique key identifying the probe
      */
     public void pushState(String key) {
@@ -140,7 +140,8 @@ public class Reply
 
 
     /**
-     * Set the return status. (see {@link #setStatusCode(int)})
+     * Set the return status.
+     * @see io.sysmo.nchecks.Reply#setStatusCode(int)
      * @param status A return status (Status.{ERROR|OK|WARNING|CRITICAL})
      */
     public void setStatus(Status status) {

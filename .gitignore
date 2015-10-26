@@ -13,6 +13,7 @@
 *.dump
 .rebar/
 ebin/
+doc/
 
 # gradle builds
 .gradle/

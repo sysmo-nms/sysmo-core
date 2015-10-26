@@ -20,7 +20,7 @@
  */
 package io.sysmo.nchecks;
 
-public interface NChecksInterface
+public interface CheckInterface
 {
     Reply execute(Query query);
 }

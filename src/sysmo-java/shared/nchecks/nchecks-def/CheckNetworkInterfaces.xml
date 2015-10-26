@@ -24,7 +24,7 @@
     <Check
         Id="CheckNetworkInterfaces"
         Version="1.0"
-        Class="io.sysmo.nchecks.modules.CheckNetworkInterfaces">
+        Class="io.sysmo.nchecks.checks.CheckNetworkInterfaces">
 
         <Author><![CDATA[Sebastien Serre (ssbx@sysmo.io)]]></Author>
         <AuthorUrl>http://www.sysmo.io</AuthorUrl>

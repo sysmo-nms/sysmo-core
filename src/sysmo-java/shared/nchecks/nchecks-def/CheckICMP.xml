@@ -24,7 +24,7 @@
     <Check
         Id="CheckICMP"
         Version="1.0"
-        Class="io.sysmo.nchecks.modules.CheckICMP">
+        Class="io.sysmo.nchecks.checks.CheckICMP">
 
         <Author><![CDATA[Sebastien Serre (ssbx@sysmo.io)]]></Author>
         <AuthorUrl>http://www.sysmo.io</AuthorUrl>

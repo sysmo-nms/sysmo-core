@@ -24,7 +24,7 @@
     <Check
         Id="CheckIfNonUnicast"
         Version="1.0"
-        Class="io.sysmo.nchecks.modules.CheckIfNonUnicast">
+        Class="io.sysmo.nchecks.checks.CheckIfNonUnicast">
 
         <Author><![CDATA[Sebastien Serre (ssbx@sysmo.io)]]></Author>
         <AuthorUrl>http://www.sysmo.io</AuthorUrl>

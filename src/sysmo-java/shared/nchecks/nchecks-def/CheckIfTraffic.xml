@@ -24,7 +24,7 @@
     <Check
         Id="CheckIfTraffic"
         Version="1.0"
-        Class="io.sysmo.nchecks.modules.CheckIfTraffic">
+        Class="io.sysmo.nchecks.checks.CheckIfTraffic">
 
         <Author><![CDATA[Sebastien Serre (ssbx@sysmo.io)]]></Author>
         <AuthorUrl>http://www.sysmo.io</AuthorUrl>

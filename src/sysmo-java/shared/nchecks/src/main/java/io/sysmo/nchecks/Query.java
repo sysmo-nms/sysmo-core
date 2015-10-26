@@ -19,6 +19,7 @@
  * along with Sysmo.  If not, see <http://www.gnu.org/licenses/>.
  */
 package io.sysmo.nchecks;
+import java.io.Serializable;
 import java.util.Map;
 import java.util.HashMap;
 
@@ -26,7 +27,7 @@ import java.util.HashMap;
  * The Reply class contain all the values and data related to the execution of
  * a module implementing NCheckInterface (a check module).
  *
- * @see {@link Reply}
+ * @see io.sysmo.nchecks.Reply
  */
 public class Query
 {
@@ -37,7 +38,8 @@ public class Query
     /**
      * Private use only.
      *
-     * @param args a map of {@link Argument}
+     * @see io.sysmo.nchecks.Argument
+     * @param args a map of Arguments
      * @param stateId a unique string identifying the probe
      */
     public Query(Map<String,Argument> args, final String stateId)
@@ -73,7 +75,7 @@ public class Query
      * }
      * ...
      *
-     * @see {@link Reply#setState(java.io.Serializable)}
+     * @see io.sysmo.nchecks.Reply#setState(Serializable)
      * @return an Object set from Reply.setState or null
      */
     public Object getState() {
@@ -98,8 +100,6 @@ public class Query
      * does not exist.
      * @param key the flag identifying the argument
      * @return the argument or null
-     * @see {@link io.sysmo.nchecks.Reply}
-     * @see {@link io.sysmo.nchecks.Argument}
      */
     public Argument get(String key) {
         if (this.arguments.containsKey(key)) {

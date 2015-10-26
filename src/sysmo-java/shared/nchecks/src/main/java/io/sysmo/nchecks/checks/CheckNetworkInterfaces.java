@@ -19,9 +19,9 @@
  * along with Sysmo.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package io.sysmo.nchecks.modules;
+package io.sysmo.nchecks.checks;
 
-import io.sysmo.nchecks.NChecksInterface;
+import io.sysmo.nchecks.CheckInterface;
 import io.sysmo.nchecks.Reply;
 import io.sysmo.nchecks.Query;
 import io.sysmo.nchecks.NChecksSNMP;
@@ -41,7 +41,7 @@ import java.util.Iterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class CheckNetworkInterfaces implements NChecksInterface
+public class CheckNetworkInterfaces implements CheckInterface
 {
     static Logger logger =
             LoggerFactory.getLogger(CheckNetworkInterfaces.class);
