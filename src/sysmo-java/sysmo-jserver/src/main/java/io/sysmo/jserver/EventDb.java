@@ -263,14 +263,16 @@ public class EventDb implements Runnable
                             + "WHERE PROBE_ID = ?");
 
             this.psSelectProbeEvents = conn.prepareStatement(
-                    "SELECT * FROM NCHECKS_EVENTS WHERE PROBE_ID = ?");
+                    "SELECT * FROM NCHECKS_EVENTS WHERE PROBE_ID = ? "
+                    + "ORDER BY DATE_CREATED");
 
             this.psSelectLatestEvents = conn.prepareStatement(
                     "SELECT * FROM NCHECKS_EVENTS "
                             + "WHERE MONTH_CREATED = ? OR MONTH_CREATED = ? "
                                 + "OR ACKNOWLEDGED = FALSE "
                             + "UNION "
-                            + "SELECT * FROM NCHECKS_LATEST_EVENTS");
+                            + "SELECT * FROM NCHECKS_LATEST_EVENTS "
+                            + "ORDER BY DATE_CREATED");
 
             this.psUpdateAck = conn.prepareStatement(
                     "UPDATE NCHECKS_EVENTS SET "

@@ -11,7 +11,7 @@ start_link() ->
 init([]) ->
     {ok,
         {
-            {one_for_all, 1, 6000},
+            {rest_for_one, 1, 6000},
             [
                 {
                     j_server,

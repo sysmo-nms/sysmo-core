@@ -35,6 +35,7 @@ assert_init() ->
 % gen_server
 init([]) ->
     % build relative java server script path
+    ?LOG_INFO("Starting j_server"),
     Prefix = case os:type() of
                  {win32,_} -> ".bat";
                  _         -> ""

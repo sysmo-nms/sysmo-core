@@ -144,7 +144,7 @@ build_if_aliases([],_,Acc) -> Acc;
 build_if_aliases([{table_row, _, []}|Rows], Names, Acc) ->
     build_if_aliases(Rows, Names, Acc);
 build_if_aliases([{table_row, Name, Alias}|Rows], Names, Acc) ->
-    case lists:keyfine(Name, 3, Names) of
+    case lists:keyfind(Name, 3, Names) of
         false ->
             build_if_aliases(Rows, Names, Acc);
         {table_row, Index, _} ->
