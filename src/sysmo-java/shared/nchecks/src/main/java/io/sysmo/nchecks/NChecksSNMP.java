@@ -146,33 +146,95 @@ public class NChecksSNMP
         return NChecksSNMP.instance.getTargetFor(query);
     }
 
+    /**
+     * Return or generate the target corresponding to snmp arguments contained
+     * in the query.
+     * @param query the Query arguments
+     * @return a snmp AbstractTarget
+     * @throws Exception
+     */
     public synchronized AbstractTarget getTargetFor(Query query)
             throws Exception
     {
         String targetId = query.get("target_id").asString();
-        AbstractTarget target = this.agents.get(targetId);
-        if (target != null) { return target; }
 
-        target = this.generateTarget(query);
-        if (target.getSecurityModel() != SecurityModel.SECURITY_MODEL_USM)
-        {
+        AbstractTarget target;
+        target = this.agents.get(targetId);
+
+        if (target != null) {
+            return target;
+        }
+
+        String  host        = query.get("host").asString();
+        int     port        = query.get("snmp_port").asInteger();
+        String  secLevel    = query.get("snmp_seclevel").asString();
+        String  version     = query.get("snmp_version").asString();
+        int     retries     = query.get("snmp_retries").asInteger();
+        int     timeout     = query.get("snmp_timeout").asInteger();
+
+        Address address = GenericAddress.parse("udp:" + host + "/" + port);
+
+        int secLevelConst = NChecksSNMP.getSecLevel(secLevel);
+
+        switch (version) {
+            case "3":
+                String secName = query.get("snmp_usm_user").asString();
+                UserTarget targetV3 = new UserTarget();
+                targetV3.setAddress(address);
+                targetV3.setRetries(retries);
+                targetV3.setTimeout(timeout);
+                targetV3.setVersion(SnmpConstants.version3);
+                targetV3.setSecurityLevel(secLevelConst);
+                targetV3.setSecurityName(new OctetString(secName));
+                target = targetV3;
+                break;
+            default:
+                String community = query.get("snmp_community").asString();
+                CommunityTarget communityTarget = new CommunityTarget();
+                communityTarget.setCommunity(new OctetString(community));
+                communityTarget.setAddress(address);
+                communityTarget.setRetries(retries);
+                communityTarget.setTimeout(timeout);
+                if (version.equals("2c")) {
+                    communityTarget.setVersion(SnmpConstants.version2c);
+                } else {
+                    communityTarget.setVersion(SnmpConstants.version1);
+                }
+                target = communityTarget;
+        }
+
+        if (target.getSecurityModel() != SecurityModel.SECURITY_MODEL_USM) {
+
             this.agents.put(targetId, target);
             return target;
+
         } else {
-            UsmUser user = this.generateUser(query);
+
+            OID authProtoOid = NChecksSNMP.getAuthProto(
+                    query.get("snmp_authproto").asString());
+            OID privProtoOid = NChecksSNMP.getPrivProto(
+                    query.get("snmp_privproto").asString());
+
+            OctetString uName = new OctetString(
+                    query.get("snmp_usm_user").asString());
+            OctetString authkey = new OctetString(
+                    query.get("snmp_authkey").asString());
+            OctetString privkey = new OctetString(
+                    query.get("snmp_privkey").asString());
+
+            UsmUser user = new UsmUser(
+                    uName,authProtoOid,authkey, privProtoOid,privkey);
+
             OctetString username = user.getSecurityName();
             UsmUserEntry oldUser =
                     this.snmp4jSession.getUSM().getUserTable().getUser(username);
-            if (oldUser == null)
-            {
+
+            if (oldUser == null) {
                 this.snmp4jSession.getUSM().addUser(user);
                 this.agents.put(targetId, target);
                 return target;
-            }
-            else
-            {
-                if (NChecksSNMP.usmUsersEquals(oldUser.getUsmUser(),user))
-                {
+            } else {
+                if (oldUser.getUsmUser().toString().equals(user.toString())) {
                     // same users conf, ok
                     this.agents.put(targetId, target);
                     return target;
@@ -181,66 +243,6 @@ public class NChecksSNMP
             }
         }
         throw new Exception("User name exists with differents credencials");
-    }
-
-    private AbstractTarget generateTarget(Query query) throws Exception, Error
-    {
-        String  host        = query.get("host").asString();
-        int     port        = query.get("snmp_port").asInteger();
-        String  secLevel    = query.get("snmp_seclevel").asString();
-        String  version     = query.get("snmp_version").asString();
-        int     retries     = query.get("snmp_retries").asInteger();
-        int     timeout     = query.get("snmp_timeout").asInteger();
-        
-        Address address = GenericAddress.parse("udp:" + host + "/" + port);
-
-        int secLevelConst = NChecksSNMP.getSecLevel(secLevel);
-
-        switch (version)
-        {
-            case "3":
-                String  secName = query.get("snmp_usm_user").asString();
-                UserTarget targetV3 = new UserTarget();
-                targetV3.setAddress(address);
-                targetV3.setRetries(retries);
-                targetV3.setTimeout(timeout);
-                targetV3.setVersion(SnmpConstants.version3);
-                targetV3.setSecurityLevel(secLevelConst);
-                targetV3.setSecurityName(new OctetString(secName));
-                return targetV3;
-
-            default:
-                String  community = query.get("snmp_community").asString();
-                CommunityTarget target = new CommunityTarget();
-                target.setCommunity(new OctetString(community));
-                target.setAddress(address);
-                target.setRetries(retries);
-                target.setTimeout(timeout);
-                if (version.equals("2c")) {
-                    target.setVersion(SnmpConstants.version2c);
-                } else {
-                    target.setVersion(SnmpConstants.version1);
-                }
-                return target;
-        }
-    }
-
-    private UsmUser generateUser(Query query) throws Exception, Error
-    {
-
-        OID authProtoOid = NChecksSNMP.getAuthProto(
-                query.get("snmp_authproto").asString());
-        OID privProtoOid = NChecksSNMP.getPrivProto(
-                query.get("snmp_privproto").asString());
-
-        OctetString uName = new OctetString(
-                query.get("snmp_usm_user").asString());
-        OctetString authkey = new OctetString(
-                query.get("snmp_authkey").asString());
-        OctetString privkey = new OctetString(
-                query.get("snmp_privkey").asString());
-
-        return new UsmUser(uName,authProtoOid,authkey, privProtoOid,privkey);
     }
 
 
@@ -292,25 +294,25 @@ public class NChecksSNMP
         return new String(new String(hexChars).getBytes("UTF-8"), "UTF-8");
     }
 
-    public static int getSecLevel(String constString) throws Exception
+    private static int getSecLevel(String constString) throws Exception
     {
 
-        int seclevel;
+        int secLevel;
         switch (constString)
         {
             case "authPriv":
-                seclevel = SecurityLevel.AUTH_PRIV; break;
+                secLevel = SecurityLevel.AUTH_PRIV; break;
             case "authNoPriv":
-                seclevel = SecurityLevel.AUTH_NOPRIV; break;
+                secLevel = SecurityLevel.AUTH_NOPRIV; break;
             case "noAuthNoPriv":
-                seclevel = SecurityLevel.NOAUTH_NOPRIV; break;
+                secLevel = SecurityLevel.NOAUTH_NOPRIV; break;
             default:
-                throw new Exception("No such seclevel!");
+                throw new Exception("No such secLevel!");
         }
-        return seclevel;
+        return secLevel;
     }
 
-    public static OID getAuthProto(String constString) throws Exception
+    private static OID getAuthProto(String constString) throws Exception
     {
 
         OID authProtoOid;
@@ -324,7 +326,7 @@ public class NChecksSNMP
         return authProtoOid;
     }
 
-    public static OID getPrivProto(String constString) throws Exception
+    private static OID getPrivProto(String constString) throws Exception
     {
         OID privProtoOid;
         switch (constString)
@@ -341,11 +343,5 @@ public class NChecksSNMP
         }
 
         return privProtoOid;
-    }
-
-
-    public static boolean usmUsersEquals(UsmUser a, UsmUser b)
-    {
-        return a.toString().equals(b.toString());
     }
 }
