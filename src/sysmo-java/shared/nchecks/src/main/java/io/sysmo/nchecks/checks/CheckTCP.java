@@ -79,14 +79,15 @@ public class CheckTCP implements CheckInterface
                 acceptState = Status.fromString(acceptStateArg.asString());
             }
         } catch (Exception|Error e) {
-            CheckTCP.logger.error(e.getMessage(), e);
+            CheckTCP.logger.info(e.getMessage(), e);
             reply.setStatus(Status.ERROR);
-            reply.setReply("Bad or wrong arguments: " + e);
+            reply.setReply("CheckTCP ERROR: Bad or wrong arguments: " + e.getMessage());
             return reply;
         }
 
 
         if (port == 0 || port > 65535) {
+            CheckTCP.logger.info("Bad port definition: " + port);
             reply.setStatus(Status.ERROR);
             reply.setReply("CheckTCP ERROR: Bad port definition " + port);
             return reply;
@@ -96,9 +97,9 @@ public class CheckTCP implements CheckInterface
         try {
             addr = InetAddress.getByName(host);
         } catch (Exception e) {
-            CheckTCP.logger.error(e.getMessage(), e);
+            CheckTCP.logger.info(e.getMessage(), e);
             reply.setStatus(Status.ERROR);
-            reply.setReply("Host lookup fail for: " + host);
+            reply.setReply("CheckTCP ERROR: Host lookup fail for: " + host + " " + e.getMessage());
             return reply;
         }
 
@@ -112,8 +113,7 @@ public class CheckTCP implements CheckInterface
             stop  = System.nanoTime();
             sock.close();
         } catch (Exception e) {
-            CheckTCP.logger.error(e.getMessage(), e);
-            reply.setReply(e.getMessage());
+            reply.setReply("CheckTCP " + refuseState.toString() + " " + e.getMessage());
             reply.setStatus(refuseState);
             return reply;
         }
@@ -134,7 +134,7 @@ public class CheckTCP implements CheckInterface
             st = acceptState;
         }
         reply.setStatus(st);
-        reply.setReply("CheckTCP " + st + "Time elapsed: "  + elapsed + " milliseconds");
+        reply.setReply("CheckTCP " + st + " Time elapsed: "  + elapsed + " milliseconds");
         return reply;
     }
 }
