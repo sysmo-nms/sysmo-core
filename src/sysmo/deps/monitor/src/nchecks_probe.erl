@@ -292,7 +292,8 @@ do_handle_nchecks_reply(PR, #state{name=Name,ref=Ref} = S) ->
                                        ES#ets_state.description,
                                        NewStatus, NewStatusCode,
                                        PR#nchecks_reply.reply_string,
-                                       ES#ets_state.belong_to),
+                                       ES#ets_state.belong_to,
+                                       ES#ets_state.permissions),
             NewProbe = Probe#probe{status = NewStatus},
             monitor_data_master:update(probe, NewProbe)
     end,

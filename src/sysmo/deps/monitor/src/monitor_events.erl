@@ -30,7 +30,7 @@
 -export([start_link/0]).
 
 % API
--export([notify/2, notify_move/7, notify_init/2,
+-export([notify/2, notify_move/8, notify_init/2,
     dump_probe_events/2, dump_latest_events/1]).
 
 -record(state, {last_notif, last_move}).
@@ -55,10 +55,10 @@ notify_init(Name, Status) ->
     gen_server:cast(?MODULE, {notify_init, Name, Status, Ts}).
 
 notify_move(Name, CheckId, Descr, Status, StatusCode,
-            ReplyString, BelongTo) ->
+            ReplyString, BelongTo, Perm) ->
     Ts = get_ts(),
     gen_server:call(?MODULE, {notify_move, Name, CheckId, Descr,
-                              Status, StatusCode, ReplyString, BelongTo, Ts}).
+        Status, StatusCode, ReplyString, BelongTo, Ts, Perm}).
 
 
 %%----------------------------------------------------------------------------
@@ -78,7 +78,7 @@ init([]) ->
 % Keep a state of all this.
 % Emit info for supercast.
 handle_call({notify_move, Name, CheckId, Descr, Status,
-             StatusCode, String, BelongTo, Time}, _From,
+             StatusCode, String, BelongTo, Time, Perm}, _From,
             #state{last_notif=Nt,last_move=Mv} = S) ->
     {TargetDisplay,TargetLocation,TargetContact} = get_target_infos(BelongTo),
     Notif = #notification{
@@ -95,6 +95,8 @@ handle_call({notify_move, Name, CheckId, Descr, Status,
     ets:insert(Nt, Notif),
     ets:insert(Mv, Notif),
     j_server_eventdb:notify(Notif),
+    Pdu = monitor_pdu:nchecksDbNotif(Notif),
+    supercast_channel:emit(?MASTER_CHANNEL, {Perm, Pdu}),
     {reply, ok, S};
 
 handle_call({dump_probe_events, DumpPath, Probe}, _F, S) ->

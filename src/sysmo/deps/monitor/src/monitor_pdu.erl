@@ -32,8 +32,30 @@
 
 -export([nchecksSimpleUpdateMessage/3, nchecksSimpleDumpMessage/4,
     nchecksTableUpdateMessage/3, nchecksTableDumpMessage/4,
-    nchecksHelperReply/3]).
+    nchecksHelperReply/3, nchecksDbNotif/1]).
 
+nchecksDbNotif({_,PName,CheckId,Status,StatusCode,Time,ReturnString,Descr,
+    TargetDisplay,TargetLocation,TargetContact}) ->
+    {struct,
+        [
+            {<<"from">>, <<"monitor_main">>},
+            {<<"type">>, <<"dbNotif">>},
+            {<<"value">>,
+                {struct, [
+                    {<<"PROBE_ID">>, char_to_binary(PName)},
+                    {<<"NCHECKS_ID">>, char_to_binary(CheckId)},
+                    {<<"STATUS">>, char_to_binary(Status)},
+                    {<<"STATUS_CODE">>, StatusCode},
+                    {<<"DATE_CREATED">>, Time},
+                    {<<"RETURN_STRING">>, char_to_binary(ReturnString)},
+                    {<<"PROBE_DISPLAY">>, char_to_binary(Descr)},
+                    {<<"HOST_DISPLAY">>, char_to_binary(TargetDisplay)},
+                    {<<"HOST_LOCATION">>, char_to_binary(TargetLocation)},
+                    {<<"HOST_CONTACT">>, char_to_binary(TargetContact)}
+                ]}
+            }
+        ]
+    }.
 nchecksSimpleUpdateMessage(Probe, Ts, Updates) ->
     Up = [{char_to_binary(K), V} || {K,V} <- Updates],
     {struct,

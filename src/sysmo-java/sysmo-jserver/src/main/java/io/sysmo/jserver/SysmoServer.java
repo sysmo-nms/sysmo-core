@@ -89,8 +89,6 @@ public class SysmoServer {
 
         SysmoServer.logger.info("Logger started");
 
-        SysmoServer.exitReason = "normal";
-
         try {
             SysmoServer.startServerLoop(args);
         } catch (Exception e) {
@@ -167,7 +165,7 @@ public class SysmoServer {
             erlangCookie = args[1];
         } catch (ArrayIndexOutOfBoundsException e) {
             SysmoServer.logger.error(e.getMessage(), e);
-            return;
+            throw e;
         }
 
         // generate paths

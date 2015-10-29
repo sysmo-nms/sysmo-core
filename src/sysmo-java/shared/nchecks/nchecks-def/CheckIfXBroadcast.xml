@@ -45,12 +45,12 @@
             <Flag Id="warning_threshold">
                 <Hint>Integer representing an average number of broadcast packets per minute.</Hint>
                 <Usage>Set the probe to WARNING state if one interface has more thant "warning_threshold" packets emited and received per minute.</Usage>
-                <Default>0</Default>
+                <Default>100</Default>
             </Flag>
             <Flag Id="critical_threshold">
                 <Hint>Integer representing an average number of broadcast packets per minute.</Hint>
                 <Usage>Set the probe to CRITICAL state if one interface has more thant "critical_threshold" packets emited and received per minute.</Usage>
-                <Default>100</Default>
+                <Default>1000</Default>
             </Flag>
         </FlagTable>
 
