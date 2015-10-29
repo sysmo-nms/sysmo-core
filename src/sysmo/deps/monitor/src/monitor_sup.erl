@@ -31,7 +31,7 @@ start_link() ->
 init([]) ->
     {ok,
         {
-            {one_for_one, 1, 60},
+            {all_for_one, 0, 6000},
             [
                 {
                     monitor_events,
