@@ -20,8 +20,8 @@ doc/
 build/
 
 # go pping builds
-pping
-pping.exe
+/src/pping/pping
+/src/pping/pping.exe
 
 # sysmo release
 /sysmo
