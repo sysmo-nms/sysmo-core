@@ -17,7 +17,7 @@ start_link() ->
 init([]) ->
     {ok,
         {
-            {all_for_one, 1, 6000},
+            {one_for_all, 1, 6000},
             [
                 {
                     mnesia_sup,

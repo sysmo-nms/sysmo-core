@@ -44,6 +44,7 @@ import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Paths;
 import java.util.Properties;
+import java.util.concurrent.TimeoutException;
 import java.util.logging.LogManager;
 
 public class SysmoServer {
@@ -75,224 +76,288 @@ public class SysmoServer {
         Logger logger = LoggerFactory.getLogger(SysmoServer.class);
         logger.info("Logger started");
 
-        // Extract args
-        String foreignNodeName;
-        String erlangCookie;
+
+        Server jettyThread   = null;
+        Thread nchecksThread = null;
+        Thread rrd4jThread   = null;
+        Thread snmp4jThread  = null;
+        Thread mailThread    = null;
+        Thread eventDbThread = null;
+
+        OtpMbox mainMbox = null;
+
+        String exitReason = "normal";
+
         try {
-            foreignNodeName = args[0];
-            erlangCookie    = args[1];
-        } catch (ArrayIndexOutOfBoundsException e) {
-            logger.error(e.getMessage(), e);
-            return;
-        }
+            // Extract args
+            String foreignNodeName;
+            String erlangCookie;
+            try {
+                foreignNodeName = args[0];
+                erlangCookie = args[1];
+            } catch (ArrayIndexOutOfBoundsException e) {
+                logger.error(e.getMessage(), e);
+                return;
+            }
 
-        // generate paths
-        FileSystem fs = FileSystems.getDefault();
-        String rubyDir    = fs.getPath("ruby").toString();
-        String utilsDir   = fs.getPath("utils").toString();
-        String etcDir     = fs.getPath("etc").toString();
-        String docrootDir = fs.getPath("docroot").toString();
-        String dataDir    = fs.getPath("data").toString();
+            // generate paths
+            FileSystem fs = FileSystems.getDefault();
+            String rubyDir = fs.getPath("ruby").toString();
+            String utilsDir = fs.getPath("utils").toString();
+            String etcDir = fs.getPath("etc").toString();
+            String docrootDir = fs.getPath("docroot").toString();
+            String dataDir = fs.getPath("data").toString();
 
-        String confFile = Paths.get(etcDir, "sysmo.properties").toString();
+            String confFile = Paths.get(etcDir, "sysmo.properties").toString();
 
-        InputStream propIn = null;
-        int stateServerPort;
-        String stateServerEmbedded;
-        String stateServerHost;
-        try  {
-            Properties props = new Properties();
-            propIn = new FileInputStream(confFile);
-            props.load(propIn);
-            stateServerPort =
-                    Integer.parseInt(props.getProperty("state_server_port"));
-            stateServerEmbedded = props.getProperty("state_server_embedded", "true");
-            stateServerHost = props.getProperty("state_server_host");
-        } catch (Exception e) {
-            stateServerPort = 0;
-            stateServerEmbedded = "true";
-            stateServerHost = "";
-        } finally {
-            if (propIn != null) {
-                try {
-                    propIn.close();
-                } catch (IOException e) {
-                    // ignore
+            InputStream propIn = null;
+            int stateServerPort;
+            String stateServerEmbedded;
+            String stateServerHost;
+            try {
+                Properties props = new Properties();
+                propIn = new FileInputStream(confFile);
+                props.load(propIn);
+                stateServerPort =
+                        Integer.parseInt(props.getProperty("state_server_port"));
+                stateServerEmbedded = props.getProperty("state_server_embedded", "true");
+                stateServerHost = props.getProperty("state_server_host");
+            } catch (Exception e) {
+                stateServerPort = 0;
+                stateServerEmbedded = "true";
+                stateServerHost = "";
+            } finally {
+                if (propIn != null) {
+                    try {
+                        propIn.close();
+                    } catch (IOException e) {
+                        // ignore
+                    }
                 }
             }
-        }
 
         /*
          * Connect to erlang-main node
          */
-        OtpNode node;
-        try {
-            node = new OtpNode(selfNodeName, erlangCookie);
-            if (!node.ping(foreignNodeName, 2000)) {
-                logger.error("Can t connect to main erlang node.");
+            OtpNode node;
+            try {
+                node = new OtpNode(selfNodeName, erlangCookie);
+                if (!node.ping(foreignNodeName, 2000)) {
+                    throw new TimeoutException("Can t connect to main erlang node.");
+                }
+            } catch (IOException e) {
+                logger.error(e.getMessage(), e);
+                exitReason = "OtpNode_io_exception";
+                return;
+            } catch (TimeoutException e) {
+                logger.error(e.getMessage(), e);
+                exitReason = "OtpNode_timed_out";
                 return;
             }
-        } catch (IOException e) {
-            logger.error(e.getMessage(), e);
-            return;
-        }
 
-        OtpMbox mainMbox = node.createMbox();
+            mainMbox = node.createMbox();
 
-        OtpMbox rrd4jMbox   = node.createMbox();
-        OtpMbox snmp4jMbox  = node.createMbox();
-        OtpMbox nchecksMbox = node.createMbox();
-        OtpMbox derbyMbox   = node.createMbox();
-        OtpMbox mailMbox    = node.createMbox();
-        OtpMbox stateDummyMbox = node.createMbox();
+            OtpMbox rrd4jMbox = node.createMbox();
+            OtpMbox snmp4jMbox = node.createMbox();
+            OtpMbox nchecksMbox = node.createMbox();
+            OtpMbox derbyMbox = node.createMbox();
+            OtpMbox mailMbox = node.createMbox();
+            OtpMbox stateDummyMbox = node.createMbox();
 
         /*
          * Link to mainMbox.
          * this way exiting mainMbox will raise an OtpExitException on
          * other mailboxes, closing the threads.
          */
-        try {
-            mainMbox.link(rrd4jMbox.self());
-            mainMbox.link(snmp4jMbox.self());
-            mainMbox.link(nchecksMbox.self());
-            mainMbox.link(derbyMbox.self());
-            mainMbox.link(mailMbox.self());
-            mainMbox.link(stateDummyMbox.self());
-        } catch (Exception e) {
-            logger.error("Should not append here!" + e.getMessage(), e);
-        }
+            try {
+                mainMbox.link(rrd4jMbox.self());
+                mainMbox.link(snmp4jMbox.self());
+                mainMbox.link(nchecksMbox.self());
+                mainMbox.link(derbyMbox.self());
+                mainMbox.link(mailMbox.self());
+                mainMbox.link(stateDummyMbox.self());
+            } catch (Exception e) {
+                logger.error("Should not append here!" + e.getMessage(), e);
+                return;
+            }
 
         /*
          * Create state server thread if required
          */
-        if (stateServerEmbedded.equals("true")) {
-            try {
-                // dummy mbox only used to notify mainMbox of a failure
-                // and stop the JVM.
-                StateServer.start(dataDir, stateServerPort, stateDummyMbox);
-            } catch (Exception e) {
-                logger.error(e.getMessage(), e);
-                return;
+            if (stateServerEmbedded.equals("true")) {
+                try {
+                    // dummy mbox only used to notify mainMbox of a failure
+                    // and stop the JVM.
+                    StateServer.start(dataDir, stateServerPort, stateDummyMbox);
+                } catch (Exception e) {
+                    logger.error(e.getMessage(), e);
+                    exitReason = "state_server_init_error";
+                    return;
+                }
             }
-        }
 
         /*
          * Create derby thread
          */
-        EventDb eventDb;
-        try {
-            eventDb = EventDb.getInstance(derbyMbox, foreignNodeName, dataDir);
-        } catch (Exception e) {
-            logger.error("EventDb failed to start" + e.getMessage(), e);
-            System.err.println("EventDb failed to start" + e.getMessage());
-            derbyMbox.exit("error");
-            if (StateServer.isStarted()) {
-                StateServer.stop();
+            EventDb eventDb;
+            try {
+                eventDb = EventDb.getInstance(derbyMbox, foreignNodeName, dataDir);
+            } catch (Exception e) {
+                logger.error(e.getMessage(), e);
+                exitReason = "derby_init_error";
+                return;
             }
-            return;
-        }
-        Thread eventDbThread = new Thread(eventDb);
-        eventDbThread.start();
+            eventDbThread = new Thread(eventDb);
+            eventDbThread.start();
 
         /*
          * Create NChecks thread
          */
-        NChecksErlang nchecks;
-        try {
-
-            InetAddress stateServerAddress;
-            if (stateServerEmbedded.equals("true")) {
-                stateServerAddress = InetAddress.getByName(null);
-            } else {
-                stateServerAddress = InetAddress.getByName(stateServerHost);
-            }
-
-            nchecks = NChecksErlang.getInstance(nchecksMbox, foreignNodeName,
-                    rubyDir, utilsDir, etcDir,
-                    stateServerAddress,stateServerPort);
-        } catch (Exception e) {
-            logger.error("NChecks failed to start" + e.getMessage(), e);
-            System.err.println("NChecks failed to start" + e.getMessage());
-            mainMbox.exit("error");
+            NChecksErlang nchecks;
             try {
-                eventDbThread.join();
-            } catch (Exception inner) {
-                logger.error("Fail to shutdown derby: ", inner);
+
+                InetAddress stateServerAddress;
+                if (stateServerEmbedded.equals("true")) {
+                    stateServerAddress = InetAddress.getByName(null);
+                } else {
+                    stateServerAddress = InetAddress.getByName(stateServerHost);
+                }
+
+                nchecks = NChecksErlang.getInstance(nchecksMbox, foreignNodeName,
+                        rubyDir, utilsDir, etcDir,
+                        stateServerAddress, stateServerPort);
+            } catch (Exception e) {
+                logger.error(e.getMessage(), e);
+                exitReason = ("nchecks_init_error");
+                return;
             }
-            if (StateServer.isStarted()) {
-                StateServer.stop();
-            }
-            return;
-        }
-        Thread nchecksThread = new Thread(nchecks);
-        nchecksThread.start();
+            nchecksThread = new Thread(nchecks);
+            nchecksThread.start();
 
         /*
          * Create rrd4j thread
          */
-        RrdLogger rrd4j = RrdLogger.getInstance(rrd4jMbox, foreignNodeName);
-        Thread rrd4jThread = new Thread(rrd4j);
-        rrd4jThread.start();
+            RrdLogger rrd4j = RrdLogger.getInstance(rrd4jMbox, foreignNodeName);
+            rrd4jThread = new Thread(rrd4j);
+            rrd4jThread.start();
 
         /*
          * Create mail thread
          */
-        MailSender mail = MailSender.getInstance(mailMbox, etcDir);
-        Thread mailThread = new Thread(mail);
-        mailThread.start();
+            MailSender mail = MailSender.getInstance(mailMbox, etcDir);
+            mailThread = new Thread(mail);
+            mailThread.start();
 
         /*
          * Create snmp4j thread
          */
-        SnmpManager snmp4j = SnmpManager.getInstance(snmp4jMbox,
-                                                foreignNodeName, etcDir);
-        Thread snmp4jThread = new Thread(snmp4j);
-        snmp4jThread.start();
+            SnmpManager snmp4j = SnmpManager.getInstance(snmp4jMbox,
+                    foreignNodeName, etcDir);
+            snmp4jThread = new Thread(snmp4j);
+            snmp4jThread.start();
 
         /*
          * Create simple http file server
          */
-        Server jettyThread = JettyServer.startServer(docrootDir, etcDir);
-        int jettyPort = JettyServer.getPort();
+            jettyThread = JettyServer.startServer(docrootDir, etcDir);
+            int jettyPort = JettyServer.getPort();
 
 
         /*
          * Send acknowledgement to the "sysmo" erlang process
          */
-        OtpErlangObject[] ackObj = new OtpErlangObject[7];
-        ackObj[0] = new OtpErlangAtom("java_connected");
-        ackObj[1] = rrd4jMbox.self();
-        ackObj[2] = snmp4jMbox.self();
-        ackObj[3] = nchecksMbox.self();
-        ackObj[4] = derbyMbox.self();
-        ackObj[5] = mailMbox.self();
-        ackObj[6] = new OtpErlangInt(jettyPort);
-        OtpErlangTuple ackTuple = new OtpErlangTuple(ackObj);
-        mainMbox.send("j_server", foreignNodeName, ackTuple);
+            OtpErlangObject[] ackObj = new OtpErlangObject[7];
+            ackObj[0] = new OtpErlangAtom("java_connected");
+            ackObj[1] = rrd4jMbox.self();
+            ackObj[2] = snmp4jMbox.self();
+            ackObj[3] = nchecksMbox.self();
+            ackObj[4] = derbyMbox.self();
+            ackObj[5] = mailMbox.self();
+            ackObj[6] = new OtpErlangInt(jettyPort);
+            OtpErlangTuple ackTuple = new OtpErlangTuple(ackObj);
+            mainMbox.send("j_server", foreignNodeName, ackTuple);
 
-        while(node.ping(foreignNodeName, 2000)) try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-            break;
-        }
+            int pingTimeoutMs = 5000; // 5 seconds
+            boolean alive;
 
-        mainMbox.exit("normal");
-        /* Will raise OtpErlangExit exception on other threads and cause them
-         * to terminate.
-         */
-        try {
+            while (true) try {
+                alive = node.ping(foreignNodeName, pingTimeoutMs);
+
+                if (!alive) {
+                    throw new TimeoutException("Erlang node as timed out");
+                }
+
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                logger.error(e.getMessage(), e);
+                exitReason = "OtpNode_interrupted";
+                return;
+            } catch (TimeoutException e) {
+                logger.error(e.getMessage(), e);
+                exitReason = "OtpNode_timeout";
+                return;
+            }
+
+        } finally {
+            if (mainMbox != null) {
+                mainMbox.exit(exitReason);
+            }
+            /* Will raise OtpErlangExit exception on other threads and cause them
+             * to terminate.
+             */
             if (StateServer.isStarted()) {
                 StateServer.stop();
             }
-            jettyThread.stop();
-            nchecksThread.join();
-            rrd4jThread.join();
-            snmp4jThread.join();
-            mailThread.join();
-            eventDbThread.join();
-        } catch (Exception e) {
-            logger.error(e.getMessage(), e);
+
+            if (jettyThread != null) {
+                try {
+                    jettyThread.stop();
+                } catch (Exception e) {
+                    logger.error(e.getMessage(), e);
+                }
+            }
+
+            if (nchecksThread != null) {
+                try {
+                    nchecksThread.join();
+                } catch (InterruptedException e) {
+                    logger.error(e.getMessage(), e);
+                }
+            }
+
+            if (rrd4jThread != null) {
+                try {
+                    rrd4jThread.join();
+                } catch (InterruptedException e) {
+                    logger.error(e.getMessage(), e);
+                }
+            }
+
+            if (snmp4jThread != null) {
+                try {
+                    snmp4jThread.join();
+                } catch (InterruptedException e) {
+                    logger.error(e.getMessage(), e);
+                }
+            }
+
+            if (mailThread != null) {
+                try {
+                    mailThread.join();
+                } catch (InterruptedException e) {
+                    logger.error(e.getMessage(), e);
+                }
+            }
+
+            if (eventDbThread != null) {
+
+                try {
+                    eventDbThread.join();
+                } catch (InterruptedException e) {
+                    logger.error(e.getMessage(), e);
+                }
+            }
+            System.exit(0);
         }
-        System.exit(0);
     }
 }
