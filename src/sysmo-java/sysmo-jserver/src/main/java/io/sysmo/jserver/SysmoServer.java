@@ -26,7 +26,6 @@ import com.ericsson.otp.erlang.OtpErlangDecodeException;
 import com.ericsson.otp.erlang.OtpErlangExit;
 import com.ericsson.otp.erlang.OtpErlangInt;
 import com.ericsson.otp.erlang.OtpErlangObject;
-import com.ericsson.otp.erlang.OtpErlangPid;
 import com.ericsson.otp.erlang.OtpErlangTuple;
 import com.ericsson.otp.erlang.OtpMbox;
 import com.ericsson.otp.erlang.OtpNode;
@@ -334,7 +333,7 @@ public class SysmoServer {
          */
         OtpErlangObject[] ackObj = new OtpErlangObject[8];
         ackObj[0] = new OtpErlangAtom("java_connected");
-        ackObj[1] = mainMbox.self();
+        ackObj[1] = SysmoServer.mainMbox.self(); // for erlang:link/1
         ackObj[2] = rrd4jMbox.self();
         ackObj[3] = snmp4jMbox.self();
         ackObj[4] = nchecksMbox.self();
@@ -345,7 +344,8 @@ public class SysmoServer {
         SysmoServer.mainMbox.send("j_server", foreignNodeName, ackTuple);
 
         try {
-            SysmoServer.mainMbox.receive(); // will raise exception on foreign pid close
+            // mainMbox is linked from erlang to "j_server" pid.
+            SysmoServer.mainMbox.receive();
         } catch (OtpErlangExit e) {
             SysmoServer.exitReason = "shutdown";
             throw e;
