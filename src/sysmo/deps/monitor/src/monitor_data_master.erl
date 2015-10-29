@@ -230,7 +230,7 @@ start_link() ->
 %%----------------------------------------------------------------------------
 init([]) ->
     init_ets_tables(),
-    init_mnesia_tables(),
+    init_mnesia_tables(), % TODO use dets
     init_targets(),
     init_probes(),
     init_jobs(),
