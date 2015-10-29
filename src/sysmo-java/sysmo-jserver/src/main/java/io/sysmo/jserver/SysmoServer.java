@@ -334,7 +334,7 @@ public class SysmoServer {
          */
         OtpErlangObject[] ackObj = new OtpErlangObject[8];
         ackObj[0] = new OtpErlangAtom("java_connected");
-        ackObj[1] = SysmoServer.mainMbox.self();
+        ackObj[1] = mainMbox.self();
         ackObj[2] = rrd4jMbox.self();
         ackObj[3] = snmp4jMbox.self();
         ackObj[4] = nchecksMbox.self();
@@ -344,9 +344,6 @@ public class SysmoServer {
         OtpErlangTuple ackTuple = new OtpErlangTuple(ackObj);
         SysmoServer.mainMbox.send("j_server", foreignNodeName, ackTuple);
 
-        OtpErlangTuple tuple = (OtpErlangTuple) SysmoServer.mainMbox.receive();
-        OtpErlangPid pid = (OtpErlangPid) tuple.elementAt(1);
-        SysmoServer.mainMbox.link(pid);
         try {
             SysmoServer.mainMbox.receive(); // will raise exception on foreign pid close
         } catch (OtpErlangExit e) {
