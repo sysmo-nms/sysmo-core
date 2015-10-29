@@ -85,10 +85,12 @@ handle_cast(_Cast, S) ->
     {noreply, S}.
 
 
-handle_info({java_connected, Rrd4jPid, Snmp4jPid, NchecksPid, EventdbPid,
-    MailPid, JettyPort}, #state{assert=From}) ->
+handle_info({java_connected, MainMbox, Rrd4jPid, Snmp4jPid, NchecksPid,
+    EventdbPid, MailPid, JettyPort}, #state{assert=From}) ->
     case From of undefined -> ok; _ -> gen_server:reply(From, ok) end,
     application:set_env(supercast, http_port, JettyPort),
+    %% info for mainbox.link
+    MainMbox ! {link, self()},
     {noreply, #state{
         ready = true,
         rrd4j_pid = Rrd4jPid,

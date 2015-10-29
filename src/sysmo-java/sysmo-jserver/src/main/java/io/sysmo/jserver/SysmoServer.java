@@ -22,8 +22,11 @@
 package io.sysmo.jserver;
 
 import com.ericsson.otp.erlang.OtpErlangAtom;
+import com.ericsson.otp.erlang.OtpErlangDecodeException;
+import com.ericsson.otp.erlang.OtpErlangExit;
 import com.ericsson.otp.erlang.OtpErlangInt;
 import com.ericsson.otp.erlang.OtpErlangObject;
+import com.ericsson.otp.erlang.OtpErlangPid;
 import com.ericsson.otp.erlang.OtpErlangTuple;
 import com.ericsson.otp.erlang.OtpMbox;
 import com.ericsson.otp.erlang.OtpNode;
@@ -49,6 +52,18 @@ import java.util.logging.LogManager;
 
 public class SysmoServer {
 
+    private static Server jettyThread   = null;
+    private static Thread nchecksThread = null;
+    private static Thread rrd4jThread   = null;
+    private static Thread snmp4jThread  = null;
+    private static Thread mailThread    = null;
+    private static Thread eventDbThread = null;
+
+    private static OtpMbox mainMbox = null;
+    private static String exitReason = "normal";
+
+    private static Logger logger = LoggerFactory.getLogger(SysmoServer.class);
+
     private static final String selfNodeName = "sysmo-jserver";
 
     public static void main(final String[] args) {
@@ -73,291 +88,273 @@ public class SysmoServer {
             }
         }
 
-        Logger logger = LoggerFactory.getLogger(SysmoServer.class);
-        logger.info("Logger started");
+        SysmoServer.logger.info("Logger started");
 
-
-        Server jettyThread   = null;
-        Thread nchecksThread = null;
-        Thread rrd4jThread   = null;
-        Thread snmp4jThread  = null;
-        Thread mailThread    = null;
-        Thread eventDbThread = null;
-
-        OtpMbox mainMbox = null;
-
-        String exitReason = "normal";
+        SysmoServer.exitReason = "normal";
 
         try {
-            // Extract args
-            String foreignNodeName;
-            String erlangCookie;
+            SysmoServer.startServerLoop(args);
+        } catch (Exception e) {
+            SysmoServer.logger.warn(e.getMessage(),e);
+        }
+
+        // cleanup
+        if (SysmoServer.mainMbox != null) {
+            SysmoServer.mainMbox.exit(SysmoServer.exitReason);
+        }
+            /* Will raise OtpErlangExit exception on other threads and cause them
+             * to terminate.
+             */
+        if (StateServer.isStarted()) {
+            StateServer.stop();
+        }
+
+        if (SysmoServer.jettyThread != null) {
             try {
-                foreignNodeName = args[0];
-                erlangCookie = args[1];
-            } catch (ArrayIndexOutOfBoundsException e) {
-                logger.error(e.getMessage(), e);
-                return;
+                SysmoServer.jettyThread.stop();
+            } catch (Exception e) {
+                SysmoServer.logger.error(e.getMessage(), e);
+            }
+        }
+
+        if (SysmoServer.nchecksThread != null) {
+            try {
+                SysmoServer.nchecksThread.join();
+            } catch (InterruptedException e) {
+                SysmoServer.logger.error(e.getMessage(), e);
+            }
+        }
+
+        if (SysmoServer.rrd4jThread != null) {
+            try {
+                SysmoServer.rrd4jThread.join();
+            } catch (InterruptedException e) {
+                SysmoServer.logger.error(e.getMessage(), e);
+            }
+        }
+
+        if (SysmoServer.snmp4jThread != null) {
+
+            try {
+                SysmoServer.snmp4jThread.join();
+            } catch (InterruptedException e) {
+                SysmoServer.logger.error(e.getMessage(), e);
+            }
+        }
+        if (SysmoServer.mailThread != null) {
+            try {
+                SysmoServer.mailThread.join();
+            } catch (InterruptedException e) {
+                SysmoServer.logger.error(e.getMessage(), e);
             }
 
-            // generate paths
-            FileSystem fs = FileSystems.getDefault();
-            String rubyDir = fs.getPath("ruby").toString();
-            String utilsDir = fs.getPath("utils").toString();
-            String etcDir = fs.getPath("etc").toString();
-            String docrootDir = fs.getPath("docroot").toString();
-            String dataDir = fs.getPath("data").toString();
-
-            String confFile = Paths.get(etcDir, "sysmo.properties").toString();
-
-            InputStream propIn = null;
-            int stateServerPort;
-            String stateServerEmbedded;
-            String stateServerHost;
+        }
+        if (SysmoServer.eventDbThread != null) {
             try {
-                Properties props = new Properties();
-                propIn = new FileInputStream(confFile);
-                props.load(propIn);
-                stateServerPort =
-                        Integer.parseInt(props.getProperty("state_server_port"));
-                stateServerEmbedded = props.getProperty("state_server_embedded", "true");
-                stateServerHost = props.getProperty("state_server_host");
-            } catch (Exception e) {
-                stateServerPort = 0;
-                stateServerEmbedded = "true";
-                stateServerHost = "";
-            } finally {
-                if (propIn != null) {
-                    try {
-                        propIn.close();
-                    } catch (IOException e) {
-                        // ignore
-                    }
+                SysmoServer.eventDbThread.join();
+            } catch (InterruptedException e) {
+                SysmoServer.logger.error(e.getMessage(), e);
+            }
+        }
+        System.exit(0);
+    }
+
+    private static void startServerLoop(String[] args) throws Exception {
+        // Extract args
+        String foreignNodeName;
+        String erlangCookie;
+        try {
+            foreignNodeName = args[0];
+            erlangCookie = args[1];
+        } catch (ArrayIndexOutOfBoundsException e) {
+            SysmoServer.logger.error(e.getMessage(), e);
+            return;
+        }
+
+        // generate paths
+        FileSystem fs = FileSystems.getDefault();
+        String rubyDir = fs.getPath("ruby").toString();
+        String utilsDir = fs.getPath("utils").toString();
+        String etcDir = fs.getPath("etc").toString();
+        String docrootDir = fs.getPath("docroot").toString();
+        String dataDir = fs.getPath("data").toString();
+
+        String confFile = Paths.get(etcDir, "sysmo.properties").toString();
+
+        InputStream propIn = null;
+        int stateServerPort;
+        String stateServerEmbedded;
+        String stateServerHost;
+        try {
+            Properties props = new Properties();
+            propIn = new FileInputStream(confFile);
+            props.load(propIn);
+            stateServerPort =
+                    Integer.parseInt(props.getProperty("state_server_port"));
+            stateServerEmbedded = props.getProperty("state_server_embedded", "true");
+            stateServerHost = props.getProperty("state_server_host");
+        } catch (Exception e) {
+            stateServerPort = 0;
+            stateServerEmbedded = "true";
+            stateServerHost = "";
+        } finally {
+            if (propIn != null) {
+                try {
+                    propIn.close();
+                } catch (IOException e) {
+                    // ignore
                 }
             }
+        }
 
         /*
          * Connect to erlang-main node
          */
-            OtpNode node;
-            try {
-                node = new OtpNode(selfNodeName, erlangCookie);
-                if (!node.ping(foreignNodeName, 2000)) {
-                    throw new TimeoutException("Can t connect to main erlang node.");
-                }
-            } catch (IOException e) {
-                logger.error(e.getMessage(), e);
-                exitReason = "OtpNode_io_exception";
-                return;
-            } catch (TimeoutException e) {
-                logger.error(e.getMessage(), e);
-                exitReason = "OtpNode_timed_out";
-                return;
+        OtpNode node;
+        try {
+            node = new OtpNode(SysmoServer.selfNodeName, erlangCookie);
+            if (!node.ping(foreignNodeName, 2000)) {
+                throw new TimeoutException("Can t connect to main erlang node.");
             }
+        } catch (IOException e) {
+            SysmoServer.exitReason = "OtpNode_io_exception";
+            throw e;
+        } catch (TimeoutException e) {
+            SysmoServer.exitReason = "OtpNode_timed_out";
+            throw e;
+        }
 
-            mainMbox = node.createMbox();
+        SysmoServer.mainMbox = node.createMbox();
 
-            OtpMbox rrd4jMbox = node.createMbox();
-            OtpMbox snmp4jMbox = node.createMbox();
-            OtpMbox nchecksMbox = node.createMbox();
-            OtpMbox derbyMbox = node.createMbox();
-            OtpMbox mailMbox = node.createMbox();
-            OtpMbox stateDummyMbox = node.createMbox();
+        OtpMbox rrd4jMbox = node.createMbox();
+        OtpMbox snmp4jMbox = node.createMbox();
+        OtpMbox nchecksMbox = node.createMbox();
+        OtpMbox derbyMbox = node.createMbox();
+        OtpMbox mailMbox = node.createMbox();
+        OtpMbox stateDummyMbox = node.createMbox();
 
         /*
          * Link to mainMbox.
          * this way exiting mainMbox will raise an OtpExitException on
          * other mailboxes, closing the threads.
          */
-            try {
-                mainMbox.link(rrd4jMbox.self());
-                mainMbox.link(snmp4jMbox.self());
-                mainMbox.link(nchecksMbox.self());
-                mainMbox.link(derbyMbox.self());
-                mainMbox.link(mailMbox.self());
-                mainMbox.link(stateDummyMbox.self());
-            } catch (Exception e) {
-                logger.error("Should not append here!" + e.getMessage(), e);
-                return;
-            }
+        try {
+            SysmoServer.mainMbox.link(rrd4jMbox.self());
+            SysmoServer.mainMbox.link(snmp4jMbox.self());
+            SysmoServer.mainMbox.link(nchecksMbox.self());
+            SysmoServer.mainMbox.link(derbyMbox.self());
+            SysmoServer.mainMbox.link(mailMbox.self());
+            SysmoServer.mainMbox.link(stateDummyMbox.self());
+        } catch (Exception e) {
+            SysmoServer.exitReason = "mbox_init_error";
+            throw e;
+        }
 
         /*
          * Create state server thread if required
          */
-            if (stateServerEmbedded.equals("true")) {
-                try {
-                    // dummy mbox only used to notify mainMbox of a failure
-                    // and stop the JVM.
-                    StateServer.start(dataDir, stateServerPort, stateDummyMbox);
-                } catch (Exception e) {
-                    logger.error(e.getMessage(), e);
-                    exitReason = "state_server_init_error";
-                    return;
-                }
+        if (stateServerEmbedded.equals("true")) {
+            try {
+                // dummy mbox only used to notify mainMbox of a failure
+                // and stop the JVM.
+                StateServer.start(dataDir, stateServerPort, stateDummyMbox);
+            } catch (Exception e) {
+                SysmoServer.exitReason = "state_server_init_error";
+                throw e;
             }
+        }
 
         /*
          * Create derby thread
          */
-            EventDb eventDb;
-            try {
-                eventDb = EventDb.getInstance(derbyMbox, foreignNodeName, dataDir);
-            } catch (Exception e) {
-                logger.error(e.getMessage(), e);
-                exitReason = "derby_init_error";
-                return;
-            }
-            eventDbThread = new Thread(eventDb);
-            eventDbThread.start();
+        EventDb eventDb;
+        try {
+            eventDb = EventDb.getInstance(derbyMbox, foreignNodeName, dataDir);
+        } catch (Exception e) {
+            SysmoServer.exitReason = "derby_init_error";
+            throw e;
+        }
+        SysmoServer.eventDbThread = new Thread(eventDb);
+        SysmoServer.eventDbThread.start();
 
         /*
          * Create NChecks thread
          */
-            NChecksErlang nchecks;
-            try {
+        NChecksErlang nchecks;
+        try {
 
-                InetAddress stateServerAddress;
-                if (stateServerEmbedded.equals("true")) {
-                    stateServerAddress = InetAddress.getByName(null);
-                } else {
-                    stateServerAddress = InetAddress.getByName(stateServerHost);
-                }
-
-                nchecks = NChecksErlang.getInstance(nchecksMbox, foreignNodeName,
-                        rubyDir, utilsDir, etcDir,
-                        stateServerAddress, stateServerPort);
-            } catch (Exception e) {
-                logger.error(e.getMessage(), e);
-                exitReason = ("nchecks_init_error");
-                return;
+            InetAddress stateServerAddress;
+            if (stateServerEmbedded.equals("true")) {
+                stateServerAddress = InetAddress.getByName(null);
+            } else {
+                stateServerAddress = InetAddress.getByName(stateServerHost);
             }
-            nchecksThread = new Thread(nchecks);
-            nchecksThread.start();
+
+            nchecks = NChecksErlang.getInstance(nchecksMbox, foreignNodeName,
+                    rubyDir, utilsDir, etcDir,
+                    stateServerAddress, stateServerPort);
+        } catch (Exception e) {
+            SysmoServer.exitReason = ("nchecks_init_error");
+            throw e;
+        }
+        SysmoServer.nchecksThread = new Thread(nchecks);
+        SysmoServer.nchecksThread.start();
 
         /*
          * Create rrd4j thread
          */
-            RrdLogger rrd4j = RrdLogger.getInstance(rrd4jMbox, foreignNodeName);
-            rrd4jThread = new Thread(rrd4j);
-            rrd4jThread.start();
+        RrdLogger rrd4j = RrdLogger.getInstance(rrd4jMbox, foreignNodeName);
+        SysmoServer.rrd4jThread = new Thread(rrd4j);
+        SysmoServer.rrd4jThread.start();
 
         /*
          * Create mail thread
          */
-            MailSender mail = MailSender.getInstance(mailMbox, etcDir);
-            mailThread = new Thread(mail);
-            mailThread.start();
+        MailSender mail = MailSender.getInstance(mailMbox, etcDir);
+        SysmoServer.mailThread = new Thread(mail);
+        SysmoServer.mailThread.start();
 
         /*
          * Create snmp4j thread
          */
-            SnmpManager snmp4j = SnmpManager.getInstance(snmp4jMbox,
-                    foreignNodeName, etcDir);
-            snmp4jThread = new Thread(snmp4j);
-            snmp4jThread.start();
+        SnmpManager snmp4j = SnmpManager.getInstance(snmp4jMbox,
+                foreignNodeName, etcDir);
+        SysmoServer.snmp4jThread = new Thread(snmp4j);
+        SysmoServer.snmp4jThread.start();
 
         /*
          * Create simple http file server
          */
-            jettyThread = JettyServer.startServer(docrootDir, etcDir);
-            int jettyPort = JettyServer.getPort();
+        SysmoServer.jettyThread = JettyServer.startServer(docrootDir, etcDir);
+        int jettyPort = JettyServer.getPort();
 
 
         /*
          * Send acknowledgement to the "sysmo" erlang process
          */
-            OtpErlangObject[] ackObj = new OtpErlangObject[7];
-            ackObj[0] = new OtpErlangAtom("java_connected");
-            ackObj[1] = rrd4jMbox.self();
-            ackObj[2] = snmp4jMbox.self();
-            ackObj[3] = nchecksMbox.self();
-            ackObj[4] = derbyMbox.self();
-            ackObj[5] = mailMbox.self();
-            ackObj[6] = new OtpErlangInt(jettyPort);
-            OtpErlangTuple ackTuple = new OtpErlangTuple(ackObj);
-            mainMbox.send("j_server", foreignNodeName, ackTuple);
+        OtpErlangObject[] ackObj = new OtpErlangObject[8];
+        ackObj[0] = new OtpErlangAtom("java_connected");
+        ackObj[1] = SysmoServer.mainMbox.self();
+        ackObj[2] = rrd4jMbox.self();
+        ackObj[3] = snmp4jMbox.self();
+        ackObj[4] = nchecksMbox.self();
+        ackObj[5] = derbyMbox.self();
+        ackObj[6] = mailMbox.self();
+        ackObj[7] = new OtpErlangInt(jettyPort);
+        OtpErlangTuple ackTuple = new OtpErlangTuple(ackObj);
+        SysmoServer.mainMbox.send("j_server", foreignNodeName, ackTuple);
 
-            int pingTimeoutMs = 5000; // 5 seconds
-            boolean alive;
-
-            while (true) try {
-                alive = node.ping(foreignNodeName, pingTimeoutMs);
-
-                if (!alive) {
-                    throw new TimeoutException("Erlang node as timed out");
-                }
-
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                logger.error(e.getMessage(), e);
-                exitReason = "OtpNode_interrupted";
-                return;
-            } catch (TimeoutException e) {
-                logger.error(e.getMessage(), e);
-                exitReason = "OtpNode_timeout";
-                return;
-            }
-
-        } finally {
-            if (mainMbox != null) {
-                mainMbox.exit(exitReason);
-            }
-            /* Will raise OtpErlangExit exception on other threads and cause them
-             * to terminate.
-             */
-            if (StateServer.isStarted()) {
-                StateServer.stop();
-            }
-
-            if (jettyThread != null) {
-                try {
-                    jettyThread.stop();
-                } catch (Exception e) {
-                    logger.error(e.getMessage(), e);
-                }
-            }
-
-            if (nchecksThread != null) {
-                try {
-                    nchecksThread.join();
-                } catch (InterruptedException e) {
-                    logger.error(e.getMessage(), e);
-                }
-            }
-
-            if (rrd4jThread != null) {
-                try {
-                    rrd4jThread.join();
-                } catch (InterruptedException e) {
-                    logger.error(e.getMessage(), e);
-                }
-            }
-
-            if (snmp4jThread != null) {
-                try {
-                    snmp4jThread.join();
-                } catch (InterruptedException e) {
-                    logger.error(e.getMessage(), e);
-                }
-            }
-
-            if (mailThread != null) {
-                try {
-                    mailThread.join();
-                } catch (InterruptedException e) {
-                    logger.error(e.getMessage(), e);
-                }
-            }
-
-            if (eventDbThread != null) {
-
-                try {
-                    eventDbThread.join();
-                } catch (InterruptedException e) {
-                    logger.error(e.getMessage(), e);
-                }
-            }
-            System.exit(0);
+        OtpErlangTuple tuple = (OtpErlangTuple) SysmoServer.mainMbox.receive();
+        OtpErlangPid pid = (OtpErlangPid) tuple.elementAt(1);
+        SysmoServer.mainMbox.link(pid);
+        try {
+            SysmoServer.mainMbox.receive(); // will raise exception on foreign pid close
+        } catch (OtpErlangExit e) {
+            SysmoServer.exitReason = "shutdown";
+            throw e;
+        } catch (OtpErlangDecodeException e) {
+            SysmoServer.exitReason = "decode_exception";
+            throw e;
         }
     }
 }
