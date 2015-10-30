@@ -6,7 +6,7 @@
 \#*\#
 *~
 
-# supercast repository
+# ignore supercast repository
 /src/sysmo/deps/supercast
 
 # erlang crashs/builds
