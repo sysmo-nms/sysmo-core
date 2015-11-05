@@ -135,6 +135,7 @@ code_change(_O, S, _E) -> {ok, S}.
 
 
 get_ts() ->
+    % TODO erlang:system_time(seconds).
     {Meg,Sec,_} = erlang:now(),
     1000000 * Meg + Sec.
 
