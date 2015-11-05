@@ -38,8 +38,21 @@ GRADLE    = File.join(JAVA_DIR,  "gradlew")
 #
 # tasks
 #
-task :default => :release
+task :default => :release_archive
 task :rel => :debug_release
+
+desc "Build release archive"
+task :release_archive do
+  cd ROOT
+  version = ""
+  File.open('sysmo/releases/start_erl.data') { |f|
+    version = f.readline().split()[1]
+  }
+  complete_name = "sysmo-core-#{version}"
+  FileUtils.mv("sysmo", complete_name)
+  sh "tar czvf #{complete_name}.tar.gz #{complete_name}"
+  FileUtils.rm_rf(complete_name)
+end
 
 desc "Build all"
 task :build => [:java, :erl, :pping]

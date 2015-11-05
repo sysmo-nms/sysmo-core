@@ -35,3 +35,6 @@ build/
 # intellij
 *.iml
 .idea
+
+# obs release
+/sysmo-core-*.tar.gz
