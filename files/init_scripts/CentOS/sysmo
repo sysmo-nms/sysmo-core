@@ -13,31 +13,25 @@
 # Source function library.
 . /etc/init.d/functions
 
-
-# EDITME
-# If the sysmo startup script is not in the $PATH, set this variable
-# to an absolute value. Exemple:
-# SYSMO_SCRIPT="/opt/bin/sysmo")
-SYSMO_SCRIPT="sysmo"
+STARTUP_SCRIPT="/usr/lib64/sysmo-nms/bin/sysmo"
 
 start() {
   echo -n "Starting sysmo: "
-  return `$SYSMO_SCRIPT start`
+  return `$STARTUP_SCRIPT start`
 }
 
 stop() {
   echo -n "Shutting down sysmo: "
-  return `$SYSMO_SCRIPT stop`
+  return `$STARTUP_SCRIPT stop`
 }
 
 status() {
-  return `$SYSMO_SCRIPT eval`
+  return `$STARTUP_SCRIPT eval`
 }
 
 restart_all() {
-  return `$SYSMO_SCRIPT reboot`
+  return `$STARTUP_SCRIPT reboot`
 }
-
 
 case "$1" in
   start)

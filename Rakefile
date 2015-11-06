@@ -50,6 +50,7 @@ task :release_archive do
   }
   complete_name = "sysmo-core-#{version}"
   FileUtils.mv("sysmo", complete_name)
+  FileUtils.cp("files/init_scripts/CentOS/sysmo", complete_name)
   sh "tar czvf #{complete_name}.tar.gz #{complete_name}"
   FileUtils.rm_rf(complete_name)
 end
