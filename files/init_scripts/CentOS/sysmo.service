@@ -1,0 +1,13 @@
+[Unit]
+Description=Sysmo Core server daemon
+After=network.target
+
+[Service]
+ExecStart=/usr/lib64/sysmo-nms/bin/sysmo 
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=process
+Restart=on-failure
+RestartSec=42s
+
+[Install]
+WantedBy=multi-user.target
