@@ -104,6 +104,8 @@ handle_info(_Info, S) ->
     ?LOG_WARNING("Received unknow info", _Info),
     {noreply, S}.
 
-terminate(_, _) -> ok.
+terminate(_Reason, _State) -> ok.
+    ?LOG_INFO("Received terminate", {_Reason, _State}),
+    ok.
 
 code_change(_, S, _) -> {ok, S}.
