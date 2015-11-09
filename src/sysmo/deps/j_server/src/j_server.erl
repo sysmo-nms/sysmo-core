@@ -16,8 +16,6 @@
 -record(state, {rrd4j_pid, snmp4j_pid, nchecks_pid,
     eventdb_pid, mail_pid, jetty_port, assert, ready=false}).
 
--define(JAVA_START_TIMEOUT, 25000).
-
 start_link() ->
     Result = gen_server:start_link({local, ?MODULE}, ?MODULE, [], []),
     % Wait for java side mailbox to be ready and send the "java_connected"
@@ -29,7 +27,7 @@ get_pid(For) ->
     gen_server:call(?MODULE, {get_pid, For}).
 
 assert_init() ->
-    gen_server:call(?MODULE, assert_init).
+    gen_server:call(?MODULE, assert_init, infinity).
 
 
 % gen_server
