@@ -1,15 +1,17 @@
 [Unit]
 Description=Sysmo Core server daemon
-After=network.target
+After=network.target remote-fs.target nss-lookup.target
 
 [Service]
 ExecStart=/usr/lib64/sysmo-nms/bin/sysmo start
 ExecReload=/usr/lib64/sysmo-nms/bin/sysmo reboot
 ExecStop=/usr/lib64/sysmo-nms/bin/sysmo stop
 User=sysmo-nms
-KillMode=process
-Restart=on-failure
-RestartSec=42s
+
+# Type=notify
+# TimeoutStopSec=42s
+# TimeoutRestartSec=42s
+# KillSignal=SIGCONT
 
 [Install]
 WantedBy=multi-user.target

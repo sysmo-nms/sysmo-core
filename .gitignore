@@ -38,3 +38,4 @@ build/
 
 # obs release
 /sysmo-core-*.tar.gz
+/sysmo-core-*

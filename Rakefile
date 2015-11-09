@@ -49,10 +49,11 @@ task :release_archive => :release do
     version = f.readline().split()[1]
   }
   complete_name = "sysmo-core-#{version}"
+  FileUtils.rm_rf(complete_name) if Dir.exist?(complete_name)
+  File.delete("#{complete_name}.tar.gz") if File.exist?("#{complete_name}.tar.gz")
   FileUtils.mv("sysmo", complete_name)
-  FileUtils.cp("files/init_scripts/CentOS/sysmo", complete_name)
+  FileUtils.cp("files/sysmo.service", complete_name)
   sh "tar czvf #{complete_name}.tar.gz #{complete_name}"
-  FileUtils.rm_rf(complete_name)
 end
 
 desc "Build all"
