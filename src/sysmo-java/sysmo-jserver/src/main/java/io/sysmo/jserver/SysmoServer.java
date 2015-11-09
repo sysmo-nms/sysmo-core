@@ -44,8 +44,10 @@ import java.io.InputStream;
 import java.net.InetAddress;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Properties;
+import java.util.Scanner;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.LogManager;
 
@@ -159,10 +161,24 @@ public class SysmoServer {
     private static void startServerLoop(String[] args) throws Exception {
         // Extract args
         String foreignNodeName;
-        String erlangCookie;
+        String currentPath = System.getProperty("user.dir");
+        String erlangCookie = null;
+        Path vmArgsFile = Paths.get(currentPath, "etc", "vm.args");
+        Scanner scanner = new Scanner(vmArgsFile);
+        while (scanner.hasNextLine()) {
+            String line = scanner.nextLine();
+            if (line.startsWith("-setcookie")) {
+                erlangCookie = line.split(" ")[1];
+                break;
+            }
+        }
+
+        if (erlangCookie == null) {
+            throw new Exception("No cookie found in vm.args");
+        }
+
         try {
             foreignNodeName = args[0];
-            erlangCookie = args[1];
         } catch (ArrayIndexOutOfBoundsException e) {
             SysmoServer.logger.error(e.getMessage(), e);
             throw e;

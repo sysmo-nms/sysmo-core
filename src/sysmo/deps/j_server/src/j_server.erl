@@ -48,13 +48,12 @@ init([]) ->
 
     % build arguments
     Node     = erlang:atom_to_list(erlang:node()),
-    Cookie   = erlang:atom_to_list(erlang:get_cookie()),
 
     % the java app will be started from WorkDir (redundant?)
     WorkDir  = filename:absname(""),
 
     erlang:open_port({spawn_executable, Cmd},
-        [{cd, WorkDir}, {args,[Node, Cookie]}, exit_status, stderr_to_stdout]),
+        [{cd, WorkDir}, {args,[Node]}, exit_status, stderr_to_stdout]),
 
     {ok, #state{}}.
 
