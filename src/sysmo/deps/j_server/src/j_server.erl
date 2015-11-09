@@ -29,7 +29,7 @@ get_pid(For) ->
     gen_server:call(?MODULE, {get_pid, For}).
 
 assert_init() ->
-    gen_server:call(?MODULE, assert_init, ?JAVA_START_TIMEOUT).
+    gen_server:call(?MODULE, assert_init).
 
 
 % gen_server
