@@ -32,6 +32,7 @@ assert_init() ->
 
 % gen_server
 init([]) ->
+    % TODO maybe trap exit
     % build relative java server script path
     ?LOG_INFO("Starting j_server"),
     Prefix = case os:type() of
@@ -106,6 +107,7 @@ handle_info(_Info, S) ->
     {noreply, S}.
 
 terminate(_Reason, #state{main_pid=MainMbox}) ->
+    % TODO maybe trap exit
     ?LOG_INFO("Received terminate", _Reason),
     exit(MainMbox, "terminate"),
     %% java have 5 seconds to terminate
