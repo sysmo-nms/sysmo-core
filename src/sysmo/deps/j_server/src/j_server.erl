@@ -13,7 +13,7 @@
 % other
 -export([get_pid/1]).
 
--record(state, {rrd4j_pid, snmp4j_pid, nchecks_pid,
+-record(state, {main_pid, rrd4j_pid, snmp4j_pid, nchecks_pid,
     eventdb_pid, mail_pid, jetty_port, assert, ready=false}).
 
 start_link() ->
@@ -89,6 +89,7 @@ handle_info({java_connected, MainMbox, Rrd4jPid, Snmp4jPid, NchecksPid,
     erlang:link(MainMbox),
     {noreply, #state{
         ready = true,
+        main_pid = MainMbox,
         rrd4j_pid = Rrd4jPid,
         snmp4j_pid = Snmp4jPid,
         nchecks_pid = NchecksPid,
@@ -104,8 +105,11 @@ handle_info(_Info, S) ->
     ?LOG_WARNING("Received unknow info", _Info),
     {noreply, S}.
 
-terminate(_Reason, _State) -> ok.
-    ?LOG_INFO("Received terminate", {_Reason, _State}),
+terminate(_Reason, #state{main_pid=MainMbox}) ->
+    ?LOG_INFO("Received terminate", _Reason),
+    exit(MainMbox, "terminate"),
+    %% java have 5 seconds to terminate
+    timer:sleep(5000),
     ok.
 
 code_change(_, S, _) -> {ok, S}.
