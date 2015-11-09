@@ -42,7 +42,7 @@ task :default => :release_archive
 task :rel => :debug_release
 
 desc "Build release archive"
-task :release_archive do
+task :release_archive => :release do
   cd ROOT
   version = ""
   File.open('sysmo/releases/start_erl.data') { |f|
@@ -89,6 +89,7 @@ task :clean do
   cd ERLANG_DIR; sh "#{REBAR} -r clean"
   cd GO_DIR;     sh "go clean pping.go"
   cd ROOT;       sh "#{REBAR} clean"
+  FileUtils.rm_f("sysmo-core-*.tar.gz")
   FileUtils.rm_rf("sysmo-worker")
 end
 

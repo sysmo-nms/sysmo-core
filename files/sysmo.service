@@ -3,8 +3,10 @@ Description=Sysmo Core server daemon
 After=network.target
 
 [Service]
-ExecStart=/usr/lib64/sysmo-nms/bin/sysmo 
-ExecReload=/bin/kill -HUP $MAINPID
+ExecStart=/usr/lib64/sysmo-nms/bin/sysmo start
+ExecReload=/usr/lib64/sysmo-nms/bin/sysmo reboot
+ExecStop=/usr/lib64/sysmo-nms/bin/sysmo stop
+User=sysmo-nms
 KillMode=process
 Restart=on-failure
 RestartSec=42s
