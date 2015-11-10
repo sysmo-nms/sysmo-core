@@ -17,7 +17,7 @@ init([]) ->
                     j_server,
                     {j_server, start_link, []},
                     permanent,
-                    2000,
+                    15000,
                     worker,
                     [j_server]
                 },

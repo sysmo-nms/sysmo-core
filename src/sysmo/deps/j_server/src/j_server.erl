@@ -32,8 +32,8 @@ assert_init() ->
 
 % gen_server
 init([]) ->
-    % TODO maybe trap exit
     % build relative java server script path
+    process_flag(trap_exit, true),
     ?LOG_INFO("Starting j_server"),
     Prefix = case os:type() of
                  {win32,_} -> ".bat";
@@ -88,6 +88,7 @@ handle_info({java_connected, MainMbox, Rrd4jPid, Snmp4jPid, NchecksPid,
     case From of undefined -> ok; _ -> gen_server:reply(From, ok) end,
     application:set_env(supercast, http_port, JettyPort),
     erlang:link(MainMbox),
+    ?LOG_INFO("main mbox pid is: ", MainMbox),
     {noreply, #state{
         ready = true,
         main_pid = MainMbox,
@@ -107,11 +108,18 @@ handle_info(_Info, S) ->
     {noreply, S}.
 
 terminate(_Reason, #state{main_pid=MainMbox}) ->
-    % TODO maybe trap exit
     ?LOG_INFO("Received terminate", _Reason),
     exit(MainMbox, "terminate"),
-    %% java have 5 seconds to terminate
-    timer:sleep(5000),
+    wait_port_close(),
     ok.
 
 code_change(_, S, _) -> {ok, S}.
+
+wait_port_close() ->
+    receive
+        {_, {exit_status, _Status}} ->
+            ?LOG_INFO("Port closed with exit status: ", _Status),
+            ok;
+        _ ->
+            wait_port_close()
+    end.
