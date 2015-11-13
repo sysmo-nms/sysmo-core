@@ -1,0 +1,5 @@
+language: erlang
+script:
+  - cd src/sysmo
+  - ./rebar get-deps
+  - ./rebar compile
