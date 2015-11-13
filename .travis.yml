@@ -1,4 +1,5 @@
 language: erlang
+sudo: false
 script:
   - cd src/sysmo
   - rebar get-deps
