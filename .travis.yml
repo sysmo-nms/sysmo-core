@@ -3,4 +3,4 @@ sudo: false
 script:
   - cd src/sysmo
   - rebar get-deps
-  - rebar
+  - rebar -r compile
