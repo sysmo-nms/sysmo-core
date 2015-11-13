@@ -1,4 +1,3 @@
-[![Build Status](https://travis-ci.org/sysmo-nms/sysmo-core.svg?branch=master)](https://travis-ci.org/sysmo-nms/sysmo-core)
 ### sysmo-core
 
 This is the main repository of sysmo-core, server part of
