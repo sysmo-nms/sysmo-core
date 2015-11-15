@@ -1,0 +1,9 @@
+/ebin
+/doc
+
+#intellij
+*.iml
+/.idea
+
+#rebar
+/.rebar

@@ -6,9 +6,6 @@
 \#*\#
 *~
 
-# ignore supercast repository
-/deps/supercast
-
 # erlang crashs/builds
 *.dump
 .rebar/
