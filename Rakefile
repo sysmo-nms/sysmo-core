@@ -24,9 +24,10 @@ require 'pathname'
 # set dirs
 #
 ROOT       = Dir.pwd
-ERLANG_DIR = File.join(ROOT, "src", "sysmo")
-JAVA_DIR   = File.join(ROOT, "src", "sysmo-java")
-GO_DIR     = File.join(ROOT, "src", "pping")
+ERLANG_DIR = ROOT
+ERLANG_REL = File.join(ROOT, "rel")
+JAVA_DIR   = File.join(ROOT, "deps", "j_server", "priv", "jserver")
+GO_DIR     = File.join(ROOT, "deps", "j_server", "priv", "pping")
 
 #
 # set wrappers
@@ -43,7 +44,7 @@ task :rel => :debug_release
 
 desc "Build release archive"
 task :release_archive => :release do
-  cd ROOT
+  cd ERLANG_REL
   version = ""
   File.open('sysmo/releases/start_erl.data') { |f|
     version = f.readline().split()[1]
@@ -88,8 +89,9 @@ desc "Clean all"
 task :clean do
   cd JAVA_DIR;   sh "#{GRADLE} clean"
   cd ERLANG_DIR; sh "#{REBAR} -r clean"
+  cd ERLANG_REL; sh "#{REBAR} clean"
   cd GO_DIR;     sh "go clean pping.go"
-  cd ROOT;       sh "#{REBAR} clean"
+  cd ERLANG_REL
   FileUtils.rm_f("sysmo-core-*.tar.gz")
   FileUtils.rm_rf("sysmo-worker")
 end
@@ -113,8 +115,9 @@ end
 
 desc "Generate a release in directory ./sysmo"
 task :release => [:build] do
+  cd ERLANG_REL
   FileUtils.rm_rf("sysmo/java_apps")
-  cd ROOT; sh "#{REBAR} generate"
+  sh "#{REBAR} generate"
   install_pping_command()
   generate_all_checks()
   puts "Release ready!"
@@ -122,8 +125,9 @@ end
 
 desc "Generate a debug release in directory ./sysmo"
 task :debug_release => [:debug_build] do
+  cd ERLANG_REL
   FileUtils.rm_rf("sysmo/java_apps")
-  cd ROOT; sh "#{REBAR} generate"
+  sh "#{REBAR} generate"
   install_pping_command()
   generate_all_checks()
   puts "Debug release ready!"
@@ -131,21 +135,22 @@ end
 
 
 task :release_worker => [:java, :pping] do
-  cd ROOT
-  worker_dir = File.join(JAVA_DIR, "sysmo-worker/build/install/sysmo-worker")
-  pping_exe = File.join(GO_DIR, "pping")
-  ruby_dir = File.join(JAVA_DIR, "shared/nchecks/ruby")
+  cd ERLANG_REL
   FileUtils.rm_rf("sysmo-worker")
+  worker_dir = File.join(JAVA_DIR, "sysmo-worker/build/install/sysmo-worker")
   FileUtils.mv(worker_dir, "sysmo-worker")
+  pping_exe = File.join(GO_DIR, "pping")
   FileUtils.mkdir("sysmo-worker/utils")
   FileUtils.cp(pping_exe, "sysmo-worker/utils/")
+  ruby_dir = File.join(JAVA_DIR, "shared/nchecks/ruby")
   FileUtils.cp_r(ruby_dir, "sysmo-worker/ruby")
   FileUtils.mkdir("sysmo-worker/etc")
 end
 
 desc "Run the release in foreground"
 task :run do
-  cd ROOT; sh "./sysmo/bin/sysmo console"
+  cd ERLANG_REL
+  sh "./sysmo/bin/sysmo console"
   sh "epmd -kill"
 end
 
@@ -153,7 +158,8 @@ end
 # pping special case
 #
 def install_pping_command()
-  dst      = File.join(ROOT, "sysmo", "utils")
+  cd ROOT
+  dst      = File.join(ERLANG_REL, "sysmo", "utils")
   win_src  = File.join(GO_DIR, "pping.exe")
   unix_src = File.join(GO_DIR, "pping")
   if File.exist?(win_src)
@@ -170,10 +176,11 @@ end
 # generate AllChecks.xml
 #
 def generate_all_checks()
+  cd ROOT
   puts "Building AllChecks.xml"
-  FileUtils.rm_f("sysmo/docroot/nchecks/AllChecks.xml")
-  checks = Dir.glob("sysmo/docroot/nchecks/Check*.xml")
-  file   = File.new("sysmo/docroot/nchecks/AllChecks.xml", "w:UTF-8")
+  FileUtils.rm_f("rel/sysmo/docroot/nchecks/AllChecks.xml")
+  checks = Dir.glob("rel/sysmo/docroot/nchecks/Check*.xml")
+  file   = File.new("rel/sysmo/docroot/nchecks/AllChecks.xml", "w:UTF-8")
   xml    = Builder::XmlMarkup.new(:target => file, :indent => 4)
   xml.instruct! :xml, :version=>"1.0", :encoding => "UTF-8"
   xml.tag!('NChecks', {"xmlns" => "http://schemas.sysmo.io/2015/NChecks"}) do

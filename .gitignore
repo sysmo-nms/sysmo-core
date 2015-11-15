@@ -7,7 +7,7 @@
 *~
 
 # ignore supercast repository
-/src/sysmo/deps/supercast
+/deps/supercast
 
 # erlang crashs/builds
 *.dump
@@ -20,11 +20,11 @@ doc/
 build/
 
 # go pping builds
-/src/pping/pping
-/src/pping/pping.exe
+/deps/j_server/priv/pping/pping
+/deps/j_server/priv/pping/pping.exe
 
 # sysmo release
-/sysmo
+/rel/sysmo
 
 # sysmo-worker release
 /sysmo-worker
@@ -37,5 +37,6 @@ build/
 .idea
 
 # obs release
-/sysmo-core-*.tar.gz
-/sysmo-core-*
+/rel/sysmo-core-*.tar.gz
+/rel/sysmo-core
+/rel/sysmo-worker
