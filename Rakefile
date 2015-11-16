@@ -26,8 +26,8 @@ require 'pathname'
 ROOT       = Dir.pwd
 ERLANG_DIR = ROOT
 ERLANG_REL = File.join(ROOT, "rel")
-JAVA_DIR   = File.join(ROOT, "deps", "j_server", "priv", "jserver")
-GO_DIR     = File.join(ROOT, "deps", "j_server", "priv", "pping")
+JAVA_DIR   = File.join(ROOT, "lib", "j_server", "priv", "jserver")
+GO_DIR     = File.join(ROOT, "lib", "j_server", "priv", "pping")
 
 #
 # set wrappers
