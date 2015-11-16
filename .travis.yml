@@ -1,9 +1,9 @@
 # will certainly not work as is
 language: erlang
+
 otp_release:
   - 17.1
 
 sudo: false
-script:
-  - gem install builder
-  - rake release
+
+script: "rake release"
