@@ -1,6 +1,11 @@
+# will certainly not work as is
 language: erlang
+language: ruby
+language: java
 sudo: false
 script:
+  - gem install builder
   - rebar -r compile
   - rebar -r eunit
-  - cd rel; rebar generate
+  - rake clean
+  - rake release
