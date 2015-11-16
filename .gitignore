@@ -9,6 +9,7 @@
 # erlang crashs/builds
 *.dump
 .rebar/
+.eunit/
 ebin/
 doc/
 
