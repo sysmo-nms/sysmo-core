@@ -6,4 +6,6 @@ otp_release:
 
 sudo: false
 
+install: "gem install builder"
+
 script: "rake release"
