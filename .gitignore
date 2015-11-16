@@ -18,8 +18,8 @@ doc/
 build/
 
 # go pping builds
-/deps/j_server/priv/pping/pping
-/deps/j_server/priv/pping/pping.exe
+/lib/j_server/priv/pping/pping
+/lib/j_server/priv/pping/pping.exe
 
 # sysmo release
 /rel/sysmo
