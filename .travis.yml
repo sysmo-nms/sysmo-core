@@ -3,3 +3,4 @@ sudo: false
 script:
   - rebar -r compile
   - rebar -r eunit
+  - cd rel; rebar generate
