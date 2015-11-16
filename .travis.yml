@@ -1,7 +1,5 @@
 # will certainly not work as is
 language: erlang
-language: ruby
-language: java
 sudo: false
 script:
   - gem install builder
