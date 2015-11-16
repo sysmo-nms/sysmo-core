@@ -6,7 +6,4 @@ otp_release:
 sudo: false
 script:
   - gem install builder
-  - rebar -r compile
-  - rebar -r eunit
-  - rake clean
   - rake release
