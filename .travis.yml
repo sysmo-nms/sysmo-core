@@ -1,4 +1,3 @@
-# will certainly not work as is
 language: erlang
 
 otp_release:
