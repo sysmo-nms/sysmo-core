@@ -14,7 +14,7 @@
 -export([get_pid/1]).
 
 -record(state, {main_pid, rrd4j_pid, snmp4j_pid, nchecks_pid,
-    eventdb_pid, mail_pid, jetty_port, assert, ready=false}).
+    eventdb_pid, mail_pid, assert, ready=false}).
 
 start_link() ->
     Result = gen_server:start_link({local, ?MODULE}, ?MODULE, [], []),
@@ -70,9 +70,6 @@ handle_call({get_pid, nchecks}, _From, #state{nchecks_pid=Pid} = S) ->
 handle_call({get_pid, eventdb}, _From, #state{eventdb_pid=Pid} = S) ->
     {reply, Pid, S};
 
-handle_call(get_http_port, _From, #state{jetty_port=Port} = S) ->
-    {reply, Port, S};
-
 handle_call(_Call, _, S) ->
     ?LOG_WARNING("Received unknow call", _Call),
     {noreply, S}.
@@ -84,9 +81,8 @@ handle_cast(_Cast, S) ->
 
 
 handle_info({java_connected, MainMbox, Rrd4jPid, Snmp4jPid, NchecksPid,
-    EventdbPid, MailPid, JettyPort}, #state{assert=From}) ->
+    EventdbPid, MailPid}, #state{assert=From}) ->
     case From of undefined -> ok; _ -> gen_server:reply(From, ok) end,
-    application:set_env(supercast, http_port, JettyPort),
     erlang:link(MainMbox),
     ?LOG_INFO("main mbox pid is: ", MainMbox),
     {noreply, #state{
@@ -96,8 +92,7 @@ handle_info({java_connected, MainMbox, Rrd4jPid, Snmp4jPid, NchecksPid,
         snmp4j_pid = Snmp4jPid,
         nchecks_pid = NchecksPid,
         eventdb_pid = EventdbPid,
-        mail_pid = MailPid,
-        jetty_port = JettyPort}};
+        mail_pid = MailPid}};
 
 handle_info({_Port, {exit_status, Status}}, S) ->
     ?LOG_ERROR("java node has crashed", {status, Status, state, S}),

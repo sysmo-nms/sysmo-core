@@ -336,16 +336,9 @@ public class SysmoServer {
         SysmoServer.snmp4jThread.start();
 
         /*
-         * Create simple http file server
-         */
-        SysmoServer.jettyThread = JettyServer.startServer(docrootDir, etcDir);
-        int jettyPort = JettyServer.getPort();
-
-
-        /*
          * Send acknowledgement to the "sysmo" erlang process
          */
-        OtpErlangObject[] ackObj = new OtpErlangObject[8];
+        OtpErlangObject[] ackObj = new OtpErlangObject[7];
         ackObj[0] = new OtpErlangAtom("java_connected");
         ackObj[1] = SysmoServer.mainMbox.self(); // for erlang:link/1
         ackObj[2] = rrd4jMbox.self();
@@ -353,7 +346,6 @@ public class SysmoServer {
         ackObj[4] = nchecksMbox.self();
         ackObj[5] = derbyMbox.self();
         ackObj[6] = mailMbox.self();
-        ackObj[7] = new OtpErlangInt(jettyPort);
         OtpErlangTuple ackTuple = new OtpErlangTuple(ackObj);
         SysmoServer.mainMbox.send("j_server", foreignNodeName, ackTuple);
 

@@ -70,12 +70,12 @@ end
 
 desc "Build erlang"
 task :erl do
-  cd ERLANG_DIR; sh "#{REBAR} -r compile"
+  cd ERLANG_DIR; sh "#{REBAR} prepare-deps"
 end
 
 desc "Debug build for Erlang"
 task :debug_erl do
-  cd ERLANG_DIR; sh "#{REBAR} -D debug -r compile"
+  cd ERLANG_DIR; sh "#{REBAR} -D debug prepare-deps"
 end
 
 desc "Build java"
