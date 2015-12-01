@@ -26,6 +26,7 @@ require 'pathname'
 ROOT       = Dir.pwd
 ERLANG_DIR = ROOT
 ERLANG_REL = File.join(ROOT, "rel")
+ERLANG_LIB = File.join(ROOT, "lib")
 JAVA_DIR   = File.join(ROOT, "lib", "j_server", "priv", "jserver")
 GO_DIR     = File.join(ROOT, "lib", "j_server", "priv", "pping")
 
@@ -83,7 +84,7 @@ task :java do
   cd JAVA_DIR;   sh "#{GRADLE} installDist"
 end
 
-desc "Clean all"
+desc "Clean"
 task :clean do
   cd JAVA_DIR;   sh "#{GRADLE} clean"
   cd ERLANG_DIR; sh "#{REBAR} -r clean"
@@ -92,6 +93,19 @@ task :clean do
   cd ERLANG_REL
   FileUtils.rm_f("sysmo-core-*.tar.gz")
   FileUtils.rm_rf("sysmo-worker")
+end
+
+desc "Clean all"
+task :clean_all => [:clean] do
+  keep = ["j_server", "monitor", "common_hrl"]
+  cd ERLANG_LIB
+  deleteThis = Dir.glob('*').select{|f| 
+    (File.directory? f) && (!keep.include? f)
+  }
+  deleteThis.each{|d|
+    puts "Deleting #{ERLANG_LIB}/#{d}"
+    FileUtils.rm_rf(d)
+  }
 end
 
 desc "Test erlang and java apps"
