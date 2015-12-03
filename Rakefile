@@ -97,15 +97,7 @@ end
 
 desc "Clean all"
 task :clean_all => [:clean] do
-  keep = ["j_server", "monitor", "common_hrl"]
-  cd ERLANG_LIB
-  deleteThis = Dir.glob('*').select{|f| 
-    (File.directory? f) && (!keep.include? f)
-  }
-  deleteThis.each{|d|
-    puts "Deleting #{ERLANG_LIB}/#{d}"
-    FileUtils.rm_rf(d)
-  }
+  cd ROOT; sh "#{REBAR} delete-deps"
 end
 
 desc "Test erlang and java apps"

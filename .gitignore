@@ -12,10 +12,8 @@
 .eunit/
 ebin/
 doc/
-/lib/*
-!/lib/j_server/*
-!/lib/monitor/*
-!/lib/common_hrl/*
+deps/
+
 
 # gradle builds
 .gradle/
