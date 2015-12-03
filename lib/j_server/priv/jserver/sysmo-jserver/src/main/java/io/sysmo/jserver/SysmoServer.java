@@ -24,7 +24,6 @@ package io.sysmo.jserver;
 import com.ericsson.otp.erlang.OtpErlangAtom;
 import com.ericsson.otp.erlang.OtpErlangDecodeException;
 import com.ericsson.otp.erlang.OtpErlangExit;
-import com.ericsson.otp.erlang.OtpErlangInt;
 import com.ericsson.otp.erlang.OtpErlangObject;
 import com.ericsson.otp.erlang.OtpErlangTuple;
 import com.ericsson.otp.erlang.OtpMbox;
@@ -189,7 +188,6 @@ public class SysmoServer {
         String rubyDir = fs.getPath("ruby").toString();
         String utilsDir = fs.getPath("utils").toString();
         String etcDir = fs.getPath("etc").toString();
-        String docrootDir = fs.getPath("docroot").toString();
         String dataDir = fs.getPath("data").toString();
 
         String confFile = Paths.get(etcDir, "sysmo.properties").toString();
