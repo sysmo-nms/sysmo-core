@@ -43,12 +43,12 @@ handle_command(Command, CState) ->
 
 handle_cast({{"createTargetQuery", Contents}, CState}, S) ->
     ?LOG_INFO("Create target query", Contents),
-    QueryId             = proplists:get_value(<<"queryId">>, Contents),
-    {struct, Contents2} = proplists:get_value(<<"value">>,   Contents),
-    {struct, Prop}      = proplists:get_value(<<"properties">>,    Contents2),
-    {struct, SProp}     = proplists:get_value(<<"sysProperties">>, Contents2),
-    NProp    = [{binary_to_list(Key), maybe_str(Val)} || {Key,Val} <- Prop],
-    NSysProp = [{binary_to_list(Key), maybe_str(Val)} || {Key,Val} <- SProp],
+    QueryId   = proplists:get_value(<<"queryId">>, Contents),
+    Contents2 = proplists:get_value(<<"value">>,   Contents),
+    Prop      = proplists:get_value(<<"properties">>,    Contents2),
+    SProp     = proplists:get_value(<<"sysProperties">>, Contents2),
+    NProp     = [{binary_to_list(Key), maybe_str(Val)} || {Key,Val} <- Prop],
+    NSysProp  = [{binary_to_list(Key), maybe_str(Val)} || {Key,Val} <- SProp],
     {NProp2, NSysProp2} = sysprop_guard(NProp,NSysProp),
 
     % can fail if USM user is incorrect
@@ -61,9 +61,9 @@ handle_cast({{"createTargetQuery", Contents}, CState}, S) ->
             case snmp_enabled(NProp2) of
                 true ->
                     SInfoJob  = monitor:new_job(
-                                  update_snmp_system_info, TargetId),
+                        update_snmp_system_info, TargetId),
                     IfInfoJob = monitor:new_job(
-                                  update_snmp_if_aliases,  TargetId),
+                        update_snmp_if_aliases,  TargetId),
                     monitor:fire_job(SInfoJob),
                     monitor:fire_job(IfInfoJob);
                 false -> ok
@@ -74,9 +74,9 @@ handle_cast({{"createTargetQuery", Contents}, CState}, S) ->
 
 handle_cast({{"createNchecksQuery", Contents}, CState}, S) ->
     ?LOG_INFO("create probe query", Contents),
-    QueryId             = proplists:get_value(<<"queryId">>, Contents),
-    {struct, Contents2} = proplists:get_value(<<"value">>,   Contents),
-    {struct, Prop}  = proplists:get_value(<<"properties">>, Contents2),
+    QueryId   = proplists:get_value(<<"queryId">>, Contents),
+    Contents2 = proplists:get_value(<<"value">>,   Contents),
+    Prop      = proplists:get_value(<<"properties">>, Contents2),
     Prop2 = [{binary_to_list(Key), maybe_str(Val)} || {Key, Val} <- Prop],
 
     Class   = binary_to_list(proplists:get_value(<<"class">>,      Contents2)),
@@ -93,9 +93,9 @@ handle_cast({{"createNchecksQuery", Contents}, CState}, S) ->
 
 handle_cast({{"deleteProbeQuery", Contents}, CState}, S) ->
     ?LOG_INFO("delete probe query", Contents),
-    QueryId             = proplists:get_value(<<"queryId">>, Contents),
-    {struct, Contents2} = proplists:get_value(<<"value">>,   Contents),
-    Probe   = binary_to_list(proplists:get_value(<<"name">>,  Contents2)),
+    QueryId   = proplists:get_value(<<"queryId">>, Contents),
+    Contents2 = proplists:get_value(<<"value">>,   Contents),
+    Probe     = binary_to_list(proplists:get_value(<<"name">>,  Contents2)),
     monitor:del_probe(Probe),
     ReplyPDU = monitor_pdu:simpleReply(QueryId, true, true, Probe),
     supercast_channel:unicast(CState, [ReplyPDU]),
@@ -103,9 +103,9 @@ handle_cast({{"deleteProbeQuery", Contents}, CState}, S) ->
 
 handle_cast({{"deleteTargetQuery", Contents}, CState}, S) ->
     ?LOG_INFO("delete target query", Contents),
-    QueryId              = proplists:get_value(<<"queryId">>, Contents),
-    {struct, Contents2}  = proplists:get_value(<<"value">>,   Contents),
-    Target  = binary_to_list(proplists:get_value(<<"name">>, Contents2)),
+    QueryId   = proplists:get_value(<<"queryId">>, Contents),
+    Contents2 = proplists:get_value(<<"value">>,   Contents),
+    Target    = binary_to_list(proplists:get_value(<<"name">>, Contents2)),
     monitor:del_target(Target),
     ReplyPDU = monitor_pdu:simpleReply(QueryId, true, true, Target),
     supercast_channel:unicast(CState, [ReplyPDU]),
@@ -113,8 +113,8 @@ handle_cast({{"deleteTargetQuery", Contents}, CState}, S) ->
 
 handle_cast({{"forceProbeQuery", Contents}, CState}, S) ->
     ?LOG_INFO("force probe query", Contents),
-    QueryId              = proplists:get_value(<<"queryId">>, Contents),
-    {struct, Contents2}  = proplists:get_value(<<"value">>,   Contents),
+    QueryId   = proplists:get_value(<<"queryId">>, Contents),
+    Contents2 = proplists:get_value(<<"value">>,   Contents),
     Probe   = binary_to_list(proplists:get_value(<<"name">>, Contents2)),
     monitor:force_probe(Probe),
     ReplyPDU = monitor_pdu:simpleReply(QueryId, true, true, Probe),
@@ -123,11 +123,11 @@ handle_cast({{"forceProbeQuery", Contents}, CState}, S) ->
 
 handle_cast({{"ncheckHelperQuery", Contents}, CState}, S) ->
     ?LOG_INFO("helper query", Contents),
-    QueryId             = proplists:get_value(<<"queryId">>, Contents),
-    {struct, Contents2} = proplists:get_value(<<"value">>,   Contents),
-    Target = binary_to_list(proplists:get_value(<<"target">>, Contents2)),
-    Class  = binary_to_list(proplists:get_value(<<"class">>,  Contents2)),
-    Props  = get_snmp_args(Target),
+    QueryId   = proplists:get_value(<<"queryId">>, Contents),
+    Contents2 = proplists:get_value(<<"value">>,   Contents),
+    Target    = binary_to_list(proplists:get_value(<<"target">>, Contents2)),
+    Class     = binary_to_list(proplists:get_value(<<"class">>,  Contents2)),
+    Props     = get_snmp_args(Target),
     case (catch j_server_nchecks:helper(Class, Props)) of
         {ok, Reply} ->
             ReplyPDU = monitor_pdu:nchecksHelperReply(QueryId, Class, Reply),
