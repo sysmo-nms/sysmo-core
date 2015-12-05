@@ -4,7 +4,7 @@
         {vsn, "0.1.0"},
         {modules, []},
         {registered, [
-            monitor_commander,
+            monitor_controler,
             monitor_data_master,
             monitor_events,
             monitor_sup,

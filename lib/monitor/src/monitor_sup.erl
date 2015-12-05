@@ -58,12 +58,12 @@ init([]) ->
                     [nchecks_probe_sup]
                 },
                 {
-                    monitor_commander,
-                    {monitor_commander, start_link, []},
+                    monitor_controler,
+                    {monitor_controler, start_link, []},
                     permanent,
                     2000,
                     worker,
-                    [monitor_commander]
+                    [monitor_controler]
                 },
                 {
                     monitor_data_master,
