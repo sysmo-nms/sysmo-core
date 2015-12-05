@@ -1,9 +1,10 @@
 <html>
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
-        <title>Supercat console</title>
+        <title>Supercast console</title>
         <script src="/js/jquery.min.js"></script>
         <script src="/js/supercast.js"></script>
+        <link rel="stylesheet" type="text/css" href="/css/supercast.css"></link>
     </head>
 
     <body>
@@ -31,7 +32,12 @@
 
             <div id="content">
 	            <button id="clear" onclick="clearScreen()" >Clear text</button>
-                <div id="output"></div>
+                <div class="docs-code">
+                    <pre>
+                        <code id="output" class="bash">
+                        </code>
+                    </pre>
+                </div>
             </div>
 
         </div>
