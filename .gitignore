@@ -13,9 +13,9 @@
 ebin/
 doc/
 /lib/*
-!/lib/j_server/*
-!/lib/monitor/*
-!/lib/common_hrl/*
+!/lib/j_server/
+!/lib/monitor/
+!/lib/common_hrl/
 
 # gradle builds
 .gradle/
