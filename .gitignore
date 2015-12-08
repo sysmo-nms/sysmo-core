@@ -10,9 +10,11 @@
 *.dump
 .rebar/
 .eunit/
-ebin/
 doc/
 deps/
+
+# keep applications ebin with a !.gitignore because rebar fail to prepare-deps if missing
+/ebin
 
 # gradle builds
 .gradle/
