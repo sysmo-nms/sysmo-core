@@ -12,18 +12,15 @@
 .eunit/
 ebin/
 doc/
-/lib/*
-!/lib/j_server/
-!/lib/monitor/
-!/lib/common_hrl/
+deps/
 
 # gradle builds
 .gradle/
 build/
 
 # go pping builds
-/lib/j_server/priv/pping/pping
-/lib/j_server/priv/pping/pping.exe
+/apps/j_server/priv/pping/pping
+/apps/j_server/priv/pping/pping.exe
 
 # sysmo release
 /rel/sysmo
@@ -39,6 +36,5 @@ build/
 .idea
 
 # obs release
-/rel/sysmo-core-*.tar.gz
-/rel/sysmo-core
+/rel/sysmo-core*
 /rel/sysmo-worker

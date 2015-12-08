@@ -26,9 +26,8 @@ require 'pathname'
 ROOT       = Dir.pwd
 ERLANG_DIR = ROOT
 ERLANG_REL = File.join(ROOT, "rel")
-ERLANG_LIB = File.join(ROOT, "lib")
-JAVA_DIR   = File.join(ROOT, "lib", "j_server", "priv", "jserver")
-GO_DIR     = File.join(ROOT, "lib", "j_server", "priv", "pping")
+JAVA_DIR   = File.join(ROOT, "apps", "j_server", "priv", "jserver")
+GO_DIR     = File.join(ROOT, "apps", "j_server", "priv", "pping")
 
 #
 # set wrappers
@@ -97,15 +96,7 @@ end
 
 desc "Clean all"
 task :clean_all => [:clean] do
-  keep = ["j_server", "monitor", "common_hrl"]
-  cd ERLANG_LIB
-  deleteThis = Dir.glob('*').select{|f| 
-    (File.directory? f) && (!keep.include? f)
-  }
-  deleteThis.each{|d|
-    puts "Deleting #{ERLANG_LIB}/#{d}"
-    FileUtils.rm_rf(d)
-  }
+  cd ERLANG_DIR; sh "#{REBAR} delete-deps"
 end
 
 desc "Test erlang and java apps"
