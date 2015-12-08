@@ -4,19 +4,9 @@
         {vsn, "1.0"},
         {modules, []},
         {registered,[sysmo_sup]},
-        {included_applications,
-            [
-                mnesia,
-                monitor,
-                supercast,
-                j_server
-            ]
-        },
-        {applications,
-            [kernel, stdlib]
-        },
-        {start_phases, []},
-        %{mod, {application_starter, [sysmo_app, []]}}
+        {included_applications, [mnesia,monitor,supercast,j_server]},
+        {applications, [kernel, stdlib]},
+        {start_phases, [{listen,[]}]},
         {mod, {sysmo_app, []}}
     ]
 }.

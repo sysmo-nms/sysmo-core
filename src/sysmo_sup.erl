@@ -43,7 +43,7 @@ init([]) ->
                     supervisor,
                     [supercast_app]
                 },
-                {
+                { %% only important is monitor last
                     monitor_app,
                     {monitor_app, start, [normal,[]]},
                     permanent,
