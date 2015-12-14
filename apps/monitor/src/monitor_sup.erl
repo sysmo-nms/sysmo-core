@@ -24,8 +24,11 @@
 
 -export([start_link/0]).
 -export([init/1]).
+-include("monitor.hrl").
 
 start_link() ->
+    ets:new(?ETS_PROBES_REGISTER, [set, public, named_table,
+        {write_concurrency, false}, {read_concurrency, true}, {keypos, 1}]),
     supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
 init([]) ->

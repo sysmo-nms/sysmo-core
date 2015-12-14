@@ -384,8 +384,5 @@ generate_id() ->
     integer_to_list(N).
 
 shutdown_probe(PidName) ->
-    case supercast_registrar:whereis_name(PidName) of
-        undefined -> ok;
-        Pid ->
-            gen_server:call(Pid, shut_it_down)
-    end.
+    nchecks_probe:shut_down(PidName).
+

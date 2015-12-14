@@ -181,7 +181,7 @@ test() ->
 
 % Clean sync dir
 clean_sync_dir(_) ->
-    {ok, DumpDir} = application:get_env(supercast,http_sync_dir),
+    {ok, DumpDir} = application:get_env(monitor,http_sync_dir),
     case file:list_dir(DumpDir) of
         {ok, []} -> ok;
         {ok, Files} ->

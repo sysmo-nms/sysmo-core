@@ -35,6 +35,12 @@
 % tests
 -export([fill_test/1]).
 
+%% pid registry behaviour
+-export([
+    register_name/2,
+    unregister_name/1,
+    whereis_name/1,
+    send/2]).
 
 %%-----------------------------------------------------------------------------
 %% PUBLIC API
@@ -100,12 +106,8 @@ new_probe({nchecks_probe, Identifier, JavaClass, Display, Args}, Target) ->
     monitor_data_master:new(probe, Probe).
 
 force_probe(PidName) ->
-    case supercast_registrar:whereis_name(PidName) of
-        undefined ->
-            ?LOG_ERROR("Unknown PidName", PidName);
-        Pid ->
-            nchecks_probe:force(Pid)
-    end.
+    nchecks_probe:force(PidName).
+
 %%-----------------------------------------------------------------------------
 %% PUBLIC API END
 %%-----------------------------------------------------------------------------
@@ -126,12 +128,7 @@ force_probe(PidName) ->
 % return time. It did not trigger a check.
 % @end
 trigger_nchecks_reply(PidName, CState) ->
-    case supercast_registrar:whereis_name(PidName) of
-        undefined ->
-            ?LOG_ERROR("Unknown PidName", PidName),
-            error;
-        Pid -> nchecks_probe:trigger_return(Pid, CState)
-    end.
+    nchecks_probe:trigger_return(PidName, CState).
 
 -spec timestamp() -> {Seconds::integer(), Microseconds::integer()}.
 % @private
@@ -188,6 +185,78 @@ send_after_rand(Step, Msg) ->
 
 
 
+%%%=============================================================================
+%%% Pid registry behaviour callbacks
+%%%=============================================================================
+
+%%------------------------------------------------------------------------------
+%% @private
+%% @see global:register_name/2
+%% @doc
+%% Same behaviour has global:register_name/2 with strings as names.
+%%
+%% @end
+%%------------------------------------------------------------------------------
+-spec register_name(Name :: string(), Pid :: pid()) -> yes | no.
+register_name(Name, Pid) ->
+    case where(Name) of
+        undefined ->
+            true = ets:insert(?ETS_PROBES_REGISTER, {Name, Pid}),
+            yes;
+        _ ->
+            no
+    end.
+
+%%------------------------------------------------------------------------------
+%% @private
+%% @see global:unregister_name/1
+%% @doc
+%% Same behaviour has global:unregister_name/1 but with strings as names.
+%%
+%% @end
+%%------------------------------------------------------------------------------
+-spec unregister_name(Name::string()) -> Name::string().
+unregister_name(Name) ->
+    true = ets:delete(?ETS_PROBES_REGISTER, Name),
+    Name.
+
+%%------------------------------------------------------------------------------
+%% @private
+%% @see global:whereis_name/1
+%% @doc
+%% Same behaviour has global:whereis_name/1 but with strings as names.
+%%
+%% @end
+%%------------------------------------------------------------------------------
+-spec whereis_name(Name::string()) -> pid() | undefined.
+whereis_name(Name) -> where(Name).
+where(Name) ->
+    case ets:lookup(?ETS_PROBES_REGISTER, Name) of
+        [{Name,Pid}] ->
+            case is_process_alive(Pid) of
+                true  -> Pid;
+                false -> undefined
+            end;
+        [] -> undefined
+    end.
+
+%%------------------------------------------------------------------------------
+%% @private
+%% @see global:send/2
+%% @doc
+%% Same behaviour has global:send/2 but with strings as names.
+%%
+%% @end
+%%------------------------------------------------------------------------------
+-spec send(Name::string, Msg::term()) -> pid().
+send(Name, Msg) ->
+    case where(Name) of
+        Pid when is_pid(Pid) ->
+            Pid ! Msg,
+            Pid;
+        undefined ->
+            exit({badarg, {Name, Msg}})
+    end.
 
 
 

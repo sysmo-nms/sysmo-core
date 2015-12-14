@@ -33,17 +33,23 @@
 -define(CRASH, "The module call has timed out. Check the server log for details").
 
 % gen_server
--export([start_link/1, init/1, handle_call/3, handle_cast/2, handle_info/2,
-    terminate/2, code_change/3]).
+-export([
+    start_link/1,
+    init/1,
+    handle_call/3,
+    handle_cast/2,
+    handle_info/2,
+    terminate/2,
+    code_change/3]).
 
 % supercast
--export([get_perms/1, sync_request/2]).
+-export([join/4, leave/4]).
 
 % spawned
 -export([exec_nchecks/3]).
 
 % monitor
--export([force/1, trigger_return/2, pause/1, resume/1]).
+-export([force/1, trigger_return/2, pause/1, resume/1, shut_down/1]).
 
 
 -record(state, {name,ref}).
@@ -66,15 +72,34 @@
 %
 % monitor
 %
-force(Pid)                 -> gen_server:cast(Pid, force).
-trigger_return(Pid,CState) -> gen_server:cast(Pid, {trigger_return, CState}).
-pause(_Pid)                -> ok.
-resume(_Pid)               -> ok.
+force(PidName) ->
+    case monitor:whereis_name(PidName) of
+        undefined ->
+            ?LOG_ERROR("Unknown PidName", PidName);
+        Pid ->
+            gen_server:cast(Pid, force)
+    end.
 
+trigger_return(PidName, CState) ->
+    case monitor:whereis_name(PidName) of
+        undefined ->
+            ?LOG_ERROR("Unknown PidName", PidName);
+        Pid ->
+            gen_server:cast(Pid, {trigger_return, CState})
+    end.
+shut_down(PidName) ->
+    case monitor:whereis_name(PidName) of
+        undefined -> ok;
+        Pid ->
+            gen_server:call(Pid, shut_it_down),
+            monitor:unregister_name(PidName)
+    end.
+
+pause(_PidName) -> ok.
+resume(_PidName) -> ok.
 
 start_link(#probe{name=Name} = Probe) ->
-    gen_server:start_link({via, supercast_registrar,
-                                    {?MODULE, Name}}, ?MODULE, Probe, []).
+    gen_server:start_link({via, monitor, Name}, ?MODULE, Probe, []).
 
 init(Probe) ->
     % to let multiple probes initialize in the same time, init is delayed.
@@ -82,9 +107,10 @@ init(Probe) ->
     {ok, Probe}.
 
 do_init(Probe) ->
+    supercast_channel:new(Probe#probe.name, ?MODULE, self(), Probe#probe.permissions),
     Ref = make_ref(),
     random:seed(erlang:now()),
-    {ok, DumpDir} = application:get_env(supercast, http_sync_dir),
+    {ok, DumpDir} = application:get_env(monitor, http_sync_dir),
     {{Class, Args}, RrdConfig, CheckId} = init_nchecks(Probe),
     TRef = monitor:send_after_rand(Probe#probe.step, {take_of, Ref}),
 
@@ -130,21 +156,18 @@ do_init(Probe) ->
         ES#ets_state.name,
         MilliRem
     ),
-    supercast_channel:emit(?MASTER_CHANNEL, {ES#ets_state.permissions, Pdu}),
+    supercast_channel:multicast(?MASTER_CHANNEL, [Pdu], ES#ets_state.permissions),
     Ref.
 
 
 %%----------------------------------------------------------------------------
 %% supercast channel behaviour
 %%----------------------------------------------------------------------------
-get_perms(PidName) ->
-    #ets_state{permissions=Perm} = monitor_data_master:get_probe_state(PidName),
-    Perm.
+join(_Channel, Args, _CState, Ref) ->
+    Self = Args,
+    gen_server:cast(Self, {sync_request, Ref}).
 
-sync_request(PidName, CState) ->
-    gen_server:cast({via, supercast_registrar, PidName}, {sync_request, CState}).
-
-do_sync_request(CState, #state{name=Name}) ->
+do_sync_request(Ref, #state{name=Name}) ->
     ES = monitor_data_master:get_probe_state(Name),
 
     % Generate tmp dir in dump dir
@@ -170,8 +193,7 @@ do_sync_request(CState, #state{name=Name}) ->
             % build the PDU
             Pdu = monitor_pdu:nchecksSimpleDumpMessage(
                                             Name, TmpDir, RrdFileBase, EventFile),
-            supercast_channel:subscribe(ES#ets_state.name, CState),
-            supercast_channel:unicast(CState, [Pdu]);
+            supercast_channel:join_accept(Ref, [Pdu]);
 
         table ->
             #rrd_table{
@@ -190,13 +212,14 @@ do_sync_request(CState, #state{name=Name}) ->
 
             Pdu = monitor_pdu:nchecksTableDumpMessage(
                                         Name, TmpDir, ElementToFile, EventFile),
-            supercast_channel:subscribe(ES#ets_state.name, CState),
-            supercast_channel:unicast(CState, [Pdu]);
+            supercast_channel:join_accept(Ref, [Pdu]);
 
         _ ->
             ok
     end.
 
+leave(_Channel, _Args, _CState, Ref) ->
+    supercast_channel:leave_ack(Ref).
 
 %%----------------------------------------------------------------------------
 %% supercast channel behaviour API END
@@ -221,7 +244,8 @@ do_trigger_return(CState, S) ->
     Pdu      = monitor_pdu:probeReturn(
             PartialPR, ES#ets_state.belong_to, ES#ets_state.name, MilliRem),
 
-    supercast_channel:unicast(CState, [Pdu]).
+    %% emit from monitor_channel
+    monitor_channel:send_unicast(CState, Pdu).
 
 % Force a probe trigger
 do_force(#state{ref=Ref} = S) ->
@@ -246,8 +270,8 @@ do_force(#state{ref=Ref} = S) ->
                 ES#ets_state.name,
                 500
             ),
-            supercast_channel:emit(
-                            ?MASTER_CHANNEL, {ES#ets_state.permissions, Pdu})
+            supercast_channel:multicast(
+                            ?MASTER_CHANNEL, [Pdu], ES#ets_state.permissions)
     end.
 %%----------------------------------------------------------------------------
 %% monitor API END
@@ -329,8 +353,8 @@ do_handle_nchecks_reply(PR, #state{name=Name,ref=Ref} = S) ->
 
 
     % send update pdu for subscribers
-    supercast_channel:emit(S#state.name,
-                                    {ES#ets_state.permissions, UpdatePdu}),
+    supercast_channel:multicast(S#state.name, [UpdatePdu],
+                                                    ES#ets_state.permissions),
 
 
     % schedule next trigger
@@ -344,7 +368,8 @@ do_handle_nchecks_reply(PR, #state{name=Name,ref=Ref} = S) ->
         ES#ets_state.belong_to,
         ES#ets_state.name,
         MilliRem),
-    supercast_channel:emit(?MASTER_CHANNEL, {ES#ets_state.permissions, Pdu}),
+    supercast_channel:multicast(?MASTER_CHANNEL, [Pdu],
+                                                    ES#ets_state.permissions),
 
 
     % write state
@@ -402,8 +427,8 @@ handle_cast(do_init, #probe{name=PName} = Probe) ->
     Ref = do_init(Probe),
     {noreply, #state{name=PName,ref=Ref}};
 
-handle_cast({sync_request, CState}, S) ->
-    do_sync_request(CState, S),
+handle_cast({sync_request, Ref}, S) ->
+    do_sync_request(Ref, S),
     {noreply, S};
 
 handle_cast({trigger_return, CState}, S) ->

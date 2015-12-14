@@ -29,7 +29,10 @@
     terminate/2, code_change/3]).
 
 % GEN_CHANNEL
--export([get_perms/1, sync_request/2]).
+-export([join/4, leave/4]).
+
+% called from nchecks_probe
+-export([send_unicast/2]).
 
 % SRV
 -export([start_link/0]).
@@ -37,21 +40,20 @@
 -record(state, {perm}).
 
 start_link() ->
-    gen_server:start_link(
-      {via, supercast_registrar, {?MODULE, ?MASTER_CHANNEL}}, ?MODULE, [], []).
+    gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
+
+send_unicast(CState, Pdu) ->
+    gen_server:cast(?MODULE, {send_unicast, CState, Pdu}).
 
 %%----------------------------------------------------------------------------
 %% supercast_channel API
 %%----------------------------------------------------------------------------
--spec get_perms(PidName::atom()) -> {ok, PermConf::#perm_conf{}}.
-get_perms(PidName) ->
-    gen_server:call({via, supercast_registrar, PidName}, get_perms).
+join(_Channel, Args, CState, Ref) ->
+    Self = Args,
+    gen_server:cast(Self, {sync_request, CState, Ref}).
 
--spec sync_request(PidName::atom(), CState::tuple()) ->  ok.
-sync_request(PidName, CState) ->
-    gen_server:cast(
-        {via, supercast_registrar, PidName}, {sync_request, CState}).
-
+leave(_Channel, _Args, _CState, Ref) ->
+    supercast_channel:leave_ack(Ref).
 
 %%----------------------------------------------------------------------------
 %% GEN_SERVER CALLBACKS
@@ -59,6 +61,8 @@ sync_request(PidName, CState) ->
 init([]) ->
     {ok, Read}  = application:get_env(monitor, master_chan_read_perm),
     {ok, Write} = application:get_env(monitor, master_chan_write_perm),
+    Perm = #perm_conf{read=Read,write=Write},
+    supercast_channel:new(?MASTER_CHANNEL, ?MODULE, self(), Perm),
     mnesia:subscribe({table, target, detailed}),
     mnesia:subscribe({table, probe,  detailed}),
     mnesia:subscribe({table, job,    detailed}),
@@ -74,11 +78,11 @@ handle_call(get_perms, _F, #state{perm = P} = S) ->
 %%----------------------------------------------------------------------------
 %% SUPERCAST_CHANNEL BEHAVIOUR CASTS
 %%----------------------------------------------------------------------------
-handle_cast({sync_request, CState}, S) ->
-    supercast_channel:subscribe(?MASTER_CHANNEL, CState),
+handle_cast({sync_request, CState, Ref}, S) ->
+    SyncPdus0 = [],
 
     % get supercast sync dir generate temporary dir
-    {ok, DumpDir} = application:get_env(supercast, http_sync_dir),
+    {ok, DumpDir} = application:get_env(monitor, http_sync_dir),
     TmpDir = monitor:generate_temp_dir(),
     DumpPath = filename:join(DumpDir,TmpDir),
     file:make_dir(DumpPath),
@@ -88,7 +92,7 @@ handle_cast({sync_request, CState}, S) ->
 
     % build and send pdu for client
     BeginPdu = monitor_pdu:masterSyncBegin(TmpDir,LatestEventsFile),
-    supercast_channel:unicast(CState, [BeginPdu]),
+    SyncPdus1 = [BeginPdu|SyncPdus0],
 
     % filter and build target pdus
     {ok, TState} = monitor_data_master:iterate(target, fun(T,Acc) ->
@@ -97,19 +101,16 @@ handle_cast({sync_request, CState}, S) ->
             true    ->
                 Pdu = monitor_pdu:infoTargetCreate(T),
                 [Pdu|Acc];
-            false   -> [Acc]
+            false   -> Acc
         end
     end),
 
     % send the target count to the client
     TStateCount = length(TState),
     TStateCountPdu = monitor_pdu:masterTargetCount(TStateCount),
-    supercast_channel:unicast(CState, [TStateCountPdu]),
+    SyncPdus2 = [TStateCountPdu|SyncPdus1],
 
-    % send target state pdus
-    lists:foreach(fun(Pdu) ->
-        supercast_channel:unicast(CState, [Pdu])
-    end, TState),
+    SyncPdus3 = lists:append(TState,SyncPdus2),
 
     % filter and build probes pdus
     {ok, PState} = monitor_data_master:iterate(probe, fun(P,Acc) ->
@@ -125,28 +126,24 @@ handle_cast({sync_request, CState}, S) ->
     % send the probe count to the client
     PStateCount = length(PState),
     PStateCountPdu = monitor_pdu:masterProbeCount(PStateCount),
-    supercast_channel:unicast(CState, [PStateCountPdu]),
+    SyncPdus4 = [PStateCountPdu|SyncPdus3],
 
-    % send probe state pdus and trigger factice nchecks_reply
-    lists:foreach(fun({PName,PPdu}) ->
-        supercast_channel:unicast(CState, [PPdu]),
+    ProbesPdus = [P || {_,P} <- PState],
+    SyncPdus5 = lists:append(ProbesPdus, SyncPdus4),
+
+    SyncPdu6 =[monitor_pdu:masterSyncEnd() | SyncPdus5],
+
+    supercast_channel:join_accept(Ref, lists:reverse(SyncPdu6)),
+
+    %% trigger nchecks dummy reply
+    lists:foreach(fun({PName,_}) ->
         monitor:trigger_nchecks_reply(PName, CState)
     end, PState),
 
-    % is this realy needed?
-    % {ok, _Jobs} = monitor_data_master:iterate(job, fun(J,Acc) ->
-    %     #job{permissions=Perm} = J,
-    %     case supercast:satisfy(CState, Perm) of
-    %         true    ->
-    %             [J|Acc];
-    %         false   ->
-    %             Acc
-    %     end
-    % end),
-    %?LOG_INFO("Should_send_jobs", _Jobs),
+    {noreply, S};
 
-    EndPdu = monitor_pdu:masterSyncEnd(),
-    supercast_channel:unicast(CState, [EndPdu]),
+handle_cast({send_unicast, CState, Pdu}, S) ->
+    supercast_channel:unicast(?MASTER_CHANNEL, CState, [Pdu]),
     {noreply, S};
 
 handle_cast(_R, S) ->
@@ -217,20 +214,20 @@ code_change(_O, S, _E) ->
 % MNESIA EVENTS
 handle_target_create(#target{permissions=Perm} = Target) ->
     Pdu = monitor_pdu:infoTargetCreate(Target),
-    supercast_channel:emit(?MASTER_CHANNEL, {Perm, Pdu}).
+    supercast_channel:multicast(?MASTER_CHANNEL, [Pdu], Perm).
 
 handle_target_update(#target{permissions=Perm} = Target, _) ->
     Pdu = monitor_pdu:infoTargetUpdate(Target),
-    supercast_channel:emit(?MASTER_CHANNEL, {Perm, Pdu}).
+    supercast_channel:multicast(?MASTER_CHANNEL, [Pdu], Perm).
 
 
 handle_probe_create(#probe{permissions=Perm} = Probe) ->
     Pdu = monitor_pdu:infoProbeCreate(Probe),
-    supercast_channel:emit(?MASTER_CHANNEL, {Perm, Pdu}).
+    supercast_channel:multicast(?MASTER_CHANNEL, [Pdu], Perm).
 
 handle_probe_update(#probe{permissions=Perm} = Probe,_) ->
     Pdu = monitor_pdu:infoProbeUpdate(Probe),
-    supercast_channel:emit(?MASTER_CHANNEL, {Perm, Pdu}).
+    supercast_channel:multicast(?MASTER_CHANNEL, [Pdu], Perm).
 
 
 handle_job_create(#job{permissions=_Perm} = _Job) ->
@@ -248,10 +245,10 @@ handle_dependency_update(_Dep) ->
 
 handle_delete({target, Name}, #target{permissions=Perm}) ->
     Pdu = monitor_pdu:deleteTarget(Name),
-    supercast_channel:emit(?MASTER_CHANNEL, {Perm, Pdu});
+    supercast_channel:multicast(?MASTER_CHANNEL, [Pdu], Perm);
 handle_delete({probe, _}, #probe{permissions=Perm} = Probe) ->
     Pdu = monitor_pdu:deleteProbe(Probe),
-    supercast_channel:emit(?MASTER_CHANNEL, {Perm, Pdu});
+    supercast_channel:multicast(?MASTER_CHANNEL, [Pdu], Perm);
 handle_delete({job, _Name},_) ->
     ?LOG_INFO("Delete job", _Name);
 handle_delete({dependency, _Name},_) ->
