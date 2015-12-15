@@ -91,8 +91,7 @@ shut_down(PidName) ->
     case monitor:whereis_name(PidName) of
         undefined -> ok;
         Pid ->
-            gen_server:call(Pid, shut_it_down),
-            monitor:unregister_name(PidName)
+            gen_server:call(Pid, shut_it_down)
     end.
 
 pause(_PidName) -> ok.
@@ -445,6 +444,7 @@ handle_cast(_Cast, S) ->
 
 handle_call(shut_it_down, _F, #state{name=Name} = S) ->
     supercast_channel:delete(Name),
+    monitor:unregister_name(Name),
     {stop, shutdown, ok, S};
 
 handle_call(_Call, _From, S) ->
