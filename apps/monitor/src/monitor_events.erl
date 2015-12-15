@@ -96,7 +96,8 @@ handle_call({notify_move, Name, CheckId, Descr, Status,
     ets:insert(Mv, Notif),
     j_server_eventdb:notify(Notif),
     Pdu = monitor_pdu:nchecksDbNotif(Notif),
-    supercast:multicast(?MASTER_CHANNEL, [Pdu], Perm),
+    %% @TODO send multicast FROM ?MASTER_CHANNEL
+    supercast_proc:send_multicast(?MASTER_CHANNEL, [Pdu], Perm),
     {reply, ok, S};
 
 handle_call({dump_probe_events, DumpPath, Probe}, _F, S) ->

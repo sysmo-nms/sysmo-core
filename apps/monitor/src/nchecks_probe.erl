@@ -24,6 +24,7 @@
 % @end
 -module(nchecks_probe).
 -behaviour(gen_server).
+-behaviour(supercast_proc).
 -include("monitor.hrl").
 -include_lib("j_server/include/nchecks.hrl").
 -include_lib("xmerl/include/xmerl.hrl").
@@ -41,8 +42,8 @@
     terminate/2,
     code_change/3]).
 
-% supercast
--export([join/4, leave/4]).
+% supercast_proc behaviour
+-export([join_request/4, leave_request/4]).
 
 % spawned
 -export([exec_nchecks/3]).
@@ -105,7 +106,8 @@ init(Probe) ->
     {ok, Probe}.
 
 do_init(Probe) ->
-    supercast:new(Probe#probe.name, ?MODULE, self(), Probe#probe.permissions),
+    supercast_proc:new_channel(Probe#probe.name, ?MODULE, self(),
+                                                    Probe#probe.permissions),
     Ref = make_ref(),
     random:seed(erlang:now()),
     {ok, DumpDir} = application:get_env(monitor, http_sync_dir),
@@ -154,14 +156,15 @@ do_init(Probe) ->
         ES#ets_state.name,
         MilliRem
     ),
-    supercast:multicast(?MASTER_CHANNEL, [Pdu], ES#ets_state.permissions),
+    supercast_proc:send_multicast(?MASTER_CHANNEL, [Pdu],
+                                                    ES#ets_state.permissions),
     Ref.
 
 
 %%----------------------------------------------------------------------------
-%% supercast channel behaviour
+%% supercast_proc behaviour
 %%----------------------------------------------------------------------------
-join(_Channel, Args, _CState, Ref) ->
+join_request(_Channel, Args, _CState, Ref) ->
     Self = Args,
     gen_server:cast(Self, {sync_request, Ref}).
 
@@ -191,7 +194,7 @@ do_sync_request(Ref, #state{name=Name}) ->
             % build the PDU
             Pdu = monitor_pdu:nchecksSimpleDumpMessage(
                                             Name, TmpDir, RrdFileBase, EventFile),
-            supercast:join_accept(Ref, [Pdu]);
+            supercast_proc:join_accept(Ref, [Pdu]);
 
         table ->
             #rrd_table{
@@ -210,17 +213,17 @@ do_sync_request(Ref, #state{name=Name}) ->
 
             Pdu = monitor_pdu:nchecksTableDumpMessage(
                                         Name, TmpDir, ElementToFile, EventFile),
-            supercast:join_accept(Ref, [Pdu]);
+            supercast_proc:join_accept(Ref, [Pdu]);
 
         _ ->
             ok
     end.
 
-leave(_Channel, _Args, _CState, Ref) ->
-    supercast:leave_ack(Ref).
+leave_request(_Channel, _Args, _CState, Ref) ->
+    supercast_proc:leave_ack(Ref).
 
 %%----------------------------------------------------------------------------
-%% supercast channel behaviour API END
+%% supercast_proc behaviour API END
 %%----------------------------------------------------------------------------
 
 
@@ -268,7 +271,7 @@ do_force(#state{ref=Ref} = S) ->
                 ES#ets_state.name,
                 500
             ),
-            supercast:multicast(?MASTER_CHANNEL, [Pdu],
+            supercast_proc:send_multicast(?MASTER_CHANNEL, [Pdu],
                                                 ES#ets_state.permissions)
     end.
 %%----------------------------------------------------------------------------
@@ -351,7 +354,8 @@ do_handle_nchecks_reply(PR, #state{name=Name,ref=Ref} = S) ->
 
 
     % send update pdu for subscribers
-    supercast:multicast(S#state.name, [UpdatePdu], ES#ets_state.permissions),
+    supercast_proc:send_multicast(S#state.name, [UpdatePdu],
+                                                    ES#ets_state.permissions),
 
 
     % schedule next trigger
@@ -365,7 +369,8 @@ do_handle_nchecks_reply(PR, #state{name=Name,ref=Ref} = S) ->
         ES#ets_state.belong_to,
         ES#ets_state.name,
         MilliRem),
-    supercast:multicast(?MASTER_CHANNEL, [Pdu], ES#ets_state.permissions),
+    supercast_proc:send_multicast(?MASTER_CHANNEL, [Pdu],
+                                                    ES#ets_state.permissions),
 
 
     % write state
@@ -440,7 +445,7 @@ handle_cast(_Cast, S) ->
     {noreply, S}.
 
 handle_call(shut_it_down, _F, #state{name=Name} = S) ->
-    supercast:delete(Name),
+    supercast_proc:delete_channel(Name),
     monitor:unregister_name(Name),
     {stop, shutdown, ok, S};
 
