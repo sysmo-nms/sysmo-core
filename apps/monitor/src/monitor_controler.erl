@@ -69,7 +69,7 @@ handle_cast({{"createTargetQuery", Contents}, CState}, S) ->
                 false -> ok
             end
     end,
-    supercast_channel:unicast(?MASTER_CHANNEL, CState, [ReplyPDU]),
+    supercast:unicast(?MASTER_CHANNEL, CState, [ReplyPDU]),
     {noreply, S};
 
 handle_cast({{"createNchecksQuery", Contents}, CState}, S) ->
@@ -88,7 +88,7 @@ handle_cast({{"createNchecksQuery", Contents}, CState}, S) ->
         {nchecks_probe, Id, Class, Display, Prop2}, Target),
 
     ReplyPDU = monitor_pdu:simpleReply(QueryId, true, true, ProbeId),
-    supercast_channel:unicast(?MASTER_CHANNEL, CState, [ReplyPDU]),
+    supercast:unicast(?MASTER_CHANNEL, CState, [ReplyPDU]),
     {noreply, S};
 
 handle_cast({{"deleteProbeQuery", Contents}, CState}, S) ->
@@ -98,7 +98,7 @@ handle_cast({{"deleteProbeQuery", Contents}, CState}, S) ->
     Probe     = binary_to_list(proplists:get_value(<<"name">>,  Contents2)),
     monitor:del_probe(Probe),
     ReplyPDU = monitor_pdu:simpleReply(QueryId, true, true, Probe),
-    supercast_channel:unicast(?MASTER_CHANNEL, CState, [ReplyPDU]),
+    supercast:unicast(?MASTER_CHANNEL, CState, [ReplyPDU]),
     {noreply, S};
 
 handle_cast({{"deleteTargetQuery", Contents}, CState}, S) ->
@@ -108,7 +108,7 @@ handle_cast({{"deleteTargetQuery", Contents}, CState}, S) ->
     Target    = binary_to_list(proplists:get_value(<<"name">>, Contents2)),
     monitor:del_target(Target),
     ReplyPDU = monitor_pdu:simpleReply(QueryId, true, true, Target),
-    supercast_channel:unicast(?MASTER_CHANNEL, CState, [ReplyPDU]),
+    supercast:unicast(?MASTER_CHANNEL, CState, [ReplyPDU]),
     {noreply, S};
 
 handle_cast({{"forceProbeQuery", Contents}, CState}, S) ->
@@ -118,7 +118,7 @@ handle_cast({{"forceProbeQuery", Contents}, CState}, S) ->
     Probe   = binary_to_list(proplists:get_value(<<"name">>, Contents2)),
     monitor:force_probe(Probe),
     ReplyPDU = monitor_pdu:simpleReply(QueryId, true, true, Probe),
-    supercast_channel:unicast(?MASTER_CHANNEL, CState, [ReplyPDU]),
+    supercast:unicast(?MASTER_CHANNEL, CState, [ReplyPDU]),
     {noreply, S};
 
 handle_cast({{"ncheckHelperQuery", Contents}, CState}, S) ->
@@ -131,11 +131,11 @@ handle_cast({{"ncheckHelperQuery", Contents}, CState}, S) ->
     case (catch j_server_nchecks:helper(Class, Props)) of
         {ok, Reply} ->
             ReplyPDU = monitor_pdu:nchecksHelperReply(QueryId, Class, Reply),
-            supercast_channel:unicast(?MASTER_CHANNEL, CState, [ReplyPDU]);
+            supercast:unicast(?MASTER_CHANNEL, CState, [ReplyPDU]);
         Error ->
             ErrorStr = io_lib:format("~p", [Error]),
             ReplyPDU = monitor_pdu:simpleReply(QueryId, false, true, ErrorStr),
-            supercast_channel:unicast(?MASTER_CHANNEL, CState, [ReplyPDU])
+            supercast:unicast(?MASTER_CHANNEL, CState, [ReplyPDU])
     end,
     {noreply, S};
 

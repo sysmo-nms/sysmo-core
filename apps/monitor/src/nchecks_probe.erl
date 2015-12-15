@@ -24,7 +24,6 @@
 % @end
 -module(nchecks_probe).
 -behaviour(gen_server).
--behaviour(supercast_channel).
 -include("monitor.hrl").
 -include_lib("j_server/include/nchecks.hrl").
 -include_lib("xmerl/include/xmerl.hrl").
@@ -106,7 +105,7 @@ init(Probe) ->
     {ok, Probe}.
 
 do_init(Probe) ->
-    supercast_channel:new(Probe#probe.name, ?MODULE, self(), Probe#probe.permissions),
+    supercast:new(Probe#probe.name, ?MODULE, self(), Probe#probe.permissions),
     Ref = make_ref(),
     random:seed(erlang:now()),
     {ok, DumpDir} = application:get_env(monitor, http_sync_dir),
@@ -155,7 +154,7 @@ do_init(Probe) ->
         ES#ets_state.name,
         MilliRem
     ),
-    supercast_channel:multicast(?MASTER_CHANNEL, [Pdu], ES#ets_state.permissions),
+    supercast:multicast(?MASTER_CHANNEL, [Pdu], ES#ets_state.permissions),
     Ref.
 
 
@@ -192,7 +191,7 @@ do_sync_request(Ref, #state{name=Name}) ->
             % build the PDU
             Pdu = monitor_pdu:nchecksSimpleDumpMessage(
                                             Name, TmpDir, RrdFileBase, EventFile),
-            supercast_channel:join_accept(Ref, [Pdu]);
+            supercast:join_accept(Ref, [Pdu]);
 
         table ->
             #rrd_table{
@@ -211,14 +210,14 @@ do_sync_request(Ref, #state{name=Name}) ->
 
             Pdu = monitor_pdu:nchecksTableDumpMessage(
                                         Name, TmpDir, ElementToFile, EventFile),
-            supercast_channel:join_accept(Ref, [Pdu]);
+            supercast:join_accept(Ref, [Pdu]);
 
         _ ->
             ok
     end.
 
 leave(_Channel, _Args, _CState, Ref) ->
-    supercast_channel:leave_ack(Ref).
+    supercast:leave_ack(Ref).
 
 %%----------------------------------------------------------------------------
 %% supercast channel behaviour API END
@@ -269,8 +268,8 @@ do_force(#state{ref=Ref} = S) ->
                 ES#ets_state.name,
                 500
             ),
-            supercast_channel:multicast(
-                            ?MASTER_CHANNEL, [Pdu], ES#ets_state.permissions)
+            supercast:multicast(?MASTER_CHANNEL, [Pdu],
+                                                ES#ets_state.permissions)
     end.
 %%----------------------------------------------------------------------------
 %% monitor API END
@@ -352,8 +351,7 @@ do_handle_nchecks_reply(PR, #state{name=Name,ref=Ref} = S) ->
 
 
     % send update pdu for subscribers
-    supercast_channel:multicast(S#state.name, [UpdatePdu],
-                                                    ES#ets_state.permissions),
+    supercast:multicast(S#state.name, [UpdatePdu], ES#ets_state.permissions),
 
 
     % schedule next trigger
@@ -367,8 +365,7 @@ do_handle_nchecks_reply(PR, #state{name=Name,ref=Ref} = S) ->
         ES#ets_state.belong_to,
         ES#ets_state.name,
         MilliRem),
-    supercast_channel:multicast(?MASTER_CHANNEL, [Pdu],
-                                                    ES#ets_state.permissions),
+    supercast:multicast(?MASTER_CHANNEL, [Pdu], ES#ets_state.permissions),
 
 
     % write state
@@ -443,7 +440,7 @@ handle_cast(_Cast, S) ->
     {noreply, S}.
 
 handle_call(shut_it_down, _F, #state{name=Name} = S) ->
-    supercast_channel:delete(Name),
+    supercast:delete(Name),
     monitor:unregister_name(Name),
     {stop, shutdown, ok, S};
 

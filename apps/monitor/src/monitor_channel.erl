@@ -20,7 +20,6 @@
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 -module(monitor_channel).
 -behaviour(gen_server).
--behaviour(supercast_channel).
 -include("monitor.hrl").
 -include_lib("common_hrl/include/logs.hrl").
 
@@ -46,14 +45,14 @@ send_unicast(CState, Pdu) ->
     gen_server:cast(?MODULE, {send_unicast, CState, Pdu}).
 
 %%----------------------------------------------------------------------------
-%% supercast_channel API
+%% supercast API
 %%----------------------------------------------------------------------------
 join(_Channel, Args, CState, Ref) ->
     Self = Args,
     gen_server:cast(Self, {sync_request, CState, Ref}).
 
 leave(_Channel, _Args, _CState, Ref) ->
-    supercast_channel:leave_ack(Ref).
+    supercast:leave_ack(Ref).
 
 %%----------------------------------------------------------------------------
 %% GEN_SERVER CALLBACKS
@@ -62,7 +61,7 @@ init([]) ->
     {ok, Read}  = application:get_env(monitor, master_chan_read_perm),
     {ok, Write} = application:get_env(monitor, master_chan_write_perm),
     Perm = #perm_conf{read=Read,write=Write},
-    supercast_channel:new(?MASTER_CHANNEL, ?MODULE, self(), Perm),
+    supercast:new(?MASTER_CHANNEL, ?MODULE, self(), Perm),
     mnesia:subscribe({table, target, detailed}),
     mnesia:subscribe({table, probe,  detailed}),
     mnesia:subscribe({table, job,    detailed}),
@@ -133,7 +132,7 @@ handle_cast({sync_request, CState, Ref}, S) ->
 
     SyncPdu6 =[monitor_pdu:masterSyncEnd() | SyncPdus5],
 
-    supercast_channel:join_accept(Ref, lists:reverse(SyncPdu6)),
+    supercast:join_accept(Ref, lists:reverse(SyncPdu6)),
 
     %% trigger nchecks dummy reply
     lists:foreach(fun({PName,_}) ->
@@ -143,7 +142,7 @@ handle_cast({sync_request, CState, Ref}, S) ->
     {noreply, S};
 
 handle_cast({send_unicast, CState, Pdu}, S) ->
-    supercast_channel:unicast(?MASTER_CHANNEL, CState, [Pdu]),
+    supercast:unicast(?MASTER_CHANNEL, CState, [Pdu]),
     {noreply, S};
 
 handle_cast(_R, S) ->
@@ -214,20 +213,20 @@ code_change(_O, S, _E) ->
 % MNESIA EVENTS
 handle_target_create(#target{permissions=Perm} = Target) ->
     Pdu = monitor_pdu:infoTargetCreate(Target),
-    supercast_channel:multicast(?MASTER_CHANNEL, [Pdu], Perm).
+    supercast:multicast(?MASTER_CHANNEL, [Pdu], Perm).
 
 handle_target_update(#target{permissions=Perm} = Target, _) ->
     Pdu = monitor_pdu:infoTargetUpdate(Target),
-    supercast_channel:multicast(?MASTER_CHANNEL, [Pdu], Perm).
+    supercast:multicast(?MASTER_CHANNEL, [Pdu], Perm).
 
 
 handle_probe_create(#probe{permissions=Perm} = Probe) ->
     Pdu = monitor_pdu:infoProbeCreate(Probe),
-    supercast_channel:multicast(?MASTER_CHANNEL, [Pdu], Perm).
+    supercast:multicast(?MASTER_CHANNEL, [Pdu], Perm).
 
 handle_probe_update(#probe{permissions=Perm} = Probe,_) ->
     Pdu = monitor_pdu:infoProbeUpdate(Probe),
-    supercast_channel:multicast(?MASTER_CHANNEL, [Pdu], Perm).
+    supercast:multicast(?MASTER_CHANNEL, [Pdu], Perm).
 
 
 handle_job_create(#job{permissions=_Perm} = _Job) ->
@@ -245,10 +244,10 @@ handle_dependency_update(_Dep) ->
 
 handle_delete({target, Name}, #target{permissions=Perm}) ->
     Pdu = monitor_pdu:deleteTarget(Name),
-    supercast_channel:multicast(?MASTER_CHANNEL, [Pdu], Perm);
+    supercast:multicast(?MASTER_CHANNEL, [Pdu], Perm);
 handle_delete({probe, _}, #probe{permissions=Perm} = Probe) ->
     Pdu = monitor_pdu:deleteProbe(Probe),
-    supercast_channel:multicast(?MASTER_CHANNEL, [Pdu], Perm);
+    supercast:multicast(?MASTER_CHANNEL, [Pdu], Perm);
 handle_delete({job, _Name},_) ->
     ?LOG_INFO("Delete job", _Name);
 handle_delete({dependency, _Name},_) ->
