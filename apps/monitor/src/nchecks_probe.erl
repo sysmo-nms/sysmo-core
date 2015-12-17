@@ -43,7 +43,7 @@
     code_change/3]).
 
 % supercast_proc behaviour
--export([join_request/4, leave_request/4]).
+-export([join_request/4, leave_request/4, info_request/3]).
 
 % spawned
 -export([exec_nchecks/3]).
@@ -167,7 +167,6 @@ do_init(Probe) ->
 join_request(_Channel, Args, _CState, Ref) ->
     Self = Args,
     gen_server:cast(Self, {sync_request, Ref}).
-
 do_sync_request(Ref, #state{name=Name}) ->
     ES = monitor_data_master:get_probe_state(Name),
 
@@ -219,8 +218,12 @@ do_sync_request(Ref, #state{name=Name}) ->
             ok
     end.
 
-leave_request(_Channel, _Args, _CState, Ref) ->
+leave_request(_Channel, _Args = Self, _CState, Ref) ->
+    gen_server:cast(Self, {leave_request, Ref}).
+do_leave_request(Ref) ->
     supercast_proc:leave_ack(Ref).
+
+info_request(_,_,_) -> ok.
 
 %%----------------------------------------------------------------------------
 %% supercast_proc behaviour API END
@@ -438,6 +441,10 @@ handle_cast({trigger_return, CState}, S) ->
 
 handle_cast(force, S) ->
     do_force(S),
+    {noreply, S};
+
+handle_cast({leave_request, Ref}, S) ->
+    do_leave_request(Ref),
     {noreply, S};
 
 handle_cast(_Cast, S) ->

@@ -29,7 +29,7 @@
     terminate/2, code_change/3]).
 
 % GEN_CHANNEL
--export([join_request/4, leave_request/4]).
+-export([join_request/4, leave_request/4, info_request/3]).
 
 % called from nchecks_probe
 -export([send_unicast/2]).
@@ -52,8 +52,12 @@ join_request(_Channel, Args, CState, Ref) ->
     Self = Args,
     gen_server:cast(Self, {sync_request, CState, Ref}).
 
-leave_request(_Channel, _Args, _CState, Ref) ->
-    supercast:leave_ack(Ref).
+leave_request(_Channel, _Args = Self, _CState, Ref) ->
+    gen_server:cast(Self, {leave_request, Ref}).
+do_leave_request(Ref) ->
+    supercast_proc:leave_ack(Ref).
+
+info_request(_,_,_) -> ok.
 
 %%----------------------------------------------------------------------------
 %% GEN_SERVER CALLBACKS
@@ -140,6 +144,10 @@ handle_cast({sync_request, CState, Ref}, S) ->
         monitor:trigger_nchecks_reply(PName, CState)
     end, PState),
 
+    {noreply, S};
+
+handle_cast({leave_request,Ref}, S) ->
+    do_leave_request(Ref),
     {noreply, S};
 
 handle_cast({send_unicast, CState, Pdu}, S) ->
