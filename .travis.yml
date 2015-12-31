@@ -11,6 +11,7 @@ script: "rake release"
 
 before_cache:
   - rm -f $HOME/.gradle/caches/modules-2/modules-2.lock
+  - rm -f deps/*/.rebar/erlcinfo  .rebar/erlcinfo
 
 cache:
   directories:

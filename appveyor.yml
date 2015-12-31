@@ -6,6 +6,8 @@ branches:
 build_script:
     - gem install builder
     - rake release
+    - .\gradlew --stop
+
 
 cache:
   - C:\Users\appveyor\.gradle
