@@ -5,7 +5,7 @@ otp_release:
 
 sudo: false
 
-install: "gem query -i -n builder || gem install builder"
+install: "gem env; gem query -i -n builder || gem install builder"
 
 script: "rake release"
 
