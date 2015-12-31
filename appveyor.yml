@@ -7,6 +7,12 @@ build_script:
     - gem query -i -n builder || gem install builder
     - rake release
     - .\apps\j_server\priv\jserver\gradlew.bat --stop
+    - del deps\ranch\.rebar\erlcinfo
+    - del deps\cowlib\.rebar\erlcinfo
+    - del deps\cowboy\.rebar\erlcinfo
+    - del deps\jsx\.rebar\erlcinfo
+    - del deps\supercast\.rebar\erlcinfo
+    - del C:\Users\appveyor\.gradle\caches\modules-2\modules-2.lock
 
 
 cache:
