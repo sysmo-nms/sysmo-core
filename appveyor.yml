@@ -6,10 +6,11 @@ branches:
 build_script:
     - gem install builder
     - rake release
-    - .\gradlew --stop
+    - .\apps\j_server\priv\jserver\gradlew.bat --stop
 
 
 cache:
-  - C:\Users\appveyor\.gradle
+  - C:\Users\appveyor\.gradle\caches\
+  - C:\Users\appveyor\.gradle\wrapper\
   - deps
 
