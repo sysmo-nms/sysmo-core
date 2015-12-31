@@ -17,6 +17,4 @@ cache:
   directories:
     - $HOME/.gradle/caches/
     - $HOME/.gradle/wrapper/
-    - $HOME/.gem/
-    - deps/
-    - vendor/
+    - $HOME/.rvm/gems/
