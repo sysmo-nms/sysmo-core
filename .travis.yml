@@ -18,3 +18,4 @@ cache:
     - $HOME/.gradle/caches/
     - $HOME/.gradle/wrapper/
     - deps/
+    - vendor/
