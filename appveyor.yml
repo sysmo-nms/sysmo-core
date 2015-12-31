@@ -6,3 +6,8 @@ branches:
 build_script:
     - gem install builder
     - rake release
+
+cache:
+  - C:\Users\appveyor\.gradle
+  - deps
+
