@@ -8,13 +8,10 @@
 
 # erlang crashs/builds
 *.dump
-.rebar/
 .eunit/
 doc/
-deps/
-
-# keep applications ebin with a !.gitignore because rebar fail to prepare-deps if missing
-/ebin
+_build
+rebar.lock
 
 # gradle builds
 .gradle/

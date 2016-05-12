@@ -13,7 +13,7 @@
             ]
         },
         {applications,
-            [kernel, stdlib]
+            [kernel, stdlib, common_hrl]
         },
         {start_phases, []},
         {mod, {j_server_app, []}}
