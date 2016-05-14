@@ -25,6 +25,6 @@ cache:
   - C:\Users\appveyor\.gradle\caches\
   - C:\Users\appveyor\.gradle\wrapper\
   - C:\Ruby193\lib\ruby\gems\
-  - .\build\default\lib
-  - .\build\prod\lib
+  - .\_build\default\lib
+  - .\_build\prod\lib
 
