@@ -4,19 +4,18 @@ before_build:
     - gem query -i -n builder || gem install builder
 
 after_build:
+    - del _build\prod\lib\monitor\.rebar3\erlcinfo
+    - del _build\prod\lib\sysmo\.rebar3\erlcinfo
+    - del _build\prod\lib\j_server\.rebar3\erlcinfo
+    - del _build\default\lib\ranch\.rebar3\erlcinfo
+    - del _build\default\lib\monitor\.rebar3\erlcinfo
+    - del _build\default\lib\cowboy\.rebar3\erlcinfo
+    - del _build\default\lib\supercast\.rebar3\erlcinfo
+    - del _build\default\lib\cowlib\.rebar3\erlcinfo
+    - del _build\default\lib\sysmo\.rebar3\erlcinfo
+    - del _build\default\lib\jsx\.rebar3\erlcinfo
+    - del _build\default\lib\j_server\.rebar3\erlcinfo
     - .\apps\j_server\priv\jserver\gradlew.bat --stop
-    - .\_build\prod\lib\monitor\.rebar3\erlcinfo
-    - .\_build\prod\lib\sysmo\.rebar3\erlcinfo
-    - .\_build\prod\lib\j_server\.rebar3\erlcinfo
-    - .\_build\default\lib\ranch\.rebar3\erlcinfo
-    - .\_build\default\lib\monitor\.rebar3\erlcinfo
-    - .\_build\default\lib\cowboy\.rebar3\erlcinfo
-    - .\_build\default\lib\supercast\.rebar3\erlcinfo
-    - .\_build\default\lib\cowlib\.rebar3\erlcinfo
-    - .\_build\default\lib\sysmo\.rebar3\erlcinfo
-    - .\_build\default\lib\jsx\.rebar3\erlcinfo
-    - .\_build\default\lib\j_server\.rebar3\erlcinfo
-    - 
     - del C:\Users\appveyor\.gradle\caches\modules-2\modules-2.lock
 
 build_script:
