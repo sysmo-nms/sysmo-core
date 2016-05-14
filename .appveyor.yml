@@ -5,11 +5,18 @@ before_build:
 
 after_build:
     - .\apps\j_server\priv\jserver\gradlew.bat --stop
-    - del deps\ranch\.rebar\erlcinfo
-    - del deps\cowlib\.rebar\erlcinfo
-    - del deps\cowboy\.rebar\erlcinfo
-    - del deps\jsx\.rebar\erlcinfo
-    - del deps\supercast\.rebar\erlcinfo
+    - .\_build\prod\lib\monitor\.rebar3\erlcinfo
+    - .\_build\prod\lib\sysmo\.rebar3\erlcinfo
+    - .\_build\prod\lib\j_server\.rebar3\erlcinfo
+    - .\_build\default\lib\ranch\.rebar3\erlcinfo
+    - .\_build\default\lib\monitor\.rebar3\erlcinfo
+    - .\_build\default\lib\cowboy\.rebar3\erlcinfo
+    - .\_build\default\lib\supercast\.rebar3\erlcinfo
+    - .\_build\default\lib\cowlib\.rebar3\erlcinfo
+    - .\_build\default\lib\sysmo\.rebar3\erlcinfo
+    - .\_build\default\lib\jsx\.rebar3\erlcinfo
+    - .\_build\default\lib\j_server\.rebar3\erlcinfo
+    - 
     - del C:\Users\appveyor\.gradle\caches\modules-2\modules-2.lock
 
 build_script:
@@ -19,5 +26,6 @@ cache:
   - C:\Users\appveyor\.gradle\caches\
   - C:\Users\appveyor\.gradle\wrapper\
   - C:\Ruby193\lib\ruby\gems\
-  - deps
+  - .\build\default\lib
+  - .\build\prod\lib
 
