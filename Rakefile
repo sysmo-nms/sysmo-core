@@ -178,10 +178,10 @@ task :release_worker => [:java, :pping] do
 end
 
 
-desc "Run the release in foreground"
+desc "Run the debug release in foreground"
 task :run do
   cd ROOT
-  sh "#{REBAR} console"
+  sh "_build/default/rel/sysmo/bin/sysmo console"
   sh "epmd -kill"
 end
 
