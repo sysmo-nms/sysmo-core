@@ -27,9 +27,6 @@ build/
 # sysmo-worker release
 /sysmo-worker
 
-# local TODO files
-*TODO*
-
 # intellij
 *.iml
 .idea

@@ -1,0 +1,3 @@
+- test user  activity
+- test probe activity
+- test nchecks workers connection/disconnection
