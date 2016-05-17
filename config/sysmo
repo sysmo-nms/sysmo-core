@@ -8,12 +8,12 @@ if [ -z $SCRIPT ]; then
 fi;
 SCRIPT_DIR="$(cd `dirname "$SCRIPT"` && pwd -P)"
 RELEASE_ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd -P)"
-REL_NAME="sysmo"
-REL_VSN="{{release_version}}"
-ERTS_VSN="{{erts_vsn}}"
+REL_NAME="{{ release_name }}"
+REL_VSN="{{ release_version }}"
+ERTS_VSN="{{ erts_vsn }}"
 CODE_LOADING_MODE="${CODE_LOADING_MODE:-embedded}"
 REL_DIR="$RELEASE_ROOT_DIR/releases/$REL_VSN"
-ERL_OPTS=""
+ERL_OPTS="{{ erl_opts }}"
 RUNNER_LOG_DIR="${RUNNER_LOG_DIR:-$RELEASE_ROOT_DIR/log}"
 
 find_erts_dir() {
@@ -87,6 +87,33 @@ relx_escript() {
 relx_start_command() {
     printf "exec \"%s\" \"%s\"" "$RELEASE_ROOT_DIR/bin/$REL_NAME" \
            "$START_OPTION"
+}
+
+# Ensure the release application has started before returning
+ensure_started() {
+    SLEEP_STEP=0.5
+
+    PING_MAX=10
+    PING_TRY=0
+    while [ "`$RELEASE_ROOT_DIR/bin/$REL_NAME ping`" != "pong" ]
+    do
+        PING_TRY=`expr $PING_TRY + 1`
+        if [ $PING_TRY -ge $PING_MAX ]; then
+            exit 1
+        fi
+        sleep $SLEEP_STEP
+    done
+
+    ENSURE_MAX=10
+    ENSURE_TRY=0
+    while [ "`$RELEASE_ROOT_DIR/bin/$REL_NAME eval "application:ensure_started($REL_NAME)"`" != "ok" ]
+    do
+        PING_TRY=`expr $ENSURE_TRY + 1`
+        if [ $ENSURE_TRY -ge $ENSURE_MAX ]; then
+            exit 1
+        fi
+        sleep $SLEEP_STEP
+    done
 }
 
 # Use $CWD/etc/vm.args if exists, otherwise releases/VSN/vm.args
@@ -231,6 +258,8 @@ case "$1" in
 
         "$BINDIR/run_erl" -daemon "$PIPE_DIR" "$RUNNER_LOG_DIR" \
                           "$(relx_start_command)"
+
+        ensure_started
         ;;
 
     stop)
