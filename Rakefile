@@ -29,8 +29,8 @@ ERLANG_REL  = File.join(ROOT, "rel")
 JAVA_DIR    = File.join(ROOT, "apps", "j_server", "priv", "jserver")
 GO_DIR      = File.join(ROOT, "apps", "j_server", "priv", "pping")
 
-PROD_RELEASE_DIR  = File.join(ROOT, "_build", "prod", "rel", "sysmo")
-DEBUG_RELEASE_DIR = File.join(ROOT, "_build", "default", "rel", "sysmo")
+PROD_RELEASE_DIR  = File.join(ROOT, "_build", "default", "rel", "sysmo")
+DEBUG_RELEASE_DIR = File.join(ROOT, "_build", "debug", "rel", "sysmo")
 
 #
 # set wrappers vars
@@ -136,7 +136,7 @@ task :release => [:build] do
   RELEASE_DIR = PROD_RELEASE_DIR;
   cd ROOT
   FileUtils.rm_rf("#{RELEASE_DIR}/java_apps")
-  sh "#{REBAR} as prod release"
+  sh "#{REBAR} release"
   install_pping_command()
   generate_all_checks()
   puts "Production release ready!"
@@ -146,7 +146,7 @@ end
 
 desc "Generate Erlang release archive under the PRODUCTION profile"
 task :release_archive => :release do
-    cd ROOT; sh "#{REBAR} as prod tar"
+    cd ROOT; sh "#{REBAR} tar"
 end
 
 
@@ -155,7 +155,7 @@ task :debug_release => [:debug_build] do
   RELEASE_DIR = DEBUG_RELEASE_DIR;
   cd ROOT
   FileUtils.rm_rf("#{RELEASE_DIR}/java_apps")
-  sh "#{REBAR} release"
+  sh "#{REBAR} as debug release"
   install_pping_command()
   generate_all_checks()
   puts "Debug release ready!"
@@ -182,7 +182,7 @@ end
 desc "Run the debug release in foreground"
 task :run do
   cd ROOT
-  sh "_build/default/rel/sysmo/bin/sysmo console"
+  sh "_build/debug/rel/sysmo/bin/sysmo console"
   sh "epmd -kill"
 end
 
