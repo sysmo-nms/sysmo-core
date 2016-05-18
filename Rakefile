@@ -96,6 +96,7 @@ desc "Clean all"
 task :clean_all => [:clean] do
   cd ROOT;
   FileUtils.rm_rf("_build")
+  FileUtils.rm_f("rebar.lock")
 end
 
 
