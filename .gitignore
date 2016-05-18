@@ -21,9 +21,6 @@ build/
 /apps/j_server/priv/pping/pping
 /apps/j_server/priv/pping/pping.exe
 
-# sysmo release
-/rel/sysmo
-
 # sysmo-worker release
 /sysmo-worker
 
@@ -31,6 +28,3 @@ build/
 *.iml
 .idea
 
-# obs release
-/rel/sysmo-core*
-/rel/sysmo-worker
