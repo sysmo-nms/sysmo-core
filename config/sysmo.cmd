@@ -1,3 +1,5 @@
+:: IMPORTANT: edit this file with a CRLF line ending editor.
+:: This file was edited with nodepad++
 @setlocal
 
 :: set node_name
@@ -36,6 +38,15 @@
 :: set erts_bin
 @set erts_bin=%node_root%\erts-%erts_version%\bin
 
+:: write_ini
+@set erl_ini=%erts_bin%\erl.ini
+@set converted_bindir=%erts_bin:\=\\%
+@set converted_rootdir=%node_root:\=\\%
+@echo [erlang] > "%erl_ini%"
+@echo Bindir=%converted_bindir% >> "%erl_ini%"
+@echo Progname=erl >> "%erl_ini%"
+@echo Rootdir=%converted_rootdir% >> "%erl_ini%"
+
 
 @if "%1"=="install"   @goto install
 @if "%1"=="start"     @goto start
@@ -50,19 +61,19 @@
 
 
 :install
-:: WTF: All node files must have "Administrators" file permissions
+:: WTF: All node files must have "Administrators" permissions
 :: to get it work with erlsrv.exe. Console mode only requires the command
 :: to be started in Administrator mode.
 :: So to get it work, first install the files then use erlsrv.
 @set args= -boot \"%node_boot%\" -config \"%sys_config%\" -args_file \"%vm_args%\" -sname "%node_name%"
 @"%erts_bin%\erlsrv.exe" add "%service_name%" ^
 	-stopaction "init:stop()." ^
-	-onfail restart ^
-	-workdir "%node_root%" ^
-	-sname "%node_name%" ^
-	-comment "%service_description%" ^
-	-machine "%erts_bin%\erl.exe" ^
-	-args "%args%"
+	-onfail     restart ^
+	-workdir    "%node_root%" ^
+	-sname      "%node_name%" ^
+	-comment    "%service_description%" ^
+	-machine    "%erts_bin%\erl.exe" ^
+	-args       "%args%"
 @goto :EOF
 :: END OF PROGRAM
 
@@ -87,6 +98,7 @@
 :uninstall
 :: WARNING: see WTF
 @"%erts_bin%\erlsrv.exe" remove "%service_name%"
+@"%erts_bin%\epmd.exe" -kill
 @goto :EOF
 :: END OF PROGRAM
 
