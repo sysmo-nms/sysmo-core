@@ -1,3 +1,5 @@
 - test user  activity
 - test probe activity
 - test nchecks workers connection/disconnection
+- test http content
+- test tcp UI conn
