@@ -1,207 +1,106 @@
-:: This batch file handles managing an Erlang node as a Windows service.
-::
-:: Commands provided:
-::
-:: * install - install the release as a Windows service
-:: * start - start the service and Erlang node
-:: * stop - stop the service and Erlang node
-:: * restart - run the stop command and start command
-:: * uninstall - uninstall the service and kill a running node
-:: * ping - check if the node is running
-:: * console - start the Erlang release in a `werl` Windows shell
-:: * attach - connect to a running node and open an interactive console
-:: * list - display a listing of installed Erlang services
-:: * usage - display available commands
+@setlocal
 
-:: Set variables that describe the release
-@set rel_name={{ rel_name }}
-@set rel_vsn={{ rel_vsn }}
-@set erts_vsn={{ erts_vsn }}
-@set erl_opts={{ erl_opts }}
+:: set node_name
+@set node_name=sysmo
 
-:: Discover the release root directory from the directory
-:: of this script
-@set script_dir=%~dp0
-@for %%A in ("%script_dir%\..") do @(
-  set release_root_dir=%%~fA
-)
-@set rel_dir=%release_root_dir%\releases\%rel_vsn%
+:: set service_name
+@set service_name=Sysmo Core
 
-@call :find_erts_dir
-@call :find_sys_config
-@call :set_boot_script_var
+:: set service_description
+@set service_description=Sysmo Core OSS
 
-@set service_name=%rel_name%_%rel_vsn%
-@set bindir=%erts_dir%\bin
-@set vm_args=%release_root_dir%\etc\vm.args
-@set progname=erl.exe
-@set clean_boot_script=%release_root_dir%\bin\start_clean
-@set erlsrv="%bindir%\erlsrv.exe"
-@set epmd="%bindir%\epmd.exe"
-@set escript="%bindir%\escript.exe"
-@set werl="%bindir%\werl.exe"
-@set nodetool="%release_root_dir%\bin\nodetool"
+:: set node_root
+@for /F "delims=" %%I in ("%~dp0..") do @set node_root=%%~fI
 
-:: Extract node type and name from vm.args
-@for /f "usebackq tokens=1-2" %%I in (`findstr /b "\-name \-sname" "%vm_args%"`) do @(
-  set node_type=%%I
-  set node_name=%%J
+:: cd into node_root
+@cd %node_root%
+
+:: set releases_dir
+@set releases_dir=%node_root%\releases
+
+:: set erts_version and release_version from start_erl.data
+@for /F "usebackq tokens=1,2" %%I in ("%releases_dir%\start_erl.data") do @(
+    @call :set_trim erts_version    %%I
+    @call :set_trim release_version %%J
 )
 
-:: Extract cookie from vm.args
-@for /f "usebackq tokens=1-2" %%I in (`findstr /b \-setcookie "%vm_args%"`) do @(
-  set cookie=%%J
-)
+:: set vm_args
+@set vm_args=%node_root%\etc\vm.args
 
-:: Write the erl.ini file to set up paths relative to this script
-@call :write_ini
+:: set sys_config
+@set sys_config=%node_root%\etc\app.config
 
-:: If a start.boot file is not present, copy one from the named .boot file
-@if not exist "%rel_dir%\start.boot" (
-  copy "%rel_dir%\%rel_name%.boot" "%rel_dir%\start.boot" >nul
-)
+:: set node_boot
+@set node_boot=%releases_dir%\%release_version%\%node_name%
 
-@if "%1"=="install" @goto install
+:: set erts_bin
+@set erts_bin=%node_root%\erts-%erts_version%\bin
+
+
+@if "%1"=="install"   @goto install
+@if "%1"=="start"     @goto start
+@if "%1"=="stop"      @goto stop
+@if "%1"=="list"      @goto list
 @if "%1"=="uninstall" @goto uninstall
-@if "%1"=="start" @goto start
-@if "%1"=="stop" @goto stop
-@if "%1"=="restart" @call :stop && @goto start
-@if "%1"=="upgrade" @goto relup
-@if "%1"=="downgrade" @goto relup
-@if "%1"=="console" @goto console
-@if "%1"=="ping" @goto ping
-@if "%1"=="list" @goto list
-@if "%1"=="attach" @goto attach
-@if "%1"=="" @goto usage
+@if "%1"=="console"   @goto console
+
 @echo Unknown command: "%1"
+@goto :EOF
+:: END OF PROGRAM
 
-@goto :eof
 
-:: Find the ERTS dir
-:find_erts_dir
-@set possible_erts_dir=%release_root_dir%\erts-%erts_vsn%
-@if exist "%possible_erts_dir%" (
-  call :set_erts_dir_from_default
-) else (
-  call :set_erts_dir_from_erl
-)
-@goto :eof
-
-:: Set the ERTS dir from the passed in erts_vsn
-:set_erts_dir_from_default
-@set erts_dir=%possible_erts_dir%
-@set rootdir=%release_root_dir%
-@goto :eof
-
-:: Set the ERTS dir from erl
-:set_erts_dir_from_erl
-@for /f "delims=" %%i in ('where erl') do @(
-  set erl=%%i
-)
-@set dir_cmd="%erl%" -noshell -eval "io:format(\"~s\", [filename:nativename(code:root_dir())])." -s init stop
-@for /f %%i in ('%%dir_cmd%%') do @(
-  set erl_root=%%i
-)
-@set erts_dir=%erl_root%\erts-%erts_vsn%
-@set rootdir=%erl_root%
-@goto :eof
-
-:: Find the sys.config (or app.config) file
-:find_sys_config
-@set possible_sys=%release_root_dir%\etc\app.config
-@if exist %possible_sys% (
-  set sys_config=-config "%possible_sys%"
-)
-@goto :eof
-
-:: set boot_script variable
-:set_boot_script_var
-@if exist "%rel_dir%\%rel_name%.boot" (
-  set boot_script=%rel_dir%\%rel_name%
-) else (
-  set boot_script=%rel_dir%\start
-)
-@goto :eof
-
-:: Write the erl.ini file
-:write_ini
-@set erl_ini=%erts_dir%\bin\erl.ini
-@set converted_bindir=%bindir:\=\\%
-@set converted_rootdir=%rootdir:\=\\%
-@echo [erlang] > "%erl_ini%"
-@echo Bindir=%converted_bindir% >> "%erl_ini%"
-@echo Progname=%progname% >> "%erl_ini%"
-@echo Rootdir=%converted_rootdir% >> "%erl_ini%"
-@goto :eof
-
-:: Display usage information
-:usage
-@echo usage: %~n0 ^(install^|uninstall^|start^|stop^|restart^|upgrade^|downgrade^|console^|ping^|list^|attach^)
-@goto :eof
-
-:: Install the release as a Windows service
-:: or install the specified version passed as argument
 :install
-@if "" == "%2" (
-  :: Install the service
-  set args=%erl_opts% -setcookie %cookie% ++ -rootdir \"%rootdir%\"
-  set start_erl=%erts_dir%\bin\start_erl.exe
-  set description=Erlang node %node_name% in %rootdir%
-  %erlsrv% add %service_name% %node_type% "%node_name%" -c "%description%" ^
-            -w "%rootdir%" -m "%start_erl%" -args "%args%" ^
-            -stopaction "init:stop()."
-) else (
-  :: relup and reldown
-  goto relup
-)
-@goto :eof
+:: WTF: All node files must have "Administrators" file permissions
+:: to get it work with erlsrv.exe. Console mode only requires the command
+:: to be started in Administrator mode.
+:: So to get it work, first install the files then use erlsrv.
+@set args= -boot \"%node_boot%\" -config \"%sys_config%\" -args_file \"%vm_args%\" -sname "%node_name%"
+@"%erts_bin%\erlsrv.exe" add "%service_name%" ^
+	-stopaction "init:stop()." ^
+	-onfail restart ^
+	-workdir "%node_root%" ^
+	-sname "%node_name%" ^
+	-comment "%service_description%" ^
+	-machine "%erts_bin%\erl.exe" ^
+	-args "%args%"
+@goto :EOF
+:: END OF PROGRAM
 
-:: Uninstall the Windows service
-:uninstall
-@%erlsrv% remove %service_name%
-@%epmd% -kill
-@goto :eof
-
-:: Start the Windows service
 :start
-@%erlsrv% start %service_name%
-@goto :eof
+:: WARNING: see WTF
+@"%erts_bin%\erlsrv.exe" start "%service_name%"
+@goto :EOF
+:: END OF PROGRAM
 
-:: Stop the Windows service
 :stop
-@%erlsrv% stop %service_name%
-@goto :eof
+:: WARNING: see WTF
+@"%erts_bin%\erlsrv.exe" stop "%service_name%"
+@goto :EOF
+:: END OF PROGRAM
 
-:: Relup and reldown
-:relup
-@if "" == "%2" (
-  echo Missing package argument
-  echo Usage: %rel_name% %1 {package base name}
-  echo NOTE {package base name} MUST NOT include the .tar.gz suffix
-  set ERRORLEVEL=1
-  exit /b %ERRORLEVEL%
-)
-@%escript% "%rootdir%/bin/install_upgrade.escript" "%rel_name%" "%node_name%" "%cookie%" "%2"
-@goto :eof
-
-:: Start a console
-:console
-@start "%rel_name% console" %werl% -boot "%boot_script%" %sys_config%  ^
-       -args_file "%vm_args%"
-@goto :eof
-
-:: Ping the running node
-:ping
-@%escript% %nodetool% ping %node_type% "%node_name%" -setcookie "%cookie%"
-@goto :eof
-
-:: List installed Erlang services
 :list
-@%erlsrv% list %service_name%
-@goto :eof
+:: WARNING: see WTF
+@"%erts_bin%\erlsrv.exe" list "%service_name%"
+@goto :EOF
+:: END OF PROGRAM
 
-:: Attach to a running node
-:attach
-@start "%node_name% attach" %werl% -boot "%clean_boot_script%" ^
-       -remsh %node_name% %node_type% console -setcookie %cookie%
-@goto :eof
+:uninstall
+:: WARNING: see WTF
+@"%erts_bin%\erlsrv.exe" remove "%service_name%"
+@goto :EOF
+:: END OF PROGRAM
+
+:console
+@"%erts_bin%\erl.exe" ^
+	-boot      "%node_boot%" ^
+	-config    "%sys_config%" ^
+	-args_file "%vm_args%" ^
+	-sname     "%node_name%"
+@goto :EOF
+:: END OF PROGRAM
+
+
+:set_trim
+@set %1=%2
+@goto :EOF
+:: END OF PROGRAM
