@@ -14,187 +14,249 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Sysmo NMS.  If not, see <http://www.gnu.org/licenses/>.
-
 require 'rubygems'
 require 'rake'
 require 'builder'
 require 'pathname'
 
-#
-# set dirs vars
-#
-ROOT        = Dir.pwd
-ERLANG_DIR  = ROOT
-ERLANG_REL  = File.join(ROOT, "rel")
-JAVA_DIR    = File.join(ROOT, "apps", "j_server", "priv", "jserver")
-GO_DIR      = File.join(ROOT, "apps", "j_server", "priv", "pping")
+# set directories constants
+SYSMO_ROOT   = Dir.pwd
+JSERVER_ROOT = File.join(SYSMO_ROOT, "apps", "j_server", "priv", "jserver")
+PPING_ROOT   = File.join(SYSMO_ROOT, "apps", "j_server", "priv", "pping")
 
-PROD_RELEASE_DIR  = File.join(ROOT, "_build", "default", "rel", "sysmo")
-DEBUG_RELEASE_DIR = File.join(ROOT, "_build", "debug", "rel", "sysmo")
+# erlang releases location constants
+PROD_RELEASE_DIR  = File.join(SYSMO_ROOT, "_build", "default", "rel", "sysmo")
+DEBUG_RELEASE_DIR = File.join(SYSMO_ROOT, "_build", "debug",   "rel", "sysmo")
 
-#
-# set wrappers vars
-#
-REBAR     = File.join(ERLANG_DIR, "rebar3")
-GRADLE    = File.join(JAVA_DIR,   "gradlew")
+# set wrappers executable constants
+REBAR  = File.join(SYSMO_ROOT, "rebar3")
+GRADLE = File.join(JSERVER_ROOT, "gradlew")
 
 
-#
-# Shortcut stasks
-#
-task :default => :release
-task :rel     => :debug_release
+# Shortcuts
+desc "Build all project components."
+task :build => ["sysmo:build", "jserver:build", "pping:build"]
+
+desc "Clean all project components."
+task :clean => ["sysmo:clean", "jserver:clean", "pping:clean"]
+
+desc "Create a debug release"
+task :rel => ["release:debug_build"]
+
+desc "Run the debug release"
+task :run => ["release:debug_run"]
+
+desc "Create a production release"
+task :release => ["release:build"]
 
 
-#
-# tasks
-#
-desc "Build all"
-task :build => [:java, :erl, :pping]
+# Sysmo-Core release related tasks
+namespace "release" do
 
+    desc "Create a debug release"
+    task :debug_build => ["sysmo:debug_build", "jserver:build", "pping:build"] do
+        cd SYSMO_ROOT
 
-desc "Debug build. Send all levels of erlang error to sysmo.log"
-task :debug_build => [:java, :debug_erl, :pping]
+        # remove old sysmo-jserver java application
+        FileUtils.rm_rf("#{DEBUG_RELEASE_DIR}/java_apps")
 
+        # generate release
+        sh "#{REBAR} as debug release"
 
-desc "Build GO pping"
-task :pping do
-  cd GO_DIR; sh "go build pping.go"
-end
+        # custom actions
+        RELEASE_DIR = DEBUG_RELEASE_DIR
+        install_pping_command()
+        generate_all_checks()
 
+        puts "Debug release ready!"
+        # end
+    end
 
-desc "Build Erlang project"
-task :erl do
-  cd ROOT; sh "#{REBAR} compile"
-end
+    desc "Run the debug release"
+    task :debug_run do
+        sh "#{DEBUG_RELEASE_DIR}/bin/sysmo console"
+        sh "epmd -kill"
+    end
 
+    desc "Create a production release"
+    task :build => ["sysmo:build", "jserver:build", "pping:build"] do
+        cd SYSMO_ROOT
 
-desc "Build debug Erlang project"
-task :debug_erl do
-  cd ROOT; sh "#{REBAR} compile"
-end
+        # remove old sysmo-jserver java application
+        FileUtils.rm_rf("#{PROD_RELEASE_DIR}/java_apps")
 
+        # generate release
+        sh "#{REBAR} release"
+        
+        # custom actions
+        RELEASE_DIR = PROD_RELEASE_DIR;
+        install_pping_command()
+        generate_all_checks()
 
-desc "Build java"
-task :java do
-  cd JAVA_DIR;   sh "#{GRADLE} installDist"
-end
+        puts "Production release ready!"
+        #end
+    end
 
+    desc "Generate a Sysmo-Worker"
+    task :build_worker => ["jserver:build", "pping:build"] do
+        cd SYSMO_ROOT
 
-#
-# Clean tasks
-#
-desc "Clean"
-task :clean do
-  cd JAVA_DIR; sh "#{GRADLE} clean"
-  cd ROOT;     sh "#{REBAR} clean"
-  cd GO_DIR;   sh "go clean pping.go"
-end
+        # rm old release if exists
+        FileUtils.rm_rf("sysmo-worker")
 
+        # where is located sysmo-worker
+        worker_dir = File.join(JSERVER_ROOT, "sysmo-worker/build/install/sysmo-worker")
 
-desc "Clean all"
-task :clean_all => [:clean] do
-  cd ROOT;
-  FileUtils.rm_rf("_build")
-  FileUtils.rm_f("rebar.lock")
-end
+        # move it here
+        FileUtils.mv(worker_dir, "sysmo-worker")
 
+        # put pping in (will fail on win32 wich is normal)
+        pping_exe = File.join(PPING_ROOT, "pping")
+        FileUtils.mkdir("sysmo-worker/utils")
+        FileUtils.cp(pping_exe, "sysmo-worker/utils/")
 
-#
-# Test tasks
-# 
-desc "Test erlang and java apps"
-task :test do
-  cd ROOT;     sh "#{REBAR}  test"
-  cd JAVA_DIR; sh "#{GRADLE} test"
-end
+        # put ruby scripts in
+        ruby_dir = File.join(JSERVER_ROOT, "shared/nchecks/ruby")
+        FileUtils.cp_r(ruby_dir, "sysmo-worker/ruby")
+        FileUtils.mkdir("sysmo-worker/etc")
 
+        # a worker does not require the xml checks definition
+        
+        puts "Worker release ready!"
+        #end
+    end
 
-desc "Check java apps"
-task :check do
-  cd JAVA_DIR; sh "#{GRADLE} check"
-end
-
-
-
-#
-# Documentation tasks
-#
-desc "Generate documentation for java and erlang apps"
-task :doc do
-  cd ROOT;     sh "#{REBAR} doc"
-  cd JAVA_DIR; sh "#{GRADLE} javadoc"
-end
-
-
-
-#
-# Release Core tasks
-#
-desc "Generate Erlang release under the PRODUCTION profile"
-task :release => [:build] do
-  RELEASE_DIR = PROD_RELEASE_DIR;
-  cd ROOT
-  FileUtils.rm_rf("#{RELEASE_DIR}/java_apps")
-  sh "#{REBAR} release"
-  install_pping_command()
-  generate_all_checks()
-  puts "Production release ready!"
+    desc "Generate Erlang release archive under the production profile"
+    task :release_archive => :release do
+        cd SYSMO_ROOT; sh "#{REBAR} tar"
+        puts "Archive built in #{PROD_RELEASE_DIR}/"
+    end
 
 end
 
 
-desc "Generate Erlang release archive under the PRODUCTION profile"
-task :release_archive => :release do
-    cd ROOT; sh "#{REBAR} tar"
+# Sysmo Erlang build and releases related tasks
+namespace "sysmo" do
+
+    desc "Build Sysmo-Core"
+    task :build do
+        cd SYSMO_ROOT
+        sh "#{REBAR} compile"
+    end
+
+    desc "Build Sysmo-Core in DEBUG mode"
+    task :debug_build do
+        cd SYSMO_ROOT
+        sh "#{REBAR} as debug compile"
+    end
+
+    desc "Clean Sysmo-Core"
+    task :clean do
+        cd SYSMO_ROOT
+        sh "#{REBAR} clean"
+        sh "#{REBAR} as debug clean"
+    end
+
+    desc "Clean all build directories"
+    task :clean_all => [:clean] do
+        cd SYSMO_ROOT
+        FileUtils.rm_rf("_build")
+        FileUtils.rm_f("rebar.lock")
+    end
+
+    desc "Test Sysmo-Core"
+    task :test do
+        # nothing to test yet
+    end
+
+    desc "Check Sysmo-Core"
+    task :check do
+        # nothing to check yet
+    end
+
+    desc "Generate documentation Sysmo-Core"
+    task :doc do
+        cd SYSMO_ROOT
+        sh "#{REBAR} doc"
+    end
+
 end
 
 
-desc "Generate Erlang release under the DEFAULT profile"
-task :debug_release => [:debug_build] do
-  RELEASE_DIR = DEBUG_RELEASE_DIR;
-  cd ROOT
-  FileUtils.rm_rf("#{RELEASE_DIR}/java_apps")
-  sh "#{REBAR} as debug release"
-  install_pping_command()
-  generate_all_checks()
-  puts "Debug release ready!"
+# Sysmo-Jserver Java build and releases related tasks
+namespace "jserver" do
+
+    desc "Build Sysmo-Jserver"
+    task :build do
+        cd JSERVER_ROOT
+        sh "#{GRADLE} installDist"
+    end
+
+
+    desc "Clean Sysmo-Jserver"
+    task :clean do
+        cd JSERVER_ROOT
+        sh "#{GRADLE} clean"
+    end
+
+    desc "Test Sysmo-Jserver"
+    task :test do
+        cd JSERVER_ROOT
+        sh "#{GRADLE} test"
+    end
+
+    desc "Check Sysmo-Jserver"
+    task :check do
+        cd JSERVER_ROOT
+        sh "#{GRADLE} check"
+    end
+
+    desc "Generate documentation Sysmo-Jserver"
+    task :doc do
+        cd JSERVER_ROOT
+        sh "#{GRADLE} javadoc"
+    end
+
 end
 
 
-#
-# Release Worker tasks
-#
-task :release_worker => [:java, :pping] do
-  cd ROOT
-  FileUtils.rm_rf("sysmo-worker")
-  worker_dir = File.join(JAVA_DIR, "sysmo-worker/build/install/sysmo-worker")
-  FileUtils.mv(worker_dir, "sysmo-worker")
-  pping_exe = File.join(GO_DIR, "pping")
-  FileUtils.mkdir("sysmo-worker/utils")
-  FileUtils.cp(pping_exe, "sysmo-worker/utils/")
-  ruby_dir = File.join(JAVA_DIR, "shared/nchecks/ruby")
-  FileUtils.cp_r(ruby_dir, "sysmo-worker/ruby")
-  FileUtils.mkdir("sysmo-worker/etc")
+# Pping Golang build and releases related tasks
+namespace "pping" do
+
+    desc "Build Pping"
+    task :build do
+        cd PPING_ROOT
+        sh "go build pping.go"
+    end
+
+    desc "Clean Pping"
+    task :clean do
+        cd PPING_ROOT;
+        sh "go clean pping.go"
+    end
+
+    desc "Test Pping"
+    task :test do
+        # nothing to test yet
+    end
+
+    desc "Check Pping"
+    task :check do
+        # nothing to check yet
+    end
+
+    desc "Generate documentation Pping"
+    task :doc do
+        # no doc yet
+    end
+
 end
 
-
-desc "Run the debug release in foreground"
-task :run do
-  cd ROOT
-  sh "_build/debug/rel/sysmo/bin/sysmo console"
-  sh "epmd -kill"
-end
-
-
-#
-# pping special case
-#
 def install_pping_command()
-  cd ROOT
+  cd SYSMO_ROOT
   dst      = File.join(RELEASE_DIR, "utils")
-  win_src  = File.join(GO_DIR, "pping.exe")
-  unix_src = File.join(GO_DIR, "pping")
+  win_src  = File.join(PPING_ROOT, "pping.exe")
+  unix_src = File.join(PPING_ROOT, "pping")
   if File.exist?(win_src)
     puts "Install #{win_src}"
     FileUtils.copy(win_src,dst)
@@ -204,12 +266,8 @@ def install_pping_command()
   end
 end
 
-
-#
-# generate AllChecks.xml
-#
 def generate_all_checks()
-  cd ROOT
+  cd SYSMO_ROOT
   puts "Building AllChecks.xml"
 
   # rm all checks informations if exists
@@ -231,5 +289,4 @@ def generate_all_checks()
   end
 
   file.close()
-
 end
