@@ -49,6 +49,14 @@ task :run => ["release:debug_run"]
 desc "Create a production release"
 task :release => ["release:build"]
 
+desc "Create a production release"
+task :release_worker => ["release:build_worker"]
+
+desc "Clean environment"
+task :clean_all => [:clean] do
+    FileUtils.rm_rf("#{SYSMO_ROOT}/_build")
+    FileUtils.rm_rf("#{SYSMO_ROOT}/sysmo-worker")
+end
 
 # Sysmo-Core release related tasks
 namespace "release" do
