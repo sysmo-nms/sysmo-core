@@ -71,10 +71,9 @@ namespace "release" do
         # generate release
         sh "#{REBAR} as debug release"
 
-        # custom actions
-        RELEASE_DIR = DEBUG_RELEASE_DIR
-        install_pping_command()
-        generate_all_checks()
+        # extern install
+        install_pping(DEBUG_RELEASE_DIR)
+        install_nchecks(DEBUG_RELEASE_DIR)
 
         puts "Debug release ready!"
         # end
@@ -96,10 +95,9 @@ namespace "release" do
         # generate release
         sh "#{REBAR} release"
         
-        # custom actions
-        RELEASE_DIR = PROD_RELEASE_DIR;
-        install_pping_command()
-        generate_all_checks()
+        # extern install
+        install_pping(PROD_RELEASE_DIR)
+        install_nchecks(PROD_RELEASE_DIR)
 
         puts "Production release ready!"
         #end
@@ -260,41 +258,48 @@ namespace "pping" do
 
 end
 
-def install_pping_command()
-  cd SYSMO_ROOT
-  dst      = File.join(RELEASE_DIR, "utils")
-  win_src  = File.join(PPING_ROOT, "pping.exe")
-  unix_src = File.join(PPING_ROOT, "pping")
-  if File.exist?(win_src)
-    puts "Install #{win_src}"
-    FileUtils.copy(win_src,dst)
-  elsif File.exist?(unix_src)
-    puts "Install #{unix_src}"
-    FileUtils.copy(unix_src,dst)
-  end
+
+#
+# Install pping command in the specified release directory
+# 
+def install_pping(release_dir)
+    cd SYSMO_ROOT
+    dst      = File.join(release_dir, "utils")
+    win_src  = File.join(PPING_ROOT, "pping.exe")
+    unix_src = File.join(PPING_ROOT, "pping")
+    if File.exist?(win_src)
+        puts "Install #{win_src}"
+        FileUtils.copy(win_src,dst)
+    elsif File.exist?(unix_src)
+        puts "Install #{unix_src}"
+        FileUtils.copy(unix_src,dst)
+    end
 end
 
-def generate_all_checks()
-  cd SYSMO_ROOT
-  puts "Building AllChecks.xml"
+#
+# Install nchecks definitions and scripts in the release directory
+# 
+def install_nchecks(release_dir)
+    cd SYSMO_ROOT
+    puts "Building AllChecks.xml"
 
-  # rm all checks informations if exists
-  FileUtils.rm_f("#{RELEASE_DIR}/docroot/nchecks/AllChecks.xml")
-  checks = Dir.glob("#{RELEASE_DIR}/docroot/nchecks/Check*.xml")
+    # rm all checks informations if exists
+    FileUtils.rm_f("#{release_dir}/docroot/nchecks/AllChecks.xml")
+    checks = Dir.glob("#{release_dir}/docroot/nchecks/Check*.xml")
 
-  # create new AllChecks.xml file
-  file   = File.new("#{RELEASE_DIR}/docroot/nchecks/AllChecks.xml", "w:UTF-8")
-  xml    = Builder::XmlMarkup.new(:target => file, :indent => 4)
+    # create new AllChecks.xml file
+    file   = File.new("#{release_dir}/docroot/nchecks/AllChecks.xml", "w:UTF-8")
+    xml    = Builder::XmlMarkup.new(:target => file, :indent => 4)
 
-  xml.instruct! :xml, :version=>"1.0", :encoding => "UTF-8"
-  xml.tag!('NChecks', {"xmlns" => "http://schemas.sysmo.io/2015/NChecks"}) do
-    xml.tag!('CheckAccessTable') do
-      checks.each do |c|
-        puts "Add CheckUrl Value=#{c}"
-        xml.tag!('CheckUrl', {"Value" => Pathname.new(c).basename})
-      end
+    xml.instruct! :xml, :version=>"1.0", :encoding => "UTF-8"
+    xml.tag!('NChecks', {"xmlns" => "http://schemas.sysmo.io/2015/NChecks"}) do
+        xml.tag!('CheckAccessTable') do
+            checks.each do |c|
+                puts "Add CheckUrl Value=#{c}"
+                xml.tag!('CheckUrl', {"Value" => Pathname.new(c).basename})
+            end
+        end
     end
-  end
 
-  file.close()
+    file.close()
 end
