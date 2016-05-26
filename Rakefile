@@ -33,157 +33,163 @@ REBAR  = File.join(SYSMO_ROOT, "rebar3")
 GRADLE = File.join(JSERVER_ROOT, "gradlew")
 
 
-# Shortcuts
-desc "Build all project components."
-task :build => ["sysmo:build", "jserver:build", "pping:build"]
-
-desc "Clean all project components."
+###############################################################################
+## TASKS 
+###############################################################################
+desc "Clean."
 task :clean => ["sysmo:clean", "jserver:clean", "pping:clean"]
 
-desc "Create a debug release"
-task :rel => ["release:debug_build"]
 
-desc "Run the debug release"
-task :run => ["release:debug_run"]
+desc "Create a debug release."
+task :rel => ["sysmo:debug_build", "jserver:build", "pping:build"] do
+    cd SYSMO_ROOT
 
-desc "Create a production release"
-task :release => ["release:build"]
+    # remove old sysmo-jserver java application wich may be present
+    FileUtils.rm_rf("#{DEBUG_RELEASE_DIR}/java_apps")
 
-desc "Create a production release"
-task :release_worker => ["release:build_worker"]
+    # generate release
+    sh "#{REBAR} as debug release"
 
-desc "Clean environment"
-task :clean_all => [:clean] do
-    FileUtils.rm_rf("#{SYSMO_ROOT}/_build")
-    FileUtils.rm_rf("#{SYSMO_ROOT}/sysmo-worker")
+    # extern install
+    install_pping(DEBUG_RELEASE_DIR)
+    install_nchecks(DEBUG_RELEASE_DIR)
+
+    puts "Debug ralease ready!"
+    # end
 end
 
-# Sysmo-Core release related tasks
-namespace "release" do
 
-    desc "Create a debug release"
-    task :debug_build => ["sysmo:debug_build", "jserver:build", "pping:build"] do
-        cd SYSMO_ROOT
+desc "Run the debug release."
+task :run do
+    sh "#{DEBUG_RELEASE_DIR}/bin/sysmo console"
+    sh "epmd -kill"
+end
 
-        # remove old sysmo-jserver java application
-        FileUtils.rm_rf("#{DEBUG_RELEASE_DIR}/java_apps")
 
-        # generate release
-        sh "#{REBAR} as debug release"
+desc "Create a production release."
+task :release => ["jserver:build", "pping:build"] do
+    cd SYSMO_ROOT
 
-        # extern install
-        install_pping(DEBUG_RELEASE_DIR)
-        install_nchecks(DEBUG_RELEASE_DIR)
+    # remove old release
+    clean_all()
 
-        puts "Debug release ready!"
-        # end
-    end
+    # generate release
+    sh "#{REBAR} release"
 
-    desc "Run the debug release"
-    task :debug_run do
-        sh "#{DEBUG_RELEASE_DIR}/bin/sysmo console"
-        sh "epmd -kill"
-    end
+    # extern install
+    install_pping(PROD_RELEASE_DIR)
+    install_nchecks(PROD_RELEASE_DIR)
 
-    desc "Create a production release"
-    task :build => ["sysmo:build", "jserver:build", "pping:build"] do
-        cd SYSMO_ROOT
+    puts "Production release ready!"
+    #end
+end
 
-        # remove old sysmo-jserver java application
-        FileUtils.rm_rf("#{PROD_RELEASE_DIR}/java_apps")
 
-        # generate release
-        sh "#{REBAR} release"
-        
-        # extern install
-        install_pping(PROD_RELEASE_DIR)
-        install_nchecks(PROD_RELEASE_DIR)
+desc "Create a Sysmo-Worker release."
+task :release_worker => ["jserver:build", "pping:build"] do
+    cd SYSMO_ROOT
 
-        puts "Production release ready!"
-        #end
-    end
+    # rm old release if exists
+    clean_all()
 
-    desc "Generate a Sysmo-Worker"
-    task :build_worker => ["jserver:build", "pping:build"] do
-        cd SYSMO_ROOT
+    # where is located sysmo-worker
+    worker_dir = File.join(JSERVER_ROOT, "sysmo-worker/build/install/sysmo-worker")
 
-        # rm old release if exists
-        FileUtils.rm_rf("sysmo-worker")
+    # move it here
+    FileUtils.mv(worker_dir, "sysmo-worker")
 
-        # where is located sysmo-worker
-        worker_dir = File.join(JSERVER_ROOT, "sysmo-worker/build/install/sysmo-worker")
+    # put pping in (will fail on win32 wich is normal)
+    pping_exe = File.join(PPING_ROOT, "pping")
+    FileUtils.mkdir("sysmo-worker/utils")
+    FileUtils.cp(pping_exe, "sysmo-worker/utils/")
 
-        # move it here
-        FileUtils.mv(worker_dir, "sysmo-worker")
+    # put ruby scripts in
+    ruby_dir = File.join(JSERVER_ROOT, "shared/nchecks/ruby")
+    FileUtils.cp_r(ruby_dir, "sysmo-worker/ruby")
+    FileUtils.mkdir("sysmo-worker/etc")
 
-        # put pping in (will fail on win32 wich is normal)
-        pping_exe = File.join(PPING_ROOT, "pping")
-        FileUtils.mkdir("sysmo-worker/utils")
-        FileUtils.cp(pping_exe, "sysmo-worker/utils/")
+    # a worker does not require the xml checks definition
 
-        # put ruby scripts in
-        ruby_dir = File.join(JSERVER_ROOT, "shared/nchecks/ruby")
-        FileUtils.cp_r(ruby_dir, "sysmo-worker/ruby")
-        FileUtils.mkdir("sysmo-worker/etc")
+    puts "Worker release ready!"
+    #end
+end
 
-        # a worker does not require the xml checks definition
-        
-        puts "Worker release ready!"
-        #end
-    end
 
-    desc "Generate Erlang release archive under the production profile"
-    task :release_archive => :release do
-        cd SYSMO_ROOT; sh "#{REBAR} tar"
-        puts "Archive built in #{PROD_RELEASE_DIR}/"
+desc "Generate a platform specific package or installer."
+task :pack => :release do
+
+    if (/cygwin|mswin|mingw|bccwin|wince|emx|win/ =~ RUBY_PLATFORM)
+        pack_win32()
+    elsif (/darwin/ =~ RUBY_PLATFORM)
+        pack_macos()
+    elsif (/linux/ =~ RUBY_PLATFORM)
+        pack_linux()
+    else
+        pack_other()
     end
 
 end
 
+
+desc "Clean environment."
+task :clean_all => [:clean] do 
+    clean_all()
+end
+
+
+desc "Test"
+task :test => ["sysmo:test", "jserver:test", "pping:test"]
+
+
+desc "Check"
+task :check => ["sysmo:check", "jserver:check", "pping:check"]
+
+
+desc "Generate documentation"
+task :doc => ["sysmo:doc", "jserver:doc", "pping:doc"]
+
+
+###############################################################################
+## NAMESPACES
+###############################################################################
 
 # Sysmo Erlang build and releases related tasks
 namespace "sysmo" do
 
-    desc "Build Sysmo-Core"
+    # "Build Sysmo-Core"
     task :build do
         cd SYSMO_ROOT
         sh "#{REBAR} compile"
     end
 
-    desc "Build Sysmo-Core in DEBUG mode"
+    # "Build Sysmo-Core in DEBUG mode"
     task :debug_build do
         cd SYSMO_ROOT
         sh "#{REBAR} as debug compile"
     end
 
-    desc "Clean Sysmo-Core"
+    # "Clean Sysmo-Core"
     task :clean do
         cd SYSMO_ROOT
         sh "#{REBAR} clean"
         sh "#{REBAR} as debug clean"
     end
 
-    desc "Clean all build directories"
-    task :clean_all => [:clean] do
-        cd SYSMO_ROOT
-        FileUtils.rm_rf("_build")
-        FileUtils.rm_f("rebar.lock")
-    end
-
-    desc "Test Sysmo-Core"
+    # "Test Sysmo-Core"
     task :test do
-        # nothing to test yet
+        cd SYSMO_ROOT
+        sh "#{REBAR} eunit"
     end
 
-    desc "Check Sysmo-Core"
+    # "Check Sysmo-Core"
     task :check do
         # nothing to check yet
     end
 
-    desc "Generate documentation Sysmo-Core"
+    # "Generate documentation Sysmo-Core"
     task :doc do
         cd SYSMO_ROOT
-        sh "#{REBAR} doc"
+        sh "#{REBAR} edoc"
     end
 
 end
@@ -192,32 +198,32 @@ end
 # Sysmo-Jserver Java build and releases related tasks
 namespace "jserver" do
 
-    desc "Build Sysmo-Jserver"
+    # "Build Sysmo-Jserver"
     task :build do
         cd JSERVER_ROOT
         sh "#{GRADLE} installDist"
     end
 
 
-    desc "Clean Sysmo-Jserver"
+    # "Clean Sysmo-Jserver"
     task :clean do
         cd JSERVER_ROOT
         sh "#{GRADLE} clean"
     end
 
-    desc "Test Sysmo-Jserver"
+    # "Test Sysmo-Jserver"
     task :test do
         cd JSERVER_ROOT
         sh "#{GRADLE} test"
     end
 
-    desc "Check Sysmo-Jserver"
+    # "Check Sysmo-Jserver"
     task :check do
         cd JSERVER_ROOT
         sh "#{GRADLE} check"
     end
 
-    desc "Generate documentation Sysmo-Jserver"
+    # "Generate documentation Sysmo-Jserver"
     task :doc do
         cd JSERVER_ROOT
         sh "#{GRADLE} javadoc"
@@ -229,29 +235,29 @@ end
 # Pping Golang build and releases related tasks
 namespace "pping" do
 
-    desc "Build Pping"
+    # "Build Pping"
     task :build do
         cd PPING_ROOT
         sh "go build pping.go"
     end
 
-    desc "Clean Pping"
+    # "Clean Pping"
     task :clean do
         cd PPING_ROOT;
         sh "go clean pping.go"
     end
 
-    desc "Test Pping"
+    # "Test Pping"
     task :test do
         # nothing to test yet
     end
 
-    desc "Check Pping"
+    # "Check Pping"
     task :check do
         # nothing to check yet
     end
 
-    desc "Generate documentation Pping"
+    # "Generate documentation Pping"
     task :doc do
         # no doc yet
     end
@@ -259,14 +265,65 @@ namespace "pping" do
 end
 
 
+
+###############################################################################
+## FUNCTIONS
+###############################################################################
+
+#
+# generate a wix package bundle
+#
+def pack_win32()
+    puts ":: Generate #{RUBY_PLATFORM} package"
+end
+
+#
+# generate an osx app installer
+#
+def pack_macos()
+    puts ":: Generate #{RUBY_PLATFORM} package"
+end
+
+#
+# detect linux flavor and generate a RPM or DEB
+#
+def pack_linux()
+    puts ":: Generate #{RUBY_PLATFORM} package"
+    sh "#{REBAR} tar"
+    puts "Archive built in #{PROD_RELEASE_DIR}/"
+end
+
+#
+# generate an archive for other unixes
+#
+def pack_other()
+    puts "Generate #{RUBY_PLATFORM} package"
+    sh "#{REBAR} tar"
+    puts "Archive built in #{PROD_RELEASE_DIR}/"
+end
+
+#
+# Remove build directories
+#
+def clean_all()
+    puts ":: Clean all"
+    cd SYSMO_ROOT
+    FileUtils.rm_rf("_build")
+    FileUtils.rm_f("rebar.lock")
+    FileUtils.rm_rf("sysmo-worker")
+end
+
 #
 # Install pping command in the specified release directory
 # 
 def install_pping(release_dir)
+    puts ":: Install pping"
     cd SYSMO_ROOT
+
     dst      = File.join(release_dir, "utils")
     win_src  = File.join(PPING_ROOT, "pping.exe")
     unix_src = File.join(PPING_ROOT, "pping")
+
     if File.exist?(win_src)
         puts "Install #{win_src}"
         FileUtils.copy(win_src,dst)
@@ -280,8 +337,8 @@ end
 # Install nchecks definitions and scripts in the release directory
 # 
 def install_nchecks(release_dir)
+    puts ":: Building AllChecks.xml"
     cd SYSMO_ROOT
-    puts "Building AllChecks.xml"
 
     # rm all checks informations if exists
     FileUtils.rm_f("#{release_dir}/docroot/nchecks/AllChecks.xml")
