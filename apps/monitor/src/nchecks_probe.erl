@@ -403,13 +403,14 @@ exec_nchecks(Class, Args, StateId) ->
          Error ->
             % An error occured.
             % It is most a sysmo state than a probe state.
-            % TODO Should I log ERROR ?
             ?LOG_ERROR("", Error),
+            Crash = io_lib:format("~p", [Error]),
+            {Mega, Sec, Ms} = os:timestamp(),
             ProbeReturn = #nchecks_reply{
                 status          = "ERROR",
-                reply_string    = ?CRASH
+                reply_string    = Crash,
+                timestamp       = (Mega * 1000000) + Sec
             }
-
     end,
     {ok, ProbeReturn}.
 
