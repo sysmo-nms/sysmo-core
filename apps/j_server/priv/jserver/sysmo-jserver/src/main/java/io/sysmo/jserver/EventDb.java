@@ -526,6 +526,9 @@ public class EventDb implements Runnable
         int statusCode = (int) statusCodeObj.longValue();
         Timestamp timestamp = new Timestamp(timestampObj.longValue() * 1000);
         String returnString = returnStringObj.stringValue();
+        if (returnString.length() > 255) {
+            returnString = returnString.substring(0, 255);
+        }
         String probeDisplayName = probeDisplayObj.stringValue();
         String hostDisplayName = hostDisplayObj.stringValue();
         String hostLocation = hostLocationObj.stringValue();
