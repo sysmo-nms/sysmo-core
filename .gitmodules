@@ -1,0 +1,3 @@
+[submodule "apps/j_server/priv/jserver/shared/nchecks"]
+	path = apps/j_server/priv/jserver/shared/nchecks
+	url = https://github.com/sysmo-nms/nchecks.git
