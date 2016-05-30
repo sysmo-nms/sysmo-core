@@ -405,7 +405,7 @@ exec_nchecks(Class, Args, StateId) ->
             % It is most a sysmo state than a probe state.
             ?LOG_ERROR("", Error),
             Crash = io_lib:format("~p", [Error]),
-            {Mega, Sec, Ms} = os:timestamp(),
+            {Mega, Sec, _} = os:timestamp(),
             ProbeReturn = #nchecks_reply{
                 status          = "ERROR",
                 reply_string    = Crash,
