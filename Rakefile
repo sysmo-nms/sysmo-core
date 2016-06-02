@@ -54,7 +54,7 @@ task :rel => ["sysmo:debug_build", "jserver:build", "pping:build"] do
     install_pping(DEBUG_RELEASE_DIR)
     install_nchecks(DEBUG_RELEASE_DIR)
 
-    puts "Debug ralease ready!"
+    puts "Debug release ready!"
     # end
 end
 
@@ -338,23 +338,24 @@ end
 # Install nchecks definitions and scripts in the release directory
 # 
 def install_nchecks(release_dir)
-    puts ":: Building AllChecks.xml"
+    puts ":: Building NChecksRepository.xml"
     cd SYSMO_ROOT
 
     # rm all checks informations if exists
-    FileUtils.rm_f("#{release_dir}/docroot/nchecks/AllChecks.xml")
-    checks = Dir.glob("#{release_dir}/docroot/nchecks/Check*.xml")
+    FileUtils.rm_f("#{release_dir}/docroot/nchecks/NChecksRepository.xml")
+    checks = Dir.glob("#{release_dir}/docroot/nchecks/io.sysmo.nchecks.Check*.xml")
 
-    # create new AllChecks.xml file
-    file   = File.new("#{release_dir}/docroot/nchecks/AllChecks.xml", "w:UTF-8")
+    # create new NChecksRepository.xml file
+    file   = File.new("#{release_dir}/docroot/nchecks/NChecksRepository.xml", "w:UTF-8")
     xml    = Builder::XmlMarkup.new(:target => file, :indent => 4)
 
     xml.instruct! :xml, :version=>"1.0", :encoding => "UTF-8"
     xml.tag!('NChecks', {"xmlns" => "http://schemas.sysmo.io/2015/NChecks"}) do
-        xml.tag!('CheckAccessTable') do
+        xml.tag!('Repository') do
             checks.each do |c|
-                puts "Add CheckUrl Value=#{c}"
-                xml.tag!('CheckUrl', {"Value" => Pathname.new(c).basename})
+                checkId = "#{Pathname.new(c).basename()}".chomp('.xml')
+                puts "Add Check Id=#{checkId}"
+                xml.tag!('Check', {"Id" => checkId})
             end
         end
     end
