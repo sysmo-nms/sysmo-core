@@ -308,7 +308,8 @@ end
 def clean_all()
     puts ":: Clean all"
     cd SYSMO_ROOT
-    FileUtils.rm_rf("_build")
+    FileUtils.rm_rf("_build/default/rel")
+    FileUtils.rm_rf("_build/debug/rel")
     FileUtils.rm_f("rebar.lock")
     FileUtils.rm_rf("sysmo-worker")
 end
