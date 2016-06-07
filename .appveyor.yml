@@ -2,6 +2,7 @@ version: 1.{build}
 
 before_build:
     - gem query -i -n builder || gem install builder
+    - git submodule update --init
 
 after_build:
     - .\apps\j_server\priv\jserver\gradlew.bat --stop
