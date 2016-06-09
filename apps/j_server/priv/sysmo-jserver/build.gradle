@@ -1,0 +1,51 @@
+apply plugin: 'java'
+apply plugin: 'pmd'
+apply plugin: 'findbugs'
+apply plugin: 'jdepend'
+apply plugin: 'application'
+
+sourceCompatibility = 1.7
+mainClassName = 'io.sysmo.jserver.SysmoServer'
+applicationDefaultJvmArgs = ["-Duser.language=en", "-Duser.country=US"]
+
+repositories {
+  mavenCentral()
+
+  // rrd4j, nchecks
+  maven {
+    url 'https://oss.sonatype.org/content/repositories/snapshots'
+  }
+
+  // snmp4j
+  maven {
+    url 'https://oosnmp.net/dist/release'
+  }
+
+}
+
+jdepend  { ignoreFailures = true }
+findbugs { ignoreFailures = true }
+pmd      { ignoreFailures = true }
+
+tasks.withType(FindBugs) {
+  reports {
+    xml.enabled = false
+      html.enabled = true
+  }
+}
+
+dependencies {
+    testCompile 'junit:junit:4.2'
+    compile 'io.sysmo:nchecks:0.9.1-SNAPSHOT'
+    compile 'org.erlang.otp:jinterface:1.5.6'
+    compile 'org.rrd4j:rrd4j:3.0-SNAPSHOT'
+    compile 'org.snmp4j:snmp4j:2.3.3'
+    compile 'org.slf4j:slf4j-api:1.7.12'
+    compile 'org.slf4j:slf4j-jdk14:1.7.12'
+    compile 'org.eclipse.jetty:jetty-server:8.1.17.v20150415'
+    compile 'org.apache.derby:derby:10.11.1.1'
+    compile 'javax.mail:mail:1.4.7'
+    compile 'javax.activation:activation:1.1.1'
+    compile 'org.glassfish:javax.json:1.0.4'
+}
+

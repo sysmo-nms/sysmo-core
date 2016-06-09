@@ -23,7 +23,7 @@ system("git submodule update --init")
 
 # set directories constants
 SYSMO_ROOT   = Dir.pwd
-JSERVER_ROOT = File.join(SYSMO_ROOT, "apps", "j_server", "priv", "jserver")
+JSERVER_ROOT = File.join(SYSMO_ROOT, "apps", "j_server", "priv", "sysmo-jserver")
 PPING_ROOT   = File.join(SYSMO_ROOT, "apps", "j_server", "priv", "pping")
 NCHECKS_REPO = File.join(SYSMO_ROOT, "apps", "j_server", "priv", "nchecks-base")
 
@@ -87,42 +87,6 @@ task :release => ["jserver:build", "pping:build"] do
     install_nchecks(PROD_RELEASE_DIR)
 
     puts "Production release ready!"
-    #end
-end
-
-
-desc "Create a Sysmo-Worker release."
-task :release_worker => ["jserver:build", "pping:build"] do
-    cd SYSMO_ROOT
-
-    # rm old release if exists
-    clean_all()
-
-    # where is located sysmo-worker
-    worker_dir = File.join(JSERVER_ROOT, "sysmo-worker/build/install/sysmo-worker")
-
-    # move it here
-    FileUtils.mv(worker_dir, "sysmo-worker")
-
-    # put pping in (will fail on win32 wich is normal)
-    pping_exe = File.join(PPING_ROOT, "pping")
-    FileUtils.mkdir("sysmo-worker/utils")
-    FileUtils.cp(pping_exe, "sysmo-worker/utils/")
-
-    # put ruby scripts in
-    FileUtils.mkdir("sysmo-worker/ruby")
-    # a worker does not need the xml checks definition
-    rbScripts = Dir.glob("#{NCHECKS_REPO}/io.sysmo.nchecks.Check*.rb")
-    rbScripts.each do |x|
-        FileUtils.cp(x, "sysmo-worker/ruby/")
-    end
-
-    # init etc
-    FileUtils.mkdir("sysmo-worker/etc")
-    FileUtils.mv("sysmo-worker/sysmo-worker.properties", "sysmo-worker/etc")
-
-
-    puts "Worker release ready!"
     #end
 end
 
