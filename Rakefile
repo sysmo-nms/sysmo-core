@@ -25,6 +25,7 @@ system("git submodule update --init")
 SYSMO_ROOT   = Dir.pwd
 JSERVER_ROOT = File.join(SYSMO_ROOT, "apps", "j_server", "priv", "jserver")
 PPING_ROOT   = File.join(SYSMO_ROOT, "apps", "j_server", "priv", "pping")
+NCHECKS_REPO = File.join(SYSMO_ROOT, "apps", "j_server", "priv", "nchecks-repository")
 
 # erlang releases location constants
 PROD_RELEASE_DIR  = File.join(SYSMO_ROOT, "_build", "default", "rel", "sysmo")
@@ -345,14 +346,35 @@ def install_nchecks(release_dir)
     puts ":: Building NChecksRepository.xml"
     cd SYSMO_ROOT
 
-    # rm all checks informations if exists
-    FileUtils.rm_f("#{release_dir}/docroot/nchecks/NChecksRepository.xml")
-    checks = Dir.glob("#{release_dir}/docroot/nchecks/io.sysmo.nchecks.Check*.xml")
+    # cleanup
+    FileUtils.rm_rf("#{release_dir}/docroot/nchecks")
+    FileUtils.rm_rf("#{release_dir}/etc/nchecks")
+    FileUtils.rm_rf("#{release_dir}/ruby")
+
+    # put all xml files where required
+    FileUtils.mkdir("#{release_dir}/docroot/nchecks")
+    FileUtils.mkdir("#{release_dir}/etc/nchecks")
+    rbXml = Dir.glob("#{NCHECKS_REPO}/io.sysmo.nchecks.Check*.xml")
+    ppXml = "#{PPING_ROOT}/io.sysmo.nchecks.CheckICMP.xml"
+    FileUtils.cp(ppXml, "#{release_dir}/docroot/nchecks/")
+    FileUtils.cp(ppXml, "#{release_dir}/etc/nchecks/")
+    rbXml.each do |x|
+        FileUtils.cp(x, "#{release_dir}/docroot/nchecks/")
+        FileUtils.cp(x, "#{release_dir}/etc/nchecks/")
+    end
+
+    # put all ruby scripts
+    FileUtils.mkdir("#{release_dir}/ruby")
+    rbScripts = Dir.glob("#{NCHECKS_REPO}/io.sysmo.nchecks.Check*.rb")
+    rbScripts.each do |x|
+        FileUtils.cp(x, "#{release_dir}/ruby/")
+    end
 
     # create new NChecksRepository.xml file
     file   = File.new("#{release_dir}/docroot/nchecks/NChecksRepository.xml", "w:UTF-8")
-    xml    = Builder::XmlMarkup.new(:target => file, :indent => 4)
+    checks = Dir.glob("#{release_dir}/docroot/nchecks/io.sysmo.nchecks.Check*.xml")
 
+    xml = Builder::XmlMarkup.new(:target => file, :indent => 4)
     xml.instruct! :xml, :version=>"1.0", :encoding => "UTF-8"
     xml.tag!('NChecks', {"xmlns" => "http://schemas.sysmo.io/2015/NChecks"}) do
         xml.tag!('Repository') do
