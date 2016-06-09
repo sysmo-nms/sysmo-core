@@ -5,7 +5,7 @@ before_build:
     - git submodule update --init
 
 after_build:
-    - .\apps\j_server\priv\jserver\gradlew.bat --stop
+    - .\apps\j_server\priv\sysmo-jserver\gradlew.bat --stop
     - del C:\Users\appveyor\.gradle\caches\modules-2\modules-2.lock
 
 build_script:
