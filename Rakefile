@@ -110,11 +110,17 @@ task :release_worker => ["jserver:build", "pping:build"] do
     FileUtils.cp(pping_exe, "sysmo-worker/utils/")
 
     # put ruby scripts in
-    ruby_dir = File.join(JSERVER_ROOT, "shared/nchecks/ruby")
-    FileUtils.cp_r(ruby_dir, "sysmo-worker/ruby")
-    FileUtils.mkdir("sysmo-worker/etc")
+    FileUtils.mkdir("sysmo-worker/ruby")
+    # a worker does not need the xml checks definition
+    rbScripts = Dir.glob("#{NCHECKS_REPO}/io.sysmo.nchecks.Check*.rb")
+    rbScripts.each do |x|
+        FileUtils.cp(x, "sysmo-worker/ruby/")
+    end
 
-    # a worker does not require the xml checks definition
+    # init etc
+    FileUtils.mkdir("sysmo-worker/etc")
+    FileUtils.mv("sysmo-worker/sysmo-worker.properties", "sysmo-worker/etc")
+
 
     puts "Worker release ready!"
     #end
