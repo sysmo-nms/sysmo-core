@@ -19,6 +19,8 @@ require 'rake'
 require 'builder'
 require 'pathname'
 
+system("git submodule update --init") 
+
 # set directories constants
 SYSMO_ROOT   = Dir.pwd
 JSERVER_ROOT = File.join(SYSMO_ROOT, "apps", "j_server", "priv", "jserver")
@@ -264,7 +266,6 @@ namespace "pping" do
     task :doc do
         # no doc yet
     end
-
 end
 
 
