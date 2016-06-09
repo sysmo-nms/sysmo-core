@@ -101,7 +101,7 @@ start_link(#probe{name=Name} = Probe) ->
     gen_server:start_link({via, monitor, Name}, ?MODULE, Probe, []).
 
 init(Probe) ->
-    % to let multiple probes initialize in the same time, init is delayed.
+    % to let multiple probes initialize at the same time, init is delayed.
     gen_server:cast(self(), do_init),
     {ok, Probe}.
 
