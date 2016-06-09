@@ -8,3 +8,34 @@ the [Sysmo NMS](http://www.sysmo.io) monitoring and management solution.
 
 For installation, configuration and development instructions
 see the [Wiki](https://github.com/sysmo-nms/sysmo-wiki/wiki).
+
+Dev Mode
+========
+The common workflow when working on Sysmo-Core, is:
+
+```sh
+Modify erlang or java code, I actually use IntelliJ for both languages,
+[...]
+
+$ rake debug_release
+[...]
+Build a local debug release ("rake rel" is a shortcut to this)
+
+$ rake run
+[...]
+Start the server.
+```
+
+This can be done in a single:
+```sh
+$ rake rel run
+```
+
+Note that:
+- The release is located at ./_build/debug/rel/sysmo/,
+- The logs are located at ./_build/debug/rel/sysmo/log/,
+- pping is not setuid so CheckICMP will raize a "permission denied error",
+- log files are located at ./_build/
+
+Have fun!
+

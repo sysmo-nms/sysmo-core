@@ -40,8 +40,11 @@ desc "Clean."
 task :clean => ["sysmo:clean", "jserver:clean", "pping:clean"]
 
 
+desc "Shortcut for debug_release"
+task :rel => [:debug_release]
+
 desc "Create a debug release."
-task :rel => ["sysmo:debug_build", "jserver:build", "pping:build"] do
+task :debug_release => ["sysmo:debug_build", "jserver:build", "pping:build"] do
     cd SYSMO_ROOT
 
     # remove old sysmo-jserver java application wich may be present
