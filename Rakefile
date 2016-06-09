@@ -25,7 +25,7 @@ system("git submodule update --init")
 SYSMO_ROOT   = Dir.pwd
 JSERVER_ROOT = File.join(SYSMO_ROOT, "apps", "j_server", "priv", "jserver")
 PPING_ROOT   = File.join(SYSMO_ROOT, "apps", "j_server", "priv", "pping")
-NCHECKS_REPO = File.join(SYSMO_ROOT, "apps", "j_server", "priv", "nchecks-repository")
+NCHECKS_REPO = File.join(SYSMO_ROOT, "apps", "j_server", "priv", "nchecks-base")
 
 # erlang releases location constants
 PROD_RELEASE_DIR  = File.join(SYSMO_ROOT, "_build", "default", "rel", "sysmo")
