@@ -429,8 +429,16 @@ exec_nchecks(Class, Args, StateId) ->
 
 
 handle_cast(do_init, #probe{name=PName} = Probe) ->
-    Ref = do_init(Probe),
-    {noreply, #state{name=PName,ref=Ref}};
+    case (catch do_init(Probe)) of
+        {'EXIT', Term} ->
+            ?LOG_ERROR("Bad probe init", Term),
+            {noreply, #state{name=PName, ref=defunct}};
+        Ref ->
+            {noreply, #state{name=PName, ref=Ref}}
+    end;
+
+handle_cast(_, #state{ref=defunct} = S) ->
+    {noreply, S};
 
 handle_cast({sync_request, Ref}, S) ->
     do_sync_request(Ref, S),
