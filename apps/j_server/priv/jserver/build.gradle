@@ -9,7 +9,7 @@ subprojects {
     repositories {
         mavenCentral()
 
-        // rrd4j
+        // rrd4j, nchecks
         maven {
             url 'https://oss.sonatype.org/content/repositories/snapshots'
         }
@@ -37,25 +37,6 @@ subprojects {
     }
 }
 
-project(':shared:nchecks') {
-    javadoc {
-        options.overview = "overview.html"
-        options.docTitle = "NChecks API"
-        options.windowTitle = "NChecks API"
-    }
-
-    dependencies {
-        compile 'org.erlang.otp:jinterface:1.5.6'
-        compile 'org.glassfish:javax.json:1.0.4'
-        compile 'org.jruby:jruby:1.7.25'
-        compile 'org.snmp4j:snmp4j:2.3.3'
-        compile 'org.slf4j:slf4j-api:1.7.12'
-        compile 'org.slf4j:slf4j-jdk14:1.7.12'
-        compile 'com.sleepycat:je:4.0.92'
-        runtime 'org.apache.httpcomponents:httpclient:4.5'
-    }
-}
-
 project(':sysmo-jserver') {
     apply plugin: 'application'
 
@@ -64,7 +45,7 @@ project(':sysmo-jserver') {
             "-Duser.language=en", "-Duser.country=US"]
 
     dependencies {
-        compile project(':shared:nchecks')
+        compile 'io.sysmo:nchecks:0.9.1-SNAPSHOT'
         compile 'org.erlang.otp:jinterface:1.5.6'
         compile 'org.rrd4j:rrd4j:3.0-SNAPSHOT'
         compile 'org.snmp4j:snmp4j:2.3.3'
@@ -88,7 +69,7 @@ project(':sysmo-worker') {
             //"-Djava.util.logging.config.file=etc/sysmo-log.properties"]
 
     dependencies {
-        compile project(':shared:nchecks')
+        compile 'io.sysmo:nchecks:0.9.1-SNAPSHOT'
         compile 'org.erlang.otp:jinterface:1.5.6'
         compile 'org.slf4j:slf4j-api:1.7.12'
         compile 'org.slf4j:slf4j-jdk14:1.7.12'
