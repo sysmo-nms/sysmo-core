@@ -1,3 +1,0 @@
-include 'shared:nchecks'
-include 'sysmo-jserver'
-include 'sysmo-worker'
