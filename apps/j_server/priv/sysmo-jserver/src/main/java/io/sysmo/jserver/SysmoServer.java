@@ -29,7 +29,7 @@ import com.ericsson.otp.erlang.OtpErlangTuple;
 import com.ericsson.otp.erlang.OtpMbox;
 import com.ericsson.otp.erlang.OtpNode;
 
-import io.sysmo.nchecks.NChecksErlang;
+import io.sysmo.nchecks.impl.ErlangNodeNChecks;
 
 import io.sysmo.nchecks.StateServer;
 import org.eclipse.jetty.server.Server;
@@ -291,7 +291,7 @@ public class SysmoServer {
         /*
          * Create NChecks thread
          */
-        NChecksErlang nchecks;
+        ErlangNodeNChecks nchecks;
         try {
 
             InetAddress stateServerAddress;
@@ -301,7 +301,7 @@ public class SysmoServer {
                 stateServerAddress = InetAddress.getByName(stateServerHost);
             }
 
-            nchecks = NChecksErlang.getInstance(nchecksMbox, foreignNodeName,
+            nchecks = ErlangNodeNChecks.getInstance(nchecksMbox, foreignNodeName,
                     rubyDir, utilsDir, etcDir,
                     stateServerAddress, stateServerPort);
         } catch (Exception e) {

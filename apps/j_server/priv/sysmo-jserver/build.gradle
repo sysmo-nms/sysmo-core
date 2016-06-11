@@ -36,7 +36,7 @@ tasks.withType(FindBugs) {
 
 dependencies {
     testCompile 'junit:junit:4.2'
-    compile 'io.sysmo:nchecks:0.9.1-SNAPSHOT'
+    compile 'io.sysmo:nchecks:0.10.1-SNAPSHOT'
     compile 'org.erlang.otp:jinterface:1.5.6'
     compile 'org.rrd4j:rrd4j:3.0-SNAPSHOT'
     compile 'org.snmp4j:snmp4j:2.3.3'
