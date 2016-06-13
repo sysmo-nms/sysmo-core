@@ -166,8 +166,8 @@ do_init(Probe) ->
 %%----------------------------------------------------------------------------
 join_request(_Channel, Args, _CState, Ref) ->
     Self = Args,
-    gen_server:cast(Self, {sync_request, Ref}).
-do_sync_request(Ref, #state{name=Name}) ->
+    gen_server:cast(Self, {join_request, Ref}).
+do_join_request(Ref, #state{name=Name}) ->
     ES = monitor_data_master:get_probe_state(Name),
 
     % Generate tmp dir in dump dir
@@ -426,8 +426,6 @@ exec_nchecks(Class, Args, StateId) ->
 %%----------------------------------------------------------------------------
 %% GEN_SERVER
 %%----------------------------------------------------------------------------
-
-
 handle_cast(do_init, #probe{name=PName} = Probe) ->
     case (catch do_init(Probe)) of
         {'EXIT', Term} ->
@@ -440,8 +438,8 @@ handle_cast(do_init, #probe{name=PName} = Probe) ->
 handle_cast(_, #state{ref=defunct} = S) ->
     {noreply, S};
 
-handle_cast({sync_request, Ref}, S) ->
-    do_sync_request(Ref, S),
+handle_cast({join_request, Ref}, S) ->
+    do_join_request(Ref, S),
     {noreply, S};
 
 handle_cast({trigger_return, CState}, S) ->
@@ -488,6 +486,8 @@ terminate(_Reason, _S) ->
 
 code_change(_OldVsn, S, _Extra) ->
     {ok, S}.
+
+
 
 
 %%----------------------------------------------------------------------------
@@ -570,11 +570,10 @@ build_snmp_args2(TargetSysProp,[Prop|Others], Value) ->
 
 
 
+
 %%----------------------------------------------------------------------------
 %% errd4j functions
 %%----------------------------------------------------------------------------
-
-
 rrd4j_init(ProbeName, Step, Args, TargetDir, XCheck_Content) ->
 
     % Generate check path dir and maybe create

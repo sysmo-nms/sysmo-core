@@ -45,7 +45,6 @@
 %%-----------------------------------------------------------------------------
 %% PUBLIC API
 %%-----------------------------------------------------------------------------
-%% TODO jruby access to these functions
 which_targets() -> monitor_data_master:which(target).
 which_probes()  -> monitor_data_master:which(probe).
 which_jobs()    -> monitor_data_master:which(job).
