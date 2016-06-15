@@ -19,10 +19,10 @@
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
 % @private
--module(monitor_controler).
+-module(monitor_controller).
 -include("monitor.hrl").
 -include_lib("common_hrl/include/logs.hrl").
--behaviour(supercast_controler).
+-behaviour(supercast_controller).
 -behaviour(gen_server).
 
 % GEN_SERVER
