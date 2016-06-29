@@ -35,17 +35,17 @@ tasks.withType(FindBugs) {
 }
 
 dependencies {
-    testCompile 'junit:junit:4.2'
-    compile 'io.sysmo:nchecks:0.10.3-SNAPSHOT'
-    compile 'org.erlang.otp:jinterface:1.5.6'
-    compile 'org.rrd4j:rrd4j:3.0-SNAPSHOT'
-    compile 'org.snmp4j:snmp4j:2.3.3'
-    compile 'org.slf4j:slf4j-api:1.7.12'
-    compile 'org.slf4j:slf4j-jdk14:1.7.12'
-    compile 'org.eclipse.jetty:jetty-server:8.1.17.v20150415'
-    compile 'org.apache.derby:derby:10.11.1.1'
-    compile 'javax.mail:mail:1.4.7'
-    compile 'javax.activation:activation:1.1.1'
-    compile 'org.glassfish:javax.json:1.0.4'
+    testCompile group: 'junit', name: 'junit', version: '4.2'
+    compile group: 'io.sysmo', name: 'nchecks', version: '0.10.3-SNAPSHOT', changing: true
+    compile group: 'org.rrd4j', name: 'rrd4j', version: '3.0-SNAPSHOT', changing: true
+    compile group: 'org.erlang.otp', name: 'jinterface', version: '1.5.6'
+    compile group: 'org.snmp4j', name: 'snmp4j', version: '2.3.3'
+    compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.12'
+    compile group: 'org.slf4j', name: 'slf4j-jdk14', version: '1.7.12'
+    compile group: 'org.eclipse.jetty', name: 'jetty-server', version: '8.1.17.v20150415'
+    compile group: 'org.apache.derby', name: 'derby', version: '10.11.1.1'
+    compile group: 'javax.mail', name: 'mail', version: '1.4.7'
+    compile group: 'javax.activation', name: 'activation', version: '1.1.1'
+    compile group: 'org.glassfish', name: 'javax.json', version: '1.0.4'
 }
 
