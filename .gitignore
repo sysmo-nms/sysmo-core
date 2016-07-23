@@ -3,7 +3,6 @@
 .eunit/
 doc/
 _build
-rebar.lock
 
 # gradle builds
 .gradle/
