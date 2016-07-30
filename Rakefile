@@ -58,7 +58,7 @@ task :debug_release => ["sysmo:debug_build", "jserver:build", "pping:build"] do
 
     # extern install
     install_pping(DEBUG_RELEASE_DIR)
-    install_nchecks(DEBUG_RELEASE_DIR)
+    install_nchecks(DEBUG_RELEASE_DIR, true)
 
     puts "Debug release ready!"
     # end
@@ -84,7 +84,7 @@ task :release => ["jserver:build", "pping:build"] do
 
     # extern install
     install_pping(PROD_RELEASE_DIR)
-    install_nchecks(PROD_RELEASE_DIR)
+    install_nchecks(PROD_RELEASE_DIR, false)
 
     puts "Production release ready!"
     #end
@@ -310,7 +310,7 @@ end
 #
 # Install nchecks definitions and scripts in the release directory
 # 
-def install_nchecks(release_dir)
+def install_nchecks(release_dir, include_dummy)
     puts ":: Building NChecksRepository.xml"
     cd SYSMO_ROOT
 
@@ -322,13 +322,23 @@ def install_nchecks(release_dir)
     # put all xml files where required
     FileUtils.mkdir("#{release_dir}/docroot/nchecks")
     FileUtils.mkdir("#{release_dir}/etc/nchecks")
-    rbXml = Dir.glob("#{NCHECKS_REPO}/io.sysmo.nchecks.Check*.xml")
+
     ppXml = "#{PPING_ROOT}/io.sysmo.nchecks.CheckICMP.xml"
     FileUtils.cp(ppXml, "#{release_dir}/docroot/nchecks/")
     FileUtils.cp(ppXml, "#{release_dir}/etc/nchecks/")
+
+    rbXml = Dir.glob("#{NCHECKS_REPO}/io.sysmo.nchecks.Check*.xml")
     rbXml.each do |x|
         FileUtils.cp(x, "#{release_dir}/docroot/nchecks/")
         FileUtils.cp(x, "#{release_dir}/etc/nchecks/")
+    end
+
+    if include_dummy == true
+        dummyXml = Dir.glob("#{NCHECKS_REPO}/dummy/io.sysmo.nchecks.dummy.Check*.xml")
+        dummyXml.each do |x|
+            FileUtils.cp(x, "#{release_dir}/docroot/nchecks/")
+            FileUtils.cp(x, "#{release_dir}/etc/nchecks/")
+        end
     end
 
     # put all ruby scripts
@@ -340,7 +350,7 @@ def install_nchecks(release_dir)
 
     # create new NChecksRepository.xml file
     file   = File.new("#{release_dir}/docroot/nchecks/NChecksRepository.xml", "w:UTF-8")
-    checks = Dir.glob("#{release_dir}/docroot/nchecks/io.sysmo.nchecks.Check*.xml")
+    checks = Dir.glob("#{release_dir}/docroot/nchecks/io.sysmo.nchecks.*.xml")
 
     xml = Builder::XmlMarkup.new(:target => file, :indent => 4)
     xml.instruct! :xml, :version=>"1.0", :encoding => "UTF-8"
