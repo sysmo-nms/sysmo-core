@@ -327,14 +327,14 @@ def install_nchecks(release_dir, include_dummy)
     FileUtils.cp(ppXml, "#{release_dir}/docroot/nchecks/")
     FileUtils.cp(ppXml, "#{release_dir}/etc/nchecks/")
 
-    rbXml = Dir.glob("#{NCHECKS_REPO}/io.sysmo.nchecks.Check*.xml")
+    rbXml = Dir.glob("#{NCHECKS_REPO}/io.sysmo.nchecks.*.xml")
     rbXml.each do |x|
         FileUtils.cp(x, "#{release_dir}/docroot/nchecks/")
         FileUtils.cp(x, "#{release_dir}/etc/nchecks/")
     end
 
     if include_dummy == true
-        dummyXml = Dir.glob("#{NCHECKS_REPO}/dummy/io.sysmo.nchecks.dummy.Check*.xml")
+        dummyXml = Dir.glob("#{NCHECKS_REPO}/dummy/io.sysmo.nchecks.*.xml")
         dummyXml.each do |x|
             FileUtils.cp(x, "#{release_dir}/docroot/nchecks/")
             FileUtils.cp(x, "#{release_dir}/etc/nchecks/")
@@ -343,7 +343,7 @@ def install_nchecks(release_dir, include_dummy)
 
     # put all ruby scripts
     FileUtils.mkdir("#{release_dir}/ruby")
-    rbScripts = Dir.glob("#{NCHECKS_REPO}/io.sysmo.nchecks.Check*.rb")
+    rbScripts = Dir.glob("#{NCHECKS_REPO}/io.sysmo.nchecks.*.rb")
     rbScripts.each do |x|
         FileUtils.cp(x, "#{release_dir}/ruby/")
     end
