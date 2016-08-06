@@ -35,16 +35,28 @@
 
 -export([get_probe_state/1, set_probe_state/1, del_probe_state/1]).
 
-%%----------------------------------------------------------------------------
+%%------------------------------------------------------------------------------
 %% API
-%%----------------------------------------------------------------------------
+%%------------------------------------------------------------------------------
+
+%%------------------------------------------------------------------------------
+%% @doc
+%% Return all keys of the table specified.
+%% @end
+%%------------------------------------------------------------------------------
 -spec which(Table::target|probe|job) -> [string()].
-% @doc
-% Return all keys of the table specified.
-% @end
 which(Table) ->
     gen_server:call(?MODULE, {which, Table}).
 
+
+%%------------------------------------------------------------------------------
+%% @private
+%% @see which/1
+%% @doc
+%% Used from the gen_server loop.
+%% @end
+%%------------------------------------------------------------------------------
+-spec(do_which(target | probe | job | dependency) -> [string()] | error).
 do_which(target) -> mnesia:dirty_all_keys(target);
 do_which(probe)  -> mnesia:dirty_all_keys(probe);
 do_which(job)    -> mnesia:dirty_all_keys(job);
@@ -52,11 +64,15 @@ do_which(dependency) -> mnesia:dirty_all_keys(dependency);
 do_which(_)      -> error.
 
 
--spec new(Table::target|probe|job|dependency, Record::#target{}|#probe{}|#job{}) -> Name::string().
-% @doc
-% Initialize the new element and add it to the table. It include giving him a
-% name, and call the appropriate API to initialize it.
-% @end
+%%------------------------------------------------------------------------------
+%% @doc
+%% Initialize the new element and add it to the table. It include giving him a
+%% name, and call the appropriate API to initialize it.
+%% @end
+%%------------------------------------------------------------------------------
+-spec new(
+    Table :: target | probe | job | dependency,
+    Record:: #target{} | #probe{} | #job{}) -> Name :: string().
 new(Table, Record) ->
     gen_server:call(?MODULE, {new, Table, Record}).
 
@@ -125,11 +141,13 @@ do_update(dependency, Dep) ->
     Dep#dependency.a_probe.
 
 
+%%------------------------------------------------------------------------------
+%% @doc
+%% Delete the specified element from the table. Deleting a target will also
+%% delete his probes and jobs.
+%% @end
+%%------------------------------------------------------------------------------
 -spec delete(Table::target|probe|job|dependency, Key::string()) -> ok | abort.
-% @doc
-% Delete the specified element from the table. Deleting a target will also
-% delete his probes and jobs.
-% @end
 delete(Table, Key) ->
     gen_server:call(?MODULE, {delete, Table, Key}).
 

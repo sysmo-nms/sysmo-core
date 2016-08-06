@@ -42,19 +42,61 @@
     whereis_name/1,
     send/2]).
 
-%%-----------------------------------------------------------------------------
+%%------------------------------------------------------------------------------
 %% PUBLIC API
-%%-----------------------------------------------------------------------------
+%%------------------------------------------------------------------------------
+
+%%------------------------------------------------------------------------------
+%% @see monitor_data_master:which/1
+%% @doc
+%% Return all known targets identifiers.
+%% @end
+%%------------------------------------------------------------------------------
+-spec(which_targets() -> Targets :: [string()]).
 which_targets() -> monitor_data_master:which(target).
+
+%%------------------------------------------------------------------------------
+%% @see monitor_data_master:which/1
+%% @doc
+%% Return all known probes identifiers.
+%% @end
+%%------------------------------------------------------------------------------
+-spec(which_probes() -> Probes :: [string()]).
 which_probes()  -> monitor_data_master:which(probe).
+
+%%------------------------------------------------------------------------------
+%% @see monitor_data_master:which/1
+%% @doc
+%% Return all known jobs identifiers.
+%% @end
+%%------------------------------------------------------------------------------
+-spec(which_jobs() -> Jobs :: [string()]).
 which_jobs()    -> monitor_data_master:which(job).
 
+%%------------------------------------------------------------------------------
+%% @doc
+%% Delete the target by his ID. Will delete the target probes and jobs.
+%% @end
+%%------------------------------------------------------------------------------
+-spec(del_target(TargetId :: string()) -> ok | abort).
 del_target(TargetName) ->
     monitor_data_master:delete(target,TargetName).
 
+%%------------------------------------------------------------------------------
+%% @doc
+%% Delete the target by his ID.
+%% @end
+%%------------------------------------------------------------------------------
+-spec(del_probe(ProbeId :: string()) -> ok | abort).
 del_probe(ProbeName) ->
     monitor_data_master:delete(probe,ProbeName).
 
+%%------------------------------------------------------------------------------
+%% @doc
+%% Delete the job by his ID.
+%% @end
+%%------------------------------------------------------------------------------
+-spec(del_job(JobId :: string()) -> ok | abort).
 del_job(JobName) ->
     monitor_data_master:delete(job,JobName).
 
@@ -119,66 +161,79 @@ force_probe(PidName) ->
 %%-----------------------------------------------------------------------------
 %% PRIVATE API
 %%-----------------------------------------------------------------------------
--spec trigger_nchecks_reply(PidName::string(), CState::#client_state{}) -> ok.
-% @private
-% @doc
-% Used by the monitor main channel to initialize clients. This function send
-% a Partial Probe return PDU to the specified client, including the next expected
-% return time. It did not trigger a check.
-% @end
+
+%%-----------------------------------------------------------------------------
+%% @private
+%% @doc
+%% Used by the monitor main channel to initialize clients. This function send
+%% a Partial Probe return PDU to the specified client, including the next expected
+%% return time. It did not trigger a check.
+%% @end
+%%-----------------------------------------------------------------------------
+-spec trigger_nchecks_reply(PidName::string(), CState :: tuple()) -> ok.
 trigger_nchecks_reply(PidName, CState) ->
     nchecks_probe:trigger_return(PidName, CState).
 
+%%-----------------------------------------------------------------------------
+%% @private
+%% @doc
+%% Used by the probes. Return timestamp in seconds and microseconds.
+%% @end
+%%-----------------------------------------------------------------------------
 -spec timestamp() -> {Seconds::integer(), Microseconds::integer()}.
-% @private
-% @doc
-% Used by the probes. Return timestamp in seconds and microseconds.
-% @end
 timestamp() ->
     {Meg,Sec,Micro} = os:timestamp(),
     Seconds = Meg * 1000000 + Sec,
     MicroSeconds = Seconds * 1000000 + Micro,
     {Seconds, MicroSeconds}.
 
+%%-----------------------------------------------------------------------------
+%% @private
+%% @doc
+%% Do erlang:read_timer(Tref) but return 0 if read_timer return false.
+%% Used by the probes.
+%% @end
+%%-----------------------------------------------------------------------------
 -spec read_timer(TimerReference::tuple()) -> Microseconds::integer().
-% @private
-% @doc
-% Do erlang:read_timer(Tref) but return 0 if read_timer return false.
-% Used by the probes.
-% @end
 read_timer(TRef) ->
     case erlang:read_timer(TRef) of
         false -> 0;
         Any -> Any
     end.
 
+%%-----------------------------------------------------------------------------
+%% @private
+%% @TODO should be a supercast work
+%% @doc
+%% The string returned can be used to create a temporary directory under dump.
+%% Used by the probes for synchronization events.
+%% @end
+%%-----------------------------------------------------------------------------
 -spec generate_temp_dir() -> TmpdirString::string().
-% @private
-% @doc
-% TODO should be a supercast work
-% The string returned can be used to create a temporary directory under dump.
-% Used by the probes for synchronization events.
-% @end
 generate_temp_dir() ->
     {_,Sec,Micro} = os:timestamp(),
     MicroSec = Sec * 1000000 + Micro,
     lists:concat(["tmp-", MicroSec]).
 
+%%-----------------------------------------------------------------------------
+%% @private
+%% @doc
+%% send Msg after Step seconds.
+%% Used by probes.
+%% @end
+%%-----------------------------------------------------------------------------
 -spec send_after(Step::integer(), Msg::any()) -> TRef::tuple().
-% @private
-% @doc
-% send Msg after Step seconds.
-% Used by probes.
-% @end
 send_after(Step, Msg) ->
     erlang:send_after(Step * 1000, self(), Msg).
 
+%%-----------------------------------------------------------------------------
+%% @private
+%% @doc
+%% send Msg after random time between 0 and Step seconds.
+%% Used by probes.
+%% @end
+%%-----------------------------------------------------------------------------
 -spec send_after_rand(Step::integer(), Msg::any()) -> TRef::tuple().
-% @private
-% @doc
-% send Msg after random time between 0 and Step seconds.
-% Used by probes.
-% @end
 send_after_rand(Step, Msg) ->
     send_after(random:uniform(Step), Msg).
 
