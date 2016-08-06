@@ -1,4 +1,5 @@
-%
+%%=
+%%=
 -ifdef(debug).
 -define(LOG_INFO(String,Term),
     error_logger:info_report([

@@ -1,3 +1,5 @@
+%%=
+%%=
 % used in monitor_events, java EventDb and MailSender classes
 -record(notification, {
     probe,

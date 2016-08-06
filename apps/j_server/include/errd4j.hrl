@@ -1,3 +1,5 @@
+%%=
+%%=
 % DATA SOURCE TYPE
 -define(DS_GAUGE,   "GAUGE").
 -define(DS_COUNTER, "COUNTER").

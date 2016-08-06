@@ -1,3 +1,4 @@
+%%=
 % This file is part of "Enms" (http://sourceforge.net/projects/enms/)
 % Copyright (C) 2012 <Sébastien Serre sserre.bx@gmail.com>
 %
@@ -18,6 +19,7 @@
 %
 % You should have received a copy of the GNU General Public License
 % along with Enms.  If not, see <http://www.gnu.org/licenses/>.
+%%=
 % @private
 -module(monitor_jobs).
 -include("monitor.hrl").

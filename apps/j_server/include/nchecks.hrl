@@ -1,5 +1,5 @@
-%
-
+%%=
+%%=
 -record(nchecks_reply, {
     status = "UNKNOWN"    :: string(),  % "OK" | "UNKNOWN" | "WARNING" | "CRITICAL" | "ERROR",
     status_code = 0     :: integer(),
