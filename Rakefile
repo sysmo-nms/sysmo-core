@@ -39,6 +39,8 @@ GRADLE = File.join(JSERVER_ROOT, "gradlew")
 ###############################################################################
 ## TASKS 
 ###############################################################################
+task :default => [:debug_release]
+
 desc "Clean."
 task :clean => ["sysmo:clean", "jserver:clean", "pping:clean"]
 
@@ -61,6 +63,8 @@ task :debug_release => ["sysmo:debug_build", "jserver:build", "pping:build"] do
     install_nchecks(DEBUG_RELEASE_DIR, true)
 
     puts "Debug release ready!"
+    puts ""
+    puts "Execute 'rake run' to start the service."
     # end
 end
 
