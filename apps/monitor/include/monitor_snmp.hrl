@@ -1,7 +1,7 @@
 %%==============================================================================
 %% Sysmo NMS Network Management and Monitoring solution (http://www.sysmo.io)
 %%
-%% Copyright (c) 2012-2016 Sebastien Serre <ssbx@sysmo.io>
+%% Copyright (c) 2012-2017 Sebastien Serre <ssbx@sysmo.io>
 %%
 %% Sysmo NMS is free software: you can redistribute it and/or modify it under
 %% the terms of the GNU General Public License as published by the Free Software
