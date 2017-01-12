@@ -19,6 +19,8 @@ require 'rake'
 require 'builder'
 require 'pathname'
 
+STDOUT.sync = true
+
 system("git submodule update --init") 
 
 #
@@ -83,7 +85,8 @@ end
 
 
 desc "Create a production release."
-task :release => ["jserver:build", "pping:build", "sysmo:build"] do
+task :release => ["sysmo:build", "jserver:build", "pping:build"] do
+    puts "=> Start release build"
     cd SYSMO_ROOT
 
     # remove old release
@@ -142,7 +145,7 @@ task :doc => ["sysmo:doc", "jserver:doc", "pping:doc"]
 # Sysmo Erlang build and releases related tasks
 namespace "sysmo" do
 
-    file "rebar.config" => ["rebar.config.in", "Rakefile"] do
+    file 'rebar.config' => ['rebar.config.in', 'Rakefile'] do
         configure_file("rebar.config.in", "rebar.config")
     end
 
