@@ -1,0 +1,422 @@
+<?xml version='1.0' encoding='windows-1252'?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"
+     xmlns:bal="http://schemas.microsoft.com/wix/BalExtension"
+     xmlns:util="http://schemas.microsoft.com/wix/UtilExtension"
+     xmlns:fw="http://schemas.microsoft.com/wix/FirewallExtension">
+
+    <Product 
+        Name='Sysmo @SYSMO_CORE_VERSION@ Core Server'
+        Id='*'
+        UpgradeCode='abc7733f-7349-453F-94F6-BCB5110BA4FD'
+        Language='1033'
+        Codepage='1252'
+        Version='@SYSMO_CORE_VERSION@'
+        Manufacturer='Sysmo NMS'>
+
+        <Package
+            Id='*'
+            Keywords='Sysmo Network Monitor Installer'
+            InstallScope='perMachine'
+            InstallPrivileges="elevated"
+            Description="Sysmo @SYSMO_CORE_VERSION@ Installer"
+            Manufacturer='Sysmo NMS'
+            InstallerVersion='400'
+            Languages='1033'
+            Compressed='yes'
+            ReadOnly="yes"
+            SummaryCodepage='1252' />
+
+        <MajorUpgrade
+            DowngradeErrorMessage="
+A later version of [ProductName] is already installed. Setup will now exit.
+"       />
+
+        <Media Id='1' Cabinet='Sample.cab' EmbedCab='yes' DiskPrompt="CD-ROM #1" />
+        <Property Id='DiskPrompt' Value="Sysmo @SYSMO_CORE_VERSION@ Installation [1]" />
+        <Property Id="MSIFASTINSTALL" Value="7" />
+        <Icon Id="sysmo.ico" SourceFile="graphics\sysmo.ico" />
+        <Property Id="ARPPRODUCTICON" Value="sysmo.ico" />
+
+        <Directory Id='TARGETDIR' Name="SourceDir">
+            <Directory Id="ProgramFilesFolder">
+                <Directory Id="INSTALLLOCATION" Name="Sysmo Enterprise Edition" />
+            </Directory>
+            <Directory Id="ProgramMenuFolder">
+                <Directory Id="ApplicationProgramsFolder" Name="Sysmo" />
+            </Directory>
+
+        
+            <!-- firewall exceptions -->
+            <Component Id="SysmoFirewallExceptions"
+                Guid='aaaaaaaa-7349-453F-94F6-BCB5116BA4F0'>
+                <fw:FirewallException
+                    Id="WebServicePort8080"
+                    Description="Sysmo web ressources"
+                    Name="Sysmo web port 8080"
+                    Port="8080"
+                    Protocol="tcp"
+                    Scope="any" />
+                <fw:FirewallException
+                    Id="OperatorConnectionPort8888"
+                    Description="Sysmo operator clent access"
+                    Name="Sysmo operator access"
+                    Port="8888"
+                    Protocol="tcp"
+                    Scope="any" />
+            </Component>
+
+            <!-- registry keys -->
+            <Component Id="SysmoRegKeys" Guid='aacaaaaa-7349-453F-94F6-BCB5116BA4F0'>
+                <RegistryKey 
+                    Id="SysmoRegContent"
+                    Root="HKLM"
+                    Key="Software\Sysmo\Sysmo Core"
+                    ForceCreateOnInstall="yes">
+                    <RegistryValue Type="string" Name="CurrentVersion"  Value="$(env.REL_VER)" />
+                    <RegistryValue Type="string" Name="InstallLocation" Value="[INSTALLLOCATION]" />
+                    <RegistryValue Type="string" Name="WebDirectory"
+                        Value="[INSTALLLOCATION]sysmo-server\var\docroot" />
+                    <RegistryValue Type="string" Name="JavaJarsDirectory"
+                        Value="[INSTALLLOCATION]sysmo-server\lib\jars" />
+                    <RegistryValue Type="string" Name="ConfigDirectory"
+                        Value="[INSTALLLOCATION]sysmo-server\cfg" />
+                </RegistryKey>
+                <RegistryKey 
+                    Id="SysmoNChecksRegContent"
+                    Root="HKLM"
+                    Key="Software\Sysmo\NChecks"
+                    ForceCreateOnInstall="yes" />
+ 
+            </Component>
+
+        </Directory>
+
+        <DirectoryRef Id="ApplicationProgramsFolder">
+            <Component Id="SysmoApplicationShortcut" Guid='abcd773f-7349-453F-94F6-BCB5110BA4F0'>
+                <Shortcut
+                    Id="ApplicationStartMenuShortcut"
+                    Name="sysmo"
+                    Description="Easy to use system and network monitor"
+                    Target="[INSTALLLOCATION]\sysmo-operator\sysmo.exe"
+                    WorkingDirectory="APPLICATIONROOTDIRECTORY" />
+                <RemoveFolder Id="ApplicationProgramsFolder" On="uninstall" />
+                <RegistryValue Root="HKCU" Key="Software\Microsoft\Sysmo" Name="installed" Type="integer" Value="1" KeyPath="yes" />
+            </Component>
+        </DirectoryRef>
+
+
+        <Feature Id='Complete' Level='1'>
+            <ComponentGroupRef  Id='AllFiles' />
+            <ComponentRef       Id="SysmoApplicationShortcut" />
+            <ComponentRef       Id="SysmoFirewallExceptions" />
+            <ComponentRef       Id="SysmoRegKeys" />
+        </Feature>
+
+
+        
+        <!-- QtExecCmd line default to nothing -->
+        <Property Id="QtExecCmdLine" Value='1' />
+
+        <!-- INIT_Sysmo action:
+            1 - Generate erl.ini,
+            3 - Register sysmo service -->
+        <CustomAction
+            Id="Set_INIT_Sysmo"
+            Property="QtExecCmdLine"
+            Value='&quot;[INSTALLLOCATION]sysmo-admin-util.exe&quot; /init [ADMIN_PASS]' />
+            
+        <CustomAction
+            Id="INIT_Sysmo"
+            BinaryKey="WixCA"
+            DllEntry="CAQuietExec"
+            Execute="immediate"
+            Return="ignore" />
+
+
+        <!-- REMOVE_Sysmo action:
+            2 - Stop sysmo service
+            3 - Kill empd.exe (if running)
+            5 - Unegister sysmo service
+            Ignore return because there might be no service running wich will
+            return an error status -->
+        <CustomAction
+            Id="Set_REMOVE_Sysmo"
+            Property="QtExecCmdLine"
+            Value='&quot;[INSTALLLOCATION]sysmo-admin-util.exe&quot; /remove' />
+            
+        <CustomAction
+            Id="REMOVE_Sysmo"
+            BinaryKey="WixCA"
+            DllEntry="CAQuietExec"
+            Execute="immediate"
+            Return="ignore" />
+
+        <!-- finaly start sysmo services -->
+        <CustomAction
+            Id="Set_START_Sysmo"
+            Property="QtExecCmdLine"
+            Value='&quot;[INSTALLLOCATION]sysmo-admin-util.exe&quot; /start' />
+
+        <CustomAction
+            Id="START_Sysmo"
+            BinaryKey="WixCA"
+            DllEntry="CAQuietExec"
+            Execute="immediate"
+            Return="ignore" />
+
+    
+        <InstallExecuteSequence>
+            <!-- after InstallFinalize -->
+            <Custom Action="Set_INIT_Sysmo" After="InstallFinalize"/>
+            <Custom Action="INIT_Sysmo"     After="Set_INIT_Sysmo" />
+
+            <Custom Action="Set_START_Sysmo" After="INIT_Sysmo" />
+            <Custom Action="START_Sysmo"    After="Set_START_Sysmo" />
+                    
+            
+            <!-- after InstallInitialize -->
+            <Custom Action="Set_REMOVE_Sysmo" After="InstallInitialize" />
+            <Custom Action="REMOVE_Sysmo"     After="Set_REMOVE_Sysmo" />
+        </InstallExecuteSequence>
+
+        <Property Id="ADMIN_PASS"         Hidden="yes" />
+        <Property Id="ADMIN_PASS_CONFIRM" Hidden="yes" />
+
+        <!-- UI only password request needed. Use only from a bundle -->
+        <UI>
+            <Binary   Id="bgbmp" SourceFile="graphics\white.bmp" />
+            <Property Id="BGBitmap">bgbmp</Property>
+            <Property Id="DefaultUIFont">DlgFont8</Property>
+            <TextStyle Id="BannerTextStyle" FaceName="Segoe UI" Size="19"/>
+            <TextStyle 
+                Id="BigLabelTextStyle"
+                FaceName="Segoe UI" 
+                Size="14"
+                Blue="102"
+                Green="102"
+                Red="102"/>
+            <TextStyle Id="LabelTextStyle" FaceName="Segoe UI" Size="9" />
+
+            <Dialog
+                Id="InstallDlg"
+                Width="300"
+                Height="200"
+                SystemModal="yes"
+                Title="[ProductName] [Setup]" NoMinimize="yes">
+                <Control
+                    Id="BGBitmap"
+                    Type="Bitmap"
+                    X="0"
+                    Y="0"
+                    Width="300"
+                    Height="200"
+                    TabSkip="no"
+                    Text="[BGBitmap]" />
+                <Control
+                    Id="Title"
+                    Type="Text"
+                    X="7"
+                    Y="7"
+                    Width="286"
+                    Height="30"
+                    Transparent="yes"
+                    NoPrefix="yes">
+                        <Text>{\BannerTextStyle}Sysmo Initial Configuration</Text>
+                </Control>
+                <Control
+                    Id="Descr"
+                    Type="Text"
+                    X="7"
+                    Y="37"
+                    Width="286"
+                    Height="40"
+                    Transparent="yes"
+                    NoPrefix="yes">
+                        <Text>{\BigLabelTextStyle}Please define a password for the "admin" user.</Text>
+                </Control>
+
+               
+ 
+                <Control
+                    Id="PasswordLabel"
+                    Type="Text"
+                    X="7"
+                    Y="82"
+                    Width="286"
+                    Height="15"
+                    Transparent="yes"
+                    TabSkip="no">
+                        <Text>{\LabelTextStyle}Password:</Text>
+                </Control>
+                <Control
+                    Id="PasswordEdit"
+                    Type="Edit"
+                    X="7"
+                    Y="95"
+                    Width="286"
+                    Height="18"
+                    Password="yes"
+                    Property="ADMIN_PASS"
+                    Text="{80}    " />
+
+                <Control
+                    Id="PasswordConfirmLabel"
+                    Type="Text"
+                    X="7"
+                    Y="117"
+                    Width="286"
+                    Height="15"
+                    Transparent="yes"
+                    TabSkip="no">
+                        <Text>{\LabelTextStyle}Confirm Password:</Text>
+                </Control>
+                <Control
+                    Id="PasswordConfirmEdit"
+                    Type="Edit"
+                    X="7"
+                    Y="130"
+                    Width="286"
+                    Height="18"
+                    Password="yes"
+                    Property="ADMIN_PASS_CONFIRM"
+                    Text="{80}    " />
+
+                <Control
+                    Id="Cancel"
+                    Type="PushButton"
+                    X="237"
+                    Y="176"
+                    Width="56"
+                    Height="17"
+                    Cancel="yes"
+                    Text="&amp;Cancel">
+                    <Publish Event="SpawnDialog" Value="MyCancelDlg">1</Publish>
+                </Control>
+                <Control
+                    Id="Validate"
+                    Type="PushButton"
+                    X="174"
+                    Y="176"
+                    Width="56"
+                    Height="17"
+                    Default="yes"
+                    Text="&amp;Validate">
+                    <!--
+                    <Publish Event="EndDialog" Value="Return" />
+                    <Publish Event="DoAction"    Value="CheckUserEntries">1</Publish>
+                    -->
+                    <Publish
+                        Event="SpawnDialog"
+                        Order="1"
+                        Value="PasswordNotSetDlg">(NOT ADMIN_PASS)</Publish>
+                    <Publish
+                        Event="SpawnDialog"
+                        Order="3"
+                        Value="PasswordNotMatchDlg"><![CDATA[(ADMIN_PASS <> ADMIN_PASS_CONFIRM)]]></Publish>
+                    <Publish
+                        Event="EndDialog"
+                        Order="4"
+                        Value="Return" />
+                </Control>
+            </Dialog>
+
+
+            <Dialog
+                Id="PasswordNotSetDlg"
+                Width="260"
+                Height="85"
+                Title="[ProductName] Setup"
+                NoMinimize="no">
+                <Control
+                    Id="Ok"
+                    Type="PushButton"
+                    X="197"
+                    Y="61"
+                    Width="56"
+                    Height="17"
+                    Default="yes"
+                    Cancel="yes"
+                    Text="&amp;Ok">
+                    <Publish Event="EndDialog" Value="Return">1</Publish>
+                </Control>
+                <Control Id="Text" Type="Text" X="72" Y="15" Width="170" Height="30">
+                    <Text>You must provide a password for the user admin.</Text>
+                </Control>
+
+                <Control Id="Icon" Type="Icon" X="15" Y="15" Width="48" Height="48"
+                    ToolTip="Information icon" FixedSize="yes" IconSize="48" Text="Info" />
+            </Dialog>
+
+            <Dialog
+                Id="PasswordNotMatchDlg"
+                Width="260"
+                Height="85"
+                Title="[ProductName] Setup"
+                NoMinimize="no">
+                <Control
+                    Id="Ok"
+                    Type="PushButton"
+                    X="197"
+                    Y="61"
+                    Width="56"
+                    Height="17"
+                    Default="yes"
+                    Cancel="yes"
+                    Text="&amp;Ok">
+                    <Publish Event="EndDialog" Value="Return">1</Publish>
+                </Control>
+                <Control Id="Text" Type="Text" X="72" Y="15" Width="170" Height="30">
+                    <Text>The passwords are not matching!</Text>
+                </Control>
+
+                <Control Id="Icon" Type="Icon" X="15" Y="15" Width="48" Height="48"
+                    ToolTip="Information icon" FixedSize="yes" IconSize="48" Text="Info" />
+            </Dialog>
+
+            <Dialog
+                Id="MyCancelDlg"
+                Width="260"
+                Height="85"
+                Title="[ProductName] Setup"
+                NoMinimize="yes">
+                <Control
+                    Id="No"
+                    Type="PushButton"
+                    X="197"
+                    Y="61"
+                    Width="56"
+                    Height="17"
+                    Default="yes"
+                    Cancel="yes"
+                    Text="&amp;No">
+                    <Publish Event="EndDialog" Value="Return">1</Publish>
+                </Control>
+                <Control
+                    Id="Yes"
+                    Type="PushButton"
+                    X="134"
+                    Y="61"
+                    Width="56"
+                    Height="17"
+                    Text="&amp;Yes">
+                    <Publish Event="EndDialog" Value="Exit">1</Publish>
+                </Control>
+                <Control Id="Text" Type="Text" X="72" Y="15" Width="170" Height="30">
+                    <Text>Are you sure you want to cancel [ProductName] installation?</Text>
+                </Control>
+
+                <Control Id="Icon" Type="Icon" X="15" Y="15" Width="48" Height="48"
+                    ToolTip="Warning icon" FixedSize="yes" IconSize="48" Text="Warn" />
+            </Dialog>
+
+            <Binary Id="Info" SourceFile="graphics\info.ico" />
+            <Binary Id="Warn" SourceFile="graphics\warning.ico" />
+            <TextStyle Id="DlgFont8" FaceName="Tahoma" Size="8" />
+            <TextStyle Id="DlgTitleFont" FaceName="Tahoma" Size="8" Bold="yes" />
+
+            <InstallUISequence>
+                <Show Dialog="InstallDlg" After="CostFinalize" />
+            </InstallUISequence>
+        </UI>
+    </Product>
+</Wix>

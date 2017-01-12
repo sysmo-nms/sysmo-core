@@ -15,6 +15,9 @@ build/
 # sysmo-worker release
 /sysmo-worker
 
-# Are configured by rake
+# Are configured by rake configure_file (.in files)
 /rebar.config
 /apps/sysmo/src/sysmo.app.src
+/support/win32/bundle.wxs
+/support/win32/sysmo.wxs
+/support/win32/bin/build_installer.cmd

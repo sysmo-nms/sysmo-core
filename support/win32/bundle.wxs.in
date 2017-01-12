@@ -1,0 +1,79 @@
+<?xml version='1.0' encoding='windows-1252'?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"
+	xmlns:bal="http://schemas.microsoft.com/wix/BalExtension"
+	xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
+	<Bundle
+		Name="Sysmo Core Server - @SYSMO_CORE_VERSION@"
+		Version="@SYSMO_CORE_VERSION@"
+		Manufacturer="Sysmo.io"
+		UpgradeCode="abcdef01-7349-453F-94F6-BCB5110BA4FD"
+		Copyright="Copyright (c) sebastien.serre@sysmo.io. All rights reserved."
+		IconSourceFile="support\win32\bundle.ico"
+		DisableModify="no"
+		DisableRemove="no"
+		HelpUrl="www.sysmo.io/help.html"
+		UpdateUrl="www.sysmo.io/updates.html"
+		AboutUrl="www.sysmo.io/about.html">
+		<Log Disable="no" Extension=".log" PathVariable="[TempFolder]" Prefix="sysmoSetup" />
+		<Update Location="www.sysmo.io/sysmo-core-x86_updates/latestBundel.exe" />
+		<BootstrapperApplicationRef
+			Id="WixStandardBootstrapperApplication.RtfLicense">
+			<bal:WixStandardBootstrapperApplication
+				LicenseFile="support\pkgs\win\License.rtf"
+				LogoFile="support\pkgs\win\bundle-logo.png"
+				ShowVersion="yes"
+				SuppressOptionsUI="yes"
+				SuppressRepair="no"
+				LaunchHidden="no"
+				SuppressDowngradeFailure="no"
+				/>
+		</BootstrapperApplicationRef>
+
+		<util:RegistrySearch
+			Root="HKLM"
+			Key="SOFTWARE\JavaSoft\Java Runtime Environment"
+			Value="CurrentVersion"
+			Variable="SEARCH_CurrentJavaVersion" />
+
+		<Chain
+			DisableRollback="yes"
+			DisableSystemRestore="yes"
+			ParallelCache="yes" >
+
+			<ExePackage
+				Id="vcredist2015"
+				Cache="always"
+				Compressed="no"
+				InstallCommand="/q /norestart"
+				RepairCommand="/q /repair /norestart"
+				Permanent="yes"
+				PerMachine="yes"
+				Vital="yes"
+				SuppressSignatureVerification="yes"
+				SourceFile="build/vcredist.exe">
+				<ExitCode Value="1638" Behavior="success"/>
+			</ExePackage>
+
+			<ExePackage
+				Id="java8"
+				Cache="always"
+				Compressed="no"
+				DetectCondition="SEARCH_CurrentJavaVersion >= v1.7"
+				PerMachine="yes"
+				Permanent="yes"
+				Vital="yes"
+				SuppressSignatureVerification="yes"
+				SourceFile="build/jre.exe" />
+
+			<RollbackBoundary />
+
+			<MsiPackage
+				Id="MainPackage"
+				SourceFile="build/core.msi"
+				Vital="yes"
+				ForcePerMachine="yes"
+				DisplayInternalUI="no" />
+		</Chain>
+	</Bundle>
+</Wix>
+

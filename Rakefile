@@ -272,6 +272,11 @@ end
 # generate a wix package bundle
 #
 def pack_win32()
+    configure_file("support/win32/bundle.wxs.in", "support/win32/bundle.wxs")
+    configure_file("support/win32/sysmo.wxs.in", "support/win32/sysmo.wxs")
+    configure_file( "support/win32/bin/build_installer.cmd.in", 
+                    "support/win32/bin/build_installer.cmd")
+
     puts ":: Generate #{RUBY_PLATFORM} package"
 end
 

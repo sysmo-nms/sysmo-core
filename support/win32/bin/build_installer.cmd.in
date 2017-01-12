@@ -1,0 +1,35 @@
+:: Build installer component
+
+:: Build installer bundle
+@set ressources=%USERPROFILE%\SYSMO_CORE_RESSOURCES
+@if not exist %ressources% mkdir %ressources%
+
+
+@if not DEFINED PLATFORM set PLATFORM="x64"
+
+@if "%PLATFORM%" == "Win32" (
+    @set VCREDIST_INSTALLER=%ressources%\vcredist_x86.exe
+    @set JAVA_INSTALLER=%ressources%\jre8_586.exe
+    @set vcredist_location="http://www.sysmo.io/runtime/msvc2015/vc_redist.x86.exe"
+    @set java_location="http://www.sysmo.io/runtime/jre/jre-8u111-windows-i586.exe"
+) else (
+    @set VCREDIST_INSTALLER=%ressources%\vcredist_x64.exe
+    @set JAVA_INSTALLER=%ressources%\jre8_64.exe
+    @set vcredist_location="http://www.sysmo.io/runtime/msvc2015/vc_redist.x64.exe"
+    @set java_location="http://www.sysmo.io/runtime/jre/jre-8u111-windows-x64.exe"
+)
+if not exist "%VCREDIST_INSTALLER%" curl -fSL -o "%VCREDIST_INSTALLER%" %vcredist_location%
+copy /y %VCREDIST_INSTALLER% build\vcredist.exe
+
+echo %JAVA_INSTALLER%
+echo %java_location%
+if not exist "%JAVA_INSTALLER%" curl -fSL -o "%JAVA_INSTALLER%"     %java_location%
+copy /y %JAVA_INSTALLER% build\jre.exe
+
+
+:: Wix bundle
+@set PATH=C:\Program Files (x86)\Wix Toolset v3.10\bin;%PATH%
+@set wix_opts=-nologo -ext WixNetFxExtension -ext WixBalExtension -ext WixUtilExtension -ext WixFirewallExtension -ext WixUIExtension
+
+candle.exe %wix_opts% -o build\bundle.wixobj build\bundle.wxs
+light.exe  %wix_opts% -o build\Sysmo-Core-@SYSMO_CORE_VERSION@-@BUILD_PLATFORM@.exe build\bundle.wixobj
