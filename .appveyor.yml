@@ -8,15 +8,9 @@ before_build:
     - gem query -i -n builder || gem install builder
     - git submodule update --init
 
-after_build:
-    - .\apps\j_server\priv\sysmo-jserver\gradlew.bat --stop
-    - del C:\Users\appveyor\.gradle\caches\modules-2\modules-2.lock
-
 build_script:
     - rake release
 
 cache:
-  - C:\Users\appveyor\.gradle\caches\
-  - C:\Users\appveyor\.gradle\wrapper\
   - C:\Ruby193\lib\ruby\gems\
 
