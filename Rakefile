@@ -83,7 +83,7 @@ end
 
 
 desc "Create a production release."
-task :release => ["jserver:build", "pping:build"] do
+task :release => ["jserver:build", "pping:build", "sysmo:build"] do
     cd SYSMO_ROOT
 
     # remove old release
