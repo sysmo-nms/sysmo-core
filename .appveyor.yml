@@ -1,5 +1,9 @@
 version: 1.{build}
 
+platform:
+    - x64
+    - Win32
+
 before_build:
     - gem query -i -n builder || gem install builder
     - git submodule update --init
