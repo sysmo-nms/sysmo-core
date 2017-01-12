@@ -85,9 +85,10 @@ end
 
 
 desc "Create a production release."
-task :release => ["sysmo:build", "jserver:build", "pping:build"] do
+task :release => ["jserver:build", "pping:build"] do
     puts "=> Start release build"
     cd SYSMO_ROOT
+    configure_file("rebar.config.in", "rebar.config")
 
     # remove old release
     clean_all()
@@ -146,6 +147,7 @@ task :doc => ["sysmo:doc", "jserver:doc", "pping:doc"]
 namespace "sysmo" do
 
     file 'rebar.config' => ['rebar.config.in', 'Rakefile'] do
+        cd SYSMO_ROOT
         configure_file("rebar.config.in", "rebar.config")
     end
 
