@@ -21,6 +21,12 @@ require 'pathname'
 
 system("git submodule update --init") 
 
+#
+SYSMO_CORE_VERSION_MAJOR = 2
+SYSMO_CORE_VERSION_MINOR = 0
+SYSMO_CORE_VERSION_PATCH = 1
+SYSMO_CORE_VERSION = "#{SYSMO_CORE_VERSION_MAJOR}.#{SYSMO_CORE_VERSION_MINOR}.#{SYSMO_CORE_VERSION_PATCH}"
+
 # set directories constants
 SYSMO_ROOT   = Dir.pwd
 JSERVER_ROOT = File.join(SYSMO_ROOT, "apps", "j_server", "priv", "sysmo-jserver")
@@ -136,27 +142,40 @@ task :doc => ["sysmo:doc", "jserver:doc", "pping:doc"]
 # Sysmo Erlang build and releases related tasks
 namespace "sysmo" do
 
+    file "rebar.config" => ["rebar.config.in", "Rakefile"] do
+        configure_file("rebar.config.in", "rebar.config")
+    end
+
+    file "apps/sysmo/src/sysmo.app.src" => 
+        ["apps/sysmo/src/sysmo.app.src.in", "Rakefile"] do
+        configure_file(
+            "apps/sysmo/src/sysmo.app.src.in", 
+            "apps/sysmo/src/sysmo.app.src")
+    end
+
+    task :configure_files => ["rebar.config", "apps/sysmo/src/sysmo.app.src"]
+
     # "Build Sysmo-Core"
-    task :build do
+    task :build => [:configure_files] do
         cd SYSMO_ROOT
         sh "#{REBAR} compile"
     end
 
     # "Build Sysmo-Core in DEBUG mode"
-    task :debug_build do
+    task :debug_build => [:configure_files] do
         cd SYSMO_ROOT
         sh "#{REBAR} as debug compile"
     end
 
     # "Clean Sysmo-Core"
-    task :clean do
+    task :clean => [:configure_files] do
         cd SYSMO_ROOT
         sh "#{REBAR} clean"
         sh "#{REBAR} as debug clean"
     end
 
     # "Test Sysmo-Core"
-    task :test do
+    task :test => [:configure_files] do
         cd SYSMO_ROOT
         sh "#{REBAR} eunit"
     end
@@ -167,7 +186,7 @@ namespace "sysmo" do
     end
 
     # "Generate documentation Sysmo-Core"
-    task :doc do
+    task :doc => [:configure_files] do
         cd SYSMO_ROOT
         sh "#{REBAR} edoc"
     end
@@ -369,4 +388,20 @@ def install_nchecks(release_dir, include_dummy)
     end
 
     file.close()
+end
+
+#
+# Configure file
+# 
+def configure_file(file_name_in, file_name_out)
+    text = File.read(file_name_in)
+
+    Module.constants.each do |x|
+        search_text = "@#{x}@"
+        replace_with = Module.const_get(x)
+        other = text.gsub(search_text.to_s, replace_with.to_s)
+        text = other
+    end
+
+    File.open(file_name_out, "w") { |file| file.puts text }
 end

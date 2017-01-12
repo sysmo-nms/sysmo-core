@@ -6,7 +6,7 @@
 %% relx default release
 {relx,
     [
-        {release, {sysmo, "0.1.0"},
+        {release, {sysmo, "@SYSMO_CORE_VERSION@"},
               [sysmo, sasl, asn1, crypto, kernel, mnesia,
                   public_key, ssl, xmerl]
         },
@@ -63,7 +63,7 @@
     {debug, [
         {erl_opts, [{d, debug}, debug_info]},
         {relx, [
-            {release, {sysmo, "0.1.0"},
+            {release, {sysmo, "@SYSMO_CORE_VERSION@"},
                 [sysmo, sasl, asn1, crypto, kernel, mnesia,
                     public_key, ssl, xmerl,
                         runtime_tools, wx, observer]

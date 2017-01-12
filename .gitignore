@@ -15,3 +15,6 @@ build/
 # sysmo-worker release
 /sysmo-worker
 
+# Are configured by rake
+/rebar.config
+/apps/sysmo/src/sysmo.app.src
