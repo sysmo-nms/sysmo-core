@@ -399,6 +399,7 @@ end
 # Configure file
 # 
 def configure_file(file_name_in, file_name_out)
+    puts "=>  Configuring file: #{file_name_out}"
     text = File.read(file_name_in)
 
     Module.constants.each do |x|
