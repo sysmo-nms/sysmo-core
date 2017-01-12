@@ -89,6 +89,7 @@ task :release => ["jserver:build", "pping:build"] do
     puts "=> Start release build"
     cd SYSMO_ROOT
     configure_file("rebar.config.in", "rebar.config")
+    configure_file("apps/sysmo/src/sysmo.app.src.in", "apps/sysmo/src/sysmo.app.src")
 
     # remove old release
     clean_all()
@@ -151,7 +152,13 @@ namespace "sysmo" do
         configure_file("rebar.config.in", "rebar.config")
     end
 
-    task :configure_files => ["rebar.config"]
+
+    file 'app/sysmo/src/sysmo.app.src' => ['apps/sysmo/src/sysmo.app.src.in', 'Rakefile'] do
+        cd SYSMO_ROOT
+        configure_file("apps/sysmo/src/sysmo.app.src.in", "apps/sysmo/src/sysmo.app.src")
+    end
+
+    task :configure_files => ["rebar.config", "apps/sysmo/src/sysmo.app.src"]
 
     # "Build Sysmo-Core"
     task :build => [:configure_files] do
