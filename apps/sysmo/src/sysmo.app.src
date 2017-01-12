@@ -1,7 +1,7 @@
 {application, sysmo,
     [
         {description, "Sysmo management system"},
-        {vsn, "@SYSMO_CORE_VERSION@"},
+        {vsn, "1.0"},
         {modules, []},
         {registered,[sysmo_sup]},
         {included_applications, [mnesia,monitor,supercast,j_server]},

@@ -149,14 +149,7 @@ namespace "sysmo" do
         configure_file("rebar.config.in", "rebar.config")
     end
 
-    file "apps/sysmo/src/sysmo.app.src" => 
-        ["apps/sysmo/src/sysmo.app.src.in", "Rakefile"] do
-        configure_file(
-            "apps/sysmo/src/sysmo.app.src.in", 
-            "apps/sysmo/src/sysmo.app.src")
-    end
-
-    task :configure_files => ["rebar.config", "apps/sysmo/src/sysmo.app.src"]
+    task :configure_files => ["rebar.config"]
 
     # "Build Sysmo-Core"
     task :build => [:configure_files] do
