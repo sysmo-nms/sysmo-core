@@ -286,7 +286,7 @@ end
 def pack_win32()
     configure_file("support/win32/bundle.wxs.in", "_build/bundle.wxs")
     configure_file("support/win32/sysmo.wxs.in", "_build/sysmo.wxs")
-    configure_file( "support/win32/bin/build_installer.cmd.in", 
+    configure_file( "support/win32/build_installer.cmd.in", 
                     "_build/build_installer.cmd")
 
     source_dir = File.join(BUILD_DIR, "SourceDir")
