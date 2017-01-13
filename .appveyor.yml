@@ -9,10 +9,7 @@ before_build:
     - git submodule update --init
 
 build_script:
-    - rake release
-
-after_build:
-    - _build\build_installer.cmd
+    - rake pack
 
 artifacts:
     - path: _build\Sysmo-Core-*.exe
