@@ -34,6 +34,10 @@ if BUILD_PLATFORM.nil? then
     BUILD_PLATFORM = "x64"
 end
 
+if BUILD_PLATFORM == "Win32" then
+    BUILD_PLATFORM = "i586"
+end
+
 # set directories constants
 SYSMO_ROOT   = Dir.pwd
 BUILD_DIR    = File.join(SYSMO_ROOT, "_build")
