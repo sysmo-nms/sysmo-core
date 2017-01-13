@@ -8,7 +8,7 @@
 		Manufacturer="Sysmo.io"
 		UpgradeCode="abcdef01-7349-453F-94F6-BCB5110BA4FD"
 		Copyright="Copyright (c) sebastien.serre@sysmo.io. All rights reserved."
-		IconSourceFile="support\win32\bundle.ico"
+		IconSourceFile="..\support\win32\bundle.ico"
 		DisableModify="no"
 		DisableRemove="no"
 		HelpUrl="www.sysmo.io/help.html"
@@ -19,8 +19,8 @@
 		<BootstrapperApplicationRef
 			Id="WixStandardBootstrapperApplication.RtfLicense">
 			<bal:WixStandardBootstrapperApplication
-				LicenseFile="support\pkgs\win\License.rtf"
-				LogoFile="support\pkgs\win\bundle-logo.png"
+				LicenseFile="..\support\win32\License.rtf"
+				LogoFile="..\support\win32\bundle-logo.png"
 				ShowVersion="yes"
 				SuppressOptionsUI="yes"
 				SuppressRepair="no"
@@ -43,33 +43,33 @@
 			<ExePackage
 				Id="vcredist2015"
 				Cache="always"
-				Compressed="no"
+				Compressed="yes"
 				InstallCommand="/q /norestart"
 				RepairCommand="/q /repair /norestart"
 				Permanent="yes"
 				PerMachine="yes"
 				Vital="yes"
 				SuppressSignatureVerification="yes"
-				SourceFile="build/vcredist.exe">
+				SourceFile="vcredist.exe">
 				<ExitCode Value="1638" Behavior="success"/>
 			</ExePackage>
 
 			<ExePackage
 				Id="java8"
 				Cache="always"
-				Compressed="no"
+				Compressed="yes"
 				DetectCondition="SEARCH_CurrentJavaVersion >= v1.7"
 				PerMachine="yes"
 				Permanent="yes"
 				Vital="yes"
 				SuppressSignatureVerification="yes"
-				SourceFile="build/jre.exe" />
+				SourceFile="jre.exe" />
 
 			<RollbackBoundary />
 
 			<MsiPackage
 				Id="MainPackage"
-				SourceFile="build/core.msi"
+				SourceFile="core.msi"
 				Vital="yes"
 				ForcePerMachine="yes"
 				DisplayInternalUI="no" />

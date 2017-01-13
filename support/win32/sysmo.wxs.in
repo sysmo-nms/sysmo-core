@@ -34,7 +34,7 @@ A later version of [ProductName] is already installed. Setup will now exit.
         <Media Id='1' Cabinet='Sample.cab' EmbedCab='yes' DiskPrompt="CD-ROM #1" />
         <Property Id='DiskPrompt' Value="Sysmo @SYSMO_CORE_VERSION@ Installation [1]" />
         <Property Id="MSIFASTINSTALL" Value="7" />
-        <Icon Id="sysmo.ico" SourceFile="graphics\sysmo.ico" />
+        <Icon Id="sysmo.ico" SourceFile="..\support\win32\sysmo.ico" />
         <Property Id="ARPPRODUCTICON" Value="sysmo.ico" />
 
         <Directory Id='TARGETDIR' Name="SourceDir">
@@ -72,7 +72,7 @@ A later version of [ProductName] is already installed. Setup will now exit.
                     Root="HKLM"
                     Key="Software\Sysmo\Sysmo Core"
                     ForceCreateOnInstall="yes">
-                    <RegistryValue Type="string" Name="CurrentVersion"  Value="$(env.REL_VER)" />
+                    <RegistryValue Type="string" Name="CurrentVersion"  Value="@SYSMO_CORE_VERSION@" />
                     <RegistryValue Type="string" Name="InstallLocation" Value="[INSTALLLOCATION]" />
                     <RegistryValue Type="string" Name="WebDirectory"
                         Value="[INSTALLLOCATION]sysmo-server\var\docroot" />
@@ -184,7 +184,7 @@ A later version of [ProductName] is already installed. Setup will now exit.
 
         <!-- UI only password request needed. Use only from a bundle -->
         <UI>
-            <Binary   Id="bgbmp" SourceFile="graphics\white.bmp" />
+            <Binary   Id="bgbmp" SourceFile="..\support\win32\white.bmp" />
             <Property Id="BGBitmap">bgbmp</Property>
             <Property Id="DefaultUIFont">DlgFont8</Property>
             <TextStyle Id="BannerTextStyle" FaceName="Segoe UI" Size="19"/>
@@ -409,8 +409,8 @@ A later version of [ProductName] is already installed. Setup will now exit.
                     ToolTip="Warning icon" FixedSize="yes" IconSize="48" Text="Warn" />
             </Dialog>
 
-            <Binary Id="Info" SourceFile="graphics\info.ico" />
-            <Binary Id="Warn" SourceFile="graphics\warning.ico" />
+            <Binary Id="Info" SourceFile="..\support\win32\info.ico" />
+            <Binary Id="Warn" SourceFile="..\support\win32\warning.ico" />
             <TextStyle Id="DlgFont8" FaceName="Tahoma" Size="8" />
             <TextStyle Id="DlgTitleFont" FaceName="Tahoma" Size="8" Bold="yes" />
 

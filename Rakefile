@@ -29,15 +29,22 @@ SYSMO_CORE_VERSION_MINOR = 0
 SYSMO_CORE_VERSION_PATCH = 1
 SYSMO_CORE_VERSION = "#{SYSMO_CORE_VERSION_MAJOR}.#{SYSMO_CORE_VERSION_MINOR}.#{SYSMO_CORE_VERSION_PATCH}"
 
+if (/x64/ =~ RUBY_PLATFORM) then
+    BUILD_PLATFORM = "x64"
+else
+    BUILD_PLATFORM = "x86"
+end
+
 # set directories constants
 SYSMO_ROOT   = Dir.pwd
+BUILD_DIR    = File.join(SYSMO_ROOT, "_build")
 JSERVER_ROOT = File.join(SYSMO_ROOT, "apps", "j_server", "priv", "sysmo-jserver")
 PPING_ROOT   = File.join(SYSMO_ROOT, "apps", "j_server", "priv", "pping")
 NCHECKS_REPO = File.join(SYSMO_ROOT, "apps", "j_server", "priv", "nchecks-base")
 
 # erlang releases location constants
-PROD_RELEASE_DIR  = File.join(SYSMO_ROOT, "_build", "default", "rel", "sysmo")
-DEBUG_RELEASE_DIR = File.join(SYSMO_ROOT, "_build", "debug",   "rel", "sysmo")
+PROD_RELEASE_DIR  = File.join(BUILD_DIR, "default", "rel", "sysmo")
+DEBUG_RELEASE_DIR = File.join(BUILD_DIR, "debug",   "rel", "sysmo")
 
 # set wrappers executable constants
 REBAR  = File.join(SYSMO_ROOT, "rebar3")
@@ -277,12 +284,19 @@ end
 # generate a wix package bundle
 #
 def pack_win32()
-    configure_file("support/win32/bundle.wxs.in", "support/win32/bundle.wxs")
-    configure_file("support/win32/sysmo.wxs.in", "support/win32/sysmo.wxs")
+    configure_file("support/win32/bundle.wxs.in", "_build/bundle.wxs")
+    configure_file("support/win32/sysmo.wxs.in", "_build/sysmo.wxs")
     configure_file( "support/win32/bin/build_installer.cmd.in", 
-                    "support/win32/bin/build_installer.cmd")
+                    "_build/build_installer.cmd")
 
-    puts ":: Generate #{RUBY_PLATFORM} package"
+    source_dir = File.join(BUILD_DIR, "SourceDir")
+    FileUtils.mkdir(source_dir)
+    FileUtils.mv(PROD_RELEASE_DIR, File.join(source_dir, "Sysmo-Core"))
+
+    puts ":: Will Generate #{RUBY_PLATFORM} package"
+    cd BUILD_DIR
+    sh "./build_installer.cmd"
+    cd SYSMO_ROOT
 end
 
 #
@@ -416,3 +430,4 @@ def configure_file(file_name_in, file_name_out)
 
     File.open(file_name_out, "w") { |file| file.puts text }
 end
+

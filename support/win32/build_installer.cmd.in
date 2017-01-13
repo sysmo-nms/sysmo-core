@@ -1,4 +1,13 @@
 :: Build installer component
+cd _build
+
+@set PATH=C:\Program Files (x86)\Wix Toolset v3.10\bin;%PATH%
+@set wix_opts=-nologo -ext WixNetFxExtension -ext WixBalExtension -ext WixUtilExtension -ext WixFirewallExtension -ext WixUIExtension
+heat.exe dir .\SourceDir -gg -ke -nologo -sreg -sfrag -srd -cg AllFiles -dr INSTALLLOCATION --template fragment -out sysmoTree.wxs
+@set wix_ice20="-sice:ICE20"
+candle.exe %wix_opts% sysmo.wxs
+candle.exe %wix_opts% sysmoTree.wxs
+light.exe %wix_ice20% %wix_opts% -o core.msi sysmo.wixobj sysmoTree.wixobj
 
 :: Build installer bundle
 @set ressources=%USERPROFILE%\SYSMO_CORE_RESSOURCES
@@ -19,17 +28,15 @@
     @set java_location="http://www.sysmo.io/runtime/jre/jre-8u111-windows-x64.exe"
 )
 if not exist "%VCREDIST_INSTALLER%" curl -fSL -o "%VCREDIST_INSTALLER%" %vcredist_location%
-copy /y %VCREDIST_INSTALLER% build\vcredist.exe
+copy /y %VCREDIST_INSTALLER% vcredist.exe
 
 echo %JAVA_INSTALLER%
 echo %java_location%
 if not exist "%JAVA_INSTALLER%" curl -fSL -o "%JAVA_INSTALLER%"     %java_location%
-copy /y %JAVA_INSTALLER% build\jre.exe
+copy /y %JAVA_INSTALLER% jre.exe
 
 
 :: Wix bundle
-@set PATH=C:\Program Files (x86)\Wix Toolset v3.10\bin;%PATH%
-@set wix_opts=-nologo -ext WixNetFxExtension -ext WixBalExtension -ext WixUtilExtension -ext WixFirewallExtension -ext WixUIExtension
 
-candle.exe %wix_opts% -o build\bundle.wixobj build\bundle.wxs
-light.exe  %wix_opts% -o build\Sysmo-Core-@SYSMO_CORE_VERSION@-@BUILD_PLATFORM@.exe build\bundle.wixobj
+candle.exe %wix_opts% -o bundle.wixobj bundle.wxs
+light.exe  %wix_opts% -o Sysmo-Core-@SYSMO_CORE_VERSION@-@BUILD_PLATFORM@.exe bundle.wixobj
