@@ -11,6 +11,31 @@ before_build:
 build_script:
     - rake release
 
+after_build:
+    - _build\build_installer.cmd
+
+artifacts:
+    - path: _build\Sysmo-Core-*.exe
+    - path: _build\core.msi
+
+deploy:
+    release: CURRENT
+    description: 'Automatic Sysmo Core release deployment'
+    provider: GitHub
+    auth_token:
+        secure: JbU57GgB5EBgwKdw4kTc2LTimc85On9dVaiCAbnqIPRbQxEs6KFEBOHxh8eFuqqD
+    artifact: 
+        - /Sysmo-Core-.*\.exe/
+        - /core.msi/
+    force_update: true
+    draft: true
+    prerelease: false
+    on:
+        branch: master
+        appveyor_repo_tag: false
+
+
 cache:
   - C:\Ruby193\lib\ruby\gems\
+  - C:\Users\appveyor\SYSMO_CORE_RESSOURCES\
 
