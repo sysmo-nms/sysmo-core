@@ -1,27 +1,14 @@
-:: Build installer component
-
-@if not DEFINED PLATFORM set PLATFORM="x64"
-
-@set PATH=C:\Program Files (x86)\Wix Toolset v3.10\bin;%PATH%
-@set wix_opts= -v -nologo -ext WixNetFxExtension -ext WixBalExtension -ext WixUtilExtension -ext WixFirewallExtension -ext WixUIExtension
-heat.exe dir .\SourceDir -gg -ke -nologo -sreg -sfrag -srd -cg AllFiles -dr INSTALLLOCATION --template fragment -out sysmoTree.wxs
-@set wix_ice20="-sice:ICE20"
-candle.exe %wix_opts% -arch %PLATFORM% core.wxs
-candle.exe %wix_opts% -arch %PLATFORM% sysmoTree.wxs
-light.exe %wix_ice20% %wix_opts% -o core-@BUILD_PLATFORM@.msi core.wixobj sysmoTree.wixobj
-
-:: Build installer bundle
 @set ressources=%USERPROFILE%\SYSMO_CORE_RESSOURCES
 @if not exist %ressources% mkdir %ressources%
 
-
-
 @if "%PLATFORM%" == "Win32" (
+    @set WIX_ARCH="x86"
     @set VCREDIST_INSTALLER=%ressources%\vcredist_x86.exe
     @set JAVA_INSTALLER=%ressources%\jre8_586.exe
     @set vcredist_location="http://www.sysmo.io/runtime/msvc2015/vc_redist.x86.exe"
     @set java_location="http://www.sysmo.io/runtime/jre/jre-8u111-windows-i586.exe"
 ) else (
+    @set WIX_ARCH="x64"
     @set VCREDIST_INSTALLER=%ressources%\vcredist_x64.exe
     @set JAVA_INSTALLER=%ressources%\jre8_64.exe
     @set vcredist_location="http://www.sysmo.io/runtime/msvc2015/vc_redist.x64.exe"
@@ -35,8 +22,19 @@ echo %java_location%
 if not exist "%JAVA_INSTALLER%" curl -fSL -o "%JAVA_INSTALLER%"     %java_location%
 copy /y %JAVA_INSTALLER% jre.exe
 
+:: Build installer component
 
-:: Wix bundle
+@if not DEFINED PLATFORM set PLATFORM="x64"
 
-candle.exe %wix_opts% -arch %PLATFORM% -o bundle.wixobj bundle.wxs
+@set PATH=C:\Program Files (x86)\Wix Toolset v3.10\bin;%PATH%
+@set wix_opts= -v -nologo -ext WixNetFxExtension -ext WixBalExtension -ext WixUtilExtension -ext WixFirewallExtension -ext WixUIExtension
+heat.exe dir .\SourceDir -gg -ke -nologo -sreg -sfrag -srd -cg AllFiles -dr INSTALLLOCATION --template fragment -out sysmoTree.wxs
+@set wix_ice20="-sice:ICE20"
+candle.exe %wix_opts% -arch %WIX_ARCH% core.wxs
+candle.exe %wix_opts% -arch %WIX_ARCH% sysmoTree.wxs
+light.exe %wix_ice20% %wix_opts% -o core-@BUILD_PLATFORM@.msi core.wixobj sysmoTree.wixobj
+
+:: Build installer bundle
+
+candle.exe %wix_opts% -arch %WIX_ARCH% -o bundle.wixobj bundle.wxs
 light.exe  %wix_opts% -o Sysmo-Core-@SYSMO_CORE_VERSION@-@BUILD_PLATFORM@.exe bundle.wixobj
