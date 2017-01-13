@@ -1,7 +1,7 @@
 :: Build installer component
 
 @set PATH=C:\Program Files (x86)\Wix Toolset v3.10\bin;%PATH%
-@set wix_opts=-nologo -ext WixNetFxExtension -ext WixBalExtension -ext WixUtilExtension -ext WixFirewallExtension -ext WixUIExtension
+@set wix_opts= -v -nologo -ext WixNetFxExtension -ext WixBalExtension -ext WixUtilExtension -ext WixFirewallExtension -ext WixUIExtension
 heat.exe dir .\SourceDir -gg -ke -nologo -sreg -sfrag -srd -cg AllFiles -dr INSTALLLOCATION --template fragment -out sysmoTree.wxs
 @set wix_ice20="-sice:ICE20"
 candle.exe %wix_opts% sysmo.wxs
