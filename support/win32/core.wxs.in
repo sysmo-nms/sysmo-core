@@ -38,11 +38,11 @@ A later version of [ProductName] is already installed. Setup will now exit.
         <Property Id="ARPPRODUCTICON" Value="sysmo.ico" />
 
         <Directory Id='TARGETDIR' Name="SourceDir">
-            <Directory Id="ProgramFilesFolder">
-                <Directory Id="INSTALLLOCATION" Name="Sysmo Enterprise Edition" />
+            <Directory Id="@WINDOW_PROGRAM_FILES_FOLDER@">
+                <Directory Id="INSTALLLOCATION" Name="Sysmo NMS" />
             </Directory>
             <Directory Id="ProgramMenuFolder">
-                <Directory Id="ApplicationProgramsFolder" Name="Sysmo" />
+                <Directory Id="ApplicationProgramsFolder" Name="Sysmo-Core" />
             </Directory>
 
         

@@ -36,6 +36,9 @@ end
 
 if BUILD_PLATFORM == "Win32" then
     BUILD_PLATFORM = "i586"
+    WINDOW_PROGRAM_FILES_FOLDER = "ProgramFilesFolder"
+else
+    WINDOW_PROGRAM_FILES_FOLDER = "ProgramFiles64Folder"
 end
 
 # set directories constants
