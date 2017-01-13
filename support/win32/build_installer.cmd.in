@@ -4,9 +4,9 @@
 @set wix_opts= -v -nologo -ext WixNetFxExtension -ext WixBalExtension -ext WixUtilExtension -ext WixFirewallExtension -ext WixUIExtension
 heat.exe dir .\SourceDir -gg -ke -nologo -sreg -sfrag -srd -cg AllFiles -dr INSTALLLOCATION --template fragment -out sysmoTree.wxs
 @set wix_ice20="-sice:ICE20"
-candle.exe %wix_opts% sysmo.wxs
+candle.exe %wix_opts% core.wxs
 candle.exe %wix_opts% sysmoTree.wxs
-light.exe %wix_ice20% %wix_opts% -o core-@BUILD_PLATFORM@.msi sysmo.wixobj sysmoTree.wixobj
+light.exe %wix_ice20% %wix_opts% -o core-@BUILD_PLATFORM@.msi core.wixobj sysmoTree.wixobj
 
 :: Build installer bundle
 @set ressources=%USERPROFILE%\SYSMO_CORE_RESSOURCES

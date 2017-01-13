@@ -91,23 +91,8 @@ A later version of [ProductName] is already installed. Setup will now exit.
 
         </Directory>
 
-        <DirectoryRef Id="ApplicationProgramsFolder">
-            <Component Id="SysmoApplicationShortcut" Guid='abcd773f-7349-453F-94F6-BCB5110BA4F0'>
-                <Shortcut
-                    Id="ApplicationStartMenuShortcut"
-                    Name="sysmo"
-                    Description="Easy to use system and network monitor"
-                    Target="[INSTALLLOCATION]\sysmo-operator\sysmo.exe"
-                    WorkingDirectory="APPLICATIONROOTDIRECTORY" />
-                <RemoveFolder Id="ApplicationProgramsFolder" On="uninstall" />
-                <RegistryValue Root="HKCU" Key="Software\Microsoft\Sysmo" Name="installed" Type="integer" Value="1" KeyPath="yes" />
-            </Component>
-        </DirectoryRef>
-
-
         <Feature Id='Complete' Level='1'>
             <ComponentGroupRef  Id='AllFiles' />
-            <ComponentRef       Id="SysmoApplicationShortcut" />
             <ComponentRef       Id="SysmoFirewallExceptions" />
             <ComponentRef       Id="SysmoRegKeys" />
         </Feature>
