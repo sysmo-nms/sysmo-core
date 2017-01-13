@@ -1,11 +1,13 @@
 :: Build installer component
 
+@if not DEFINED PLATFORM set PLATFORM="x64"
+
 @set PATH=C:\Program Files (x86)\Wix Toolset v3.10\bin;%PATH%
 @set wix_opts= -v -nologo -ext WixNetFxExtension -ext WixBalExtension -ext WixUtilExtension -ext WixFirewallExtension -ext WixUIExtension
 heat.exe dir .\SourceDir -gg -ke -nologo -sreg -sfrag -srd -cg AllFiles -dr INSTALLLOCATION --template fragment -out sysmoTree.wxs
 @set wix_ice20="-sice:ICE20"
-candle.exe %wix_opts% core.wxs
-candle.exe %wix_opts% sysmoTree.wxs
+candle.exe %wix_opts% -arch %PLATFORM% core.wxs
+candle.exe %wix_opts% -arch %PLATFORM% sysmoTree.wxs
 light.exe %wix_ice20% %wix_opts% -o core-@BUILD_PLATFORM@.msi core.wixobj sysmoTree.wixobj
 
 :: Build installer bundle
@@ -13,7 +15,6 @@ light.exe %wix_ice20% %wix_opts% -o core-@BUILD_PLATFORM@.msi core.wixobj sysmoT
 @if not exist %ressources% mkdir %ressources%
 
 
-@if not DEFINED PLATFORM set PLATFORM="x64"
 
 @if "%PLATFORM%" == "Win32" (
     @set VCREDIST_INSTALLER=%ressources%\vcredist_x86.exe
@@ -37,5 +38,5 @@ copy /y %JAVA_INSTALLER% jre.exe
 
 :: Wix bundle
 
-candle.exe %wix_opts% -o bundle.wixobj bundle.wxs
+candle.exe %wix_opts% -arch %PLATFORM% -o bundle.wixobj bundle.wxs
 light.exe  %wix_opts% -o Sysmo-Core-@SYSMO_CORE_VERSION@-@BUILD_PLATFORM@.exe bundle.wixobj
