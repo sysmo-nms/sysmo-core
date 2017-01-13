@@ -24,9 +24,7 @@ deploy:
     provider: GitHub
     auth_token:
         secure: JbU57GgB5EBgwKdw4kTc2LTimc85On9dVaiCAbnqIPRbQxEs6KFEBOHxh8eFuqqD
-    artifact: 
-        - /Sysmo-Core-.*\.exe/
-        - /core.msi/
+    artifact: /Sysmo-Core-.*\.exe/
     force_update: true
     draft: true
     prerelease: false
