@@ -69,10 +69,10 @@
 
 			<MsiPackage
 				Id="MainPackage"
-				SourceFile="core.msi"
+				SourceFile="core-@BUILD_PLATFORM@.msi"
 				Vital="yes"
 				ForcePerMachine="yes"
-				DisplayInternalUI="no" />
+				DisplayInternalUI="yes" />
 		</Chain>
 	</Bundle>
 </Wix>

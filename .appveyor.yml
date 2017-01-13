@@ -13,7 +13,7 @@ build_script:
 
 artifacts:
     - path: _build\Sysmo-Core-*.exe
-    - path: _build\core.msi
+    - path: _build\core-*.msi
 
 deploy:
     release: CURRENT
@@ -21,7 +21,7 @@ deploy:
     provider: GitHub
     auth_token:
         secure: JbU57GgB5EBgwKdw4kTc2LTimc85On9dVaiCAbnqIPRbQxEs6KFEBOHxh8eFuqqD
-    artifact: /Sysmo-Core-.*\.exe/
+    artifact: /Sysmo-Core-.*\.exe/, /core-.*\.msi/
     force_update: true
     draft: true
     prerelease: false

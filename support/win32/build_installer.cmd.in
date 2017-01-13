@@ -1,5 +1,4 @@
 :: Build installer component
-cd _build
 
 @set PATH=C:\Program Files (x86)\Wix Toolset v3.10\bin;%PATH%
 @set wix_opts=-nologo -ext WixNetFxExtension -ext WixBalExtension -ext WixUtilExtension -ext WixFirewallExtension -ext WixUIExtension
@@ -7,7 +6,7 @@ heat.exe dir .\SourceDir -gg -ke -nologo -sreg -sfrag -srd -cg AllFiles -dr INST
 @set wix_ice20="-sice:ICE20"
 candle.exe %wix_opts% sysmo.wxs
 candle.exe %wix_opts% sysmoTree.wxs
-light.exe %wix_ice20% %wix_opts% -o core.msi sysmo.wixobj sysmoTree.wixobj
+light.exe %wix_ice20% %wix_opts% -o core-@BUILD_PLATFORM@.msi sysmo.wixobj sysmoTree.wixobj
 
 :: Build installer bundle
 @set ressources=%USERPROFILE%\SYSMO_CORE_RESSOURCES
