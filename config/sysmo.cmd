@@ -71,7 +71,7 @@
 	-stopaction "init:stop()." ^
 	-onfail     restart ^
 	-workdir    "%node_root%" ^
-	-name       "%node_name%" ^
+	-sname      "%node_name%" ^
 	-comment    "%service_description%" ^
 	-machine    "%erts_bin%\erl.exe" ^
 	-args       "%args%"

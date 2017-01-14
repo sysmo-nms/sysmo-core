@@ -1,0 +1,10 @@
+'rake pack', generate a valid package. But:
+
+* Trying cmd.exe and starting sysmo.cmd with argument "console" work.
+* Installing and starting the service fail either to:
+    * wrong -name or -sname used (see vm.args and sysmo.cmd scrit install arguments),
+    * java process fail to connect to the local erlang node (probably due to a wrong name/sname argument).
+
+TODO:
+* Normalize -name/-sname in bin/sysmo.cmd etc/vm.args
+* More debug informations from the java side (print the erlang node name he his failing to connect to)
