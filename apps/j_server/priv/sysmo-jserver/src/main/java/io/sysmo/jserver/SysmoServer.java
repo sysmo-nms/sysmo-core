@@ -221,11 +221,12 @@ public class SysmoServer {
         /*
          * Connect to erlang-main node
          */
+        SysmoServer.logger.info("Trying to connect to node: " + foreignNodeName);
         OtpNode node;
         try {
             node = new OtpNode(SysmoServer.selfNodeName, erlangCookie);
             if (!node.ping(foreignNodeName, 2000)) {
-                throw new TimeoutException("Can t connect to main erlang node.");
+                throw new TimeoutException("Can t connect to main erlang node: ");
             }
         } catch (IOException e) {
             SysmoServer.exitReason = "OtpNode_io_exception";
