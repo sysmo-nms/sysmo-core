@@ -108,7 +108,7 @@ A later version of [ProductName] is already installed. Setup will now exit.
         <CustomAction
             Id="Set_INIT_Sysmo"
             Property="QtExecCmdLine"
-            Value='&quot;[INSTALLLOCATION]sysmo-admin-util.exe&quot; /init [ADMIN_PASS]' />
+            Value='&quot;[INSTALLLOCATION]\Sysmo Core\bin\sysmo.cmd&quot; reset_pwd [ADMIN_PASS]' />
             
         <CustomAction
             Id="INIT_Sysmo"
@@ -127,7 +127,7 @@ A later version of [ProductName] is already installed. Setup will now exit.
         <CustomAction
             Id="Set_REMOVE_Sysmo"
             Property="QtExecCmdLine"
-            Value='&quot;[INSTALLLOCATION]sysmo-admin-util.exe&quot; /remove' />
+            Value='&quot;[INSTALLLOCATION]\Sysmo Core\bin\sysmo.cmd&quot; uninstall' />
             
         <CustomAction
             Id="REMOVE_Sysmo"
@@ -140,7 +140,7 @@ A later version of [ProductName] is already installed. Setup will now exit.
         <CustomAction
             Id="Set_START_Sysmo"
             Property="QtExecCmdLine"
-            Value='&quot;[INSTALLLOCATION]sysmo-admin-util.exe&quot; /start' />
+            Value='&quot;[INSTALLLOCATION]\Sysmo Core\bin\sysmo.cmd&quot; start' />
 
         <CustomAction
             Id="START_Sysmo"

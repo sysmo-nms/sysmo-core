@@ -29,15 +29,16 @@ SYSMO_CORE_VERSION_MINOR = 0
 SYSMO_CORE_VERSION_PATCH = 1
 SYSMO_CORE_VERSION = "#{SYSMO_CORE_VERSION_MAJOR}.#{SYSMO_CORE_VERSION_MINOR}.#{SYSMO_CORE_VERSION_PATCH}"
 
-BUILD_PLATFORM = ENV['PLATFORM']
-if BUILD_PLATFORM.nil? then
-    BUILD_PLATFORM = "x64"
+build_platform = ENV['PLATFORM']
+if build_platform.nil? then
+    build_platform = "x64"
 end
 
-if BUILD_PLATFORM == "Win32" then
+if build_platform == "Win32" then
     BUILD_PLATFORM = "i586"
     WINDOW_PROGRAM_FILES_FOLDER = "ProgramFilesFolder"
 else
+    BUILD_PLATFORM = "x64"
     WINDOW_PROGRAM_FILES_FOLDER = "ProgramFiles64Folder"
 end
 

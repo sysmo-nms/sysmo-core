@@ -54,6 +54,7 @@
 @if "%1"=="list"      @goto list
 @if "%1"=="uninstall" @goto uninstall
 @if "%1"=="console"   @goto console
+@if "%1"=="reset_pwd" @goto reset_pwd
 
 @echo Unknown command: "%1"
 @goto :EOF
@@ -65,12 +66,12 @@
 :: to get it work with erlsrv.exe. Console mode only requires the command
 :: to be started in Administrator mode.
 :: So to get it work, first install the files then use erlsrv.
-@set args= -boot \"%node_boot%\" -config \"%sys_config%\" -args_file \"%vm_args%\" -sname "%node_name%"
+@set args= -boot \"%node_boot%\" -config \"%sys_config%\" -args_file \"%vm_args%\" -name "%node_name%"
 @"%erts_bin%\erlsrv.exe" add "%service_name%" ^
 	-stopaction "init:stop()." ^
 	-onfail     restart ^
 	-workdir    "%node_root%" ^
-	-sname      "%node_name%" ^
+	-name       "%node_name%" ^
 	-comment    "%service_description%" ^
 	-machine    "%erts_bin%\erl.exe" ^
 	-args       "%args%"
@@ -97,6 +98,7 @@
 
 :uninstall
 :: WARNING: see WTF
+@"%erts_bin%\erlsrv.exe" stop   "%service_name%"
 @"%erts_bin%\erlsrv.exe" remove "%service_name%"
 @"%erts_bin%\epmd.exe" -kill
 @goto :EOF
@@ -107,10 +109,13 @@
 	-boot      "%node_boot%" ^
 	-config    "%sys_config%" ^
 	-args_file "%vm_args%" ^
-	-sname     "%node_name%"
+	-name      "%node_name%"
 @goto :EOF
 :: END OF PROGRAM
 
+:reset_pwd
+@echo "Init config"
+@goto :EOF
 
 :set_trim
 @set %1=%2
