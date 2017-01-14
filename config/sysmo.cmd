@@ -66,7 +66,7 @@
 :: to get it work with erlsrv.exe. Console mode only requires the command
 :: to be started in Administrator mode.
 :: So to get it work, first install the files then use erlsrv.
-@set args= -boot \"%node_boot%\" -config \"%sys_config%\" -args_file \"%vm_args%\" -name "%node_name%"
+@set args= -boot \"%node_boot%\" -config \"%sys_config%\" -args_file \"%vm_args%\" -sname "%node_name%"
 @"%erts_bin%\erlsrv.exe" add "%service_name%" ^
 	-stopaction "init:stop()." ^
 	-onfail     restart ^
@@ -109,7 +109,7 @@
 	-boot      "%node_boot%" ^
 	-config    "%sys_config%" ^
 	-args_file "%vm_args%" ^
-	-name      "%node_name%"
+	-sname     "%node_name%"
 @goto :EOF
 :: END OF PROGRAM
 
