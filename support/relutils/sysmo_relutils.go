@@ -189,11 +189,6 @@ func main() {
     tmp_pass_file := filepath.Join(etc_dir, "users.xml.tmp")
     tmp_args_file := filepath.Join(etc_dir, "vm.args.tmp")
 
-    fmt.Println(pass_file)
-    fmt.Println(args_file)
-
-    fmt.Println(tmp_pass_file)
-    fmt.Println(tmp_args_file)
     flag.Parse()
     if (UpdateCookie == false) && (UpdateAdminPassword == false) {
         fmt.Println("Correct usage can be:")
