@@ -12,6 +12,10 @@ build/
 /apps/j_server/priv/pping/pping
 /apps/j_server/priv/pping/pping.exe
 
+# go sysmo_relutils builds
+/support/relutils/sysmo_relutils
+/support/relutils/sysmo_relutils.exe
+
 # sysmo-worker release
 /sysmo-worker
 

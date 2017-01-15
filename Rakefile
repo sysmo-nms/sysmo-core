@@ -21,7 +21,7 @@ require 'pathname'
 
 STDOUT.sync = true
 
-system("git submodule update --init") 
+system("git submodule update --init")
 
 #
 SYSMO_CORE_VERSION_MAJOR = 2
@@ -47,6 +47,7 @@ SYSMO_ROOT   = Dir.pwd
 BUILD_DIR    = File.join(SYSMO_ROOT, "_build")
 JSERVER_ROOT = File.join(SYSMO_ROOT, "apps", "j_server", "priv", "sysmo-jserver")
 PPING_ROOT   = File.join(SYSMO_ROOT, "apps", "j_server", "priv", "pping")
+SYSMO_RELUTILS_ROOT = File.join(SYSMO_ROOT, "support", "relutils")
 NCHECKS_REPO = File.join(SYSMO_ROOT, "apps", "j_server", "priv", "nchecks-base")
 
 # erlang releases location constants
@@ -59,19 +60,19 @@ GRADLE = File.join(JSERVER_ROOT, "gradlew")
 
 
 ###############################################################################
-## TASKS 
+## TASKS
 ###############################################################################
 task :default => [:debug_release]
 
 desc "Clean."
-task :clean => ["sysmo:clean", "jserver:clean", "pping:clean"]
+task :clean => ["sysmo:clean", "jserver:clean", "pping:clean", "relutils:clean"]
 
 
 desc "Shortcut for debug_release"
 task :rel => [:debug_release]
 
 desc "Create a debug release."
-task :debug_release => ["sysmo:debug_build", "jserver:build", "pping:build"] do
+task :debug_release => ["sysmo:debug_build", "jserver:build", "pping:build", "relutils:build"] do
     cd SYSMO_ROOT
 
     # remove old sysmo-jserver java application wich may be present
@@ -82,6 +83,7 @@ task :debug_release => ["sysmo:debug_build", "jserver:build", "pping:build"] do
 
     # extern install
     install_pping(DEBUG_RELEASE_DIR)
+    install_release_utils(DEBUG_RELEASE_DIR)
     install_nchecks(DEBUG_RELEASE_DIR, true)
 
     puts "Debug release ready!"
@@ -99,7 +101,7 @@ end
 
 
 desc "Create a production release."
-task :release => ["jserver:build", "pping:build"] do
+task :release => ["jserver:build", "pping:build", "relutils:build"] do
     puts "=> Start release build"
     cd SYSMO_ROOT
     configure_file("rebar.config.in", "rebar.config")
@@ -113,6 +115,7 @@ task :release => ["jserver:build", "pping:build"] do
 
     # extern install
     install_pping(PROD_RELEASE_DIR)
+    install_release_utils(PROD_RELEASE_DIR)
     install_nchecks(PROD_RELEASE_DIR, false)
 
     puts "Production release ready!"
@@ -137,21 +140,21 @@ end
 
 
 desc "Clean environment."
-task :clean_all => [:clean] do 
+task :clean_all => [:clean] do
     clean_all()
 end
 
 
 desc "Test"
-task :test => ["sysmo:test", "jserver:test", "pping:test"]
+task :test => ["sysmo:test", "jserver:test", "pping:test", "relutils:test"]
 
 
 desc "Check"
-task :check => ["sysmo:check", "jserver:check", "pping:check"]
+task :check => ["sysmo:check", "jserver:check", "pping:check", "relutils:check"]
 
 
 desc "Generate documentation"
-task :doc => ["sysmo:doc", "jserver:doc", "pping:doc"]
+task :doc => ["sysmo:doc", "jserver:doc", "pping:doc", "relutils:doc"]
 
 
 ###############################################################################
@@ -249,6 +252,37 @@ namespace "jserver" do
 
 end
 
+# sysmo_relutils Golang build and releases related tasks
+namespace "relutils" do
+
+    # "Build relutils"
+    task :build do
+        cd SYSMO_RELUTILS_ROOT
+        sh "go build sysmo_relutils.go"
+    end
+
+    # "Clean relutils"
+    task :clean do
+        cd SYSMO_RELUTILS_ROOT
+        sh "go clean sysmo_relutils.go"
+    end
+
+    # "Test relutils"
+    task :test do
+        # nothing to test yet
+    end
+
+    # "Check relutils"
+    task :check do
+        # nothing to check yet
+    end
+
+    # "Generate documentation relutils"
+    task :doc do
+        # no doc yet
+    end
+end
+
 
 # Pping Golang build and releases related tasks
 namespace "pping" do
@@ -293,7 +327,7 @@ end
 def pack_win32()
     configure_file("support/win32/bundle.wxs.in", "_build/bundle.wxs")
     configure_file("support/win32/core.wxs.in", "_build/core.wxs")
-    configure_file( "support/win32/build_installer.cmd.in", 
+    configure_file( "support/win32/build_installer.cmd.in",
                     "_build/build_installer.cmd")
 
     source_dir = File.join(BUILD_DIR, "SourceDir")
@@ -343,7 +377,7 @@ end
 
 #
 # Install pping command in the specified release directory
-# 
+#
 def install_pping(release_dir)
     puts ":: Install pping"
     cd SYSMO_ROOT
@@ -362,8 +396,28 @@ def install_pping(release_dir)
 end
 
 #
+# Install sysmo_relutils command in the specified release directory
+#
+def install_release_utils(release_dir)
+    puts ":: Install sysmo_relutils"
+    cd SYSMO_ROOT
+
+    dst      = File.join(release_dir, "bin")
+    win_src  = File.join(SYSMO_RELUTILS_ROOT, "sysmo_relutils.exe")
+    unix_src = File.join(SYSMO_RELUTILS_ROOT, "sysmo_relutils")
+
+    if File.exist?(win_src)
+        puts "Install #{win_src}"
+        FileUtils.copy(win_src,dst)
+    elsif File.exist?(unix_src)
+        puts "Install #{unix_src}"
+        FileUtils.copy(unix_src,dst)
+    end
+end
+
+#
 # Install nchecks definitions and scripts in the release directory
-# 
+#
 def install_nchecks(release_dir, include_dummy)
     puts ":: Building NChecksRepository.xml"
     cd SYSMO_ROOT
@@ -423,7 +477,7 @@ end
 
 #
 # Configure file
-# 
+#
 def configure_file(file_name_in, file_name_out)
     puts "=>  Configuring file: #{file_name_out}"
     text = File.read(file_name_in)
