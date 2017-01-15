@@ -31,8 +31,7 @@ import "io"
 import "path/filepath"
 
 var UpdateCookie bool
-var UpdateAdminPassword bool
-var UpdateAdminPasswordVar string
+var UpdateAdminPassword string
 
 const cookie_size int = 25
 
@@ -60,10 +59,8 @@ type Group struct {
 
 func init() {
     flag.BoolVar(&UpdateCookie, "update_cookie", false, "Set a random cookie")
-    flag.BoolVar(&UpdateAdminPassword, "update_admin_password", false,
-        "Update the admin password. Requires --admin_password_string.")
-    flag.StringVar(&UpdateAdminPasswordVar, "admin_password_string", "",
-        "The new password to be set")
+    flag.StringVar(&UpdateAdminPassword, "update_admin_password", "",
+        "If set, will update the \"admin\" user password")
 }
 
 func generate_cookie() string {
@@ -146,7 +143,7 @@ func update_admin_password() {
     for i := range v.Users {
         user := &v.Users[i]
         if user.Id == "admin" {
-            user.Passwd = UpdateAdminPasswordVar
+            user.Passwd = UpdateAdminPassword
             break
         }
     }
@@ -190,8 +187,8 @@ func main() {
     tmp_args_file = filepath.Join(etc_dir, "vm.args.tmp")
 
     flag.Parse()
-    if (UpdateCookie == false) && (UpdateAdminPassword == false) {
-        fmt.Println("Correct usage can be:")
+    if UpdateCookie == false && len(UpdateAdminPassword) == 0 {
+        fmt.Println(filepath.Base(os.Args[0]) + " usage:")
         flag.PrintDefaults()
         os.Exit(1)
     }
@@ -200,9 +197,8 @@ func main() {
        update_cookie()
     }
 
-    if UpdateAdminPassword == true {
-       if len(UpdateAdminPasswordVar) > 0 {
-          update_admin_password()
-       }
+    if len(UpdateAdminPassword) > 0 {
+        update_admin_password()
     }
+    os.Exit(0)
 }
