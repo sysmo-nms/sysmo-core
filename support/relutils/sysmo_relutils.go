@@ -184,10 +184,10 @@ func main() {
     parent_dir := filepath.Dir(current_dir)
     etc_dir := filepath.Join(parent_dir, "etc")
 
-    pass_file := filepath.Join(etc_dir, "users.xml")
-    args_file := filepath.Join(etc_dir, "vm.args")
-    tmp_pass_file := filepath.Join(etc_dir, "users.xml.tmp")
-    tmp_args_file := filepath.Join(etc_dir, "vm.args.tmp")
+    pass_file     = filepath.Join(etc_dir, "users.xml")
+    args_file     = filepath.Join(etc_dir, "vm.args")
+    tmp_pass_file = filepath.Join(etc_dir, "users.xml.tmp")
+    tmp_args_file = filepath.Join(etc_dir, "vm.args.tmp")
 
     flag.Parse()
     if (UpdateCookie == false) && (UpdateAdminPassword == false) {
