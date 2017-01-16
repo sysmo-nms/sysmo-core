@@ -69,7 +69,7 @@
 
 			<MsiPackage
 				Id="MainPackage"
-				SourceFile="core-@BUILD_PLATFORM@.msi"
+				SourceFile="zcore-@BUILD_PLATFORM@.msi"
 				Vital="yes"
 				ForcePerMachine="yes"
 				DisplayInternalUI="yes" />
