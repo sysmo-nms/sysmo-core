@@ -11,8 +11,7 @@ install: gem query -i -n builder || gem install builder
 script: rake pack
 
 before_deploy:
-    - export RELEASE_PKG_FILE=$(ls _build/sysmo-*.tgz)
-    - echo "Deploying $RELEASE_PKG_FILE to Github releases"
+    - export TRAVIS_TAG = "CURRENT"
 
 deploy:
     skip_cleanup: true
