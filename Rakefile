@@ -131,9 +131,9 @@ task :pack => :release do
     elsif (/darwin/ =~ RUBY_PLATFORM)
         pack_macos()
     elsif (/linux/ =~ RUBY_PLATFORM)
-        pack_linux()
+        pack_unix()
     else
-        pack_other()
+        pack_unix()
     end
 
 end
@@ -348,20 +348,11 @@ def pack_macos()
 end
 
 #
-# detect linux flavor and generate a RPM or DEB
+# Create unix archive
 #
-def pack_linux()
+def pack_unix()
     puts ":: Generate #{RUBY_PLATFORM} package"
-    sh "#{REBAR} tar"
-    puts "Archive built in #{PROD_RELEASE_DIR}/"
-end
-
-#
-# generate an archive for other unixes
-#
-def pack_other()
-    puts "Generate #{RUBY_PLATFORM} package"
-    sh "#{REBAR} tar"
+    sh "tar -C #{BUILD_DIR}/default/rel/ -acf #{BUILD_DIR}/sysmo-#{SYSMO_CORE_VERSION}-x64.tgz sysmo"
     puts "Archive built in #{PROD_RELEASE_DIR}/"
 end
 
