@@ -129,7 +129,7 @@ task :pack => :release do
     if (/cygwin|mswin|mingw|bccwin|wince|emx|win/ =~ RUBY_PLATFORM)
         pack_win32()
     elsif (/darwin/ =~ RUBY_PLATFORM)
-        pack_macos()
+        pack_unix()
     elsif (/linux/ =~ RUBY_PLATFORM)
         pack_unix()
     else
@@ -352,7 +352,7 @@ end
 #
 def pack_unix()
     puts ":: Generate #{RUBY_PLATFORM} package"
-    sh "tar -C #{BUILD_DIR}/default/rel/ -acf #{BUILD_DIR}/sysmo-#{SYSMO_CORE_VERSION}-x64.tgz sysmo"
+    sh "tar -C #{BUILD_DIR}/default/rel/ -acf #{BUILD_DIR}/Sysmo-Core-#{SYSMO_CORE_VERSION}-x64.tgz sysmo"
     puts "Archive built in #{PROD_RELEASE_DIR}/"
 end
 
