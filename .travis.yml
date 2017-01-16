@@ -23,6 +23,7 @@ deploy:
     file: "_build/sysmo-*.tgz"
     on:
         repo: sysmo-nms/sysmo-core
+        condition: "$TRAVIS_OTP_VERION = 18.2.1"
 
 before_cache:
     - rm -f $HOME/.gradle/caches/modules-2/modules-2.lock
