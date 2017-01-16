@@ -11,6 +11,7 @@ install: gem query -i -n builder || gem install builder
 script: rake pack
 
 before_deploy:
+    - echo "We are running OTP $TRAVIS_OTP_RELEASE"
     - export TRAVIS_TAG="CURRENT"
 
 deploy:
@@ -24,7 +25,7 @@ deploy:
     file: "_build/Sysmo-Core-*.tgz"
     on:
         repo: sysmo-nms/sysmo-core
-        condition: "$TRAVIS_OTP_VERION = 18.2.1"
+        condition: $TRAVIS_OTP_RELEASE = 18.2.1
 
 before_cache:
     - rm -f $HOME/.gradle/caches/modules-2/modules-2.lock
