@@ -29,6 +29,7 @@ import "encoding/xml"
 import "bytes"
 import "io"
 import "path/filepath"
+import "runtime"
 
 var UpdateCookie bool
 var UpdateAdminPassword string
@@ -76,10 +77,11 @@ func generate_cookie() string {
 
 func update_cookie() {
 
+    var newline string
     if runtime.GOOS == "windows" {
-        newline := "\r\n"
+        newline = "\r\n"
     } else {
-        newline := "\n"
+        newline = "\n"
     }
     file, err := os.Open(args_file)
     if err != nil {

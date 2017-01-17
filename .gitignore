@@ -25,4 +25,4 @@ build/
 /support/win32/sysmo.wxs
 /support/win32/bin/build_installer.cmd
 /apps/sysmo/src/sysmo.app.src
-
+/config/vm.args
