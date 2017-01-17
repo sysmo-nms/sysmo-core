@@ -108,7 +108,7 @@ A later version of [ProductName] is already installed. Setup will now exit.
         <CustomAction
             Id="Set_INIT_Sysmo"
             Property="QtExecCmdLine"
-            Value='&quot;[INSTALLLOCATION]\Sysmo Core\bin\sysmo.cmd&quot; reset_pwd [ADMIN_PASS]' />
+            Value='&quot;[INSTALLLOCATION]\Sysmo Core\bin\sysmo.cmd&quot; init_admin_pass [ADMIN_PASS]' />
             
         <CustomAction
             Id="INIT_Sysmo"

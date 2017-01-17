@@ -20,6 +20,9 @@
 :: set releases_dir
 @set releases_dir=%node_root%\releases
 
+:: set sysmo_relutils
+@set sysmo_relutils=%node_root%\bin\sysmo_relutils.exe
+
 :: set erts_version and release_version from start_erl.data
 @for /F "usebackq tokens=1,2" %%I in ("%releases_dir%\start_erl.data") do @(
     @call :set_trim erts_version    %%I
@@ -54,7 +57,7 @@
 @if "%1"=="list"      @goto list
 @if "%1"=="uninstall" @goto uninstall
 @if "%1"=="console"   @goto console
-@if "%1"=="reset_pwd" @goto reset_pwd
+@if "%1"=="init_admin_pass" @goto init_sysmo_credentials
 
 @echo Unknown command: "%1"
 @goto :EOF
@@ -66,7 +69,7 @@
 :: to get it work with erlsrv.exe. Console mode only requires the command
 :: to be started in Administrator mode.
 :: So to get it work, first install the files then use erlsrv.
-@set args= -boot \"%node_boot%\" -config \"%sys_config%\" -args_file \"%vm_args%\" -sname "%node_name%"
+@set args= -boot \"%node_boot%\" -config \"%sys_config%\" -args_file \"%vm_args%\"
 @"%erts_bin%\erlsrv.exe" add "%service_name%" ^
 	-stopaction "init:stop()." ^
 	-onfail     restart ^
@@ -113,8 +116,9 @@
 @goto :EOF
 :: END OF PROGRAM
 
-:reset_pwd
-@echo "Init config"
+:init_sysmo_credentials
+@set new_password=%2
+@"%sysmo_relutils%" --update_cookie --update_admin_password="%2"
 @goto :EOF
 
 :set_trim
