@@ -76,6 +76,11 @@ func generate_cookie() string {
 
 func update_cookie() {
 
+    if runtime.GOOS == "windows" {
+        newline := "\r\n"
+    } else {
+        newline := "\n"
+    }
     file, err := os.Open(args_file)
     if err != nil {
         log.Fatal(err)
@@ -94,10 +99,10 @@ func update_cookie() {
         text := scanner.Text()
         if strings.HasPrefix(text, "-setcookie") {
             new_cookie := generate_cookie()
-            _, tmp_err = tmp_file.WriteString("-setcookie " + new_cookie + "\n")
+            _, tmp_err = tmp_file.WriteString("-setcookie " + new_cookie + newline)
             cookie_updated = true
         } else {
-            _, tmp_err = tmp_file.WriteString(text + "\n")
+            _, tmp_err = tmp_file.WriteString(text + newline)
         }
         if tmp_err != nil {
             log.Fatal(tmp_err)
@@ -110,7 +115,7 @@ func update_cookie() {
 
     if cookie_updated == false {
         new_cookie := generate_cookie()
-        _, tmp_err = tmp_file.WriteString("-setcookie " + new_cookie + "\n")
+        _, tmp_err = tmp_file.WriteString("-setcookie " + new_cookie + newline)
         if tmp_err != nil {
             log.Fatal(tmp_err)
         }
