@@ -1,10 +1,10 @@
 <?xml version='1.0' encoding='windows-1252'?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"
-     xmlns:bal="http://schemas.microsoft.com/wix/BalExtension"
-     xmlns:util="http://schemas.microsoft.com/wix/UtilExtension"
-     xmlns:fw="http://schemas.microsoft.com/wix/FirewallExtension">
+    xmlns:bal="http://schemas.microsoft.com/wix/BalExtension"
+    xmlns:util="http://schemas.microsoft.com/wix/UtilExtension"
+    xmlns:fw="http://schemas.microsoft.com/wix/FirewallExtension">
 
-    <Product 
+    <Product
         Name='Sysmo @SYSMO_CORE_VERSION@ Core Server'
         Id='*'
         UpgradeCode='abc7733f-7349-453F-94F6-BCB5110BA4FD'
@@ -28,8 +28,8 @@
 
         <MajorUpgrade
             DowngradeErrorMessage="
-A later version of [ProductName] is already installed. Setup will now exit.
-"       />
+            A later version of [ProductName] is already installed. Setup will now exit.
+            "       />
 
         <Media Id='1' Cabinet='Sample.cab' EmbedCab='yes' DiskPrompt="CD-ROM #1" />
         <Property Id='DiskPrompt' Value="Sysmo @SYSMO_CORE_VERSION@ Installation [1]" />
@@ -45,7 +45,7 @@ A later version of [ProductName] is already installed. Setup will now exit.
                 <Directory Id="ApplicationProgramsFolder" Name="Sysmo-Core" />
             </Directory>
 
-        
+
             <!-- firewall exceptions -->
             <Component Id="SysmoFirewallExceptions"
                 Guid='aaaaaaaa-7349-453F-94F6-BCB5116BA4F0'>
@@ -67,7 +67,7 @@ A later version of [ProductName] is already installed. Setup will now exit.
 
             <!-- registry keys -->
             <Component Id="SysmoRegKeys" Guid='aacaaaaa-7349-453F-94F6-BCB5116BA4F0'>
-                <RegistryKey 
+                <RegistryKey
                     Id="SysmoRegContent"
                     Root="HKLM"
                     Key="Software\Sysmo\Sysmo Core"
@@ -81,12 +81,12 @@ A later version of [ProductName] is already installed. Setup will now exit.
                     <RegistryValue Type="string" Name="ConfigDirectory"
                         Value="[INSTALLLOCATION]sysmo-server\cfg" />
                 </RegistryKey>
-                <RegistryKey 
+                <RegistryKey
                     Id="SysmoNChecksRegContent"
                     Root="HKLM"
                     Key="Software\Sysmo\NChecks"
                     ForceCreateOnInstall="yes" />
- 
+
             </Component>
 
         </Directory>
@@ -98,7 +98,7 @@ A later version of [ProductName] is already installed. Setup will now exit.
         </Feature>
 
 
-        
+
         <!-- QtExecCmd line default to nothing -->
         <Property Id="QtExecCmdLine" Value='1' />
 
@@ -108,8 +108,8 @@ A later version of [ProductName] is already installed. Setup will now exit.
         <CustomAction
             Id="Set_INIT_Sysmo"
             Property="QtExecCmdLine"
-            Value='&quot;[INSTALLLOCATION]\Sysmo Core\bin\sysmo.cmd&quot; init_admin_pass [ADMIN_PASS]' />
-            
+            Value='&quot;[INSTALLLOCATION]\Sysmo-Core\bin\sysmo.cmd&quot; install' />
+
         <CustomAction
             Id="INIT_Sysmo"
             BinaryKey="WixCA"
@@ -119,16 +119,16 @@ A later version of [ProductName] is already installed. Setup will now exit.
 
 
         <!-- REMOVE_Sysmo action:
-            2 - Stop sysmo service
+            1 - Stop sysmo service
+            2 - Unegister sysmo service
             3 - Kill empd.exe (if running)
-            5 - Unegister sysmo service
             Ignore return because there might be no service running wich will
             return an error status -->
         <CustomAction
             Id="Set_REMOVE_Sysmo"
             Property="QtExecCmdLine"
-            Value='&quot;[INSTALLLOCATION]\Sysmo Core\bin\sysmo.cmd&quot; uninstall' />
-            
+            Value='&quot;[INSTALLLOCATION]\Sysmo-Core\bin\sysmo.cmd&quot; uninstall' />
+
         <CustomAction
             Id="REMOVE_Sysmo"
             BinaryKey="WixCA"
@@ -136,11 +136,15 @@ A later version of [ProductName] is already installed. Setup will now exit.
             Execute="immediate"
             Return="ignore" />
 
-        <!-- finaly start sysmo services -->
+        <!-- Initial start,
+             1 - Will set up the new admin password,
+             2 - Generate a random cookie,
+             3 - Start the service.
+             -->
         <CustomAction
             Id="Set_START_Sysmo"
             Property="QtExecCmdLine"
-            Value='&quot;[INSTALLLOCATION]\Sysmo Core\bin\sysmo.cmd&quot; start' />
+            Value='&quot;[INSTALLLOCATION]\Sysmo-Core\bin\sysmo.cmd&quot; initial_start [ADMIN_PASS]' />
 
         <CustomAction
             Id="START_Sysmo"
@@ -149,7 +153,7 @@ A later version of [ProductName] is already installed. Setup will now exit.
             Execute="immediate"
             Return="ignore" />
 
-    
+
         <InstallExecuteSequence>
             <!-- after InstallFinalize -->
             <Custom Action="Set_INIT_Sysmo" After="InstallFinalize"/>
@@ -157,8 +161,8 @@ A later version of [ProductName] is already installed. Setup will now exit.
 
             <Custom Action="Set_START_Sysmo" After="INIT_Sysmo" />
             <Custom Action="START_Sysmo"    After="Set_START_Sysmo" />
-                    
-            
+
+
             <!-- after InstallInitialize -->
             <Custom Action="Set_REMOVE_Sysmo" After="InstallInitialize" />
             <Custom Action="REMOVE_Sysmo"     After="Set_REMOVE_Sysmo" />
@@ -173,9 +177,9 @@ A later version of [ProductName] is already installed. Setup will now exit.
             <Property Id="BGBitmap">bgbmp</Property>
             <Property Id="DefaultUIFont">DlgFont8</Property>
             <TextStyle Id="BannerTextStyle" FaceName="Segoe UI" Size="19"/>
-            <TextStyle 
+            <TextStyle
                 Id="BigLabelTextStyle"
-                FaceName="Segoe UI" 
+                FaceName="Segoe UI"
                 Size="14"
                 Blue="102"
                 Green="102"
@@ -206,7 +210,7 @@ A later version of [ProductName] is already installed. Setup will now exit.
                     Height="30"
                     Transparent="yes"
                     NoPrefix="yes">
-                        <Text>{\BannerTextStyle}Sysmo Initial Configuration</Text>
+                    <Text>{\BannerTextStyle}Sysmo Initial Configuration</Text>
                 </Control>
                 <Control
                     Id="Descr"
@@ -217,11 +221,11 @@ A later version of [ProductName] is already installed. Setup will now exit.
                     Height="40"
                     Transparent="yes"
                     NoPrefix="yes">
-                        <Text>{\BigLabelTextStyle}Please define a password for the "admin" user.</Text>
+                    <Text>{\BigLabelTextStyle}Please define a password for the "admin" user.</Text>
                 </Control>
 
-               
- 
+
+
                 <Control
                     Id="PasswordLabel"
                     Type="Text"
@@ -231,7 +235,7 @@ A later version of [ProductName] is already installed. Setup will now exit.
                     Height="15"
                     Transparent="yes"
                     TabSkip="no">
-                        <Text>{\LabelTextStyle}Password:</Text>
+                    <Text>{\LabelTextStyle}Password:</Text>
                 </Control>
                 <Control
                     Id="PasswordEdit"
@@ -253,7 +257,7 @@ A later version of [ProductName] is already installed. Setup will now exit.
                     Height="15"
                     Transparent="yes"
                     TabSkip="no">
-                        <Text>{\LabelTextStyle}Confirm Password:</Text>
+                    <Text>{\LabelTextStyle}Confirm Password:</Text>
                 </Control>
                 <Control
                     Id="PasswordConfirmEdit"

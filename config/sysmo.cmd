@@ -57,7 +57,7 @@
 @if "%1"=="list"      @goto list
 @if "%1"=="uninstall" @goto uninstall
 @if "%1"=="console"   @goto console
-@if "%1"=="init_admin_pass" @goto init_sysmo_credentials
+@if "%1"=="initial_start" @goto initial_start
 
 @echo Unknown command: "%1"
 @goto :EOF
@@ -116,9 +116,10 @@
 @goto :EOF
 :: END OF PROGRAM
 
-:init_sysmo_credentials
+:initial_start
 @set new_password=%2
 @"%sysmo_relutils%" --update_cookie --update_admin_password="%2"
+@"%erts_bin%\erlsrv.exe" start "%service_name%"
 @goto :EOF
 
 :set_trim
