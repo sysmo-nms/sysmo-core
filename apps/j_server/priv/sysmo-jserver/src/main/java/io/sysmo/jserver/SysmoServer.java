@@ -49,6 +49,7 @@ import java.util.Properties;
 import java.util.Scanner;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.LogManager;
+import java.util.Arrays;
 
 public class SysmoServer {
 
@@ -89,6 +90,7 @@ public class SysmoServer {
         }
 
         SysmoServer.logger.info("Logger started");
+        SysmoServer.logger.info("VM args are: " + Arrays.toString(args));
 
         try {
             SysmoServer.startServerLoop(args);
