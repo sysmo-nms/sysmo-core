@@ -18,6 +18,7 @@ require 'rubygems'
 require 'rake'
 require 'builder'
 require 'pathname'
+require 'rbconfig'
 
 STDOUT.sync = true
 
@@ -37,11 +38,15 @@ end
 if build_platform == "Win32" then
     BUILD_PLATFORM = "i586"
     WINDOW_PROGRAM_FILES_FOLDER = "ProgramFilesFolder"
-    NODE_NAME_ARG="##-sname sysmo"
 else
     BUILD_PLATFORM = "x64"
     WINDOW_PROGRAM_FILES_FOLDER = "ProgramFiles64Folder"
-    NODE_NAME_ARG="-sname sysmo"
+end
+
+if (RbConfig::CONFIG['host_os'] =~ /mswin|mingw|cygwin/)
+    ERLANG_VM_ARG_FILE="vm.args.win"
+else
+    ERLANG_VM_ARG_FILE="vm.args.unix"
 end
 
 # set directories constants
@@ -106,7 +111,6 @@ desc "Create a production release."
 task :release => ["jserver:build", "pping:build", "relutils:build"] do
     puts "=> Start release build"
     cd SYSMO_ROOT
-    configure_file("config/vm.args.in", "config/vm.args")
     configure_file("rebar.config.in", "rebar.config")
     configure_file("apps/sysmo/src/sysmo.app.src.in", "apps/sysmo/src/sysmo.app.src")
 
@@ -172,18 +176,12 @@ namespace "sysmo" do
         configure_file("rebar.config.in", "rebar.config")
     end
 
-
-    file 'config/vm.args' => ['config/vm.args.in', 'Rakefile'] do
-        cd SYSMO_ROOT
-        configure_file("config/vm.args.in", "config.vm.args")
-    end
-
     file 'app/sysmo/src/sysmo.app.src' => ['apps/sysmo/src/sysmo.app.src.in', 'Rakefile'] do
         cd SYSMO_ROOT
         configure_file("apps/sysmo/src/sysmo.app.src.in", "apps/sysmo/src/sysmo.app.src")
     end
 
-    task :configure_files => ["rebar.config", "apps/sysmo/src/sysmo.app.src", "config/vm.args"]
+    task :configure_files => ["rebar.config", "apps/sysmo/src/sysmo.app.src"]
 
     # "Build Sysmo-Core"
     task :build => [:configure_files] do

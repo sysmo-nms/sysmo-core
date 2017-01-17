@@ -1,5 +1,5 @@
 ## Name of the node
-@NODE_NAME_ARG@
+-sname sysmo
 
 ## Cookie for distributed erlang
 ## packager should generate a random cookie on intall
