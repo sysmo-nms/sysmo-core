@@ -72,7 +72,7 @@
 @set args= -boot \"%node_boot%\" -config \"%sys_config%\" -args_file \"%vm_args%\"
 @"%erts_bin%\erlsrv.exe" add "%service_name%" ^
 	-stopaction "init:stop()." ^
-	-onfail     restart ^
+	-onfail     restart_always ^
 	-workdir    "%node_root%" ^
 	-sname      "%node_name%" ^
 	-comment    "%service_description%" ^
