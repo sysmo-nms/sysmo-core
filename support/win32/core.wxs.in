@@ -7,7 +7,7 @@
     <Product
         Name='Sysmo @SYSMO_CORE_VERSION@ Core Server'
         Id='*'
-        UpgradeCode='abc7733f-7349-453F-94F6-BCB5110BA4FD'
+        UpgradeCode='0B90B6C7-C8C6-42ED-A4C5-CEE026B77B79'
         Language='1033'
         Codepage='1252'
         Version='@SYSMO_CORE_VERSION@'

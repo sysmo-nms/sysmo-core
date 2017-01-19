@@ -6,7 +6,7 @@
 		Name="Sysmo Core Server - @SYSMO_CORE_VERSION@"
 		Version="@SYSMO_CORE_VERSION@"
 		Manufacturer="Sysmo.io"
-		UpgradeCode="abcdef01-7349-453F-94F6-BCB5110BA4FD"
+		UpgradeCode="0571B346-C4EB-4857-A860-3981844FA02B"
 		Copyright="Copyright (c) sebastien.serre@sysmo.io. All rights reserved."
 		IconSourceFile="..\support\win32\bundle.ico"
 		DisableModify="no"
