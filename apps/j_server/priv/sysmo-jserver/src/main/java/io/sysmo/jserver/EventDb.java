@@ -755,16 +755,21 @@ public class EventDb implements Runnable
             arrayBuilder.add(obj);
         }
 
-        FileOutputStream output;
         try {
-            output = new FileOutputStream(file);
-        } catch (FileNotFoundException e) {
-            this.logger.error("Can't create dump file", e);
-            return;
-        }
+            FileOutputStream output = new FileOutputStream(file);
+            JsonWriter jsonWriter = Json.createWriter(output);
+            jsonWriter.writeArray(arrayBuilder.build());
+        } catch(Exception e) {
+            this.logger.error("Error writing json payload", e);
+        } finally {
+            if (jsonWriter != null) {
+                jsonWriter.close();
+            }
 
-        JsonWriter jsonWriter = Json.createWriter(output);
-        jsonWriter.writeArray(arrayBuilder.build());
+            if (output != null) {
+                output.close();
+            }
+        }
     }
 
     private String getCurrentMonth() {
