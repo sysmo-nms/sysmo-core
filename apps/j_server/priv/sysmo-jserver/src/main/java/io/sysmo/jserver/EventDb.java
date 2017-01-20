@@ -755,9 +755,11 @@ public class EventDb implements Runnable
             arrayBuilder.add(obj);
         }
 
+        FileOutputStream output;
+        JsonWriter jsonWriter;
         try {
-            FileOutputStream output = new FileOutputStream(file);
-            JsonWriter jsonWriter = Json.createWriter(output);
+            output = new FileOutputStream(file);
+            jsonWriter = Json.createWriter(output);
             jsonWriter.writeArray(arrayBuilder.build());
         } catch(Exception e) {
             this.logger.error("Error writing json payload", e);
