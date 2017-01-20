@@ -22,6 +22,7 @@
 package io.sysmo.jserver;
 
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.FileOutputStream;
 import java.nio.file.Paths;
 import java.sql.Connection;
@@ -38,6 +39,7 @@ import javax.json.JsonArrayBuilder;
 import javax.json.JsonBuilderFactory;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonWriter;
+import javax.json.JsonException;
 
 import com.ericsson.otp.erlang.OtpErlangAtom;
 import com.ericsson.otp.erlang.OtpErlangDecodeException;
@@ -755,8 +757,8 @@ public class EventDb implements Runnable
             arrayBuilder.add(obj);
         }
 
-        FileOutputStream output;
-        JsonWriter jsonWriter;
+        FileOutputStream output = null;
+        JsonWriter jsonWriter = null;
         try {
             output = new FileOutputStream(file);
             jsonWriter = Json.createWriter(output);
@@ -765,11 +767,19 @@ public class EventDb implements Runnable
             this.logger.error("Error writing json payload", e);
         } finally {
             if (jsonWriter != null) {
-                jsonWriter.close();
+                try {
+                    jsonWriter.close();
+                } catch (JsonException e) {
+                    // inner
+                }
             }
 
             if (output != null) {
-                output.close();
+                try {
+                    output.close();
+                } catch (IOException e) {
+                    // inner
+                }
             }
         }
     }
