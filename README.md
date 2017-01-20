@@ -72,7 +72,7 @@ $ /opt/sysmo/bin/sysmo start
 ```
 
 ### What's next
-If you plan to have a huge number of elements to monitor, you can see the documentation for installing aditionnal workers at [[Deploying Sysmo Workers]].
+If you plan to have a huge number of elements to monitor, you can see the documentation for installing aditionnal workers at [Deploying Sysmo Workers](https://github.com/sysmo-nms/sysmo-nms.github.io/wiki/Deploying-Sysmo-Workers).
 
 
 Development Mode
