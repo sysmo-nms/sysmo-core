@@ -32,7 +32,7 @@ heat.exe dir .\SourceDir -gg -ke -nologo -sreg -sfrag -srd -cg AllFiles -dr INST
 @set wix_ice20="-sice:ICE20"
 candle.exe %wix_opts% -arch %WIX_ARCH% core.wxs
 candle.exe %wix_opts% -arch %WIX_ARCH% sysmoTree.wxs
-light.exe %wix_ice20% %wix_opts% -o zcore-@BUILD_PLATFORM@.msi core.wixobj sysmoTree.wixobj
+light.exe %wix_ice20% %wix_opts% -o __installer-@BUILD_PLATFORM@.msi core.wixobj sysmoTree.wixobj
 
 :: Build installer bundle
 
