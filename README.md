@@ -64,7 +64,8 @@ $ sudo chown root /opt/sysmo/utils/pping
 $ sudo chmod 4755 /opt/sysmo/utils/pping
 ```
 
-Of course the user running the daemon must have read-write permission on /opt/sysmo.
+The user running the daemon must have read permission on /opt/sysmo.
+The user running the daemon must have read-write permission on /opt/sysmo/var.
 
 #### Start ####
 ```sh
