@@ -359,6 +359,7 @@ end
 def pack_unix()
     puts ":: Generate #{RUBY_PLATFORM} package"
     sh "tar -C #{BUILD_DIR}/default/rel/ -acf #{BUILD_DIR}/Sysmo-Core-#{SYSMO_CORE_VERSION}-x64.tgz sysmo"
+    sh "cp ${BUILD_DIR}/Sysmo-Core-#{SYSMO_CORE_VERSION}-x64.tgz #{BUILD_DIR}/sysmo-core.tar.gz"
     puts "Archive built in #{PROD_RELEASE_DIR}/"
 end
 
