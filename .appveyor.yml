@@ -17,7 +17,7 @@ artifacts:
 
 deploy:
     release: CURRENT
-    description: 'Automatic Sysmo Core release deployment'
+    description: 'Sysmo Core release'
     provider: GitHub
     auth_token:
         secure: JbU57GgB5EBgwKdw4kTc2LTimc85On9dVaiCAbnqIPRbQxEs6KFEBOHxh8eFuqqD
