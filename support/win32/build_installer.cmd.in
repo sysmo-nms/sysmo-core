@@ -17,8 +17,6 @@
 if not exist "%VCREDIST_INSTALLER%" curl -fSL -o "%VCREDIST_INSTALLER%" %vcredist_location%
 copy /y %VCREDIST_INSTALLER% vcredist.exe
 
-echo %JAVA_INSTALLER%
-echo %java_location%
 if not exist "%JAVA_INSTALLER%" curl -fSL -o "%JAVA_INSTALLER%"     %java_location%
 copy /y %JAVA_INSTALLER% jre.exe
 
