@@ -8,7 +8,7 @@
 		Manufacturer="Sysmo.io"
 		UpgradeCode="0571B346-C4EB-4857-A860-3981844FA02B"
 		Copyright="Copyright (c) sebastien.serre@sysmo.io. All rights reserved."
-		IconSourceFile="..\support\win32\bundle.ico"
+		IconSourceFile="..\support\packages\win32\bundle.ico"
 		DisableModify="no"
 		DisableRemove="no"
 		HelpUrl="www.sysmo.io/help.html"
@@ -19,8 +19,8 @@
 		<BootstrapperApplicationRef
 			Id="WixStandardBootstrapperApplication.RtfLicense">
 			<bal:WixStandardBootstrapperApplication
-				LicenseFile="..\support\win32\License.rtf"
-				LogoFile="..\support\win32\bundle-logo.png"
+				LicenseFile="..\support\packages\win32\License.rtf"
+				LogoFile="..\support\packages\win32\bundle-logo.png"
 				ShowVersion="yes"
 				SuppressOptionsUI="yes"
 				SuppressRepair="no"
