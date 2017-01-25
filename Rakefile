@@ -331,9 +331,9 @@ end
 # generate a wix package bundle
 #
 def pack_win32()
-    configure_file("support/win32/bundle.wxs.in", "_build/bundle.wxs")
-    configure_file("support/win32/core.wxs.in", "_build/core.wxs")
-    configure_file( "support/win32/build_installer.cmd.in",
+    configure_file("support/packages/win32/bundle.wxs.in", "_build/bundle.wxs")
+    configure_file("support/packages/win32/core.wxs.in", "_build/core.wxs")
+    configure_file( "support/packages/win32/build_installer.cmd.in",
                     "_build/build_installer.cmd")
 
     source_dir = File.join(BUILD_DIR, "SourceDir")
