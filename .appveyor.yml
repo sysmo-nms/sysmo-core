@@ -32,5 +32,5 @@ deploy:
 
 cache:
   - C:\Ruby193\lib\ruby\gems\
-  - C:\Users\appveyor\SYSMO_CORE_RESSOURCES\
+  #- C:\Users\appveyor\SYSMO_CORE_RESSOURCES\
 
