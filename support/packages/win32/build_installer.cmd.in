@@ -5,14 +5,14 @@
     @set WIX_ARCH="x86"
     @set VCREDIST_INSTALLER=%ressources%\vcredist_x86.exe
     @set JAVA_INSTALLER=%ressources%\jre8_586.exe
-    @set vcredist_location="http://www.sysmo.io/runtime/msvc2010/vc_redist.x86.exe"
-    @set java_location="http://www.sysmo.io/runtime/jre/jre-8u111-windows-i586.exe"
+    @set vcredist_location="https://github.com/sysmo-nms/bundle/releases/download/RESSOURCES/msvc2010_vc_redist.x86.exe"
+    @set java_location="https://github.com/sysmo-nms/bundle/releases/download/RESSOURCES/jre-8u111-windows-i586.exe"
 ) else (
     @set WIX_ARCH="x64"
     @set VCREDIST_INSTALLER=%ressources%\vcredist_x64.exe
     @set JAVA_INSTALLER=%ressources%\jre8_64.exe
-    @set vcredist_location="http://www.sysmo.io/runtime/msvc2010/vc_redist.x64.exe"
-    @set java_location="http://www.sysmo.io/runtime/jre/jre-8u111-windows-x64.exe"
+    @set vcredist_location="https://github.com/sysmo-nms/bundle/releases/download/RESSOURCES/msvc2010_vc_redist.x64.exe"
+    @set java_location="https://github.com/sysmo-nms/bundle/releases/download/RESSOURCES/jre-8u111-windows-x64.exe"
 )
 if not exist "%VCREDIST_INSTALLER%" curl -fSL -o "%VCREDIST_INSTALLER%" %vcredist_location%
 copy /y %VCREDIST_INSTALLER% vcredist.exe
