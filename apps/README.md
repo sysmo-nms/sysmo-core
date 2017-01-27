@@ -12,7 +12,7 @@ In addition, Sysmo-Workers can connect to the jserver application to offer resso
 |        +------+ sysmo +---------------------+        |
 |        |      +---+---+                     |        |
 |   +----+---+      |    +--------+      +----+-----+  |  +--------------------+
-|   | monitor|      +----+ mnesia |      | j_server +------| 0..N Sysmo-Workers |
+|   | monitor|      +----+ mnesia |      | j_server +-----| 0..N Sysmo-Workers |
 |   +----+---+           +--------+      +----+-----+  |  +--------------------+
 |        |                                    |        |
 |   +----+------+                             |        |
