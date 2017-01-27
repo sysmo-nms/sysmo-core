@@ -80,7 +80,11 @@ task :rel => [:debug_release]
 
 desc "Create a debug release."
 task :debug_release => ["sysmo:debug_build", "jserver:build", "pping:build", "relutils:build"] do
+    puts "=> Start debug release build"
     cd SYSMO_ROOT
+
+    configure_file("rebar.config.in", "rebar.config")
+    configure_file("apps/sysmo/src/sysmo.app.src.in", "apps/sysmo/src/sysmo.app.src")
 
     # remove old sysmo-jserver java application wich may be present
     FileUtils.rm_rf("#{DEBUG_RELEASE_DIR}/java_apps")
@@ -111,6 +115,7 @@ desc "Create a production release."
 task :release => ["jserver:build", "pping:build", "relutils:build"] do
     puts "=> Start release build"
     cd SYSMO_ROOT
+
     configure_file("rebar.config.in", "rebar.config")
     configure_file("apps/sysmo/src/sysmo.app.src.in", "apps/sysmo/src/sysmo.app.src")
 
@@ -170,40 +175,29 @@ task :doc => ["sysmo:doc", "jserver:doc", "pping:doc", "relutils:doc"]
 
 # Sysmo Erlang build and releases related tasks
 namespace "sysmo" do
-
-    file 'rebar.config' => ['rebar.config.in', 'Rakefile'] do
-        cd SYSMO_ROOT
-        configure_file("rebar.config.in", "rebar.config")
-    end
-
-    file 'app/sysmo/src/sysmo.app.src' => ['apps/sysmo/src/sysmo.app.src.in', 'Rakefile'] do
-        cd SYSMO_ROOT
-        configure_file("apps/sysmo/src/sysmo.app.src.in", "apps/sysmo/src/sysmo.app.src")
-    end
-
     task :configure_files => ["rebar.config", "apps/sysmo/src/sysmo.app.src"]
 
     # "Build Sysmo-Core"
-    task :build => [:configure_files] do
+    task :build do
         cd SYSMO_ROOT
         sh "#{REBAR} compile"
     end
 
     # "Build Sysmo-Core in DEBUG mode"
-    task :debug_build => [:configure_files] do
+    task :debug_build do
         cd SYSMO_ROOT
         sh "#{REBAR} as debug compile"
     end
 
     # "Clean Sysmo-Core"
-    task :clean => [:configure_files] do
+    task :clean do
         cd SYSMO_ROOT
         sh "#{REBAR} clean"
         sh "#{REBAR} as debug clean"
     end
 
     # "Test Sysmo-Core"
-    task :test => [:configure_files] do
+    task :test do
         cd SYSMO_ROOT
         sh "#{REBAR} eunit"
     end
