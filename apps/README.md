@@ -19,9 +19,9 @@ In addition, Sysmo-Workers can connect to the jserver application to offer resso
        Network link (Java node over loopback) |
                                               |
 +---------------------------------------------|--------+
-| Java VM                               +-----+---+    |
-|       +------------+-----------+------+ jserver |    |
-|       |            |           |      +-----+---+    |
+| Java VM                                +----+----+   |
+|       +------------+-----------+-------+ jserver |   |
+|       |            |           |       +----+----+   |
 |       |            |           |            |        |
 |   +---+---+   +---+---+   +----+---+   +----+----+   |
 |   | rrd4j |   | derby |   | snmp4j |   | nchecks |   |
