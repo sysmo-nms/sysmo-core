@@ -5,19 +5,17 @@ Sysmo is composed of several Erlang Applications running in a single Erlang VM. 
 
 In addition, Sysmo-Workers can connect to the jserver application to offer ressources for executing NChecks actions.
 
-# Diagram
 ```text
 
 +------------------------------------------------------+
 | Erlang VM     +-------+                              |
 |        +------+ sysmo +---------------------+        |
 |        |      +---+---+                     |        |
-|        |          |                         |        |  +---------------+
-|   +----+---+      |    +--------+      +----+----+   |  | Potentially X |
-|   | monitor|      +----+ mnesia |      | jserver +------| Sysmo-Workers |
-|   +----+---+           +--------+      +----+----+   |  +---------------+
+|   +----+---+      |    +--------+      +----+-----+  |  +--------------------+
+|   | monitor|      +----+ mnesia |      | j_server +------| 0..N Sysmo-Workers |
+|   +----+---+           +--------+      +----+-----+  |  +--------------------+
 |        |                                    |        |
-|   +---+-------+                             |        |
+|   +----+------+                             |        |
 |   | supercast +-------+                     |        |
 |   +----+------+       |                     |        |
 |        |              |                     |        |
@@ -26,15 +24,15 @@ In addition, Sysmo-Workers can connect to the jserver application to offer resso
 |   +--------+      +-------+                 |        |
 +---------------------------------------------|--------+
                                               |
-     Network link (erlang node over loopback) |
+       Network link (Java node over loopback) |
                                               |
 +---------------------------------------------|--------+
-| Java VM                               +-----+----+   |
-|                                       | j_server |   |
-|                                       +-----+----+   |
+| Java VM                               +-----+---+    |
+|                                       | jserver |    |
+|                                       +-----+---+    |
 |                                             |        |
-|       +------------+-------------+----------+--+     |
-|       |            |             |             |     |
+|       +------------+-----------+------------+        |
+|       |            |           |            |        |
 |   +---+---+   +---+---+   +----+---+   +----+----+   |
 |   | rrd4j |   | derby |   | snmp4j |   | nchecks |   |
 |   +-------+   +-------+   +--------+   +---------+   |
