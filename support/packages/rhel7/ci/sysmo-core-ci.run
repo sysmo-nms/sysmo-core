@@ -1,4 +1,4 @@
 #!/bin/bash
 
 SOURCE_DIR="$(cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-${SOURCE_DIR}/sysmo-core-ci &
+${SOURCE_DIR}/sysmo-core-ci 2>&1 > /tmp/sysmo-core-ci.log &

@@ -6,6 +6,11 @@ function cleanup {
 }
 trap cleanup EXIT
 
-cd $TMP_DIR
+echo "Entering directory ${TMP_DIR}"
+cd ${TMP_DIR}
 
-echo "Should build rpm and upload to github ..."
+git clone --quiet --depth=1 https://github.com/sysmo-nms/sysmo-core.git
+cd sysmo-core
+rake pack
+
+

@@ -1,6 +1,9 @@
 <?php
+    /*
+     * Github hook
+     */
     $headers = apache_request_headers();
-    $signature = "none";
+    $signature = "";
     foreach ($headers as $header => $value) {
         if ($header == "X-Hub-Signature") {
             $signature = $value;
@@ -11,6 +14,6 @@
 	exec('sysmo-core-ci.run');
         http_response_code(200);
     } else {
-        http_response_code(500);
+        http_response_code(404);
     }
 ?>
