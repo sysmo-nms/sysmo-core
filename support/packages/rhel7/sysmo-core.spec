@@ -33,7 +33,7 @@ Sysmo-Core is the main sysmo service.
 
 
 %build
-git submodule --update --init
+git submodule update --init
 rake release
 
 %pre
