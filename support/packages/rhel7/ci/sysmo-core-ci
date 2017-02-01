@@ -2,6 +2,7 @@
 
 echo "Generate rpm build directories"
 WRK_DIR="$HOME/rpmbuild"
+rm -rf $WRK_DIR
 rpmdev-setuptree
 echo "Entering directory ${WRK_DIR}/SOURCES"
 cd ${WRK_DIR}/SOURCES
