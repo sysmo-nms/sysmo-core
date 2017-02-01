@@ -9,7 +9,7 @@ Summary:	Sysmo Core server
 Group:		Application/Productivity
 License:	GPLv3+
 URL:		http://www.sysmo.io
-Source0:	https://github.com/sysmo-nms/sysmo-core/archive/sysmo-core-1.1.0.tar.gz
+Source:	        sysmo-core.tar.gz
 
 Requires: java
 
@@ -33,22 +33,28 @@ Sysmo-Core is the main sysmo service.
 
 
 %build
-# No access to maven repo over network on suze obs
-# rake release
+rake release
 
 %pre
 
 
 %install
 # if build localy: cd sysmo
+RELEASE_DIR="_build/default/rel/sysmo"
 
 SYSMO_LIB=%{buildroot}/usr/lib64/%{sysmo_app_name}
 mkdir -p ${SYSMO_LIB}
-cp -R bin erts-* java_apps lib releases ruby utils ${SYSMO_LIB}
+cp -R ${RELEASE_DIR}/bin ${SYSMO_LIB}
+cp -R ${RELEASE_DIR}/erts-* ${SYSMO_LIB}
+cp -R ${RELEASE_DIR}/java_apps ${SYSMO_LIB}
+cp -R ${RELEASE_DIR}/lib ${SYSMO_LIB}
+cp -R ${RELEASE_DIR}/releases ${SYSMO_LIB}
+cp -R ${RELEASE_DIR}/ruby ${SYSMO_LIB}
+cp -R ${RELEASE_DIR}/utils ${SYSMO_LIB}
 
 SYSMO_ETC=%{buildroot}/etc/%{sysmo_app_name}
 mkdir -p ${SYSMO_ETC}
-cp -R etc/*  ${SYSMO_ETC}/
+cp -R ${RELEASE_DIR}/etc/*  ${SYSMO_ETC}/
 ln -s ../../../etc/%{sysmo_app_name} ${SYSMO_LIB}/etc
 
 SYSMO_LOG=%{buildroot}/var/log/%{sysmo_app_name}
@@ -56,13 +62,15 @@ mkdir -p ${SYSMO_LOG}/sasl
 ln -s ../../../var/log/%{sysmo_app_name} ${SYSMO_LIB}/log
 
 SYSMO_VAR=%{buildroot}/var/lib/%{sysmo_app_name}
-mkdir -p ${SYSMO_VAR}/data/{events,monitor,states}
-cp -R docroot ${SYSMO_VAR}/
+mkdir -p ${SYSMO_VAR}/data/monitor
+mkdir -p ${SYSMO_VAR}/data/states
+mkdir -p ${SYSMO_VAR}/data/events
+cp -R ${RELEASE_DIR}/docroot ${SYSMO_VAR}/
 ln -s ../../../var/lib/%{sysmo_app_name}/data ${SYSMO_LIB}/data
 ln -s ../../../var/lib/%{sysmo_app_name}/docroot ${SYSMO_LIB}/docroot
 
 mkdir -p %{buildroot}/usr/lib/systemd/system
-cp sysmo.service %{buildroot}/usr/lib/systemd/system/
+cp support/packages/rhl7/sysmo.service %{buildroot}/usr/lib/systemd/system/
 
 
 %post
