@@ -3,13 +3,13 @@
 #
 
 Name:		sysmo-core
-Version:	1.1.0
+Version:	@SYSMO_CORE_VERSION@
 Release:	1%{?dist}
 Summary:	Sysmo Core server
 Group:		Application/Productivity
 License:	GPLv3+
 URL:		http://www.sysmo.io
-Source:	        sysmo-core-1.1.0.tar.gz
+Source:	        sysmo-core-@SYSMO_CORE_VERSION@.tar.gz
 
 Requires: java
 
