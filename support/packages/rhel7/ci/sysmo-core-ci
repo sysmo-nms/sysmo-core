@@ -1,16 +1,22 @@
 #!/bin/bash
 
-TMP_DIR=$(mktemp -d)
-function cleanup {
-  rm -rf ${TMP_DIR}
-}
-trap cleanup EXIT
-
-echo "Entering directory ${TMP_DIR}"
-cd ${TMP_DIR}
-
+echo "Generate rpm build directories"
+WRK_DIR="$HOME/rpmbuild"
+rpmdev-setuptree
+echo "Entering directory ${WRK_DIR}/SOURCES"
+cd ${WRK_DIR}/SOURCES
+echo "Cloning sysmo-core"
 git clone --quiet --depth=1 https://github.com/sysmo-nms/sysmo-core.git
+echo "Entering directory ${WRK_DIR}/SOURCES/sysmo-core"
 cd sysmo-core
-rake pack
-
-
+CURRENT_VERSION=$(rake get_current_version)
+cd ..
+echo "Configure file for using $CURRENT_VERSION"
+cat sysmo-core/support/packages/rhel7/sysmo-core.spec | sed s/@SYSMO_CORE_VERSION@/$CURRENT_VERSION/g > ../SPECS/sysmo-core.spec
+echo "Generate source archive"
+mv sysmo-core sysmo-core-$CURRENT_VERSION
+tar -czf sysmo-core-${CURRENT_VERSION}.tar.gz sysmo-core-${CURRENT_VERSION}
+echo "Entering directory ${WRK_DIR}"
+cd ..
+echo "Build ckage"
+rpmbuild --ba SPECS/sysmo-core.spec
