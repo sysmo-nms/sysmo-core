@@ -70,7 +70,7 @@ ln -s ../../../var/lib/%{sysmo_app_name}/data ${SYSMO_LIB}/data
 ln -s ../../../var/lib/%{sysmo_app_name}/docroot ${SYSMO_LIB}/docroot
 
 mkdir -p %{buildroot}/usr/lib/systemd/system
-cp support/packages/rhl7/sysmo.service %{buildroot}/usr/lib/systemd/system/
+cp support/packages/rhel7/sysmo.service %{buildroot}/usr/lib/systemd/system/
 
 
 %post
