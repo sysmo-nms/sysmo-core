@@ -22,8 +22,6 @@ require 'rbconfig'
 
 STDOUT.sync = true
 
-system("git submodule update --init")
-
 #
 SYSMO_CORE_VERSION_MAJOR = 2
 SYSMO_CORE_VERSION_MINOR = 0

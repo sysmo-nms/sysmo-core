@@ -8,7 +8,9 @@ sudo: false
 
 install: gem query -i -n builder || gem install builder
 
-script: rake pack
+script:
+    - git submodule update --init
+    - rake pack
 
 before_cache:
     - rm -f $HOME/.gradle/caches/modules-2/modules-2.lock
