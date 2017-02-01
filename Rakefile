@@ -71,6 +71,10 @@ GRADLE = File.join(JSERVER_ROOT, "gradlew")
 ###############################################################################
 task :default => [:debug_release]
 
+task :get_current_version do
+    print SYSMO_CORE_VERSION
+end
+
 desc "Clean."
 task :clean => ["sysmo:clean", "jserver:clean", "pping:clean", "relutils:clean"]
 
