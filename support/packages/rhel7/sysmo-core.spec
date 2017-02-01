@@ -9,7 +9,7 @@ Summary:	Sysmo Core server
 Group:		Application/Productivity
 License:	GPLv3+
 URL:		http://www.sysmo.io
-Source:	        sysmo-core.tar.gz
+Source:	        sysmo-core-1.1.0.tar.gz
 
 Requires: java
 
