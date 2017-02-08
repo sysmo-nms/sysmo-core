@@ -72,6 +72,20 @@ The user running the daemon must have read-write permission on /opt/sysmo/var.
 $ /opt/sysmo/bin/sysmo start
 ```
 
+### Networking
+The following ports must be accessible from the outside in the following cases:
+
+##### Sysmo-Operator clients accessing the application
+These ports must be opened:
+* port 9758 (client TCP connexion),
+* port 9759 (web servicesand websocket).
+
+##### Sysmo-Worker nodes offering ressources to the core server
+These ports must be opened:
+* port 9760 (NChecks state server),
+* port 4369 (Erlang epmd),
+* port range 4370-4385 (used by erlang nodes connexion).
+
 ### What's next
 If you plan to have a huge number of elements to monitor, you can see the documentation for installing aditionnal workers at [Deploying Sysmo Workers](https://github.com/sysmo-nms/sysmo-nms.github.io/wiki/Deploying-Sysmo-Workers).
 
