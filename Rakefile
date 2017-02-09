@@ -22,7 +22,6 @@ require 'rbconfig'
 
 STDOUT.sync = true
 
-#
 SYSMO_CORE_VERSION_MAJOR = 2
 SYSMO_CORE_VERSION_MINOR = 0
 SYSMO_CORE_VERSION_PATCH = 3
@@ -50,10 +49,11 @@ end
 # set directories constants
 SYSMO_ROOT   = Dir.pwd
 BUILD_DIR    = File.join(SYSMO_ROOT, "_build")
-JSERVER_ROOT = File.join(SYSMO_ROOT, "apps", "j_server", "priv", "sysmo-jserver")
-PPING_ROOT   = File.join(SYSMO_ROOT, "apps", "j_server", "priv", "pping")
+JSERVER_ROOT = File.join(SYSMO_ROOT, "apps", "j_server", "priv", "java", "sysmo-jserver")
+NCHECKS_ROOT = File.join(SYSMO_ROOT, "apps", "j_server", "priv", "java", "nchecks")
+PPING_ROOT   = File.join(SYSMO_ROOT, "apps", "j_server", "priv", "bin", "pping")
 SYSMO_RELUTILS_ROOT = File.join(SYSMO_ROOT, "support", "relutils")
-NCHECKS_REPO = File.join(SYSMO_ROOT, "apps", "j_server", "priv", "nchecks-base")
+NCHECKS_DEFS = File.join(SYSMO_ROOT, "apps", "j_server", "priv", "java", "nchecks", "defs")
 
 # erlang releases location constants
 PROD_RELEASE_DIR  = File.join(BUILD_DIR, "default", "rel", "sysmo")
@@ -217,19 +217,30 @@ namespace "sysmo" do
 
 end
 
+namespace "nchecks" do
+    task :build do
+        cd NCHECKS_ROOT
+        sh "#{GRADLE} jar"
+    end
+    task :clean do
+        cd NCHECKS_ROOT
+        sh "#{GRADLE} clean"
+    end
+
+end
 
 # Sysmo-Jserver Java build and releases related tasks
 namespace "jserver" do
 
     # "Build Sysmo-Jserver"
-    task :build do
+    task :build => ["nchecks:build" ] do
         cd JSERVER_ROOT
         sh "#{GRADLE} installDist"
     end
 
 
     # "Clean Sysmo-Jserver"
-    task :clean do
+    task :clean => ["nchecks:clean"] do
         cd JSERVER_ROOT
         sh "#{GRADLE} clean"
     end
@@ -416,6 +427,7 @@ def install_nchecks(release_dir, include_dummy)
     puts ":: Building NChecksRepository.xml"
     cd SYSMO_ROOT
 
+
     # cleanup
     FileUtils.rm_rf("#{release_dir}/docroot/nchecks")
     FileUtils.rm_rf("#{release_dir}/etc/nchecks")
@@ -429,14 +441,16 @@ def install_nchecks(release_dir, include_dummy)
     FileUtils.cp(ppXml, "#{release_dir}/docroot/nchecks/")
     FileUtils.cp(ppXml, "#{release_dir}/etc/nchecks/")
 
-    rbXml = Dir.glob("#{NCHECKS_REPO}/io.sysmo.nchecks.*.xml")
+    rbXml = Dir.glob("#{NCHECKS_DEFS}/io.sysmo.nchecks.*.xml")
+
+    puts ":: wtf #{NCHECKS_DEFS}"
     rbXml.each do |x|
         FileUtils.cp(x, "#{release_dir}/docroot/nchecks/")
         FileUtils.cp(x, "#{release_dir}/etc/nchecks/")
     end
 
     if include_dummy == true
-        dummyXml = Dir.glob("#{NCHECKS_REPO}/dummy/io.sysmo.nchecks.*.xml")
+        dummyXml = Dir.glob("#{NCHECKS_DEFS}/dummy/io.sysmo.nchecks.*.xml")
         dummyXml.each do |x|
             FileUtils.cp(x, "#{release_dir}/docroot/nchecks/")
             FileUtils.cp(x, "#{release_dir}/etc/nchecks/")
@@ -445,7 +459,7 @@ def install_nchecks(release_dir, include_dummy)
 
     # put all ruby scripts
     FileUtils.mkdir("#{release_dir}/ruby")
-    rbScripts = Dir.glob("#{NCHECKS_REPO}/io.sysmo.nchecks.*.rb")
+    rbScripts = Dir.glob("#{NCHECKS_DEFS}/io.sysmo.nchecks.*.rb")
     rbScripts.each do |x|
         FileUtils.cp(x, "#{release_dir}/ruby/")
     end

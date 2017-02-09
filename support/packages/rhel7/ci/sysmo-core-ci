@@ -21,3 +21,8 @@ echo "Entering directory ${WRK_DIR}"
 cd ..
 echo "Build ckage"
 rpmbuild --ba SPECS/sysmo-core.spec
+echo "Moving package to repository"
+sudo mv RPMS/* /share/share/CentOS/7/local/x86_64/
+chown -R root.root /share/CentOS/7/local
+createrepo /share/CentOS/7/local/i386
+chmod -R o-w+r /share/CentOS/7/local
