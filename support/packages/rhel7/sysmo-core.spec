@@ -93,6 +93,8 @@ find /usr/lib64/%{sysmo_app_name} -type f ! -perm /u+x -exec chmod 664 {} \;
 
 find /etc/%{sysmo_app_name} -type d -exec chmod 775 {} \;
 find /etc/%{sysmo_app_name} -type f -exec chmod 664 {} \;
+chmod 600 /etc/%{sysmo_app_name}/users.xml
+chmod 600 /etc/%{sysmo_app_name}/vm.args
 
 find /var/lib/%{sysmo_app_name} -type d -exec chmod 775 {} \;
 find /var/lib/%{sysmo_app_name} -type f -exec chmod 660 {} \;
