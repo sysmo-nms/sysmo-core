@@ -18,10 +18,8 @@
  * You should have received a copy of the GNU General Public License
  * along with Sysmo.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package io.sysmo.jserver;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.FileOutputStream;
 import java.nio.file.Paths;
@@ -60,8 +58,8 @@ import java.sql.Types;
 import java.util.Calendar;
 import java.util.Properties;
 
-public class EventDb implements Runnable
-{
+public class EventDb implements Runnable {
+
     private Logger logger;
     private OtpMbox mbox;
     private String foreignNodeName;
@@ -69,35 +67,35 @@ public class EventDb implements Runnable
 
     private static EventDb instance;
 
-    private static OtpErlangAtom atomReply = new OtpErlangAtom("reply");
-    private static OtpErlangAtom atomOk = new OtpErlangAtom("ok");
-    private static OtpErlangAtom atomError = new OtpErlangAtom("error");
+    private static final OtpErlangAtom ATOM_REPLY = new OtpErlangAtom("reply");
+    private static final OtpErlangAtom ATMO_OK = new OtpErlangAtom("ok");
+    private static final OtpErlangAtom ATOM_ERROR = new OtpErlangAtom("error");
 
     // NCHECKS_EVENTS and NCHECKS_LATEST_EVENTS table insert prepared statement
     private PreparedStatement psInsert;
     private PreparedStatement psInsertLast;
-    private static final int PROBE_ID      = 1;
-    private static final int DATE_CREATED  = 2;
-    private static final int NCHECKS_ID    = 3;
-    private static final int STATUS        = 4;
-    private static final int STATUS_CODE   = 5;
+    private static final int PROBE_ID = 1;
+    private static final int DATE_CREATED = 2;
+    private static final int NCHECKS_ID = 3;
+    private static final int STATUS = 4;
+    private static final int STATUS_CODE = 5;
     private static final int RETURN_STRING = 6;
     private static final int MONTH_CREATED = 7;
-    private static final int HOST_DISPLAY  = 8;
+    private static final int HOST_DISPLAY = 8;
     private static final int HOST_LOCATION = 9;
-    private static final int HOST_CONTACT  = 10;
+    private static final int HOST_CONTACT = 10;
     private static final int PROBE_DISPLAY = 11;
-    private static final int ACKNOWLEDGED  = 12;
-    private static final int ACK_USER      = 13;
-    private static final int ACK_MESSAGE   = 14;
-    private static final int EVENT_ID      = 15;
+    private static final int ACKNOWLEDGED = 12;
+    private static final int ACK_USER = 13;
+    private static final int ACK_MESSAGE = 14;
+    private static final int EVENT_ID = 15;
 
     // NCHECKS_EVENTS and NCHECKS_LATEST_EVENTS update acknowledgement
     private PreparedStatement psUpdateAck;
     private PreparedStatement psUpdateLatestAck;
-    private static final int UP_ACK_USER      = 1;
-    private static final int UP_ACK_MESSAGE   = 2;
-    private static final int UP_EVENT_ID      = 3;
+    private static final int UP_ACK_USER = 1;
+    private static final int UP_ACK_MESSAGE = 2;
+    private static final int UP_EVENT_ID = 3;
 
     // NCHECKS_LATEST_EVENTS table delete prepared statement
     private PreparedStatement psDeletePrevious;
@@ -107,7 +105,7 @@ public class EventDb implements Runnable
     private PreparedStatement psSelectProbeEvents;
 
     private PreparedStatement psSelectLatestEvents;
-    private static final int CURRENT_MONTH  = 1;
+    private static final int CURRENT_MONTH = 1;
     private static final int PREVIOUS_MONTH = 2;
 
     public static EventDb getInstance(
@@ -115,7 +113,7 @@ public class EventDb implements Runnable
             final String foreignNodeName,
             final String dataDir) throws Exception {
 
-        EventDb.instance = new EventDb(mbox,foreignNodeName,dataDir);
+        EventDb.instance = new EventDb(mbox, foreignNodeName, dataDir);
         return EventDb.instance;
     }
 
@@ -172,8 +170,8 @@ public class EventDb implements Runnable
             try {
                 statement.execute("CREATE TABLE NCHECKS_EVENTS("
                         + "EVENT_ID INT NOT NULL "
-                            + "GENERATED ALWAYS AS IDENTITY "
-                                + "(START WITH 1, INCREMENT BY 1),"
+                        + "GENERATED ALWAYS AS IDENTITY "
+                        + "(START WITH 1, INCREMENT BY 1),"
                         + "PROBE_ID      VARCHAR(40)  NOT NULL,"
                         + "MONTH_CREATED VARCHAR(6)   NOT NULL," // for master sync ie: 201509
                         + "DATE_CREATED  TIMESTAMP    NOT NULL," // from notif ts
@@ -239,30 +237,28 @@ public class EventDb implements Runnable
 
             this.conn.setAutoCommit(true);
 
-
             this.psInsert = conn.prepareStatement(
                     "INSERT INTO NCHECKS_EVENTS "
-                            + "(PROBE_ID,DATE_CREATED,NCHECKS_ID,"
-                            + "STATUS,STATUS_CODE,RETURN_STRING,MONTH_CREATED,"
-                            + "HOST_DISPLAY,HOST_LOCATION,HOST_CONTACT,"
-                            + "PROBE_DISPLAY,ACKNOWLEDGED,ACK_USER,"
-                            + "ACK_MESSAGE) "
-                            + "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                    + "(PROBE_ID,DATE_CREATED,NCHECKS_ID,"
+                    + "STATUS,STATUS_CODE,RETURN_STRING,MONTH_CREATED,"
+                    + "HOST_DISPLAY,HOST_LOCATION,HOST_CONTACT,"
+                    + "PROBE_DISPLAY,ACKNOWLEDGED,ACK_USER,"
+                    + "ACK_MESSAGE) "
+                    + "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                     Statement.RETURN_GENERATED_KEYS);
 
             this.psInsertLast = conn.prepareStatement(
                     "INSERT INTO NCHECKS_LATEST_EVENTS "
-                            + "(PROBE_ID,DATE_CREATED,NCHECKS_ID,"
-                            + "STATUS,STATUS_CODE,RETURN_STRING,MONTH_CREATED,"
-                            + "HOST_DISPLAY,HOST_LOCATION,HOST_CONTACT,"
-                            + "PROBE_DISPLAY,ACKNOWLEDGED,ACK_USER,"
-                            + "ACK_MESSAGE,EVENT_ID) "
-                            + "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
-
+                    + "(PROBE_ID,DATE_CREATED,NCHECKS_ID,"
+                    + "STATUS,STATUS_CODE,RETURN_STRING,MONTH_CREATED,"
+                    + "HOST_DISPLAY,HOST_LOCATION,HOST_CONTACT,"
+                    + "PROBE_DISPLAY,ACKNOWLEDGED,ACK_USER,"
+                    + "ACK_MESSAGE,EVENT_ID) "
+                    + "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
 
             this.psDeletePrevious = conn.prepareStatement(
                     "DELETE FROM NCHECKS_LATEST_EVENTS "
-                            + "WHERE PROBE_ID = ?");
+                    + "WHERE PROBE_ID = ?");
 
             this.psSelectProbeEvents = conn.prepareStatement(
                     "SELECT * FROM NCHECKS_EVENTS WHERE PROBE_ID = ? "
@@ -270,24 +266,24 @@ public class EventDb implements Runnable
 
             this.psSelectLatestEvents = conn.prepareStatement(
                     "SELECT * FROM NCHECKS_EVENTS "
-                            + "WHERE MONTH_CREATED = ? OR MONTH_CREATED = ? "
-                                + "OR ACKNOWLEDGED = FALSE "
-                            + "UNION "
-                            + "SELECT * FROM NCHECKS_LATEST_EVENTS "
-                            + "ORDER BY DATE_CREATED");
+                    + "WHERE MONTH_CREATED = ? OR MONTH_CREATED = ? "
+                    + "OR ACKNOWLEDGED = FALSE "
+                    + "UNION "
+                    + "SELECT * FROM NCHECKS_LATEST_EVENTS "
+                    + "ORDER BY DATE_CREATED");
 
             this.psUpdateAck = conn.prepareStatement(
                     "UPDATE NCHECKS_EVENTS SET "
-                            + "ACKNOWLEDGED = TRUE,"
-                            + "ACK_USER     = ?,"
-                            + "ACK_MESSAGE  = ? "
-                            + "WHERE EVENT_ID = ?");
+                    + "ACKNOWLEDGED = TRUE,"
+                    + "ACK_USER     = ?,"
+                    + "ACK_MESSAGE  = ? "
+                    + "WHERE EVENT_ID = ?");
             this.psUpdateLatestAck = conn.prepareStatement(
                     "UPDATE NCHECKS_LATEST_EVENTS SET "
-                            + "ACKNOWLEDGED = TRUE,"
-                            + "ACK_USER     = ?,"
-                            + "ACK_MESSAGE  = ? "
-                            + "WHERE EVENT_ID = ?");
+                    + "ACKNOWLEDGED = TRUE,"
+                    + "ACK_USER     = ?,"
+                    + "ACK_MESSAGE  = ? "
+                    + "WHERE EVENT_ID = ?");
 
         } catch (SQLException e) {
             this.printSQLException(e);
@@ -301,30 +297,32 @@ public class EventDb implements Runnable
         this.logger.info("begin to loop");
 
         OtpErlangObject call;
-        while (true) try {
+        while (true) {
+            try {
 
-            call = this.mbox.receive();
-            this.handleEvent(call);
+                call = this.mbox.receive();
+                this.handleEvent(call);
 
-        } catch (OtpErlangExit e) {
-            this.logger.info(e.getMessage(), e);
-            break;
-        } catch (OtpErlangDecodeException e) {
-            this.mbox.exit("erlang_decode_exception");
-            this.logger.info(e.getMessage(), e);
-            break;
-        } catch (SQLException e) {
-            this.mbox.exit("sql_exception");
-            this.printSQLException(e);
-            break;
+            } catch (OtpErlangExit e) {
+                this.logger.info(e.getMessage(), e);
+                break;
+            } catch (OtpErlangDecodeException e) {
+                this.mbox.exit("erlang_decode_exception");
+                this.logger.info(e.getMessage(), e);
+                break;
+            } catch (SQLException e) {
+                this.mbox.exit("sql_exception");
+                this.printSQLException(e);
+                break;
+            }
         }
 
         Connection con = null;
         try {
             con = DriverManager.getConnection("jdbc:derby:;shutdown=true");
         } catch (SQLException se) {
-            if (se.getErrorCode() == 50000 &&
-                    se.getSQLState().equals("XJ015")) {
+            if (se.getErrorCode() == 50000
+                    && se.getSQLState().equals("XJ015")) {
                 this.logger.info("Derby shut down normally");
             } else {
                 this.logger.error("Derby did not shut down normally");
@@ -440,9 +438,8 @@ public class EventDb implements Runnable
         }
     }
 
-    private void handleSelectLatestEvents(OtpErlangTuple call)
-    {
-        OtpErlangObject caller  = call.elementAt(1);
+    private void handleSelectLatestEvents(OtpErlangTuple call) {
+        OtpErlangObject caller = call.elementAt(1);
         OtpErlangString dumpDir = (OtpErlangString) call.elementAt(2);
 
         String file = "latest.json";
@@ -474,13 +471,11 @@ public class EventDb implements Runnable
         this.sendReply(caller, reply);
     }
 
+    private void handleSelectProbeEvents(OtpErlangTuple call) {
+        OtpErlangObject caller = call.elementAt(1);
+        OtpErlangTuple payload = (OtpErlangTuple) call.elementAt(2);
 
-    private void handleSelectProbeEvents(OtpErlangTuple call)
-    {
-        OtpErlangObject caller  = call.elementAt(1);
-        OtpErlangTuple payload  = (OtpErlangTuple)  call.elementAt(2);
-
-        OtpErlangString probe   = (OtpErlangString) payload.elementAt(0);
+        OtpErlangString probe = (OtpErlangString) payload.elementAt(0);
         OtpErlangString dumpDir = (OtpErlangString) payload.elementAt(1);
 
         String file = "allProbeEvents.json";
@@ -511,16 +506,16 @@ public class EventDb implements Runnable
 
     private void handleNotification(OtpErlangObject notif) throws SQLException {
         OtpErlangTuple tuple = (OtpErlangTuple) notif;
-        OtpErlangString      probeIdObj = (OtpErlangString) tuple.elementAt(1);
-        OtpErlangString      checkIdObj = (OtpErlangString) tuple.elementAt(2);
-        OtpErlangString       statusObj = (OtpErlangString) tuple.elementAt(3);
-        OtpErlangLong     statusCodeObj = (OtpErlangLong)   tuple.elementAt(4);
-        OtpErlangLong      timestampObj = (OtpErlangLong)   tuple.elementAt(5);
+        OtpErlangString probeIdObj = (OtpErlangString) tuple.elementAt(1);
+        OtpErlangString checkIdObj = (OtpErlangString) tuple.elementAt(2);
+        OtpErlangString statusObj = (OtpErlangString) tuple.elementAt(3);
+        OtpErlangLong statusCodeObj = (OtpErlangLong) tuple.elementAt(4);
+        OtpErlangLong timestampObj = (OtpErlangLong) tuple.elementAt(5);
         OtpErlangString returnStringObj = (OtpErlangString) tuple.elementAt(6);
         OtpErlangString probeDisplayObj = (OtpErlangString) tuple.elementAt(7);
-        OtpErlangString  hostDisplayObj = (OtpErlangString) tuple.elementAt(8);
+        OtpErlangString hostDisplayObj = (OtpErlangString) tuple.elementAt(8);
         OtpErlangString hostLocationObj = (OtpErlangString) tuple.elementAt(9);
-        OtpErlangString  hostContactObj = (OtpErlangString) tuple.elementAt(10);
+        OtpErlangString hostContactObj = (OtpErlangString) tuple.elementAt(10);
 
         String probeId = probeIdObj.stringValue();
         String checkId = checkIdObj.stringValue();
@@ -563,7 +558,7 @@ public class EventDb implements Runnable
                 // should never occur
                 key = 0;
             }
-        } catch (SQLFeatureNotSupportedException|NullPointerException e) {
+        } catch (SQLFeatureNotSupportedException | NullPointerException e) {
             this.logger.error("getGeneratedKeys fail: " + e);
             throw e;
         }
@@ -596,22 +591,20 @@ public class EventDb implements Runnable
 
         //this.printTables();
         MailEventMessage message = new MailEventMessage(
-                probeId,checkId,status,statusCode,
-                timestamp,returnString,probeDisplayName,hostDisplayName,
-                hostLocation,hostContact);
+                probeId, checkId, status, statusCode,
+                timestamp, returnString, probeDisplayName, hostDisplayName,
+                hostLocation, hostContact);
 
         MailSender.sendMail(message);
     }
 
-    private void printSQLException(SQLException e)
-    {
-        while (e != null)
-        {
+    private void printSQLException(SQLException e) {
+        while (e != null) {
             String errorOutput = "\n\n";
             errorOutput += "SQLException ========================= BEGIN\n";
             errorOutput += "SQLState:\t" + e.getSQLState() + "\n";
             errorOutput += "Severity:\t" + e.getErrorCode() + "\n";
-            errorOutput += "Message:\t"  + e.getMessage() + "\n";
+            errorOutput += "Message:\t" + e.getMessage() + "\n";
             this.logger.warn(errorOutput, e);
             this.logger.warn("SQLException ========================= END\n\n");
             e = e.getNextException();
@@ -675,7 +668,7 @@ public class EventDb implements Runnable
             int columnsNumber = rsmd.getColumnCount();
 
             while (rs.next()) {
-                for (int i=1; i<=columnsNumber; i++) {
+                for (int i = 1; i <= columnsNumber; i++) {
                     buff.append(rs.getString(i));
                     buff.append("\t");
 
@@ -690,35 +683,31 @@ public class EventDb implements Runnable
     }
 
     private void sendReply(
-            final OtpErlangObject to, final OtpErlangObject msg)
-    {
+            final OtpErlangObject to, final OtpErlangObject msg) {
         OtpErlangObject[] obj = new OtpErlangObject[3];
-        obj[0] = EventDb.atomReply;
+        obj[0] = EventDb.ATOM_REPLY;
         obj[1] = to;
         obj[2] = msg;
         OtpErlangTuple tuple = new OtpErlangTuple(obj);
         this.mbox.send("j_server_eventdb", this.foreignNodeName, tuple);
     }
 
-    private OtpErlangTuple buildErrorReply(OtpErlangObject msg)
-    {
+    private OtpErlangTuple buildErrorReply(OtpErlangObject msg) {
         OtpErlangObject[] valObj = new OtpErlangObject[2];
-        valObj[0] = EventDb.atomError;
+        valObj[0] = EventDb.ATOM_ERROR;
         valObj[1] = msg;
         return new OtpErlangTuple(valObj);
     }
 
-    private OtpErlangTuple buildOkReply(OtpErlangObject msg)
-    {
+    private OtpErlangTuple buildOkReply(OtpErlangObject msg) {
         OtpErlangObject[] valObj = new OtpErlangObject[2];
-        valObj[0] = EventDb.atomOk;
+        valObj[0] = EventDb.ATMO_OK;
         valObj[1] = msg;
         return new OtpErlangTuple(valObj);
     }
 
     public void writeToJsonFile(ResultSet resultSet, String file)
-            throws SQLException
-    {
+            throws SQLException {
         JsonBuilderFactory factory = Json.createBuilderFactory(null);
         JsonArrayBuilder arrayBuilder = factory.createArrayBuilder();
 
@@ -763,7 +752,7 @@ public class EventDb implements Runnable
             output = new FileOutputStream(file);
             jsonWriter = Json.createWriter(output);
             jsonWriter.writeArray(arrayBuilder.build());
-        } catch(Exception e) {
+        } catch (Exception e) {
             this.logger.error("Error writing json payload", e);
         } finally {
             if (jsonWriter != null) {

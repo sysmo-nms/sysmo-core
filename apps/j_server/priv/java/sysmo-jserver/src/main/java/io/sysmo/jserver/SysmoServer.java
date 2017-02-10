@@ -18,7 +18,6 @@
  * You should have received a copy of the GNU General Public License
  * along with Sysmo.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package io.sysmo.jserver;
 
 import com.ericsson.otp.erlang.OtpErlangAtom;
@@ -30,9 +29,7 @@ import com.ericsson.otp.erlang.OtpMbox;
 import com.ericsson.otp.erlang.OtpNode;
 
 import io.sysmo.nchecks.impl.ErlangNodeNChecks;
-
 import io.sysmo.nchecks.StateServer;
-import org.eclipse.jetty.server.Server;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,19 +50,18 @@ import java.util.Arrays;
 
 public class SysmoServer {
 
-    private static Server jettyThread   = null;
     private static Thread nchecksThread = null;
-    private static Thread rrd4jThread   = null;
-    private static Thread snmp4jThread  = null;
-    private static Thread mailThread    = null;
+    private static Thread rrd4jThread = null;
+    private static Thread snmp4jThread = null;
+    private static Thread mailThread = null;
     private static Thread eventDbThread = null;
 
     private static OtpMbox mainMbox = null;
     private static String exitReason = "normal";
 
-    private static Logger logger = LoggerFactory.getLogger(SysmoServer.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(SysmoServer.class);
 
-    private static final String selfNodeName = "sysmo-jserver";
+    private static final String SELF_NODE_NAME = "sysmo-jserver";
 
     public static void main(final String[] args) {
 
@@ -89,39 +85,38 @@ public class SysmoServer {
             }
         }
 
-        SysmoServer.logger.info("Logger started");
-        SysmoServer.logger.info("VM args are: " + Arrays.toString(args));
+        SysmoServer.LOGGER.info("Logger started");
+        SysmoServer.LOGGER.info("VM args are: " + Arrays.toString(args));
 
         try {
             SysmoServer.startServerLoop(args);
         } catch (Exception e) {
-            SysmoServer.logger.warn(e.getMessage(),e);
+            SysmoServer.LOGGER.warn(e.getMessage(), e);
+        } finally {
+            SysmoServer.cleanServerLoop();
         }
+
+        System.exit(0);
+    }
+
+    private static void cleanServerLoop() {
 
         // cleanup
         if (SysmoServer.mainMbox != null) {
             SysmoServer.mainMbox.exit(SysmoServer.exitReason);
         }
-            /* Will raise OtpErlangExit exception on other threads and cause them
+        /* Will raise OtpErlangExit exception on other threads and cause them
              * to terminate.
-             */
+         */
         if (StateServer.isStarted()) {
             StateServer.stop();
-        }
-
-        if (SysmoServer.jettyThread != null) {
-            try {
-                SysmoServer.jettyThread.stop();
-            } catch (Exception e) {
-                SysmoServer.logger.error(e.getMessage(), e);
-            }
         }
 
         if (SysmoServer.nchecksThread != null) {
             try {
                 SysmoServer.nchecksThread.join();
             } catch (InterruptedException e) {
-                SysmoServer.logger.error(e.getMessage(), e);
+                SysmoServer.LOGGER.error(e.getMessage(), e);
             }
         }
 
@@ -129,7 +124,7 @@ public class SysmoServer {
             try {
                 SysmoServer.rrd4jThread.join();
             } catch (InterruptedException e) {
-                SysmoServer.logger.error(e.getMessage(), e);
+                SysmoServer.LOGGER.error(e.getMessage(), e);
             }
         }
 
@@ -138,14 +133,14 @@ public class SysmoServer {
             try {
                 SysmoServer.snmp4jThread.join();
             } catch (InterruptedException e) {
-                SysmoServer.logger.error(e.getMessage(), e);
+                SysmoServer.LOGGER.error(e.getMessage(), e);
             }
         }
         if (SysmoServer.mailThread != null) {
             try {
                 SysmoServer.mailThread.join();
             } catch (InterruptedException e) {
-                SysmoServer.logger.error(e.getMessage(), e);
+                SysmoServer.LOGGER.error(e.getMessage(), e);
             }
 
         }
@@ -153,10 +148,9 @@ public class SysmoServer {
             try {
                 SysmoServer.eventDbThread.join();
             } catch (InterruptedException e) {
-                SysmoServer.logger.error(e.getMessage(), e);
+                SysmoServer.LOGGER.error(e.getMessage(), e);
             }
         }
-        System.exit(0);
     }
 
     private static void startServerLoop(String[] args) throws Exception {
@@ -181,7 +175,7 @@ public class SysmoServer {
         try {
             foreignNodeName = args[0];
         } catch (ArrayIndexOutOfBoundsException e) {
-            SysmoServer.logger.error(e.getMessage(), e);
+            SysmoServer.LOGGER.error(e.getMessage(), e);
             throw e;
         }
 
@@ -202,8 +196,8 @@ public class SysmoServer {
             Properties props = new Properties();
             propIn = new FileInputStream(confFile);
             props.load(propIn);
-            stateServerPort =
-                    Integer.parseInt(props.getProperty("state_server_port"));
+            stateServerPort
+                    = Integer.parseInt(props.getProperty("state_server_port"));
             stateServerEmbedded = props.getProperty("state_server_embedded", "true");
             stateServerHost = props.getProperty("state_server_host");
         } catch (Exception e) {
@@ -223,10 +217,10 @@ public class SysmoServer {
         /*
          * Connect to erlang-main node
          */
-        SysmoServer.logger.info("Trying to connect to node: " + foreignNodeName);
+        SysmoServer.LOGGER.info("Trying to connect to node: " + foreignNodeName);
         OtpNode node;
         try {
-            node = new OtpNode(SysmoServer.selfNodeName, erlangCookie);
+            node = new OtpNode(SysmoServer.SELF_NODE_NAME, erlangCookie);
             if (!node.ping(foreignNodeName, 2000)) {
                 throw new TimeoutException("Can t connect to main erlang node: ");
             }
@@ -317,22 +311,40 @@ public class SysmoServer {
         /*
          * Create rrd4j thread
          */
-        RrdLogger rrd4j = RrdLogger.getInstance(rrd4jMbox, foreignNodeName);
+        RrdLogger rrd4j;
+        try {
+            rrd4j = RrdLogger.getInstance(rrd4jMbox, foreignNodeName);
+        } catch (Exception e) {
+            SysmoServer.exitReason = ("rrd_init_error");
+            throw e;
+        }
         SysmoServer.rrd4jThread = new Thread(rrd4j);
         SysmoServer.rrd4jThread.start();
 
         /*
          * Create mail thread
          */
-        MailSender mail = MailSender.getInstance(mailMbox, etcDir);
+        MailSender mail;
+        try {
+            mail = MailSender.getInstance(mailMbox, etcDir);
+        } catch (Exception e) {
+            SysmoServer.exitReason = ("mail_init_error");
+            throw e;
+        }
         SysmoServer.mailThread = new Thread(mail);
         SysmoServer.mailThread.start();
 
         /*
          * Create snmp4j thread
          */
-        SnmpManager snmp4j = SnmpManager.getInstance(snmp4jMbox,
-                foreignNodeName, etcDir);
+        SnmpManager snmp4j;
+        try {
+            snmp4j = SnmpManager.getInstance(snmp4jMbox,
+                    foreignNodeName, etcDir);
+        } catch (Exception e) {
+            SysmoServer.exitReason = ("snmp_init_error");
+            throw e;
+        }
         SysmoServer.snmp4jThread = new Thread(snmp4j);
         SysmoServer.snmp4jThread.start();
 

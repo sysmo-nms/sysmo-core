@@ -18,7 +18,6 @@
  * You should have received a copy of the GNU General Public License
  * along with Sysmo.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package io.sysmo.jserver;
 
 import com.ericsson.otp.erlang.OtpErlangDecodeException;
@@ -49,26 +48,25 @@ import java.util.Properties;
  * Created by seb on 30/09/15.
  */
 public class MailSender implements Runnable {
+
     private Logger logger;
     private OtpMbox mbox;
     private static MailSender singleton;
     private InternetAddress from;
     private InternetAddress to;
-    private Properties properties;
+    private final Properties properties;
     private boolean active = true;
 
     public static MailSender getInstance(
             final OtpMbox mbox,
-            final String etcDir)
-    {
+            final String etcDir) throws Exception {
         MailSender.singleton = new MailSender(mbox, etcDir);
         return MailSender.singleton;
     }
 
     private MailSender(
             final OtpMbox mbox,
-            final String etcDir)
-    {
+            final String etcDir) throws Exception {
         this.logger = LoggerFactory.getLogger(MailSender.class);
         this.mbox = mbox;
 
@@ -80,6 +78,7 @@ public class MailSender implements Runnable {
             props.load(input);
         } catch (Exception e) {
             this.logger.info("No config file found....", e);
+            throw e;
         } finally {
             try {
                 if (input != null) {
@@ -91,13 +90,14 @@ public class MailSender implements Runnable {
         }
 
         String fromString = props.getProperty("mail_from", "sysmo@localhost");
-        String toString   = props.getProperty("mail_to");
+        String toString = props.getProperty("mail_to");
         try {
             this.from = new InternetAddress(fromString);
-            if (toString != null)
+            if (toString != null) {
                 this.to = new InternetAddress(toString);
-            else
-               this.active = false;
+            } else {
+                this.active = false;
+            }
         } catch (AddressException e) {
             this.logger.error("Mail address exception: ", e);
             this.active = false;
@@ -111,29 +111,32 @@ public class MailSender implements Runnable {
         this.properties.setProperty("mail.smtp.host", host);
 
         String user_name = props.getProperty("mail_user_name");
-        if (user_name != null)
+        if (user_name != null) {
             this.properties.setProperty("mail.user", user_name);
+        }
 
         String user_password = props.getProperty("mail_user_password");
-        if (user_password != null)
+        if (user_password != null) {
             this.properties.setProperty("mail.password", user_password);
+        }
         this.logger.info("End MailSender init");
     }
-
 
     @Override
     public void run() {
         // begin to loop and wait for calls
         OtpErlangObject event;
-        while (true) try {
-            event = this.mbox.receive();
-            this.sendMail(event);
-        } catch (OtpErlangExit e) {
-            this.logger.info(e.getMessage(), e);
-            break;
-        } catch (OtpErlangDecodeException e) {
-            this.logger.error(e.getMessage(), e);
-            break;
+        while (true) {
+            try {
+                event = this.mbox.receive();
+                this.sendMail(event);
+            } catch (OtpErlangExit e) {
+                this.logger.info(e.getMessage(), e);
+                break;
+            } catch (OtpErlangDecodeException e) {
+                this.logger.error(e.getMessage(), e);
+                break;
+            }
         }
         this.mbox.exit("crash");
     }
@@ -146,11 +149,12 @@ public class MailSender implements Runnable {
         MailSender.singleton.sendMailEvent(event);
     }
 
-    public synchronized void sendMailEvent(MailEventMessage event)
-    {
+    public synchronized void sendMailEvent(MailEventMessage event) {
         this.logger.info("Should send mail: " + event.getProbeId());
 
-        if (!this.active) return;
+        if (!this.active) {
+            return;
+        }
 
         Session session = Session.getDefaultInstance(this.properties);
         try {

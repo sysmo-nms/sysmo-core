@@ -18,7 +18,6 @@
  * You should have received a copy of the GNU General Public License
  * along with Sysmo.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package io.sysmo.jserver;
 
 import java.sql.Timestamp;
@@ -27,16 +26,17 @@ import java.sql.Timestamp;
  * Created by seb on 05/10/15.
  */
 public class MailEventMessage {
-    private String probeId;
-    private String checkId;
-    private String status;
-    private int statusCode;
-    private Timestamp timestamp;
-    private String returnString;
-    private String probeDisplayName;
-    private String hostDisplayName;
-    private String hostLocation;
-    private String hostContact;
+
+    private final String probeId;
+    private final String checkId;
+    private final String status;
+    private final int statusCode;
+    private final Timestamp timestamp;
+    private final String returnString;
+    private final String probeDisplayName;
+    private final String hostDisplayName;
+    private final String hostLocation;
+    private final String hostContact;
 
     MailEventMessage(
             String probeId,
@@ -61,17 +61,44 @@ public class MailEventMessage {
         this.hostContact = hostContact;
     }
 
-    public String getProbeId() {return this.probeId;}
-    public String getCheckId() {return this.checkId;}
-    public String getStatus() {return this.status;}
-    public int getStatusCode() {return this.statusCode;}
+    public String getProbeId() {
+        return this.probeId;
+    }
+
+    public String getCheckId() {
+        return this.checkId;
+    }
+
+    public String getStatus() {
+        return this.status;
+    }
+
+    public int getStatusCode() {
+        return this.statusCode;
+    }
+
     public Timestamp getTimestamp() {
         return (Timestamp) this.timestamp.clone();
     }
-    public String getReturnString() {return this.returnString;}
-    public String getProbeDisplayName() {return this.probeDisplayName;}
-    public String getHostDisplayName() {return this.hostDisplayName;}
-    public String getHostLocation() {return this.hostLocation;}
-    public String getHostContact() {return this.hostContact;}
+
+    public String getReturnString() {
+        return this.returnString;
+    }
+
+    public String getProbeDisplayName() {
+        return this.probeDisplayName;
+    }
+
+    public String getHostDisplayName() {
+        return this.hostDisplayName;
+    }
+
+    public String getHostLocation() {
+        return this.hostLocation;
+    }
+
+    public String getHostContact() {
+        return this.hostContact;
+    }
 
 }
