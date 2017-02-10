@@ -10,21 +10,21 @@ applicationDefaultJvmArgs = ["-Duser.language=en", "-Duser.country=US"]
 
 repositories {
 
-  flatDir {
-    dirs '../nchecks/build/libs/'
-  }
+    flatDir {
+        dirs '../nchecks/build/libs/'
+    }
 
-  mavenCentral()
+    mavenCentral()
 
-  // rrd4j
-  maven {
-    url 'https://oss.sonatype.org/content/repositories/snapshots'
-  }
+    // rrd4j
+    maven {
+        url 'https://oss.sonatype.org/content/repositories/snapshots'
+    }
 
-  // snmp4j
-  maven {
-    url 'https://oosnmp.net/dist/release'
-  }
+    // snmp4j
+    maven {
+        url 'https://oosnmp.net/dist/release'
+    }
 
 }
 
@@ -33,10 +33,10 @@ findbugs { ignoreFailures = true }
 pmd      { ignoreFailures = true }
 
 tasks.withType(FindBugs) {
-  reports {
-    xml.enabled = false
-      html.enabled = true
-  }
+    reports {
+        xml.enabled = false
+        html.enabled = true
+    }
 }
 
 dependencies {
@@ -47,7 +47,6 @@ dependencies {
     compile group: 'org.snmp4j', name: 'snmp4j', version: '2.3.3'
     compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.12'
     compile group: 'org.slf4j', name: 'slf4j-jdk14', version: '1.7.12'
-    compile group: 'org.eclipse.jetty', name: 'jetty-server', version: '8.1.17.v20150415'
     compile group: 'org.apache.derby', name: 'derby', version: '10.11.1.1'
     compile group: 'javax.mail', name: 'mail', version: '1.4.7'
     compile group: 'javax.activation', name: 'activation', version: '1.1.1'
