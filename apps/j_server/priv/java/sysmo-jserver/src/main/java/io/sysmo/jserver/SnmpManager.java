@@ -79,9 +79,9 @@ public class SnmpManager implements Runnable {
             = new OtpErlangAtom("wrong_order");
 
     private static final char[] HEX_ARRAY = "0123456789ABCDEF".toCharArray();
+    private static final Object LOCK = new Object();
 
     private static SnmpManager instance;
-    private static final Object LOCK = new Object();
 
     private OtpMbox mbox;
     private String nodeName;

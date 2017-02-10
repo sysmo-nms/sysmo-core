@@ -49,9 +49,10 @@ import java.util.Properties;
  */
 public class MailSender implements Runnable {
 
+    private static MailSender singleton;
+
     private Logger logger;
     private OtpMbox mbox;
-    private static MailSender singleton;
     private InternetAddress from;
     private InternetAddress to;
     private final Properties properties;

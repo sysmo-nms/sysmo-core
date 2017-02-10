@@ -50,6 +50,9 @@ import java.util.Arrays;
 
 public class SysmoServer {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(SysmoServer.class);
+    private static final String SELF_NODE_NAME = "sysmo-jserver";
+
     private static Thread nchecksThread = null;
     private static Thread rrd4jThread = null;
     private static Thread snmp4jThread = null;
@@ -58,10 +61,6 @@ public class SysmoServer {
 
     private static OtpMbox mainMbox = null;
     private static String exitReason = "normal";
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(SysmoServer.class);
-
-    private static final String SELF_NODE_NAME = "sysmo-jserver";
 
     public static void main(final String[] args) {
 
