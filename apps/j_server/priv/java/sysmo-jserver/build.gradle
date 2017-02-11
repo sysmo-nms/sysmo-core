@@ -16,10 +16,11 @@ repositories {
 
     mavenCentral()
 
-    // rrd4j
+    /* rrd4j
     maven {
         url 'https://oss.sonatype.org/content/repositories/snapshots'
     }
+    */
 
     // snmp4j
     maven {
