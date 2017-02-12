@@ -217,30 +217,18 @@ namespace "sysmo" do
 
 end
 
-namespace "nchecks" do
-    task :build do
-        cd NCHECKS_ROOT
-        sh "#{GRADLE} jar"
-    end
-    task :clean do
-        cd NCHECKS_ROOT
-        sh "#{GRADLE} clean"
-    end
-
-end
-
 # Sysmo-Jserver Java build and releases related tasks
 namespace "jserver" do
 
     # "Build Sysmo-Jserver"
-    task :build => ["nchecks:build" ] do
+    task :build do
         cd JSERVER_ROOT
         sh "#{GRADLE} installDist"
     end
 
 
     # "Clean Sysmo-Jserver"
-    task :clean => ["nchecks:clean"] do
+    task :clean do
         cd JSERVER_ROOT
         sh "#{GRADLE} clean"
     end

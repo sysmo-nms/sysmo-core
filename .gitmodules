@@ -1,3 +1,6 @@
-[submodule "apps/j_server/priv/pping"]
+[submodule "apps/j_server/priv/java/sysmo-jserver/nchecks"]
+	path = apps/j_server/priv/java/sysmo-jserver/nchecks
+	url = https://github.com/sysmo-nms/nchecks.git
+[submodule "apps/j_server/priv/bin/pping"]
 	path = apps/j_server/priv/bin/pping
 	url = https://github.com/sysmo-nms/pping.git
