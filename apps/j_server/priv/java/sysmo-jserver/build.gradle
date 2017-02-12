@@ -47,7 +47,6 @@ dependencies {
     compile group: 'org.slf4j', name: 'slf4j-jdk14', version: '1.7.12'
     compile group: 'org.eclipse.jetty', name: 'jetty-server', version: '8.1.17.v20150415'
     compile group: 'org.apache.derby', name: 'derby', version: '10.11.1.1'
-    compile group: 'com.sleepycat', name: 'je', version: '4.0.92'
     compile group: 'javax.mail', name: 'mail', version: '1.4.7'
     compile group: 'javax.activation', name: 'activation', version: '1.1.1'
     compile group: 'org.glassfish', name: 'javax.json', version: '1.0.4'
