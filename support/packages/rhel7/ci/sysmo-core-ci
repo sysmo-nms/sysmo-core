@@ -1,5 +1,15 @@
 #!/bin/bash
 
+if [ ! -e ~/.sysmo-core_version-bump ]; then
+    echo "0" > ~/.sysmo-core_version-bump
+fi
+
+PREV_BUILD_VER=$(cat ~/.sysmo-core_version-bump)
+CURR_BUILD_VER=$(expr $PREV_VER + 1)
+echo $CURR_BUILD_VER > ~/.sysmo-core_version-bump
+
+cat ~/.sysmo-core_version-bump
+
 echo "Generate rpm build directories"
 WRK_DIR="$HOME/rpmbuild"
 rm -rf $WRK_DIR
@@ -12,17 +22,26 @@ echo "Entering directory ${WRK_DIR}/SOURCES/sysmo-core"
 cd sysmo-core
 CURRENT_VERSION=$(rake get_current_version)
 cd ..
-echo "Configure file for using $CURRENT_VERSION"
-cat sysmo-core/support/packages/rhel7/sysmo-core.spec | sed s/@SYSMO_CORE_VERSION@/$CURRENT_VERSION/g > ../SPECS/sysmo-core.spec
+echo "Configure file for using $CURRENT_VERSION build $CURR_BUILD_VER"
+cat sysmo-core/support/packages/rhel7/sysmo-core.spec | \
+    sed s/@SYSMO_CORE_VERSION@/$CURRENT_VERSION/g | \
+    sed s/@SYSMO_CORE_BUILD@/$CURR_BUILD_VER/g | \
+    > ../SPECS/sysmo-core.spec
+echo "Configure file fo using build number $CURR_VER"
 echo "Generate source archive"
 mv sysmo-core sysmo-core-$CURRENT_VERSION
 tar -czf sysmo-core-${CURRENT_VERSION}.tar.gz sysmo-core-${CURRENT_VERSION}
 echo "Entering directory ${WRK_DIR}"
 cd ..
-echo "Build ckage"
+echo "Build package"
 rpmbuild --ba SPECS/sysmo-core.spec
-echo "Moving package to repository"
-sudo mv RPMS/* /share/share/CentOS/7/local/x86_64/
-chown -R root.root /share/CentOS/7/local
-createrepo /share/CentOS/7/local/i386
-chmod -R o-w+r /share/CentOS/7/local
+
+#echo "Moving package to repository"
+#sudo mv RPMS/* /share/share/CentOS/7/local/x86_64/
+#chown -R root.root /share/CentOS/7/local
+#createrepo /share/CentOS/7/local/i386
+#chmod -R o-w+r /share/CentOS/7/local
+
+echo "Push package to gemfury"
+cd RPMS/x86_64
+fury push sysmo-core-*

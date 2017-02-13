@@ -4,7 +4,7 @@
 
 Name:		sysmo-core
 Version:	@SYSMO_CORE_VERSION@
-Release:	1%{?dist}
+Release:	@SYSMO_BUILD_VER@%{?dist}
 Summary:	Sysmo Core server
 Group:		Application/Productivity
 License:	GPLv3+
