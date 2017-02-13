@@ -1,14 +1,16 @@
 #!/bin/bash
 
-if [ ! -e ~/.sysmo-core_version-bump ]; then
-    echo "0" > ~/.sysmo-core_version-bump
+BUMP_FILE="$HOME/.sysmo-core_version-bump"
+if [ ! -e $BUMP_FILE ]; then
+    echo "0" > $BUMP_FILE
 fi
 
-PREV_BUILD_VER=$(cat ~/.sysmo-core_version-bump)
-CURR_BUILD_VER=$(expr $PREV_VER + 1)
-echo $CURR_BUILD_VER > ~/.sysmo-core_version-bump
+PREV_BUILD_VER=$(cat $BUMP_FILE)
+CURR_BUILD_VER=$(expr $PREV_BUILD_VER + 1)
+echo "Previous build $PREV_BUILD_VER next $CURR_BUILD_VER)"
+echo -n $CURR_BUILD_VER > $BUMP_FILE
 
-cat ~/.sysmo-core_version-bump
+cat $BUMP_FILE
 
 echo "Generate rpm build directories"
 WRK_DIR="$HOME/rpmbuild"
@@ -25,10 +27,10 @@ cd ..
 echo "Configure file for using $CURRENT_VERSION build $CURR_BUILD_VER"
 cat sysmo-core/support/packages/rhel7/sysmo-core.spec | \
     sed s/@SYSMO_CORE_VERSION@/$CURRENT_VERSION/g | \
-    sed s/@SYSMO_CORE_BUILD@/$CURR_BUILD_VER/g | \
+    sed s/@SYSMO_CORE_BUILD@/$CURR_BUILD_VER/g \
     > ../SPECS/sysmo-core.spec
-echo "Configure file fo using build number $CURR_VER"
 echo "Generate source archive"
+cat ../SPECS/sysmo-core.spec
 mv sysmo-core sysmo-core-$CURRENT_VERSION
 tar -czf sysmo-core-${CURRENT_VERSION}.tar.gz sysmo-core-${CURRENT_VERSION}
 echo "Entering directory ${WRK_DIR}"
