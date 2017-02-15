@@ -7,6 +7,15 @@ This is the main repository of sysmo-core, server part of the [Sysmo NMS](http:/
 
 More information and documentation can be found at the Sysmo [Wiki](https://github.com/sysmo-nms/sysmo-nms.github.io/wiki).
 
+Install
+=======
+Use the yum "unstable" repository to get the latest builds on CentOS 7:
+```sh
+$ sudo curl http://repos.sysmo.io:9000/unstable/CentOS/7/sysmo-core.repo > /etc/yum.repos.d/sysmo-core.repo
+$ sudo yum update
+$ sudo yum install sysmo-core
+```
+
 Build
 =====
 To interact with the server, you will need to download/install our fantastic [Sysmo-operator UI](http://www.sysmo.io/Downloads) user interface.

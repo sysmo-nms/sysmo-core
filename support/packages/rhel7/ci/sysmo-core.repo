@@ -1,0 +1,7 @@
+[sysmo-core]
+name=Sysmo Core unstable updates for CentOS 7 - $basearch
+baseurl=http://repos.sysmo.io/unstable/CentOS/7/$basearch
+enabled=1
+gpgcheck=0
+#gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-SYSMO-CORE-7
+

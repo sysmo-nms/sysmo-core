@@ -10,7 +10,6 @@ CURR_BUILD_VER=$(expr $PREV_BUILD_VER + 1)
 echo "Previous build $PREV_BUILD_VER next $CURR_BUILD_VER)"
 echo -n $CURR_BUILD_VER > $BUMP_FILE
 
-cat $BUMP_FILE
 
 echo "Generate rpm build directories"
 WRK_DIR="$HOME/rpmbuild"
@@ -38,12 +37,12 @@ cd ..
 echo "Build package"
 rpmbuild --ba SPECS/sysmo-core.spec
 
-#echo "Moving package to repository"
-#sudo mv RPMS/* /share/share/CentOS/7/local/x86_64/
-#chown -R root.root /share/CentOS/7/local
-#createrepo /share/CentOS/7/local/i386
-#chmod -R o-w+r /share/CentOS/7/local
 
-echo "Push package to gemfury"
-cd RPMS/x86_64
-fury push sysmo-core-*
+echo "Promote packages"
+REPO_DIR="/var/www/repos/unstable/CentOS/7/x86_64"
+
+if [ ! -d $REPO_DIR ]; then
+    sudo mkdir -p $REPO_DIR
+fi
+sudo cp RPMS/x86_64/sysmo-core* $REPO_DIR
+sudo createrepo $REPO_DIR
