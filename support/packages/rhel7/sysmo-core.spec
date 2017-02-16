@@ -149,6 +149,8 @@ fi
 %files
 %dir /usr/lib64/%{sysmo_app_name}
 %dir /etc/%{sysmo_app_name}
+%dir /etc/%{sysmo_app_name}/nchecks
+%dir /etc/%{sysmo_app_name}/ssl
 %dir /var/log/%{sysmo_app_name}
 %dir /var/log/%{sysmo_app_name}/sasl
 %dir /var/lib/%{sysmo_app_name}
@@ -159,7 +161,11 @@ fi
 
 /usr/lib/systemd/system/sysmo.service
 /usr/lib64/%{sysmo_app_name}/*
-/etc/%{sysmo_app_name}/*
+%config(noreplace) /etc/%{sysmo_app_name}/app.config
+%config(noreplace) /etc/%{sysmo_app_name}/sysmo.properties
+%config(noreplace) /etc/%{sysmo_app_name}/users.xml
+%config(noreplace) /etc/%{sysmo_app_name}/vm.args
+/etc/%{sysmo_app_name}/ssl/gen_certificates
 /var/lib/%{sysmo_app_name}/docroot/*
 
 
