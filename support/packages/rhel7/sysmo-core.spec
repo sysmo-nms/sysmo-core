@@ -36,8 +36,6 @@ Sysmo-Core is the main sysmo service.
 git submodule update --init
 rake release
 
-%pre
-
 
 %install
 # if build localy: cd sysmo
@@ -54,10 +52,8 @@ cp -R ${RELEASE_DIR}/ruby ${SYSMO_LIB}
 cp -R ${RELEASE_DIR}/utils ${SYSMO_LIB}
 
 SYSMO_ETC=%{buildroot}/etc/%{sysmo_app_name}
-if [ ! -d ${SYSMO_ETC} ]; then
-  mkdir -p ${SYSMO_ETC}
-fi
-cp -Rn ${RELEASE_DIR}/etc/*  ${SYSMO_ETC}/
+mkdir -p ${SYSMO_ETC}
+cp -R ${RELEASE_DIR}/etc/*  ${SYSMO_ETC}/
 ln -s ../../../etc/%{sysmo_app_name} ${SYSMO_LIB}/etc
 
 SYSMO_LOG=%{buildroot}/var/log/%{sysmo_app_name}
@@ -75,6 +71,18 @@ ln -s ../../../var/lib/%{sysmo_app_name}/docroot ${SYSMO_LIB}/docroot
 mkdir -p %{buildroot}/usr/lib/systemd/system
 cp support/packages/rhel7/sysmo.service %{buildroot}/usr/lib/systemd/system/
 
+%pre
+if [ $1 -gt 1 ]; then
+  # It is an upgrade. Sysmo service is allready installed
+  /usr/bin/systemctl stop sysmo
+  EPMD_EXE=$(find /usr/lib64/%{sysmo_app_name}/*/bin -name epmd)
+  if [ $EPMD_EXE != "" ]; then
+    $EPMD_EXE -kill > /dev/null 2>&1 || true
+  fi
+fi
+
+
+# INSTALL
 
 %post
 /bin/getent group %{sysmo_group_name} > /dev/null \
@@ -111,21 +119,26 @@ if [ -e /usr/lib64/%{sysmo_app_name}/.erlang.cookie ]; then
   chmod 400 /usr/lib64/%{sysmo_app_name}/.erlang.cookie
 fi
 
-echo "============ enable sysmo"
-/usr/bin/systemctl enable sysmo
-echo "============ start sysmo"
-/usr/bin/systemctl start sysmo
-echo "============ end"
+if [ $1 -gt 1 ]; then
+  # It is an upgrade start sysmo
+  /usr/bin/systemctl enable sysmo
+  /usr/bin/systemctl start sysmo
+fi
 
 
 %preun
-/usr/bin/systemctl stop sysmo
-/usr/bin/systemctl disable sysmo
-EPMD_EXE=$(find /usr/lib64/%{sysmo_app_name}/*/bin -name epmd)
-if [ $EPMD_EXE != "" ]; then
-  $EPMD_EXE -kill > /dev/null 2>&1 || true
+if [ $1 -eq 1 ]; then
+  # It is an upgrade do nothing
+else
+  /usr/bin/systemctl stop sysmo
+  /usr/bin/systemctl disable sysmo
+  EPMD_EXE=$(find /usr/lib64/%{sysmo_app_name}/*/bin -name epmd)
+  if [ $EPMD_EXE != "" ]; then
+    $EPMD_EXE -kill > /dev/null 2>&1 || true
+  fi
 fi
 
+# UNINSTALL
 
 %postun
 
