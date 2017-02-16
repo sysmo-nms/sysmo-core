@@ -54,8 +54,10 @@ cp -R ${RELEASE_DIR}/ruby ${SYSMO_LIB}
 cp -R ${RELEASE_DIR}/utils ${SYSMO_LIB}
 
 SYSMO_ETC=%{buildroot}/etc/%{sysmo_app_name}
-mkdir -p ${SYSMO_ETC}
-cp -R ${RELEASE_DIR}/etc/*  ${SYSMO_ETC}/
+if [ ! -d ${SYSMO_ETC} ]; then
+  mkdir -p ${SYSMO_ETC}
+fi
+cp -Rn ${RELEASE_DIR}/etc/*  ${SYSMO_ETC}/
 ln -s ../../../etc/%{sysmo_app_name} ${SYSMO_LIB}/etc
 
 SYSMO_LOG=%{buildroot}/var/log/%{sysmo_app_name}
