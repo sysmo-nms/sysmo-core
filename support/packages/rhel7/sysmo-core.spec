@@ -13,6 +13,9 @@ Source:	        sysmo-core-@SYSMO_CORE_VERSION@.tar.gz
 
 Requires: java
 
+%{?systemd_requires}
+BuildRequires: systemd
+
 %define debug_package %{nil}
 
 %global sysmo_app_name sysmo-nms
@@ -72,19 +75,12 @@ mkdir -p %{buildroot}/usr/lib/systemd/system
 cp support/packages/rhel7/sysmo.service %{buildroot}/usr/lib/systemd/system/
 
 %pre
-if [ $1 -gt 1 ]; then
-  # It is an upgrade. Sysmo service is allready installed
-  /usr/bin/systemctl stop sysmo
-  EPMD_EXE=$(find /usr/lib64/%{sysmo_app_name}/*/bin -name epmd)
-  if [ $EPMD_EXE != "" ]; then
-    $EPMD_EXE -kill > /dev/null 2>&1 || true
-  fi
-fi
-
 
 # INSTALL
 
 %post
+%systemd_post sysmo.service
+
 /bin/getent group %{sysmo_group_name} > /dev/null \
 	|| /sbin/groupadd -r %{sysmo_group_name}
 /bin/getent passwd %{sysmo_user_name} > /dev/null \
@@ -119,28 +115,12 @@ if [ -e /usr/lib64/%{sysmo_app_name}/.erlang.cookie ]; then
   chmod 400 /usr/lib64/%{sysmo_app_name}/.erlang.cookie
 fi
 
-if [ $1 -gt 1 ]; then
-  # It is an upgrade start sysmo
-  /usr/bin/systemctl enable sysmo
-  /usr/bin/systemctl start sysmo
-fi
-
 
 %preun
-if [ $1 -eq 1 ]; then
-  # It is an upgrade do nothing
-else
-  /usr/bin/systemctl stop sysmo
-  /usr/bin/systemctl disable sysmo
-  EPMD_EXE=$(find /usr/lib64/%{sysmo_app_name}/*/bin -name epmd)
-  if [ $EPMD_EXE != "" ]; then
-    $EPMD_EXE -kill > /dev/null 2>&1 || true
-  fi
-fi
-
-# UNINSTALL
+%systemd_preun sysmo.service
 
 %postun
+%systemd_postun_with_restart sysmo.service
 
 
 %files
