@@ -109,6 +109,7 @@ if [ -e /usr/lib64/%{sysmo_app_name}/.erlang.cookie ]; then
   chmod 400 /usr/lib64/%{sysmo_app_name}/.erlang.cookie
 fi
 
+
 %preun
 systemctl stop sysmo > /dev/null 2>&1 || true
 systemctl disable sysmo > /dev/null 2>&1 || true
@@ -119,10 +120,7 @@ fi
 
 
 %postun
-test -d /var/log/%{sysmo_app_name} && chown -R root:root /var/log/%{sysmo_app_name}
-test -d /var/lib/%{sysmo_app_name} && chown -R root:root /var/lib/%{sysmo_app_name}
-/bin/getent passwd %{sysmo_user_name} > /dev/null && /sbin/userdel %{sysmo_user_name}
-/bin/getent group  %{sysmo_group_name} > /dev/null && /sbin/groupdel %{sysmo_group_name}
+
 
 %files
 %dir /usr/lib64/%{sysmo_app_name}
