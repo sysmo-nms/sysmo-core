@@ -111,13 +111,16 @@ if [ -e /usr/lib64/%{sysmo_app_name}/.erlang.cookie ]; then
   chmod 400 /usr/lib64/%{sysmo_app_name}/.erlang.cookie
 fi
 
-/usr/bin/systemctl enable sysmo > /dev/null 2>&1 || true
-/usr/bin/systemctl start sysmo > /dev/null 2>&1 || true
+echo "============ enable sysmo"
+/usr/bin/systemctl enable sysmo
+echo "============ start sysmo"
+/usr/bin/systemctl start sysmo
+echo "============ end"
 
 
 %preun
-/usr/bin/systemctl stop sysmo > /dev/null 2>&1 || true
-/usr/bin/systemctl disable sysmo > /dev/null 2>&1 || true
+/usr/bin/systemctl stop sysmo
+/usr/bin/systemctl disable sysmo
 EPMD_EXE=$(find /usr/lib64/%{sysmo_app_name}/*/bin -name epmd)
 if [ $EPMD_EXE != "" ]; then
   $EPMD_EXE -kill > /dev/null 2>&1 || true
