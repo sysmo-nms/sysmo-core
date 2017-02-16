@@ -112,7 +112,7 @@ if [ -e /usr/lib64/%{sysmo_app_name}/.erlang.cookie ]; then
 fi
 
 # if it is an upgrade auto enable and start sysmo
-if [ $1 -eq 2 ]; then
+if [ ! $1 -eq 1 ]; then
   systemctl enable sysmo > /dev/null 2>&1
   systemctl start sysmo
 fi
