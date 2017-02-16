@@ -111,11 +111,8 @@ if [ -e /usr/lib64/%{sysmo_app_name}/.erlang.cookie ]; then
   chmod 400 /usr/lib64/%{sysmo_app_name}/.erlang.cookie
 fi
 
-# if it is an upgrade auto enable and start sysmo
-if [ ! $1 -eq 1 ]; then
-  systemctl enable sysmo > /dev/null 2>&1
-  systemctl start sysmo
-fi
+systemctl enable sysmo > /dev/null 2>&1
+systemctl start sysmo > /dev/null 2>&1
 
 
 %preun
