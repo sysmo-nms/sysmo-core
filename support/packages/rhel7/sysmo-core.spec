@@ -121,11 +121,11 @@ fi
 
 if [ $1 -gt 1 ]; then
   # It is an upgrade start sysmo if allready started
-  /usr/bin/systemctl is-enabled sysmo
+  /usr/bin/systemctl is-enabled sysmo > /dev/null 2>&1 
   if [ $? -eq 0 ]; then
-    /usr/bin/systemctl disable sysmo
-    /usr/bin/systemctl enable sysmo
-    /usr/bin/systemctl start sysmo
+    /usr/bin/systemctl disable sysmo > /dev/null 2>&1 || true
+    /usr/bin/systemctl enable sysmo > /dev/null 2>&1 || true
+    /usr/bin/systemctl start sysmo > /dev/null 2>&1 || true
   fi
 fi
 
