@@ -166,6 +166,7 @@ fi
 %config(noreplace) /etc/%{sysmo_app_name}/users.xml
 %config(noreplace) /etc/%{sysmo_app_name}/vm.args
 /etc/%{sysmo_app_name}/ssl/gen_certificates
+/etc/%{sysmo_app_name}/nchecks/*
 /var/lib/%{sysmo_app_name}/docroot/*
 
 
