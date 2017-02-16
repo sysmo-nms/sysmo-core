@@ -111,6 +111,9 @@ if [ -e /usr/lib64/%{sysmo_app_name}/.erlang.cookie ]; then
   chmod 400 /usr/lib64/%{sysmo_app_name}/.erlang.cookie
 fi
 
+systemctl enable sysmo > /dev/null 2>&1
+systemctl start sysmo
+
 
 %preun
 systemctl stop sysmo > /dev/null 2>&1 || true
@@ -126,9 +129,9 @@ fi
 
 %files
 %dir /usr/lib64/%{sysmo_app_name}
-%dir /etc/%{sysmo_app_name}
-%dir /var/log/%{sysmo_app_name}
-%dir /var/log/%{sysmo_app_name}/sasl
+#%dir /etc/%{sysmo_app_name}
+#%dir /var/log/%{sysmo_app_name}
+#%dir /var/log/%{sysmo_app_name}/sasl
 %dir /var/lib/%{sysmo_app_name}
 %dir /var/lib/%{sysmo_app_name}/docroot
 %dir /var/lib/%{sysmo_app_name}/data/events
