@@ -55,11 +55,21 @@ dependencies {
 task launcherJar(type: Jar) {
     appendix = "launcher"
     manifest {
-      attributes "Class-Path": configurations.runtime.files*.name.join(" ")
+      attributes "Class-Path": "sysmo-jserver.jar " << configurations.runtime.files*.name.join(" ")
     }
 }
 
 startScripts {
     // clear up the classpath because the launcher jar has it.
     classpath = launcherJar.outputs.files
+}
+
+distributions {
+    main {
+        contents {
+            from(launcherJar) {
+                into "lib"
+            }
+        }
+    }
 }
