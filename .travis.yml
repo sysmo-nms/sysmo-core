@@ -1,4 +1,4 @@
-language: java
+language: erlang
 jdk:
     - oraclejdk8
 
