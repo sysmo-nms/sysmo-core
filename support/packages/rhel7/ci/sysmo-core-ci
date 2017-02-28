@@ -46,3 +46,4 @@ if [ ! -d $REPO_DIR ]; then
 fi
 sudo cp RPMS/x86_64/sysmo-core* $REPO_DIR
 sudo createrepo $REPO_DIR
+rm -rf $WRK_DIR
