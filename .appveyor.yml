@@ -9,6 +9,7 @@ before_build:
     - git submodule update --init
 
 build_script:
+    - set PATH=%WIX%\bin;%PATH%
     - rake pack
 
 artifacts:
