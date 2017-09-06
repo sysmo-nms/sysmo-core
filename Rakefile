@@ -53,7 +53,7 @@ JSERVER_ROOT = File.join(SYSMO_ROOT, "apps", "j_server", "priv", "java", "sysmo-
 NCHECKS_ROOT = File.join(SYSMO_ROOT, "apps", "j_server", "priv", "java", "sysmo-jserver", "nchecks")
 PPING_ROOT   = File.join(SYSMO_ROOT, "apps", "j_server", "priv", "bin", "pping")
 SYSMO_RELUTILS_ROOT = File.join(SYSMO_ROOT, "support", "relutils")
-NCHECKS_DEFS = File.join(NCHECKS_ROOT, "defs")
+NCHECKS_DEFS = File.join(NCHECKS_ROOT, "dist")
 
 # erlang releases location constants
 PROD_RELEASE_DIR  = File.join(BUILD_DIR, "default", "rel", "sysmo")
