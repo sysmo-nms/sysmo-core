@@ -28,11 +28,11 @@ copy /y %JAVA_INSTALLER% jre.exe
 @set wix_opts= -v -nologo -ext WixNetFxExtension -ext WixBalExtension -ext WixUtilExtension -ext WixFirewallExtension -ext WixUIExtension
 heat.exe dir .\SourceDir -gg -ke -nologo -sreg -sfrag -srd -cg AllFiles -dr INSTALLLOCATION --template fragment -out sysmoTree.wxs
 @set wix_ice20="-sice:ICE20"
-candle.exe %wix_opts% -arch %WIX_ARCH% core.wxs
-candle.exe %wix_opts% -arch %WIX_ARCH% sysmoTree.wxs
-light.exe %wix_ice20% %wix_opts% -o __installer-@BUILD_PLATFORM@.msi core.wixobj sysmoTree.wixobj
+%WIX%\candle.exe %wix_opts% -arch %WIX_ARCH% core.wxs
+%WIX%\candle.exe %wix_opts% -arch %WIX_ARCH% sysmoTree.wxs
+%WIX%\light.exe %wix_ice20% %wix_opts% -o __installer-@BUILD_PLATFORM@.msi core.wixobj sysmoTree.wixobj
 
 :: Build installer bundle
 
-candle.exe %wix_opts% -arch %WIX_ARCH% -o bundle.wixobj bundle.wxs
-light.exe  %wix_opts% -o Sysmo-Core-@SYSMO_CORE_VERSION@-@BUILD_PLATFORM@.exe bundle.wixobj
+%WIX%\candle.exe %wix_opts% -arch %WIX_ARCH% -o bundle.wixobj bundle.wxs
+%WIX%\light.exe  %wix_opts% -o Sysmo-Core-@SYSMO_CORE_VERSION@-@BUILD_PLATFORM@.exe bundle.wixobj
