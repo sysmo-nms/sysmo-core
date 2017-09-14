@@ -106,7 +106,7 @@ do_init(Probe) ->
     supercast_proc:new_channel(Probe#probe.name, ?MODULE, self(),
                                                     Probe#probe.permissions),
     Ref = make_ref(),
-    random:seed(erlang:now()),
+    random:seed(erlang:timestamp()),
     {ok, DumpDir} = application:get_env(monitor, http_sync_dir),
     {{Class, Args}, RrdConfig, CheckId} = init_nchecks(Probe),
     TRef = monitor:send_after_rand(Probe#probe.step, {take_of, Ref}),
@@ -132,7 +132,7 @@ do_init(Probe) ->
         permissions         = PPermissions,
         belong_to           = PBelongTo,
         tref                = TRef,
-        current_status_from = erlang:now(),
+        current_status_from = erlang:timestamp(),
         current_status      = PStatus,
         local_state         = NS,
         description         = PDescription,
@@ -377,7 +377,7 @@ do_handle_nchecks_reply(PR, #state{name=Name,ref=Ref} = S) ->
     monitor_data_master:set_probe_state(
         ES#ets_state{
             tref                =TRef,
-            current_status_from = erlang:now(),
+            current_status_from = erlang:timestamp(),
             current_status      = PR#nchecks_reply.status,
             last_return         = PR#nchecks_reply.reply_string
         }

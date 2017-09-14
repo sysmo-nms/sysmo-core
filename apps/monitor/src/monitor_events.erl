@@ -134,7 +134,7 @@ code_change(_O, S, _E) -> {ok, S}.
 
 get_ts() ->
     % TODO erlang:system_time(seconds).
-    {Meg,Sec,_} = erlang:now(),
+    {Meg,Sec,_} = erlang:timestamp(),
     1000000 * Meg + Sec.
 
 get_target_infos(Target) ->
