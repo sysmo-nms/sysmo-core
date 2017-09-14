@@ -115,14 +115,16 @@ end
 
 desc "Create a production release."
 task :release => ["jserver:build", "pping:build", "relutils:build"] do
+
+    # remove old release
+    clean_all()
+
     puts "=> Start release build"
     cd SYSMO_ROOT
 
     configure_file("rebar.config.in", "rebar.config")
     configure_file("apps/sysmo/src/sysmo.app.src.in", "apps/sysmo/src/sysmo.app.src")
 
-    # remove old release
-    clean_all()
 
     # generate release
     sh "#{REBAR} release"
