@@ -106,7 +106,6 @@ do_init(Probe) ->
     supercast_proc:new_channel(Probe#probe.name, ?MODULE, self(),
                                                     Probe#probe.permissions),
     Ref = make_ref(),
-    random:seed(erlang:timestamp()),
     {ok, DumpDir} = application:get_env(monitor, http_sync_dir),
     {{Class, Args}, RrdConfig, CheckId} = init_nchecks(Probe),
     TRef = monitor:send_after_rand(Probe#probe.step, {take_of, Ref}),
