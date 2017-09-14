@@ -104,7 +104,7 @@ init([]) ->
 
 % @private
 handle_call({register_job, Job, Step, MFA}, _From, JobList) ->
-    InitialStep = random:uniform(Step),
+    InitialStep = rand:uniform(Step),
     TRef = erlang:send_after(InitialStep, self(), {fire, Job, Step, MFA}),
     {reply, ok, [{Job, Step, MFA, TRef} | JobList]};
 

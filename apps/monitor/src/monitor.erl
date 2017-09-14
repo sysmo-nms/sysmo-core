@@ -232,7 +232,7 @@ send_after(Step, Msg) ->
 %%-----------------------------------------------------------------------------
 -spec send_after_rand(Step::integer(), Msg::any()) -> TRef::tuple().
 send_after_rand(Step, Msg) ->
-    send_after(random:uniform(Step), Msg).
+    send_after(rand:uniform(Step), Msg).
 
 
 
