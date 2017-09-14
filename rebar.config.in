@@ -51,7 +51,7 @@
                 "etc/sysmo.properties"},
             {mkdir, "etc/ssl"},
             {copy, "config/app.config", "etc/app.config"},
-            {copy, "config/@ERLANG_VM_ARG_FILE@", "etc/vm.args"},
+            {copy, "config/@SYSMO_ERLANG_VM_ARG_FILE@", "etc/vm.args"},
             {copy, "config/users.xml", "etc/users.xml"},
             {mkdir, "etc"}
 

@@ -41,9 +41,9 @@ else
 end
 
 if (RbConfig::CONFIG['host_os'] =~ /mswin|mingw|cygwin/)
-    ERLANG_VM_ARG_FILE="vm.args.win"
+    SYSMO_ERLANG_VM_ARG_FILE="vm.args.win"
 else
-    ERLANG_VM_ARG_FILE="vm.args.unix"
+    SYSMO_ERLANG_VM_ARG_FILE="vm.args.unix"
 end
 
 # set directories constants
@@ -99,7 +99,7 @@ task :debug_release => ["sysmo:debug_build", "jserver:build", "pping:build", "re
     install_release_utils(DEBUG_RELEASE_DIR)
     install_nchecks(DEBUG_RELEASE_DIR, true)
 
-    puts "Debug release ready!"
+    puts ":: Debug release ready!"
     puts ""
     puts "Execute 'rake run' to start the service."
     # end
@@ -132,7 +132,7 @@ task :release => ["jserver:build", "pping:build", "relutils:build"] do
     install_release_utils(PROD_RELEASE_DIR)
     install_nchecks(PROD_RELEASE_DIR, false)
 
-    puts "Production release ready!"
+    puts ":: Production release ready!"
     #end
 end
 
@@ -365,7 +365,8 @@ def clean_all()
     puts ":: Clean all"
     cd SYSMO_ROOT
     FileUtils.rm_rf("_build")
-    FileUtils.rm_rf("sysmo-worker")
+    FileUtils.rm_f("rebar.config")
+    FileUtils.rm_f("apps/sysmo/src/sysmo.app.src")
 end
 
 #
@@ -431,7 +432,6 @@ def install_nchecks(release_dir, include_dummy)
 
     rbXml = Dir.glob("#{NCHECKS_DEFS}/io.sysmo.nchecks.*.xml")
 
-    puts ":: wtf #{NCHECKS_DEFS}"
     rbXml.each do |x|
         FileUtils.cp(x, "#{release_dir}/docroot/nchecks/")
         FileUtils.cp(x, "#{release_dir}/etc/nchecks/")
@@ -479,10 +479,12 @@ def configure_file(file_name_in, file_name_out)
     text = File.read(file_name_in)
 
     Module.constants.each do |x|
-        search_text = "@#{x}@"
-        replace_with = Module.const_get(x)
-        other = text.gsub(search_text.to_s, replace_with.to_s)
-        text = other
+        if "#{x}".start_with? 'SYSMO_'
+            search_text = "@#{x}@"
+            replace_with = Module.const_get(x)
+            other = text.gsub(search_text.to_s, replace_with.to_s)
+            text = other
+        end
     end
 
     File.open(file_name_out, "w") { |file| file.puts text }
