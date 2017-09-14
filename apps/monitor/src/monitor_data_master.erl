@@ -394,7 +394,7 @@ generate_id(Table) ->
         [_] -> generate_id(Table)
     end.
 generate_id() ->
-    B = crypto:rand_bytes(8),
+    B = crypto:strong_rand_bytes(8),
     N = lists:foldl(fun(N,Acc) -> Acc * 256 + N end, 0, binary_to_list(B)),
     integer_to_list(N).
 
