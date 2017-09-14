@@ -33,11 +33,11 @@ if build_platform.nil? then
 end
 
 if build_platform == "Win32" then
-    BUILD_PLATFORM = "i586"
-    WINDOW_PROGRAM_FILES_FOLDER = "ProgramFilesFolder"
+    SYSMO_BUILD_PLATFORM = "i586"
+    SYSMO_WINDOW_PROGRAM_FILES_FOLDER = "ProgramFilesFolder"
 else
-    BUILD_PLATFORM = "x64"
-    WINDOW_PROGRAM_FILES_FOLDER = "ProgramFiles64Folder"
+    SYSMO_BUILD_PLATFORM = "x64"
+    SYSMO_WINDOW_PROGRAM_FILES_FOLDER = "ProgramFiles64Folder"
 end
 
 if (RbConfig::CONFIG['host_os'] =~ /mswin|mingw|cygwin/)

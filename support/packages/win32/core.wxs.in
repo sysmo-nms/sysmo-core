@@ -38,7 +38,7 @@
         <Property Id="ARPPRODUCTICON" Value="sysmo.ico" />
 
         <Directory Id='TARGETDIR' Name="SourceDir">
-            <Directory Id="@WINDOW_PROGRAM_FILES_FOLDER@">
+            <Directory Id="@SYSMO_WINDOW_PROGRAM_FILES_FOLDER@">
                 <Directory Id="INSTALLLOCATION" Name="Sysmo NMS" />
             </Directory>
             <Directory Id="ProgramMenuFolder">
