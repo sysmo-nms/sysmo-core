@@ -8,7 +8,7 @@ Release:	@SYSMO_CORE_BUILD@%{?dist}
 Summary:	Sysmo Core server
 Group:		Application/Productivity
 License:	GPLv3+
-URL:		http://www.sysmo.io
+URL:		https://sysmo-nms.github.io
 Source:	        sysmo-core-@SYSMO_CORE_VERSION@.tar.gz
 
 Requires: java

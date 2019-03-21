@@ -1,5 +1,5 @@
 %%==============================================================================
-%% Sysmo NMS Network Management and Monitoring solution (http://www.sysmo.io)
+%% Sysmo NMS Network Management and Monitoring solution (https://sysmo-nms.github.io)
 %%
 %% Copyright (c) 2012-2017 Sebastien Serre <ssbx@sysmo.io>
 %%
